@@ -9,6 +9,7 @@
 import type { RGB } from './RibbonTrail';
 import type { HeroDesign, Palette, Particle, ParticleKind } from './Hero';
 import { Hero, Spring, css, glow, mix } from './Hero';
+import { nebulaPearl } from './cgShading';
 
 const CALM: Palette = {
 	light: [255, 240, 228],
@@ -61,10 +62,15 @@ const BOW_SPAN = 1.1;
  * highlight on the loops, ink thicker on the shadow side. Its own frame: the knot at the
  * centre, up (-y) pointing away from her head.
  */
-function paintedBow(deviceR: number, lightAngle: number, look: 0 | 1): HTMLCanvasElement {
+function paintedBow(
+	deviceR: number,
+	lightAngle: number,
+	look: 0 | 1,
+	cg = false
+): HTMLCanvasElement {
 	const R = Math.max(4, Math.round(deviceR));
 	const step = Math.round((((lightAngle / (Math.PI * 2)) % 1) + 1) * 16) % 16;
-	const key = `${R}:${step}:${look}`;
+	const key = `${R}:${step}:${look}:${cg ? 'cg' : 'paint'}`;
 	let c = bowCache.get(key);
 	if (c) return c;
 	if (bowCache.size > 200) bowCache.clear();
@@ -125,35 +131,49 @@ function paintedBow(deviceR: number, lightAngle: number, look: 0 | 1): HTMLCanva
 		ctx.ellipse(0, 0, R * 0.17, R * 0.15, 0, 0, Math.PI * 2);
 	};
 	const parts = [() => tail(-1), () => tail(1), () => loop(-1), () => loop(1), knot];
-	// ink, thicker on the side away from the light
-	ctx.save();
-	ctx.translate(-lx * R * 0.035, -ly * R * 0.035);
-	ctx.fillStyle = css(ink);
-	ctx.strokeStyle = css(ink);
-	ctx.lineWidth = R * 0.12;
-	for (const part of parts) {
-		part();
-		ctx.fill();
-		ctx.stroke();
-	}
-	ctx.restore();
-	for (const [i, part] of parts.entries()) {
-		part();
-		ctx.fillStyle = css(i < 2 ? mix(base, shade, 0.35) : i === 4 ? knotC : base);
-		ctx.fill();
-		// the shadow shape: the part shifted towards the light, cut out of a shaded copy
+	if (cg) {
+		// CG satin: no ink; each part shaded round from its lit side, glossy highlights
+		for (const [i, part] of parts.entries()) {
+			part();
+			const col = i < 2 ? mix(base, shade, 0.35) : i === 4 ? knotC : base;
+			const g = ctx.createRadialGradient(lx * R * 0.25, ly * R * 0.25, 0, 0, 0, R * 0.75);
+			g.addColorStop(0, css(mix(col, [255, 255, 255], 0.35)));
+			g.addColorStop(0.45, css(col));
+			g.addColorStop(1, css(mix(col, shade, 0.85)));
+			ctx.fillStyle = g;
+			ctx.fill();
+		}
+	} else {
+		// ink, thicker on the side away from the light
 		ctx.save();
-		part();
-		ctx.clip();
-		ctx.beginPath();
-		ctx.rect(-R * 2, -R * 2, R * 4, R * 4);
-		ctx.save();
-		ctx.translate(lx * R * 0.1, ly * R * 0.1);
-		part();
+		ctx.translate(-lx * R * 0.035, -ly * R * 0.035);
+		ctx.fillStyle = css(ink);
+		ctx.strokeStyle = css(ink);
+		ctx.lineWidth = R * 0.12;
+		for (const part of parts) {
+			part();
+			ctx.fill();
+			ctx.stroke();
+		}
 		ctx.restore();
-		ctx.fillStyle = css(shade, 0.85);
-		ctx.fill('evenodd');
-		ctx.restore();
+		for (const [i, part] of parts.entries()) {
+			part();
+			ctx.fillStyle = css(i < 2 ? mix(base, shade, 0.35) : i === 4 ? knotC : base);
+			ctx.fill();
+			// the shadow shape: the part shifted towards the light, cut out of a shaded copy
+			ctx.save();
+			part();
+			ctx.clip();
+			ctx.beginPath();
+			ctx.rect(-R * 2, -R * 2, R * 4, R * 4);
+			ctx.save();
+			ctx.translate(lx * R * 0.1, ly * R * 0.1);
+			part();
+			ctx.restore();
+			ctx.fillStyle = css(shade, 0.85);
+			ctx.fill('evenodd');
+			ctx.restore();
+		}
 	}
 	// satin highlights on the loops and a glint on the knot
 	ctx.strokeStyle = 'rgba(255,255,255,0.85)';
@@ -263,8 +283,11 @@ const DESIGN: HeroDesign = {
 	death: 'spin'
 };
 
+/** The CG style: the same heroine rendered as a nebula in a pearl, without ink. */
+const CG_DESIGN: HeroDesign = { ...DESIGN, id: 'ms-pacman-cg', shade: nebulaPearl, ink: false };
+
 export class MsPacmanHero extends Hero {
-	protected readonly design = DESIGN;
+	protected readonly designs = { painted: DESIGN, cg: CG_DESIGN };
 	/** The bow's sway, radians, on a soft spring. */
 	private readonly bow = new Spring(0);
 	/** Seconds into a blink, or -1; the next blink is due at `nextBlink`. */
@@ -412,14 +435,24 @@ export class MsPacmanHero extends Hero {
 		R: number,
 		pal: Palette
 	): void {
-		ctx.strokeStyle = css(pal.ink);
-		ctx.lineWidth = R * 0.12;
-		lips();
-		ctx.stroke();
+		const cg = this.style === 'cg';
+		if (!cg) {
+			ctx.strokeStyle = css(pal.ink);
+			ctx.lineWidth = R * 0.12;
+			lips();
+			ctx.stroke();
+		}
 		ctx.strokeStyle = css(mix([232, 28, 72], [255, 120, 180], this.power));
-		ctx.lineWidth = R * 0.07;
+		ctx.lineWidth = R * (cg ? 0.08 : 0.07);
 		lips();
 		ctx.stroke();
+		if (cg) {
+			// a glossy line on the lipstick
+			ctx.strokeStyle = 'rgba(255,220,230,0.6)';
+			ctx.lineWidth = R * 0.02;
+			lips();
+			ctx.stroke();
+		}
 	}
 
 	/** Her eye, then the bow swaying on its spring, luminous when powered. */
@@ -442,10 +475,11 @@ export class MsPacmanHero extends Hero {
 		ctx.rotate(turn);
 		ctx.scale(scale, scale);
 		const half = R * BOW_SPAN;
-		ctx.drawImage(paintedBow(R * dpr, la, 0), -half, -half, half * 2, half * 2);
+		const cg = this.style === 'cg';
+		ctx.drawImage(paintedBow(R * dpr, la, 0, cg), -half, -half, half * 2, half * 2);
 		if (p > 0.01) {
 			ctx.globalAlpha = p;
-			ctx.drawImage(paintedBow(R * dpr, la, 1), -half, -half, half * 2, half * 2);
+			ctx.drawImage(paintedBow(R * dpr, la, 1, cg), -half, -half, half * 2, half * 2);
 			ctx.globalAlpha = 1;
 		}
 		ctx.restore();

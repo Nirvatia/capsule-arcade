@@ -155,6 +155,11 @@ function paintedDisc(
 	const a = (step / LIGHT_STEPS) * Math.PI * 2;
 	const lx = Math.cos(a);
 	const ly = Math.sin(a);
+	if (design.shade) {
+		c = shadedDisc(design.shade, R, lx, ly, look / POWER_STEPS);
+		discCache.set(key, c);
+		return c;
+	}
 	const pal = mixPal(design.calm, design.awoken, look / POWER_STEPS);
 	const p = look / POWER_STEPS;
 	c = document.createElement('canvas');
@@ -227,6 +232,47 @@ function paintedDisc(
 	return c;
 }
 
+/**
+ * The CG body: every pixel of the sphere shaded by the hero's material, antialiased at the
+ * edge; the light comes from the frame's light direction, raised towards the viewer.
+ */
+function shadedDisc(
+	shade: NonNullable<HeroDesign['shade']>,
+	R: number,
+	lx: number,
+	ly: number,
+	look: number
+): HTMLCanvasElement {
+	const c = document.createElement('canvas');
+	c.width = c.height = Math.ceil(R * DISC_SPAN * 2);
+	const ctx = c.getContext('2d') as CanvasRenderingContext2D;
+	const img = ctx.createImageData(c.width, c.height);
+	const d = img.data;
+	const mid = c.width / 2;
+	const n = Math.hypot(lx * 0.75, ly * 0.75, 0.66);
+	const light = { x: (lx * 0.75) / n, y: (ly * 0.75) / n, z: 0.66 / n };
+	for (let py = 0; py < c.height; py++) {
+		for (let px = 0; px < c.width; px++) {
+			const dx = px + 0.5 - mid;
+			const dy = py + 0.5 - mid;
+			const r = Math.hypot(dx, dy);
+			const cover = Math.min(1, Math.max(0, R - r + 0.5));
+			if (cover <= 0) continue;
+			const x = dx / R;
+			const y = dy / R;
+			const z = Math.sqrt(Math.max(0, 1 - x * x - y * y));
+			const col = shade(x, y, z, light, look);
+			const o = (py * c.width + px) * 4;
+			d[o] = Math.min(255, col[0]);
+			d[o + 1] = Math.min(255, col[1]);
+			d[o + 2] = Math.min(255, col[2]);
+			d[o + 3] = cover * 255;
+		}
+	}
+	ctx.putImageData(img, 0, 0);
+	return c;
+}
+
 /** What each hero brings: looks, jaws, rhythm, the light in the mouth, trail and death. */
 export interface HeroDesign {
 	/** Key of the baked discs. */
@@ -250,7 +296,24 @@ export interface HeroDesign {
 	readonly trailAwoken: readonly RibbonLayer[];
 	/** 'open': the mouth opens all the way round; 'spin': she spins away. */
 	readonly death: 'open' | 'spin';
+	/**
+	 * A CG material instead of the painted disc: the colour of the unit sphere at (x, y)
+	 * with height z, lit by `light` (a unit vector in the frame, y down, z towards the
+	 * viewer), for the look 0..1.
+	 */
+	readonly shade?: (x: number, y: number, z: number, light: Vec3, look: number) => RGB;
+	/** false: no ink silhouette (the CG style reads by light and a soft edge). */
+	readonly ink?: boolean;
 }
+
+export interface Vec3 {
+	readonly x: number;
+	readonly y: number;
+	readonly z: number;
+}
+
+/** The ways a hero can be drawn: the painted 2D look or the CG render. */
+export type HeroStyle = 'painted' | 'cg';
 
 export type ParticleKind = 'ember' | 'star' | 'heart';
 
@@ -281,7 +344,21 @@ const DEATH_END = 1.75;
 const CHARGE = 0.18;
 
 export abstract class Hero {
-	protected abstract readonly design: HeroDesign;
+	/** The hero's designs, one per style; the painted one is drawn unless told otherwise. */
+	protected abstract readonly designs: Readonly<Record<HeroStyle, HeroDesign>>;
+	private styleValue: HeroStyle = 'painted';
+
+	protected get design(): HeroDesign {
+		return this.designs[this.styleValue];
+	}
+
+	get style(): HeroStyle {
+		return this.styleValue;
+	}
+
+	setStyle(style: HeroStyle): void {
+		this.styleValue = style;
+	}
 	protected r = 20;
 	protected x = 0;
 	protected y = 0;
@@ -626,18 +703,20 @@ export abstract class Hero {
 		const U = { x: Math.cos(mu) * R, y: -Math.sin(mu) * R };
 		const Dn = { x: Math.cos(md) * R, y: Math.sin(md) * R };
 		const bend = R * 0.09 * clamp01(m * 2.5);
-		ctx.save();
-		ctx.translate(-lx * R * 0.045, -ly * R * 0.045);
-		ctx.scale(1.075, 1.075);
-		ctx.beginPath();
-		ctx.moveTo(U.x, U.y);
-		ctx.arc(0, 0, R, -mu, md, true);
-		ctx.quadraticCurveTo((Dn.x + A.x) / 2, (Dn.y + A.y) / 2 - bend, A.x, A.y);
-		ctx.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x, U.y);
-		ctx.closePath();
-		ctx.fillStyle = css(pal.ink);
-		ctx.fill();
-		ctx.restore();
+		if (D.ink !== false) {
+			ctx.save();
+			ctx.translate(-lx * R * 0.045, -ly * R * 0.045);
+			ctx.scale(1.075, 1.075);
+			ctx.beginPath();
+			ctx.moveTo(U.x, U.y);
+			ctx.arc(0, 0, R, -mu, md, true);
+			ctx.quadraticCurveTo((Dn.x + A.x) / 2, (Dn.y + A.y) / 2 - bend, A.x, A.y);
+			ctx.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x, U.y);
+			ctx.closePath();
+			ctx.fillStyle = css(pal.ink);
+			ctx.fill();
+			ctx.restore();
+		}
 		const body = this.composeBody(R, lx, ly, p, pulse, mu, md, bend);
 		ctx.drawImage(body.canvas, -body.half, -body.half, body.half * 2, body.half * 2);
 
@@ -702,15 +781,16 @@ export abstract class Hero {
 	protected afterUpdate?(dt: number): void;
 	protected resetLooks?(): void;
 
-	/** The lips along the mouth's cut: ink. */
+	/** The lips along the mouth's cut: ink, or a soft crease in the CG style. */
 	protected drawLips(
 		ctx: CanvasRenderingContext2D,
 		lips: () => void,
 		R: number,
 		pal: Palette
 	): void {
-		ctx.strokeStyle = css(pal.ink);
-		ctx.lineWidth = R * 0.075;
+		const cg = this.design.ink === false;
+		ctx.strokeStyle = css(pal.ink, cg ? 0.4 : 1);
+		ctx.lineWidth = R * (cg ? 0.045 : 0.075);
 		lips();
 		ctx.stroke();
 	}

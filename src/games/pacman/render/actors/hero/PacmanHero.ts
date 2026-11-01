@@ -5,6 +5,7 @@
 // (painting, acting, energizer beat, trail) is the shared Hero.
 import type { HeroDesign, Palette } from './Hero';
 import { Hero } from './Hero';
+import { stellarGold } from './cgShading';
 
 const CALM: Palette = {
 	light: [255, 230, 128],
@@ -194,8 +195,11 @@ const DESIGN: HeroDesign = {
 	death: 'open'
 };
 
+/** The CG style: the same hero rendered as stellar gold, without ink. */
+const CG_DESIGN: HeroDesign = { ...DESIGN, id: 'pacman-cg', shade: stellarGold, ink: false };
+
 export class PacmanHero extends Hero {
-	protected readonly design = DESIGN;
+	protected readonly designs = { painted: DESIGN, cg: CG_DESIGN };
 
 	/** Painted flame tongues streaming back from his head, swaying (no noise: no flicker). */
 	protected drawBehind(ctx: CanvasRenderingContext2D, R: number, k: number): void {

@@ -2,8 +2,8 @@
 // figure of eight (or resting in the middle), with a tile-sized inset of the same moment on
 // the summer sand. Buttons: Pac-Man / Ms. Pac-Man, run / rest, a bite, the energizer (6 s, the
 // last 1.6 s calm down), death, quarter speed. ?capture: window.__advance(seconds) steps 1/60 s
-// frames; ?ms starts with Ms. Pac-Man.
-import type { Hero } from '../../../src/games/pacman/render/actors/hero/Hero';
+// frames; ?ms starts with Ms. Pac-Man; ?painted starts in the painted style (CG otherwise).
+import type { Hero, HeroStyle } from '../../../src/games/pacman/render/actors/hero/Hero';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
 
@@ -18,7 +18,12 @@ const POWER_ENDING = 1.6;
 const TILE = 30;
 
 let ms = new URLSearchParams(location.search).has('ms');
-const make = (): Hero => (ms ? new MsPacmanHero() : new PacmanHero());
+let style: HeroStyle = new URLSearchParams(location.search).has('painted') ? 'painted' : 'cg';
+const make = (): Hero => {
+	const h = ms ? new MsPacmanHero() : new PacmanHero();
+	h.setStyle(style);
+	return h;
+};
 let hero = make();
 let small = make();
 let deathTimer = -1;
@@ -48,7 +53,14 @@ function pickHero(): void {
 	small = make();
 	layout();
 	$('who').textContent = ms ? 'Ms. Pac-Man' : 'Pac-Man';
+$('style').textContent = style === 'cg' ? 'Стиль: CG' : 'Стиль: рисованный';
 }
+$('style').addEventListener('click', () => {
+	style = style === 'cg' ? 'painted' : 'cg';
+	hero.setStyle(style);
+	small.setStyle(style);
+	$('style').textContent = style === 'cg' ? 'Стиль: CG' : 'Стиль: рисованный';
+});
 $('who').addEventListener('click', () => {
 	ms = !ms;
 	pickHero();

@@ -19,6 +19,7 @@
     <canvas id="view"></canvas>
     <div id="ctl">
       <button class="bt" id="who">Pac-Man</button>
+      <button class="bt" id="style">Стиль: CG</button>
       <button class="bt" id="run" aria-pressed="true">Бег</button>
       <button class="bt" id="bite">Укус</button>
       <button class="bt" id="power">⚡ Энерджайзер</button>
@@ -166,9 +167,9 @@
 		a[2] + (b[2] - a[2]) * k
 	];
 	var css = (c, a = 1) => `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a})`;
-	var clamp01 = (v) => Math.max(0, Math.min(1, v));
-	var easeOut = (t) => 1 - Math.pow(1 - clamp01(t), 3);
-	var easeIn = (t) => Math.pow(clamp01(t), 3);
+	var clamp01$1 = (v) => Math.max(0, Math.min(1, v));
+	var easeOut = (t) => 1 - Math.pow(1 - clamp01$1(t), 3);
+	var easeIn = (t) => Math.pow(clamp01$1(t), 3);
 	/** The key light, fixed in the world: from the upper left. */
 	var LIGHT = (() => {
 		const n = Math.hypot(-.55, -.83);
@@ -249,7 +250,7 @@
 	function paintedDisc(design, deviceR, lightAngle, power) {
 		const R = Math.max(4, Math.round(deviceR));
 		const step = Math.round((lightAngle / (Math.PI * 2) % 1 + 1) * LIGHT_STEPS) % LIGHT_STEPS;
-		const look = Math.round(clamp01(power) * POWER_STEPS);
+		const look = Math.round(clamp01$1(power) * POWER_STEPS);
 		const key = `${design.id}:${R}:${step}:${look}`;
 		let c = discCache.get(key);
 		if (c) return c;
@@ -257,6 +258,11 @@
 		const a = step / LIGHT_STEPS * Math.PI * 2;
 		const lx = Math.cos(a);
 		const ly = Math.sin(a);
+		if (design.shade) {
+			c = shadedDisc(design.shade, R, lx, ly, look / POWER_STEPS);
+			discCache.set(key, c);
+			return c;
+		}
 		const pal = mixPal(design.calm, design.awoken, look / POWER_STEPS);
 		const p = look / POWER_STEPS;
 		c = document.createElement("canvas");
@@ -311,11 +317,55 @@
 		discCache.set(key, c);
 		return c;
 	}
+	/**
+	* The CG body: every pixel of the sphere shaded by the hero's material, antialiased at the
+	* edge; the light comes from the frame's light direction, raised towards the viewer.
+	*/
+	function shadedDisc(shade, R, lx, ly, look) {
+		const c = document.createElement("canvas");
+		c.width = c.height = Math.ceil(R * DISC_SPAN * 2);
+		const ctx = c.getContext("2d");
+		const img = ctx.createImageData(c.width, c.height);
+		const d = img.data;
+		const mid = c.width / 2;
+		const n = Math.hypot(lx * .75, ly * .75, .66);
+		const light = {
+			x: lx * .75 / n,
+			y: ly * .75 / n,
+			z: .66 / n
+		};
+		for (let py = 0; py < c.height; py++) for (let px = 0; px < c.width; px++) {
+			const dx = px + .5 - mid;
+			const dy = py + .5 - mid;
+			const cover = Math.min(1, Math.max(0, R - Math.hypot(dx, dy) + .5));
+			if (cover <= 0) continue;
+			const x = dx / R;
+			const y = dy / R;
+			const col = shade(x, y, Math.sqrt(Math.max(0, 1 - x * x - y * y)), light, look);
+			const o = (py * c.width + px) * 4;
+			d[o] = Math.min(255, col[0]);
+			d[o + 1] = Math.min(255, col[1]);
+			d[o + 2] = Math.min(255, col[2]);
+			d[o + 3] = cover * 255;
+		}
+		ctx.putImageData(img, 0, 0);
+		return c;
+	}
 	/** Death: a hit (0..0.3), the dying move (to 1.3), then a burst of particles and a flare. */
 	var DEATH_OPEN = .3;
 	var DEATH_POP = 1.3;
 	var CHARGE = .18;
 	var Hero = class {
+		styleValue = "painted";
+		get design() {
+			return this.designs[this.styleValue];
+		}
+		get style() {
+			return this.styleValue;
+		}
+		setStyle(style) {
+			this.styleValue = style;
+		}
 		r = 20;
 		x = 0;
 		y = 0;
@@ -541,7 +591,7 @@
 			const d = this.dying;
 			if (d >= DEATH_POP) {
 				this.drawEmbers(ctx);
-				const k = clamp01((d - DEATH_POP) / .44999999999999996);
+				const k = clamp01$1((d - DEATH_POP) / .44999999999999996);
 				if (k < 1) {
 					const gs = r * (1.2 + 2.2 * easeOut(k));
 					ctx.globalCompositeOperation = "lighter";
@@ -559,7 +609,7 @@
 			let S = 1 + .07 * p;
 			let spin = 0;
 			if (d >= 0) {
-				const k = clamp01((d - DEATH_OPEN) / 1);
+				const k = clamp01$1((d - DEATH_OPEN) / 1);
 				const e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
 				grin = 0;
 				if (D.death === "open") {
@@ -592,7 +642,7 @@
 				ctx.globalAlpha = 1;
 				ctx.globalCompositeOperation = "source-over";
 			}
-			const coreA = Math.min(1, clamp01(open * 1.4) * (.85 + .15 * p) + charge * .6);
+			const coreA = Math.min(1, clamp01$1(open * 1.4) * (.85 + .15 * p) + charge * .6);
 			if (coreA > .01) {
 				ctx.globalAlpha = coreA;
 				ctx.drawImage(D.core(), R * .1 - R * .92, -R * .92, R * 1.84, R * 1.84);
@@ -610,19 +660,21 @@
 				x: Math.cos(md) * R,
 				y: Math.sin(md) * R
 			};
-			const bend = R * .09 * clamp01(m * 2.5);
-			ctx.save();
-			ctx.translate(-lx * R * .045, -ly * R * .045);
-			ctx.scale(1.075, 1.075);
-			ctx.beginPath();
-			ctx.moveTo(U.x, U.y);
-			ctx.arc(0, 0, R, -mu, md, true);
-			ctx.quadraticCurveTo((Dn.x + A.x) / 2, (Dn.y + A.y) / 2 - bend, A.x, A.y);
-			ctx.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x, U.y);
-			ctx.closePath();
-			ctx.fillStyle = css(pal.ink);
-			ctx.fill();
-			ctx.restore();
+			const bend = R * .09 * clamp01$1(m * 2.5);
+			if (D.ink !== false) {
+				ctx.save();
+				ctx.translate(-lx * R * .045, -ly * R * .045);
+				ctx.scale(1.075, 1.075);
+				ctx.beginPath();
+				ctx.moveTo(U.x, U.y);
+				ctx.arc(0, 0, R, -mu, md, true);
+				ctx.quadraticCurveTo((Dn.x + A.x) / 2, (Dn.y + A.y) / 2 - bend, A.x, A.y);
+				ctx.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x, U.y);
+				ctx.closePath();
+				ctx.fillStyle = css(pal.ink);
+				ctx.fill();
+				ctx.restore();
+			}
 			const body = this.composeBody(R, lx, ly, p, pulse, mu, md, bend);
 			ctx.drawImage(body.canvas, -body.half, -body.half, body.half * 2, body.half * 2);
 			ctx.lineCap = "round";
@@ -636,11 +688,11 @@
 			this.drawLips(ctx, lips, R, pal);
 			this.drawWorn?.(ctx, R, p, lx, ly);
 			ctx.restore();
-			const spill = clamp01(open) * (.45 + .4 * p) + this.mouthFlash * .6;
+			const spill = clamp01$1(open) * (.45 + .4 * p) + this.mouthFlash * .6;
 			if (spill > .01) {
 				const fx = this.x + Math.cos(this.angle) * R * .75;
 				const fy = this.y + Math.sin(this.angle) * R * .75;
-				const gs = R * (1.1 + .5 * clamp01(open) + .3 * p);
+				const gs = R * (1.1 + .5 * clamp01$1(open) + .3 * p);
 				ctx.globalCompositeOperation = "lighter";
 				ctx.globalAlpha = Math.min(1, spill);
 				ctx.drawImage(glow(D.spill), fx - gs, fy - gs, gs * 2, gs * 2);
@@ -658,10 +710,11 @@
 			this.drawFront?.(ctx);
 			this.drawBursts(ctx);
 		}
-		/** The lips along the mouth's cut: ink. */
+		/** The lips along the mouth's cut: ink, or a soft crease in the CG style. */
 		drawLips(ctx, lips, R, pal) {
-			ctx.strokeStyle = css(pal.ink);
-			ctx.lineWidth = R * .075;
+			const cg = this.design.ink === false;
+			ctx.strokeStyle = css(pal.ink, cg ? .4 : 1);
+			ctx.lineWidth = R * (cg ? .045 : .075);
 			lips();
 			ctx.stroke();
 		}
@@ -775,7 +828,7 @@
 				ctx.strokeStyle = `rgba(255,252,235,${.95 * a})`;
 				ctx.lineWidth = Math.max(1, R * .1 * a);
 				ctx.stroke();
-				const ra = clamp01(1 - b.t / .25);
+				const ra = clamp01$1(1 - b.t / .25);
 				if (ra > 0) {
 					ctx.fillStyle = `rgba(255,248,220,${ra})`;
 					for (let i = 0; i < 10; i++) {
@@ -808,6 +861,249 @@
 			highlight: mix(a.highlight, b.highlight, k),
 			rim: mix(a.rim, b.rim, k)
 		};
+	}
+	//#endregion
+	//#region src/games/pacman/render/actors/hero/cgShading.ts
+	var clamp01 = (v) => Math.max(0, Math.min(1, v));
+	var smooth = (a, b, v) => {
+		const t = clamp01((v - a) / (b - a));
+		return t * t * (3 - 2 * t);
+	};
+	var lerp3 = (a, b, k) => [
+		a[0] + (b[0] - a[0]) * k,
+		a[1] + (b[1] - a[1]) * k,
+		a[2] + (b[2] - a[2]) * k
+	];
+	function hash(x, y) {
+		let h = x * 374761393 + y * 668265263 | 0;
+		h = Math.imul(h ^ h >>> 13, 1274126177);
+		return ((h ^ h >>> 16) >>> 0) / 4294967296;
+	}
+	function noise(x, y) {
+		const ix = Math.floor(x);
+		const iy = Math.floor(y);
+		const fx = x - ix;
+		const fy = y - iy;
+		const ux = fx * fx * (3 - 2 * fx);
+		const uy = fy * fy * (3 - 2 * fy);
+		const a = hash(ix, iy);
+		const b = hash(ix + 1, iy);
+		const c = hash(ix, iy + 1);
+		const d = hash(ix + 1, iy + 1);
+		return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+	}
+	function fbm(x, y) {
+		let s = 0;
+		let a = .5;
+		for (let i = 0; i < 4; i++) {
+			s += a * noise(x, y);
+			x = x * 2.03 + 17.1;
+			y = y * 2.03 + 3.7;
+			a *= .5;
+		}
+		return s / .9375;
+	}
+	/** What the sphere reflects in the direction (rx, ry, rz): the cosmic studio. */
+	function studio(rx, ry, rz, light) {
+		let col = lerp3([
+			10,
+			12,
+			30
+		], [
+			40,
+			30,
+			80
+		], clamp01(1 - Math.abs(ry)));
+		const key = Math.pow(Math.max(0, rx * light.x + ry * light.y + rz * light.z), 7);
+		col = lerp3(col, [
+			255,
+			248,
+			236
+		], clamp01(key * 1.3));
+		const n = Math.hypot(.35, .85, .4);
+		const strip = Math.pow(Math.max(0, (rx * .35 + ry * .85 + rz * .4) / n), 10);
+		col = [
+			col[0] + 80 * strip,
+			col[1] + 130 * strip,
+			col[2] + 255 * strip
+		];
+		const haze = Math.exp(-Math.pow((ry + .05) / .22, 2)) * .35;
+		return [
+			col[0] + 140 * haze,
+			col[1] + 90 * haze,
+			col[2] + 200 * haze
+		];
+	}
+	/** The common lighting terms at a point of the unit sphere. */
+	function lighting(x, y, z, light) {
+		const ndl = Math.max(0, x * light.x + y * light.y + z * light.z);
+		const hx = light.x;
+		const hy = light.y;
+		const hz = light.z + 1;
+		const hn = Math.hypot(hx, hy, hz);
+		const ndh = Math.max(0, (x * hx + y * hy + z * hz) / hn);
+		const fres = Math.pow(1 - z, 5);
+		const reflected = studio(2 * z * x, 2 * z * y, 2 * z * z - 1, light);
+		const rl = Math.hypot(x, y) || 1;
+		return {
+			ndl,
+			ndh,
+			fres,
+			reflected,
+			rim: Math.pow(1 - z, 2.2) * Math.max(0, (-x * .8 - y * .45) / rl),
+			edge: .5 + .5 * smooth(0, .3, z)
+		};
+	}
+	/**
+	* Pac-Man: stellar gold. A warm semi-metal that reflects the cosmic studio, a white-hot
+	* specular, subsurface warmth at the edge and a cool blue rim from behind. Powered (look 1)
+	* the star inside shines through: the gold pales and glows from the centre.
+	*/
+	function stellarGold(x, y, z, light, look) {
+		const l = lighting(x, y, z, light);
+		const albedo = lerp3([
+			255,
+			178,
+			46
+		], [
+			255,
+			236,
+			170
+		], look);
+		const diffuse = (.16 + .84 * l.ndl) * .78 * l.edge;
+		const refl = .32 + .68 * l.fres;
+		const tint = lerp3([
+			255,
+			200,
+			110
+		], [
+			255,
+			236,
+			200
+		], look);
+		let r = albedo[0] * diffuse + l.reflected[0] * tint[0] * refl / 255 / 1.6;
+		let g = albedo[1] * diffuse + l.reflected[1] * tint[1] * refl / 255 / 1.6;
+		let b = albedo[2] * diffuse + l.reflected[2] * tint[2] * refl / 255 / 1.6;
+		const spec = Math.pow(l.ndh, 140) * 2.4 + Math.pow(l.ndh, 22) * .35;
+		r += 255 * spec;
+		g += 245 * spec;
+		b += 220 * spec;
+		const sss = Math.pow(1 - z, 2.5) * (.55 + .3 * look);
+		r += 255 * sss;
+		g += 110 * sss;
+		b += 20 * sss;
+		r += 110 * l.rim * 1.3;
+		g += 150 * l.rim * 1.3;
+		b += 255 * l.rim * 1.3;
+		const core = Math.pow(z, 1.6) * look;
+		r += 255 * core * .55;
+		g += 225 * core * .55;
+		b += 150 * core * .55;
+		return [
+			r,
+			g,
+			b
+		];
+	}
+	/** Stars scattered in a field: a soft point in some cells of a grid. */
+	function stars(x, y, scale, density) {
+		const gx = x * scale;
+		const gy = y * scale;
+		const ix = Math.floor(gx);
+		const iy = Math.floor(gy);
+		const h = hash(ix + 991, iy + 313);
+		if (h < 1 - density) return 0;
+		const sx = ix + .25 + .5 * hash(ix + 7, iy + 11);
+		const sy = iy + .25 + .5 * hash(ix + 13, iy + 5);
+		const d2 = (gx - sx) ** 2 + (gy - sy) ** 2;
+		return Math.exp(-d2 * 22) * (.6 + .4 * h);
+	}
+	/**
+	* Ms. Pac-Man: a nebula in a pearl. A translucent pearl shell with a pink and violet nebula
+	* full of stars inside (seen deepest at the centre), an iridescent Fresnel rim, glossy
+	* speculars and a pink rim light. Powered (look 1) the pearl turns white and the nebula
+	* lavender and bright.
+	*/
+	function nebulaPearl(x, y, z, light, look) {
+		const l = lighting(x, y, z, light);
+		const ix = x * .85;
+		const iy = y * .85;
+		const n1 = fbm(ix * 2.2 + 3.1, iy * 2.2 + 1.7);
+		const n2 = fbm(ix * 4.1 + 7.3, iy * 4.1 + 2.9);
+		let neb = lerp3(lerp3([
+			46,
+			12,
+			76
+		], [
+			120,
+			90,
+			200
+		], look), lerp3([
+			255,
+			96,
+			176
+		], [
+			230,
+			200,
+			255
+		], look), smooth(.35, .78, n1));
+		neb = lerp3(neb, lerp3([
+			90,
+			130,
+			255
+		], [
+			180,
+			240,
+			255
+		], look), smooth(.55, .85, n2) * .55);
+		const st = stars(ix, iy, 9, .18 + .12 * look) + stars(ix + 3.3, iy + 1.1, 17, .12);
+		neb = [
+			neb[0] + 255 * st,
+			neb[1] + 245 * st,
+			neb[2] + 255 * st
+		];
+		const albedo = lerp3([
+			255,
+			186,
+			214
+		], [
+			255,
+			244,
+			252
+		], look);
+		const diffuse = (.3 + .7 * l.ndl) * l.edge;
+		const shell = [
+			albedo[0] * diffuse,
+			albedo[1] * diffuse,
+			albedo[2] * diffuse
+		];
+		const see = clamp01(Math.pow(z, .7) * (.62 - .12 * look));
+		let col = lerp3(shell, neb, see);
+		const f = Math.pow(1 - z, 2);
+		const irid = [
+			.5 + .5 * Math.cos(6.283 * (f * 1.2)),
+			.5 + .5 * Math.cos(6.283 * (f * 1.2 + .33)),
+			.5 + .5 * Math.cos(6.283 * (f * 1.2 + .67))
+		];
+		const ir = f * (.45 + .35 * look);
+		col = [
+			col[0] + 255 * irid[0] * ir,
+			col[1] + 255 * irid[1] * ir,
+			col[2] + 255 * irid[2] * ir
+		];
+		const refl = .06 + .94 * l.fres;
+		col = [
+			col[0] + l.reflected[0] * refl * .9,
+			col[1] + l.reflected[1] * refl * .9,
+			col[2] + l.reflected[2] * refl * .9
+		];
+		const spec = Math.pow(l.ndh, 220) * 2.6 + Math.pow(l.ndh, 30) * .4;
+		const rim = l.rim * 1.2;
+		return [
+			col[0] + 255 * spec + 255 * rim,
+			col[1] + 252 * spec + 140 * rim,
+			col[2] + 255 * spec + 230 * rim
+		];
 	}
 	//#endregion
 	//#region src/games/pacman/render/actors/hero/PacmanHero.ts
@@ -1201,8 +1497,18 @@
 		],
 		death: "open"
 	};
+	/** The CG style: the same hero rendered as stellar gold, without ink. */
+	var CG_DESIGN$1 = {
+		...DESIGN$1,
+		id: "pacman-cg",
+		shade: stellarGold,
+		ink: false
+	};
 	var PacmanHero = class extends Hero {
-		design = DESIGN$1;
+		designs = {
+			painted: DESIGN$1,
+			cg: CG_DESIGN$1
+		};
 		/** Painted flame tongues streaming back from his head, swaying (no noise: no flicker). */
 		drawBehind(ctx, R, k) {
 			const t = this.time;
@@ -1365,10 +1671,10 @@
 	* highlight on the loops, ink thicker on the shadow side. Its own frame: the knot at the
 	* centre, up (-y) pointing away from her head.
 	*/
-	function paintedBow(deviceR, lightAngle, look) {
+	function paintedBow(deviceR, lightAngle, look, cg = false) {
 		const R = Math.max(4, Math.round(deviceR));
 		const step = Math.round((lightAngle / (Math.PI * 2) % 1 + 1) * 16) % 16;
-		const key = `${R}:${step}:${look}`;
+		const key = `${R}:${step}:${look}:${cg ? "cg" : "paint"}`;
 		let c = bowCache.get(key);
 		if (c) return c;
 		if (bowCache.size > 200) bowCache.clear();
@@ -1452,33 +1758,49 @@
 			() => loop(1),
 			knot
 		];
-		ctx.save();
-		ctx.translate(-lx * R * .035, -ly * R * .035);
-		ctx.fillStyle = css(ink);
-		ctx.strokeStyle = css(ink);
-		ctx.lineWidth = R * .12;
-		for (const part of parts) {
+		if (cg) for (const [i, part] of parts.entries()) {
 			part();
+			const col = i < 2 ? mix(base, shade, .35) : i === 4 ? knotC : base;
+			const g = ctx.createRadialGradient(lx * R * .25, ly * R * .25, 0, 0, 0, R * .75);
+			g.addColorStop(0, css(mix(col, [
+				255,
+				255,
+				255
+			], .35)));
+			g.addColorStop(.45, css(col));
+			g.addColorStop(1, css(mix(col, shade, .85)));
+			ctx.fillStyle = g;
 			ctx.fill();
-			ctx.stroke();
 		}
-		ctx.restore();
-		for (const [i, part] of parts.entries()) {
-			part();
-			ctx.fillStyle = css(i < 2 ? mix(base, shade, .35) : i === 4 ? knotC : base);
-			ctx.fill();
+		else {
 			ctx.save();
-			part();
-			ctx.clip();
-			ctx.beginPath();
-			ctx.rect(-R * 2, -R * 2, R * 4, R * 4);
-			ctx.save();
-			ctx.translate(lx * R * .1, ly * R * .1);
-			part();
+			ctx.translate(-lx * R * .035, -ly * R * .035);
+			ctx.fillStyle = css(ink);
+			ctx.strokeStyle = css(ink);
+			ctx.lineWidth = R * .12;
+			for (const part of parts) {
+				part();
+				ctx.fill();
+				ctx.stroke();
+			}
 			ctx.restore();
-			ctx.fillStyle = css(shade, .85);
-			ctx.fill("evenodd");
-			ctx.restore();
+			for (const [i, part] of parts.entries()) {
+				part();
+				ctx.fillStyle = css(i < 2 ? mix(base, shade, .35) : i === 4 ? knotC : base);
+				ctx.fill();
+				ctx.save();
+				part();
+				ctx.clip();
+				ctx.beginPath();
+				ctx.rect(-R * 2, -R * 2, R * 4, R * 4);
+				ctx.save();
+				ctx.translate(lx * R * .1, ly * R * .1);
+				part();
+				ctx.restore();
+				ctx.fillStyle = css(shade, .85);
+				ctx.fill("evenodd");
+				ctx.restore();
+			}
 		}
 		ctx.strokeStyle = "rgba(255,255,255,0.85)";
 		ctx.lineWidth = R * .05;
@@ -1735,8 +2057,18 @@
 		],
 		death: "spin"
 	};
+	/** The CG style: the same heroine rendered as a nebula in a pearl, without ink. */
+	var CG_DESIGN = {
+		...DESIGN,
+		id: "ms-pacman-cg",
+		shade: nebulaPearl,
+		ink: false
+	};
 	var MsPacmanHero = class extends Hero {
-		design = DESIGN;
+		designs = {
+			painted: DESIGN,
+			cg: CG_DESIGN
+		};
 		/** The bow's sway, radians, on a soft spring. */
 		bow = new Spring(0);
 		/** Seconds into a blink, or -1; the next blink is due at `nextBlink`. */
@@ -1890,10 +2222,13 @@
 		}
 		/** Red lipstick with a fine dark edge. */
 		drawLips(ctx, lips, R, pal) {
-			ctx.strokeStyle = css(pal.ink);
-			ctx.lineWidth = R * .12;
-			lips();
-			ctx.stroke();
+			const cg = this.style === "cg";
+			if (!cg) {
+				ctx.strokeStyle = css(pal.ink);
+				ctx.lineWidth = R * .12;
+				lips();
+				ctx.stroke();
+			}
 			ctx.strokeStyle = css(mix([
 				232,
 				28,
@@ -1903,9 +2238,15 @@
 				120,
 				180
 			], this.power));
-			ctx.lineWidth = R * .07;
+			ctx.lineWidth = R * (cg ? .08 : .07);
 			lips();
 			ctx.stroke();
+			if (cg) {
+				ctx.strokeStyle = "rgba(255,220,230,0.6)";
+				ctx.lineWidth = R * .02;
+				lips();
+				ctx.stroke();
+			}
 		}
 		/** Her eye, then the bow swaying on its spring, luminous when powered. */
 		drawWorn(ctx, R, p, lx, ly) {
@@ -1920,10 +2261,11 @@
 			ctx.rotate(turn);
 			ctx.scale(scale, scale);
 			const half = R * BOW_SPAN;
-			ctx.drawImage(paintedBow(R * dpr, la, 0), -half, -half, half * 2, half * 2);
+			const cg = this.style === "cg";
+			ctx.drawImage(paintedBow(R * dpr, la, 0, cg), -half, -half, half * 2, half * 2);
 			if (p > .01) {
 				ctx.globalAlpha = p;
-				ctx.drawImage(paintedBow(R * dpr, la, 1), -half, -half, half * 2, half * 2);
+				ctx.drawImage(paintedBow(R * dpr, la, 1, cg), -half, -half, half * 2, half * 2);
 				ctx.globalAlpha = 1;
 			}
 			ctx.restore();
@@ -2006,7 +2348,12 @@
 	/** The inset's tile, css px (the game's tile on a large screen). */
 	var TILE = 30;
 	var ms = new URLSearchParams(location.search).has("ms");
-	var make = () => ms ? new MsPacmanHero() : new PacmanHero();
+	var style = new URLSearchParams(location.search).has("painted") ? "painted" : "cg";
+	var make = () => {
+		const h = ms ? new MsPacmanHero() : new PacmanHero();
+		h.setStyle(style);
+		return h;
+	};
 	var hero = make();
 	var small = make();
 	var deathTimer = -1;
@@ -2034,7 +2381,14 @@
 		small = make();
 		layout();
 		$("who").textContent = ms ? "Ms. Pac-Man" : "Pac-Man";
+		$("style").textContent = style === "cg" ? "Стиль: CG" : "Стиль: рисованный";
 	}
+	$("style").addEventListener("click", () => {
+		style = style === "cg" ? "painted" : "cg";
+		hero.setStyle(style);
+		small.setStyle(style);
+		$("style").textContent = style === "cg" ? "Стиль: CG" : "Стиль: рисованный";
+	});
 	$("who").addEventListener("click", () => {
 		ms = !ms;
 		pickHero();
