@@ -13,13 +13,13 @@ architecture where they changed) and pushes to `feat/pacman`. New art and new ef
 start as a prototype the owner approves first (see `ARCHITECTURE.md`, Prototypes), unless
 the owner says to go straight into the game.
 
-Token budget: code first, art last. Stages 1–4 need no new art (placeholders are fine);
-art waits for stage 5, where it moves from hand-coded Canvas drawing to images the owner
-makes outside the chat.
+Token budget: code first, art last. Stages 1–6 need no new art (placeholders are fine);
+art waits for stage 7, where it moves from hand-coded Canvas drawing to images the owner
+makes outside the chat. The model named per stage is a suggestion.
 
 ## Order
 
-**1 → 2 → 3 → 4 → 5 → 6.** Stage 1 is next.
+**1 → 2 → … → 10.** Stage 1 is next.
 
 ## Plan
 
@@ -30,41 +30,92 @@ makes outside the chat.
       `logic/doom/DoomBossService.ts` (~1400), `logic/rules/CombatService.ts`,
       `logic/actors/GhostService.ts`, `render/doom/DoomBake.ts`,
       `render/actors/hero/Hero.ts`, `render/actors/PlayerView.ts`,
-      `render/seasons/meadow/MeadowBake.ts`. Check `config/gridConfig.ts` (~1450): maze
-      data can move to its own data file so code reads never pull it in.
+      `render/seasons/meadow/MeadowBake.ts`. Maze data out of `config/gridConfig.ts`
+      (~1450 lines) into data files of its own, so code reads never pull it in (stage 5
+      adds more mazes).
    2. **Pay the known debt**: `DecayPass` onto `render/common/GlPass`; states that use the
       nullable `LevelLoader` getters (`DeathState.enter`, `GameOverState`) onto
       `level.ensure()`; the ESLint config for `prototypes/pacman/hud/Proto.svelte`.
-   3. **Core tests** where regressions hurt most: `Director` transitions, collisions
+   3. **Folder structure** where it is not ideal: one place per world (the hell's logic and
+      render are split over `logic/doom` and `render/doom`; stage 6 adds two more worlds),
+      so a new world is one folder pair with a known shape.
+   4. **Core tests** where regressions hurt most: `Director` transitions, collisions
       (Pac-Man vs ghosts, fruit, dots), level change carrying score and lives.
-   4. Update `ARCHITECTURE.md` (code map) to the new layout.
+   5. Update `ARCHITECTURE.md` (code map) to the new layout.
 
-2. **Bugs and transitions** (Sonnet).
-   1. Pac-Man blinks before the game starts.
-   2. No screen fade on the very first start of a game (`Director.startGame`).
-   3. Level change: the season turn keeps Pac-Man's sprite on screen until the next level
+2. **Bugs** (Sonnet).
+   1. Level 5 played as a summer level. In the code the hell is Pac-Man's only
+      (`LevelLoader`, `profile === 'pacman'`); Ms. Pac-Man gets the season by design.
+      Check with Pac-Man; the owner decides whether Ms. Pac-Man gets the hell too.
+   2. **Fruit order** (`logic/bonuses/fruitCatalog.ts`): today one fruit per level from a
+      mixed list, and Ms. Pac-Man always random (a bell on level 1). Follow the originals:
+      Pac-Man cherry, strawberry, orange ×2, apple ×2, melon ×2, Galaxian ×2, bell ×2, then
+      key; Ms. Pac-Man a fixed order for levels 1–7, random after.
+   3. After a death the hero respawns facing his last direction (e.g. down); respawn
+      facing the start direction.
+   4. The lair door does not open when ghosts leave the lair (`MeadowWorld.setLairGate`
+      is only driven by the Easter egg); open it for every ghost going out.
+   5. The hell boss shows a heading chevron (`render/doom/HellBlinkyView`, `drawHeading`):
+      remove it from the boss; its eyes already show the heading.
+   6. Pac-Man blinks before the game starts.
+   7. No screen fade on the very first start of a game (`Director.startGame`).
+   8. Level change: the season turn keeps Pac-Man's sprite on screen until the next level
       starts (`RenderPipeline`, drawn while `lights` + `turn` run); hide him during the
       animation and spawn him once the new level is in place.
 
-3. **Mechanics without new art** (Sonnet).
+3. **Sound and tools** (Sonnet).
+   1. **Mute** button and key (`M`), and a **volume** slider; both saved in
+      `localStorage`, applied on the synth's master gain (`audio/ArcadeSynth`).
+   2. **Music track support**: a looped file (ogg/mp3 from `static/`) per world, under the
+      same volume; first the hell's own doom-like track, which the owner brings (generated
+      or a free licence).
+   3. **Dev panel rework** (`ui/debug/*`): readable at 1440p (text and controls scale with
+      the screen), buttons grouped in collapsible sections by topic instead of one block,
+      the most used actions first.
+
+4. **Mechanics and balance** (Sonnet; Opus for the hypnosis design).
    1. **Echo clone mechanic** (`logic/bonuses/EchoCloneService.ts`): a rare bonus that
       spawns at a random place and sets off a riot of 7–9 Pac-Man clones for 2–3 s that
       eat everything they find (dots, fruit) and die on contact with ghosts. Today's
-      `EchoCloneView` look stays until stage 6.
-   2. **Hell lighting, phase 3**: in the ash storm the lights that follow Pac-Man flicker
+      `EchoCloneView` look stays until stage 8.
+   2. **Hypnosis for Ms. Pac-Man** (`logic/rules/HypnosisService.ts`): useful only half the
+      time, because a hypnotised ghost does not take the best route through the food. Make
+      it plan a route that eats the most dots per second (nearest dense cluster, no
+      backtracking over eaten corridors) so it is always worth taking.
+   3. **Hell lighting, phase 3**: in the ash storm the lights that follow Pac-Man flicker
       like a strobe and do not help visibility (`render/doom/DoomLightmap.ts`, the night
       pass in `DoomWorld`); make them calm and useful.
-   3. Regular levels have no teleport effect (the hell has its teleport fog): add a simple
-      one built from the existing FX (`render/fx/LevelFx.ts`); its final look is stage 6.
+   4. Regular levels have no teleport effect (the hell has its teleport fog): add a simple
+      one built from the existing FX (`render/fx/LevelFx.ts`); its final look is stage 8.
+   5. **Balance check**: compare speeds, timers and scores with the arcade originals and
+      with play on levels 1–15; change configs only where something is off. If all is
+      fine, this step closes with no change.
 
-4. **New boss worlds, every 5th level** (Opus for the design of a world, Sonnet for the
-   steps). Level 5 stays the hell; levels 10, 15, … get new worlds, each like the hell
-   (`*Bake` + `*World` + a level renderer with `preview()`), its own boss and mechanics, a
-   decay palette and a season-turn style (`RenderPipeline.turnStyle`). Mechanics first on
-   placeholder art; the art joins stage 6.
+5. **The remaining mazes** (Opus). Today one maze (`GRID_01`, hand-made by the owner: an
+   empty border so the canvas does not cut the walls, islands without inner void, two-
+   letter tokens). Models are bad at typing maze matrices, so no maze is typed by hand:
+   1. A converter script from a compact ASCII drawing of a maze (one char per tile) to the
+      game's token rows, applying the owner's rules (border, filled islands).
+   2. A validator (used by the script and a test): all dots reachable, tunnels paired,
+      the lair, the spawn pads and the fruit pad present, symmetry where expected.
+   3. The mazes one by one, each checked in a prototype page before it joins
+      `SeasonCatalog`'s rotation; then decide which maze goes with which levels.
+   4. Whether the empty border is still needed (the canvas may no longer cut lines).
 
-5. **Sprite pipeline** (Sonnet). The owner is not an artist, so the art comes from image
-   generators (Gemini, or locally ComfyUI/Forge through Pinokio) as plain single PNGs,
+6. **New boss worlds, every 5th level** (Opus for the design of a world, Sonnet for the
+   steps). Level 5 stays the hell; each later world is still Pac-Man in a maze, with a
+   different boss, a different mechanic and a different way to play, never a reskin of
+   the hell's fight. Each world like the hell (`*Bake` + `*World` + a level renderer with
+   `preview()`), with a decay palette and a season-turn style
+   (`RenderPipeline.turnStyle`). Mechanics first on placeholder art; the art joins stage 8.
+   1. **Level 10: a neon grid world** in the spirit of TRON (light trails, a grid arena).
+   2. **Level 15: a shark-and-lava world** in the spirit of _Sharkboy and Lavagirl_ (a
+      playful, over-the-top tone).
+   3. Each world starts with a one-page design (boss, mechanic, rules, how it differs from
+      the hell) that the owner approves before code.
+
+7. **Sprite pipeline** (Sonnet). The owner is not an artist, so the art comes from image
+   generators (Gemini, or locally ComfyUI/Fooocus through Pinokio) as plain single PNGs,
    not sprite sheets; Claude assembles them.
    1. `static/pacman/sprites/`: one folder per subject, one PNG per pose, transparent
       background, square, ~512 px. A naming rule (`ghost/summer/body.png`, `eyes.png`…).
@@ -76,23 +127,43 @@ makes outside the chat.
       every season, over day and night, next to the current procedural look. The owner
       iterates the images here without spending chat budget.
 
-6. **Art pass** on top of stage 5 (one subject per chat; prototype first).
-   1. **Pac-Man**: the hero (`render/actors/hero/PacmanHero`) plays on the season levels
+8. **Art pass** on top of stage 7 (one subject per chat; prototype first).
+   1. **Energizers vs fruit**: in spring and autumn the energizers look edible and are
+      mixed up with fruit. Energizers must read as non-food objects (an orb, a crystal, a
+      charm) in every season; fruit stays food.
+   2. **Pac-Man**: the hero (`render/actors/hero/PacmanHero`) plays on the season levels
       through `HeroView`; the hell still uses `PlayerView` (berserk, BFG); a ghost-eaten
       beat of his own. The owner did not like the current hero designs.
-   2. **Ms. Pac-Man** (`MsPacmanHero` through `HeroView`): the same.
-   3. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
+   3. **Ms. Pac-Man** (`MsPacmanHero` through `HeroView`): the same.
+   4. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
       summer, autumn, winter, with normal, scared, flashing and eyes-only; focus on
       cuteness; the eyes show the heading.
-   4. **Echo clone look** (`render/actors/EchoCloneView.ts`).
-   5. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`); the teleport effect;
+   5. **Echo clone look** (`render/actors/EchoCloneView.ts`).
+   6. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`); the teleport effect;
       the teleporters' own art (`MeadowBake` portal + `MeadowWorld`), bulky today though
       the spiral works.
-   6. **Hell**: the purple corrupted tiles (`DoomCombatView.drawCorruption`) read well but
+   7. **Hell**: the purple corrupted tiles (`DoomCombatView.drawCorruption`) read well but
       clash with the hell's look; restyle them in the hell's palette, as readable.
-   7. **Death decay**: the background under the shards looks odd (a nebula plus square
+   8. **Death decay**: the background under the shards looks odd (a nebula plus square
       dots reads random); rework the abyss (`render/transitions/decay/decayShader.ts`).
-   8. Art for the boss worlds of stage 4.
+   9. Art for the boss worlds of stage 6.
+
+9. **UI and screens**. The HUD and the screens look bad. Built from a mock-up image the
+   owner brings (made in a generator or found as a reference), not designed in the chat:
+   Claude implements a given picture well and designs one poorly.
+   1. The HUD (`ui/hud/*`) and the menu, pause and READY screens (`ui/screens/*`).
+   2. A full **game-over screen**: the final score, the best score, level reached, fruit
+      collected, restart and menu.
+
+10. **Depth and post-processing** (the very end). More volume with modern 2D techniques,
+    as far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
+    1. Soft drop shadows for actors and walls; walls with height (a baked height map and
+       a bevel).
+    2. Normal maps for sprites and walls, so the world lights (energizers, the hell's
+       lights, the neon grid) shade them.
+    3. A post-processing stack on `render/common/GlPass`: bloom, colour grading per world,
+       a light vignette, optional chromatic aberration on hits.
+    4. A performance budget: everything switchable, measured on real hardware.
 
 ## Known issues
 
@@ -126,6 +197,7 @@ makes outside the chat.
   heat haze and a lighter summer night, a little sun instead of the watermelon energizer.
   The `collectibles` prototype gained a weather toggle.
 - v2 10.3/10.4 heroes in the game: `PacmanHero` and `MsPacmanHero` through `HeroView`; the
-  owner rejected the designs, so the heroes move to stage 6 on sprites.
-- Plan v3 (seventh chat): the plan renumbered from 1, code before art; `CLAUDE.md` and
-  read-deny rules for the other games (`.claude/settings.json`).
+  owner rejected the designs, so the heroes move to stage 8 on sprites.
+- Plan v3 (seventh chat): the plan renumbered from 1, code before art; the owner's bug and
+  feature list folded in; `CLAUDE.md` and read-deny rules for the other games
+  (`.claude/settings.json`).
