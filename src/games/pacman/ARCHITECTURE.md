@@ -11,29 +11,36 @@ core/        GameMain (wiring, input → director, auto-pause, HUD frame), Event
   states/    menu, ready (intro | short), playing, paused, death, level-clear, game-over
   debug/     DebugController (every dev command, dev builds only)
 engine/      EventBus, GameLoop, TimeControl
-config/      grids, scores, actor contact distance, flowConfig (every flow duration),
-             arcadeConfig (the secret level's rounds)
+config/      gridConfig (tile tokens, level constants), mazes/ (one file per maze, one
+             string per row, checked by parseMaze), scores, actor contact distance,
+             flowConfig (every flow duration), arcadeConfig (the secret level's rounds)
 logic/
   level/     LevelLoader (the run: level number, profile, secret / hell routing, arcade
              round and tries, carry-over), LevelSession (all services of one level, built
              together, never partial), SeasonCatalog (grids, per-season modifiers),
              LevelProgress, ScoreModel
   maze/      GridModel, GridService, SpawnLocator, LairExit
-  actors/    Player*, Ghost*, arcadeTargets (the arcade ghosts' characters)
-  rules/     CombatService (contacts, power, lives / tries, hit-stop, near misses),
-             HypnosisService (Ms. Pac-Man overdrive), LairCodeService
+  actors/    Player*, Ghost*, ghostTargets (scatter, chase, flight, the hypnotised
+             ghost's dot), arcadeTargets (the arcade ghosts' characters)
+  rules/     CombatService (power, lives / tries, score, death, hit-stop), ghostContact
+             (who touches which ghost, per profile; near misses), HypnosisService
+             (Ms. Pac-Man overdrive), LairCodeService
   bonuses/   fruit, Easter egg, echo clone, boss reward
-  doom/      hell boss, weapons, hazards, fairness checks
+  doom/      the hell: DoomBossService (the boss's state machine), DoomArena (hazards,
+             seals, void, pull, corruption, echo, shake), DoomMinionSwarm, DoomAttackPlanner
+             (which attack, fair or not), DoomTargeting (tile picks), weapons, pickups
   debug/     debugLog (dev log lines; no-op in production)
 render/
   RenderPipeline   canvas, HiDPI, render clock → a RenderFrame per frame, picks the level
                    renderer, runs the decay and the season turn
   RenderFrame      frame data + the LevelRenderer / WorldPreview interfaces
   SharedLayers     Pac-Man, Ms. Pac-Man and the bonuses (every level)
-  seasons/meadow/  MeadowBake (static world) + MeadowWorld (live layer) +
+  seasons/meadow/  MeadowBake (static world: a frame + one function per layer; decor and
+                   walls in meadowBakeDecor / meadowBakeWalls) + MeadowWorld (live layer) +
                    MeadowLevelRenderer, driven by a MeadowTheme per season
                    (seasons/<season>/<season>Theme.ts)
-  doom/            DoomLevelRenderer, baked world, light map, Blinky lord of hell, imps,
+  doom/            DoomLevelRenderer, baked world (DoomBake, same layer shape as the
+                   meadow), light map, Blinky lord of hell, imps,
                    combat and weapon FX
   arcade/          the secret level: pixel sprites, maze bake, view, CRT pass, intermission,
                    ArcadeLevelRenderer
@@ -42,7 +49,8 @@ render/
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
   actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero; HeroView drives them; PlayerView
           for the hell) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
-  common/          textures, GlPass, colour, maths, seeded random
+  common/          textures, GlPass (every WebGL2 pass), colour, maths, seeded random,
+                   worldDecor (the decor layout and stream shared by every world)
 audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), ArcadeSynth
 ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (GameHud, ArcadeHud,
              hudSnapshot, hudFrame), screens/, debug/ (dev panel and log), i18n
@@ -54,6 +62,13 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (GameHud, Arc
   `frame.director`) and never mutates it; the doom FX queue is the one consumer-side
   drain. Logic tells render about moments through events: `audio:cue`, `fx:event`.
 - A new level kind = a new `LevelRenderer`; the pipeline only picks one per frame.
+- A world (the hell today, the boss worlds of stage 6 next) is a folder pair:
+  `logic/<world>/` (services, balance, tests) and `render/<world>/` (`*Bake` with the
+  layer shape above, `*World`, the level renderer), plus its route in
+  `LevelLoader.worldOf` and a `LevelSession` slot. Logic stays free of render.
+- Keep files at ~200–400 lines, one job each. Pure rules (targets, contacts, attack
+  choice) live in functions of their own, so tests call them directly instead of
+  casting into private fields.
 - Per-level state goes into `LevelSession`; anything that survives a level change is
   carried explicitly by `LevelLoader.changeLevel` (score, lives, life threshold, arcade
   tries).
@@ -136,7 +151,11 @@ still takes it (`LATE_TURN`). Tests: `logic/actors/playerControl.test.ts`.
 - `logic/bonuses/easterEgg.test.ts` — the egg in the lair's centre, the vanish → gate →
   egg order, banished ghosts frozen, nothing outside level 7.
 - `logic/level/arcade.test.ts` — tries, rounds, intermission, restart, ghost characters.
+- `logic/level/levelRouting.test.ts` — seasons in order, the hell every 5th level per
+  profile, score / lives / next-life threshold carried across a level change.
 - `logic/rules/fx.test.ts` — fx events, hit-stop, near misses.
+- `logic/rules/ghostContact.test.ts` — eat, death, overdrive and who never touches, for
+  both profiles.
 - `render/transitions/decay/decay.test.ts` — the decay field and timeline.
 
 ## Prototypes

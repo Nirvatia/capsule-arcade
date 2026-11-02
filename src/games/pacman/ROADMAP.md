@@ -19,34 +19,17 @@ makes outside the chat. The model named per stage is a suggestion.
 
 ## Order
 
-**1 → 2 → … → 10.** Stage 1 is next.
+**1 → 2 → … → 10.** Stage 2 is next.
 
 ## Plan
 
-1. **Refactor to solid game-dev code** (next; Opus). The architecture is sound (fixed-step
-   loop, `Director` state machine, logic/render split, event bus); the cost is in large
-   files that must be read whole for a small change. Not a rewrite: no behaviour changes.
-   1. **Cut the large files** into modules of ~200–400 lines, one job each:
-      `logic/doom/DoomBossService.ts` (~1400), `logic/rules/CombatService.ts`,
-      `logic/actors/GhostService.ts`, `render/doom/DoomBake.ts`,
-      `render/actors/hero/Hero.ts`, `render/actors/PlayerView.ts`,
-      `render/seasons/meadow/MeadowBake.ts`. Maze data out of `config/gridConfig.ts`
-      (~1450 lines) into data files of its own, so code reads never pull it in (stage 5
-      adds more mazes).
-   2. **Pay the known debt**: `DecayPass` onto `render/common/GlPass`; states that use the
-      nullable `LevelLoader` getters (`DeathState.enter`, `GameOverState`) onto
-      `level.ensure()`; the ESLint config for `prototypes/pacman/hud/Proto.svelte`.
-   3. **Folder structure** where it is not ideal: one place per world (the hell's logic and
-      render are split over `logic/doom` and `render/doom`; stage 6 adds two more worlds),
-      so a new world is one folder pair with a known shape.
-   4. **Core tests** where regressions hurt most: `Director` transitions, collisions
-      (Pac-Man vs ghosts, fruit, dots), level change carrying score and lives.
-   5. Update `ARCHITECTURE.md` (code map) to the new layout.
+1. ~~**Refactor to solid game-dev code**~~. Done (see Done).
 
 2. **Bugs** (Sonnet).
    1. Level 5 played as a summer level. In the code the hell is Pac-Man's only
-      (`LevelLoader`, `profile === 'pacman'`); Ms. Pac-Man gets the season by design.
-      Check with Pac-Man; the owner decides whether Ms. Pac-Man gets the hell too.
+      (`LevelLoader.worldOf`, `profile === 'pacman'`); Ms. Pac-Man gets the season by
+      design. Pac-Man's level 5 is the hell (`logic/level/levelRouting.test.ts`). The owner
+      decides whether Ms. Pac-Man gets the hell too (update that test then).
    2. **Fruit order** (`logic/bonuses/fruitCatalog.ts`): today one fruit per level from a
       mixed list, and Ms. Pac-Man always random (a bell on level 1). Follow the originals:
       Pac-Man cherry, strawberry, orange ×2, apple ×2, melon ×2, Galaxian ×2, bell ×2, then
@@ -79,9 +62,11 @@ makes outside the chat. The model named per stage is a suggestion.
       eat everything they find (dots, fruit) and die on contact with ghosts. Today's
       `EchoCloneView` look stays until stage 8.
    2. **Hypnosis for Ms. Pac-Man** (`logic/rules/HypnosisService.ts`): useful only half the
-      time, because a hypnotised ghost does not take the best route through the food. Make
-      it plan a route that eats the most dots per second (nearest dense cluster, no
-      backtracking over eaten corridors) so it is always worth taking.
+      time, because a hypnotised ghost does not take the best route through the food. Found
+      in stage 1: it heads for the dot nearest _in a straight line_
+      (`logic/actors/ghostTargets.nearestDotTarget`), through walls, so it often walks
+      away from food behind a wall. Make it plan by path length (BFS) towards the most dots
+      per second (nearest dense cluster, no backtracking over eaten corridors).
    3. **Hell lighting, phase 3**: in the ash storm the lights that follow Pac-Man flicker
       like a strobe and do not help visibility (`render/doom/DoomLightmap.ts`, the night
       pass in `DoomWorld`); make them calm and useful.
@@ -133,7 +118,9 @@ makes outside the chat. The model named per stage is a suggestion.
       charm) in every season; fruit stays food.
    2. **Pac-Man**: the hero (`render/actors/hero/PacmanHero`) plays on the season levels
       through `HeroView`; the hell still uses `PlayerView` (berserk, BFG); a ghost-eaten
-      beat of his own. The owner did not like the current hero designs.
+      beat of his own. The owner did not like the current hero designs. `Hero.ts` (~940
+      lines) and `PlayerView.ts` (~730) were left uncut in stage 1 on purpose: the sprite
+      heroes replace them; cut what survives.
    3. **Ms. Pac-Man** (`MsPacmanHero` through `HeroView`): the same.
    4. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
       summer, autumn, winter, with normal, scared, flashing and eyes-only; focus on
@@ -169,7 +156,7 @@ makes outside the chat. The model named per stage is a suggestion.
 
 - Headless Chromium without a GPU runs the hell night at ~20 FPS; JS cost is ~2 ms per
   frame, the rest is software rasterisation. Check on real hardware.
-- The rest of the known debt is stage 1.
+- `Hero.ts` and `PlayerView.ts` are still large (see 8.2).
 
 ## Done
 
@@ -201,3 +188,21 @@ makes outside the chat. The model named per stage is a suggestion.
 - Plan v3 (seventh chat): the plan renumbered from 1, code before art; the owner's bug and
   feature list folded in; `CLAUDE.md` and read-deny rules for the other games
   (`.claude/settings.json`).
+- v3 1, the refactor (seventh chat). No behaviour changed; every step checked by the
+  tests, a browser run (start, death decay, the hell's attacks) and, for the bakes, a
+  pixel hash of every world's background before and after.
+  - The mazes moved out of `config/gridConfig.ts` (1448 → 36 lines) into
+    `config/mazes/`, one string per row, checked by `parseMaze` at import.
+  - `DoomBossService` (1475 lines) split into the boss's state machine plus `DoomArena`,
+    `DoomMinionSwarm`, `DoomAttackPlanner` and `DoomTargeting`; its tests stopped casting
+    into private fields.
+  - `CombatService` → `ghostContact` (pure contact rules + near misses);
+    `GhostService` → `ghostTargets` (pure targets).
+  - `MeadowBake` and `DoomBake` shared copied code → `render/common/worldDecor`; each
+    bake is a frame plus one function per layer, decor and walls in files of their own.
+  - Debt paid: `DecayPass` on `GlPass`; `DeathState` / `GameOverState` on
+    `level.ensure()`; ESLint lints the prototypes' Svelte files.
+  - Structure kept: a world is a `logic/<world>` + `render/<world>` pair
+    (`ARCHITECTURE.md`, Rules of thumb); moving folders would have cost more than it
+    gives.
+  - New tests: `ghostContact.test.ts`, `levelRouting.test.ts` (74 tests in all).
