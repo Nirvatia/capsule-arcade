@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GridMatrix, TileType } from '../../../config/gridConfig';
-import { GRID_01 } from '../../../config/gridConfig';
+import { GRID_01 } from '../../../config/mazes';
 import { computeDecayField, DECAY_MARGIN, packDecayFields, sampleDecayField } from './decayField';
 import { decayFronts, FRONT_OFF, REBUILD_BAND } from './decayTimeline';
 import { FLOW } from '../../../config/flowConfig';

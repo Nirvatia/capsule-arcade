@@ -2,7 +2,7 @@
 // and views on a real season. "Код логова решён" solves the code: the ghosts vanish, the
 // lair gate slides open, the Easter egg appears in the lair's centre and Pac-Man walks in
 // to take it; "Заново" starts over. A 3× close-up of the lair, the egg large on a strip.
-import { GRID_01 } from '../../../src/games/pacman/config/gridConfig';
+import { GRID_01 } from '../../../src/games/pacman/config/mazes';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';

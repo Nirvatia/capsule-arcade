@@ -1,4 +1,4 @@
-import { GRIDS, GRID_01, GRID_DOOM } from '../../config/gridConfig';
+import { GRIDS, GRID_01, GRID_DOOM } from '../../config/mazes';
 import type { GridMatrix } from '../../config/gridConfig';
 
 export type SeasonName = 'spring' | 'summer' | 'autumn' | 'winter';

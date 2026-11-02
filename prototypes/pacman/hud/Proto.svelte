@@ -2,7 +2,7 @@
 	// Prototype shell: a real world behind, the game's HUD and screens on top, and buttons
 	// for every case. The snapshot is made up here; the components are the game's own.
 	import { onMount } from 'svelte';
-	import { GRID_01, GRID_DOOM } from '../../../src/games/pacman/config/gridConfig';
+	import { GRID_01, GRID_DOOM } from '../../../src/games/pacman/config/mazes';
 	import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 	import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 	import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';

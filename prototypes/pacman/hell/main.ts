@@ -2,7 +2,7 @@
 // Gallery: Blinky, lord of hell (phases, states, echo), his imps, the berserk fist, large on
 // a dark strip, at game scale on the hell maze and magnified. Fight: the real boss logic
 // against Pac-Man on the arrow keys, to try the aimed seals and the new eruption.
-import { GRID_DOOM } from '../../../src/games/pacman/config/gridConfig';
+import { GRID_DOOM } from '../../../src/games/pacman/config/mazes';
 import { EventBus } from '../../../src/games/pacman/engine/EventBus';
 import type { PacmanEventMap } from '../../../src/games/pacman/core/Events';
 import { GridModel } from '../../../src/games/pacman/logic/maze/GridModel';

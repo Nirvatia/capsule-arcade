@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GRID_01 } from '../../config/gridConfig';
+import { GRID_01 } from '../../config/mazes';
 import { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
 import { GridModel } from '../maze/GridModel';

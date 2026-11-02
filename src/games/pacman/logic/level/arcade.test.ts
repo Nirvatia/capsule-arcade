@@ -4,7 +4,7 @@ import type { PacmanAudioCue, PacmanEventMap } from '../../core/Events';
 import { Director } from '../../core/Director';
 import { FLOW } from '../../config/flowConfig';
 import { ARCADE, arcadeRound } from '../../config/arcadeConfig';
-import { GRID_01 } from '../../config/gridConfig';
+import { GRID_01 } from '../../config/mazes';
 import { GridModel } from '../maze/GridModel';
 import { GridService } from '../maze/GridService';
 import { LevelLoader } from './LevelLoader';

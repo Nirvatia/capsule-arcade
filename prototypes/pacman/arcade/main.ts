@@ -1,7 +1,7 @@
 // Prototype for plan v2 stage 6 (the secret level as our own arcade round), built from
 // the game's sources: the pixel art, the CRT pass, the intermission and the synth sounds.
 // Pac-Man and the ghosts wander the maze on their own; the buttons show every state.
-import { GRID_01 } from '../../../src/games/pacman/config/gridConfig';
+import { GRID_01 } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { FruitKind } from '../../../src/games/pacman/logic/bonuses/fruitCatalog';
 import { ArcadeView } from '../../../src/games/pacman/render/arcade/ArcadeView';

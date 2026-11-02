@@ -2,7 +2,7 @@
 // own views on a real season: in a corridor at game scale, a 4× close-up of that corridor,
 // and large on a dark strip the way the mock-ups show them. Under each item: how far it
 // reaches from its tile centre, glow and animation included (stage 10.1: at most 0.5 tile).
-import { GRID_01 } from '../../../src/games/pacman/config/gridConfig';
+import { GRID_01 } from '../../../src/games/pacman/config/mazes';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';

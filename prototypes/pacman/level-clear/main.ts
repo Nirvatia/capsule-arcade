@@ -1,6 +1,6 @@
 // Stage 4 prototype: the level-complete animation on the real seasons. Everything drawn
 // here comes from the game's sources; only the controls and the Pac-Man marker are local.
-import { GRID_01 } from '../../../src/games/pacman/config/gridConfig';
+import { GRID_01 } from '../../../src/games/pacman/config/mazes';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';

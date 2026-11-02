@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GRID_DOOM } from '../../config/gridConfig';
+import { GRID_DOOM } from '../../config/mazes';
 import { EventBus } from '../../engine/EventBus';
 import { FRAME_STEP, TimeControl } from '../../engine/TimeControl';
 import type { PacmanDebugLogPayload, PacmanEventMap } from '../Events';
