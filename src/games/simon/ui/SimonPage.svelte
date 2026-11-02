@@ -1,643 +1,581 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { SimonGame } from '../core/GameMain';
-	import { SimonConsoleKind, type SimonConsoleKindId } from '../core/Events';
-	import { SimonMode, SimonPadList, SimonState, type SimonPadId } from '../core/SimonTypes';
+	import { resolve } from '$app/paths';
+	import { getSavedScore, saveScore } from '$shared/utils/scoreStore';
+	import { SimonAudio } from '../audio';
+	import { ORDERS_PER_LEVEL, MAX_LIVES } from '../logic/orders';
+	import type { Mode, Pad } from '../logic/types';
+	import { SimonGame, type Fx } from '../SimonGame.svelte';
+	import SimonMascot from './SimonMascot.svelte';
+	import SimonOffice from './SimonOffice.svelte';
 	import SimonPads from './SimonPads.svelte';
-	import { SvelteSimonAdapter } from './SvelteSimonAdapter';
-	import { SimonUiStore } from './simonUiStore.svelte';
 
-	const store = new SimonUiStore();
-
-	let game: SimonGame | null = null;
-	let host: HTMLDivElement | undefined = $state(undefined);
-	let consoleEl: HTMLDivElement | undefined = $state(undefined);
-	let menuOpen = $state<string | null>(null);
-
-	interface MenuItem {
-		readonly label?: string;
-		readonly separator?: boolean;
-		readonly disabled?: boolean;
-		readonly action?: () => void;
+	interface Pop {
+		id: number;
+		text: string;
+		tone: 'good' | 'crit' | 'life';
 	}
 
-	interface MenuDef {
-		readonly title: string;
-		readonly items: readonly MenuItem[];
+	interface Particle {
+		id: number;
+		x: number;
+		y: number;
+		dx: number;
+		dy: number;
+		rot: number;
+		color: string;
 	}
 
-	function decorative(text: string): void {
-		store.addLine(text, SimonConsoleKind.Info);
+	interface Puff {
+		id: number;
+		left: number;
 	}
 
-	function selectOrders(): void {
-		if (store.isMenu) {
-			game?.selectMode(SimonMode.Orders);
-			return;
-		}
+	const SCORE_KEYS: Record<Mode, string> = { classic: 'simon', orders: 'simon_orders' };
+	const PAD_COLORS = ['#2ed573', '#3f8cff', '#ff4757', '#ffc61f'];
+	const HEART = 'M12 21s-8-5.3-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.7-8 11-8 11z';
+	const clock = new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-digit' });
 
-		decorative('Режим можно изменить только до начала смены.');
+	const game = new SimonGame({
+		load: (mode) => Number.parseInt(getSavedScore(SCORE_KEYS[mode], 0), 10) || 0,
+		save: (mode, score) => void saveScore(SCORE_KEYS[mode], score)
+	});
+	const audio = new SimonAudio();
+
+	let root: HTMLDivElement | undefined = $state();
+	let muted = $state(audio.muted);
+	let shake = $state(false);
+	let flash = $state(false);
+	let glitch = $state(false);
+	let pops = $state<Pop[]>([]);
+	let particles = $state<Particle[]>([]);
+	let puffs = $state<Puff[]>([]);
+	let crit = $state(0);
+	let levelBanner = $state<number | null>(null);
+	let lostHeart = $state(-1);
+	let bests = $state<Record<Mode, number>>({ classic: 0, orders: 0 });
+	let menuTab = $state<'shifts' | 'rules'>('shifts');
+	let endTime = $state('');
+
+	let timers: ReturnType<typeof setTimeout>[] = [];
+	let fxId = 0;
+
+	function later(fn: () => void, ms: number): void {
+		const id = setTimeout(() => {
+			timers = timers.filter((t) => t !== id);
+			fn();
+		}, ms);
+		timers.push(id);
 	}
 
-	function selectClassic(): void {
-		if (store.isMenu) {
-			game?.selectMode(SimonMode.Classic);
-			return;
-		}
-
-		decorative('Режим можно изменить только до начала смены.');
+	function pop(text: string, tone: Pop['tone']): void {
+		const id = ++fxId;
+		pops = [...pops, { id, text, tone }];
+		later(() => (pops = pops.filter((p) => p.id !== id)), 1000);
 	}
 
-	function restartAndStart(): void {
-		if (!game) {
-			return;
-		}
+	/** Конфетти из центра кнопки (или из центра пульта, если кнопки нет). */
+	function burst(pad: Pad | null, count: number): void {
+		if (!root || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		const selector = pad === null ? '.simon' : `[data-pad="${pad}"]`;
+		const target = root.querySelector(selector)?.getBoundingClientRect();
+		const base = root.getBoundingClientRect();
+		if (!target) return;
 
-		if (store.isGameOver) {
-			game.requestRestart();
-			game.requestStart();
-			return;
-		}
-
-		if (store.isMenu) {
-			game.requestStart();
-			return;
-		}
-
-		decorative('Сначала завершите текущую смену.');
+		const x = target.left - base.left + target.width / 2;
+		const y = target.top - base.top + target.height / 2;
+		const fresh: Particle[] = Array.from({ length: count }, () => {
+			const angle = Math.random() * Math.PI * 2;
+			const dist = 80 + Math.random() * 140;
+			return {
+				id: ++fxId,
+				x,
+				y,
+				dx: Math.cos(angle) * dist,
+				dy: Math.sin(angle) * dist - 40,
+				rot: Math.random() * 720,
+				color: pad === null || Math.random() < 0.3 ? '#ffd21f' : PAD_COLORS[pad]!
+			};
+		});
+		const first = fresh[0]!.id;
+		particles = [...particles, ...fresh];
+		later(() => (particles = particles.filter((p) => p.id < first || p.id > first + count)), 950);
 	}
 
-	function restartToMenu(): void {
-		if (!game) {
-			return;
-		}
+	function handleFx(fx: Fx): void {
+		audio.play(fx);
 
-		if (store.isGameOver) {
-			game.requestRestart();
-			return;
-		}
-
-		decorative('Завершение сеанса запрещено администратором.');
-	}
-
-	function about(): void {
-		store.addLine('О программе: 1С:Предприятие 8.3 «Симон говорит».', SimonConsoleKind.Info);
-		store.addLine('Версия 8.3.24.0000 (демо).', SimonConsoleKind.Info);
-		store.addLine('Разработано за 15 минут, внедряется за 15 месяцев.', SimonConsoleKind.Info);
-	}
-
-	const menus: readonly MenuDef[] = [
-		{
-			title: 'Файл',
-			items: [
-				{ label: 'Новый', disabled: true },
-				{ label: 'Открыть…', disabled: true },
-				{ separator: true },
-				{ label: 'Начать заново', action: restartAndStart },
-				{ separator: true },
-				{
-					label: 'Выход',
-					action: () =>
-						decorative('Завершение сеанса запрещено администратором: идёт проведение документов.')
+		switch (fx.type) {
+			case 'success':
+				if (game.mode === 'orders') {
+					pop(`+${fx.points}`, fx.crit ? 'crit' : 'good');
+					if (fx.lottery === 'life') pop('+1 ❤', 'life');
 				}
-			]
-		},
-		{
-			title: 'Правка',
-			items: [
-				{ label: 'Отменить', disabled: true },
-				{ label: 'Повторить', disabled: true },
-				{ separator: true },
-				{ label: 'Найти', disabled: true },
-				{ label: 'Заменить', disabled: true }
-			]
-		},
-		{
-			title: 'Вид',
-			items: [
-				{ label: 'Режим «Подчинённость»', action: selectOrders },
-				{ label: 'Режим «Симон»', action: selectClassic },
-				{ separator: true },
-				{ label: 'Настройка формы', disabled: true }
-			]
-		},
-		{
-			title: 'Инструменты',
-			items: [
-				{
-					label: 'Обновление конфигурации',
-					action: () =>
-						decorative(
-							'Обновление недоступно: ваша лицензия заканчивается раньше, чем выходит новый релиз.'
-						)
-				},
-				{ label: 'Тестирование и исправление', disabled: true },
-				{ label: 'Выгрузка данных', disabled: true }
-			]
-		},
-		{
-			title: 'Окно',
-			items: [
-				{ label: 'Все окна', disabled: true },
-				{ label: 'Закрепить', disabled: true }
-			]
-		},
-		{
-			title: 'Справка',
-			items: [
-				{
-					label: 'Содержание справки',
-					action: () =>
-						decorative(
-							'Раздел справки не найден. Обратитесь к франчайзи. Консультация: 3 000 ₽/час.'
-						)
-				},
-				{ label: 'О программе', action: about }
-			]
+				burst(game.pressedPad, fx.crit ? 34 : game.mode === 'classic' ? 26 : 18);
+				if (fx.crit) {
+					crit = ++fxId;
+					later(() => (crit = 0), 950);
+				}
+				break;
+			case 'fail':
+				lostHeart = game.mode === 'orders' ? game.lives : -1;
+				shake = flash = glitch = true;
+				later(() => (flash = false), 160);
+				later(() => (shake = glitch = false), 720);
+				later(() => (lostHeart = -1), 600);
+				break;
+			case 'levelUp':
+				levelBanner = fx.level;
+				later(() => (levelBanner = null), 1450);
+				break;
+			case 'gameOver':
+				endTime = clock.format(Date.now());
+				refreshBests();
+				break;
 		}
-	];
+	}
 
-	const navItems: ReadonlyArray<{ readonly name: string; readonly icon: string }> = [
-		{ name: 'Справочники', icon: '📁' },
-		{ name: 'Документы', icon: '📄' },
-		{ name: 'Регистры', icon: '📊' },
-		{ name: 'Отчёты', icon: '📈' },
-		{ name: 'Обработки', icon: '⚙️' }
-	];
+	function refreshBests(): void {
+		bests = {
+			classic: Number.parseInt(getSavedScore(SCORE_KEYS.classic, 0), 10) || 0,
+			orders: Number.parseInt(getSavedScore(SCORE_KEYS.orders, 0), 10) || 0
+		};
+	}
 
 	onMount(() => {
-		if (!host) {
-			return;
-		}
+		refreshBests();
+		const offFx = game.onFx(handleFx);
 
-		const instance = new SimonGame();
-		const bridge = new SvelteSimonAdapter(instance, store);
-
-		game = instance;
-		bridge.connect();
-
-		void instance.init(host).catch((error: unknown) => {
-			console.error('[Simon] init failed', error);
+		let last = performance.now();
+		let raf = requestAnimationFrame(function loop(now) {
+			game.tick(now - last);
+			last = now;
+			raf = requestAnimationFrame(loop);
 		});
 
 		return () => {
-			bridge.disconnect();
-			instance.destroy();
-			game = null;
+			cancelAnimationFrame(raf);
+			offFx();
+			for (const id of timers) clearTimeout(id);
+			audio.destroy();
 		};
 	});
 
+	const onBreak = $derived(game.phase === 'order' && game.order?.kind === 'break' && !game.paused);
+
+	// Перекур: снизу поднимается пар.
 	$effect(() => {
-		const count = store.lines.length;
-
-		if (consoleEl && count >= 0) {
-			consoleEl.scrollTop = consoleEl.scrollHeight;
-		}
+		if (!onBreak) return;
+		const puff = () => {
+			const id = ++fxId;
+			puffs = [...puffs, { id, left: 10 + Math.random() * 80 }];
+			later(() => (puffs = puffs.filter((p) => p.id !== id)), 2500);
+		};
+		puff();
+		const interval = setInterval(puff, 350);
+		return () => clearInterval(interval);
 	});
 
-	const failureVisible = $derived(
-		store.state === SimonState.FailureOrders || store.state === SimonState.FailureClassic
-	);
-
-	const orderLabel = $derived.by(() => {
-		if (store.orderPad === null) {
-			return '';
-		}
-
-		switch (store.orderPad) {
-			case 'PROVESTI':
-				return 'Провести';
-			case 'ZAPISAT':
-				return 'Записать';
-			case 'UDALIT':
-				return 'Пометить на удаление';
-			case 'ESHCHE':
-				return 'Ещё…';
-			default:
-				return '';
-		}
-	});
-
-	const showSayOrder = $derived(
-		store.orderSay &&
-			store.orderPad !== null &&
-			(store.state === SimonState.OrdersAwaiting || store.state === SimonState.OrdersIssuing)
-	);
-
-	function press(pad: SimonPadId): void {
-		game?.pressPad(pad);
+	function start(mode: Mode): void {
+		audio.unlock();
+		game.start(mode);
 	}
 
-	function start(): void {
-		game?.requestStart();
+	function toggleMute(): void {
+		audio.setMuted(!audio.muted);
+		muted = audio.muted;
 	}
 
-	function skip(): void {
-		game?.skip();
+	function press(pad: Pad): void {
+		audio.unlock();
+		game.press(pad);
 	}
 
-	function acknowledgeFailure(): void {
-		game?.acknowledgeFailure();
-	}
-
-	function abortToMenu(): void {
-		game?.requestRestart();
-	}
-
-	function handleModeChange(event: Event): void {
+	function onKeydown(event: KeyboardEvent): void {
+		if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
 		const target = event.target;
-
-		if (!(target instanceof HTMLSelectElement)) {
+		if (
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target instanceof HTMLSelectElement
+		) {
 			return;
 		}
+		// На кнопке/ссылке Enter и Пробел оставляем браузеру — пусть сработает сам элемент.
+		const onControl = target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement;
 
-		const value = target.value;
-
-		if (value === SimonMode.Orders) {
-			game?.selectMode(SimonMode.Orders);
-			return;
-		}
-
-		if (value === SimonMode.Classic) {
-			game?.selectMode(SimonMode.Classic);
-		}
-	}
-
-	function handleKeydown(event: KeyboardEvent): void {
-		if (event.repeat) {
-			return;
-		}
-
-		const target = event.target;
-
-		if (target instanceof HTMLSelectElement || target instanceof HTMLInputElement) {
-			return;
-		}
-
-		if (store.isGameOver) {
-			if (event.key === 'Enter') {
-				event.preventDefault();
-				restartAndStart();
-			}
-
-			return;
-		}
-
-		if (failureVisible) {
-			if (event.key === 'Enter' || event.key === 'Escape') {
-				event.preventDefault();
-				acknowledgeFailure();
-			}
-
-			return;
-		}
+		audio.unlock();
+		let handled = true;
 
 		if (event.key >= '1' && event.key <= '4') {
-			const index = Number(event.key) - 1;
-			const pad = SimonPadList[index];
-
-			if (pad) {
-				press(pad);
-			}
-
-			return;
+			game.press((Number(event.key) - 1) as Pad);
+		} else if (event.code === 'KeyM') {
+			toggleMute();
+		} else if (event.key === 'Escape') {
+			game.togglePause();
+		} else if (event.key === ' ' && !onControl) {
+			if (game.paused) game.resume();
+			else game.skip();
+		} else if (event.key === 'Enter' && !onControl) {
+			if (game.paused) game.resume();
+			else if (game.phase === 'menu' || game.phase === 'gameover') start(game.mode);
+			else handled = false;
+		} else {
+			handled = false;
 		}
 
-		if (event.key === ' ') {
-			event.preventDefault();
-
-			if (store.canSkip) {
-				skip();
-			}
-
-			return;
-		}
-
-		if (event.key === 'Enter' && store.isMenu && store.canStart) {
-			event.preventDefault();
-			start();
-		}
+		if (handled) event.preventDefault();
 	}
 
-	function toggleMenu(title: string, event: MouseEvent): void {
-		event.stopPropagation();
-		menuOpen = menuOpen === title ? null : title;
+	function onVisibility(): void {
+		if (document.hidden) game.pause();
 	}
 
-	function closeMenu(): void {
-		menuOpen = null;
-	}
+	const isOrders = $derived(game.mode === 'orders');
+	const inGame = $derived(game.phase !== 'menu' && game.phase !== 'gameover');
+	const bubbleTone = $derived(
+		game.phase === 'fail'
+			? 'bad'
+			: game.phase === 'feedback' || game.phase === 'cleared'
+				? 'good'
+				: onBreak
+					? 'break'
+					: ''
+	);
+	const timerPct = $derived(Math.round(game.timer * 100));
 
-	function runMenu(item: MenuItem): void {
-		menuOpen = null;
-
-		if (item.action) {
-			item.action();
-			return;
-		}
-
-		if (item.disabled) {
-			decorative(`«${item.label ?? 'Действие'}» недоступно в демо-версии.`);
-		}
-	}
-
-	function lineClass(kind: SimonConsoleKindId): string {
-		switch (kind) {
-			case SimonConsoleKind.Ok:
-				return 'ok';
-			case SimonConsoleKind.Error:
-				return 'err';
-			case SimonConsoleKind.Command:
-				return 'cmd';
-			default:
-				return '';
-		}
-	}
+	const rank = $derived.by(() => {
+		const s = game.score;
+		const tiers: [number, string, string][] = isOrders
+			? [
+					[15000, 'Гуру 1С', 'О тебе слагают легенды в курилке.'],
+					[9000, 'Архитектор хаоса', 'Конфигурация боится тебя.'],
+					[5000, 'Ведущий программист', 'Главбух смотрит с уважением.'],
+					[2000, 'Программист 1С', 'База жива. Пока.'],
+					[0, 'Стажёр', 'Тебе доверили только скрепки.']
+				]
+			: [
+					[25, 'Гуру 1С', 'Помнишь все проводки с 2007 года.'],
+					[18, 'Архитектор', 'Память как у регистра накопления.'],
+					[12, 'Программист 1С', 'Пакеты проводишь не глядя.'],
+					[6, 'Оператор', 'Неплохо, но кофе нужен.'],
+					[0, 'Стажёр', 'Зато честно.']
+				];
+		const [, name, quip] = tiers.find(([min]) => s >= min) ?? tiers[tiers.length - 1]!;
+		return { name, quip };
+	});
 </script>
 
-<svelte:window onclick={closeMenu} onkeydown={handleKeydown} />
-<div class="simon-app">
-	<div class="desktop" aria-hidden="true">
-		<div class="desktop-icons">
-			<div class="desktop-icon">
-				<span>🟨</span>
-				<small>1С:Предприятие</small>
-			</div>
-			<div class="desktop-icon">
-				<span>📄</span>
-				<small>Бухгалтерия</small>
-			</div>
-			<div class="desktop-icon">
-				<span>🗄️</span>
-				<small>База данных</small>
-			</div>
-			<div class="desktop-icon">
-				<span>🧾</span>
-				<small>Первичка</small>
-			</div>
-		</div>
+<svelte:head>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+	<link
+		href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;600;800&family=Caveat:wght@700&display=swap"
+		rel="stylesheet"
+	/>
+</svelte:head>
 
-		<div class="desktop-logo">1С</div>
-		<div class="scanlines"></div>
-		<div class="vignette"></div>
+<svelte:window onkeydown={onKeydown} onblur={() => game.pause()} />
+<svelte:document onvisibilitychange={onVisibility} />
 
-		<div class="taskbar">
-			<div class="start">Пуск</div>
-			<div class="task-item active">1С:Предприятие 8.3</div>
-			<div class="task-item">Обновление конфигурации</div>
-			<div class="tray">
-				<span>RU</span>
-				<span>🔊</span>
-				<span>14:47</span>
-			</div>
-		</div>
-	</div>
-	<div class="window">
-		<div class="titlebar">
-			<div class="app-ic"></div>
-			<div class="tb-title">
-				1С:Предприятие 8.3 — Конфигурация «Симон говорит»
-				<span>(демо-режим)</span>
-			</div>
-			<div class="tb-btns">
-				<button
-					type="button"
-					class="tb-btn"
-					onclick={() => decorative('Свёртывание недоступно: вы ещё не провели все документы.')}
-				>
-					—
-				</button>
-				<button
-					type="button"
-					class="tb-btn"
-					onclick={() => decorative('Развёртывание окна недоступно: форма не масштабируется.')}
-				>
-					□
-				</button>
-				<button
-					type="button"
-					class="tb-btn close"
-					onclick={() =>
-						decorative('Невозможно закрыть окно: сеанс под наблюдением отдела кадров.')}
-				>
-					✕
-				</button>
-			</div>
-		</div>
+<div class="simon-root" class:coffee={onBreak} bind:this={root}>
+	<SimonOffice />
 
-		<nav class="menubar">
-			{#each menus as menu (menu.title)}
-				<div class="menu" class:open={menuOpen === menu.title}>
-					<div class="menu-title" onclick={(event: MouseEvent) => toggleMenu(menu.title, event)}>
-						{menu.title}
-					</div>
-					<ul class="dropdown">
-						{#each menu.items as item, index (`${menu.title}-${index}`)}
-							{#if item.separator}
-								<hr />
-							{:else}
-								<li class:dis={item.disabled} onclick={() => runMenu(item)}>
-									{item.label}
-								</li>
-							{/if}
-						{/each}
-					</ul>
-				</div>
-			{/each}
-		</nav>
-
-		<div class="toolbar">
-			<button
-				type="button"
-				class="tbtn"
-				onclick={() => decorative('Ничего не найдено — как и в прошлом квартале.')}
-			>
-				🔍 Найти
-			</button>
-			<button
-				type="button"
-				class="tbtn"
-				onclick={() => decorative('Проведено 0 документов из 12 458. Начните с любого.')}
-			>
-				📤 Провести всё
-			</button>
-			<button
-				type="button"
-				class="tbtn"
-				onclick={() => decorative('Печать недоступна: принтер не подключен с 2019 года.')}
-			>
-				🖨 Печать
-			</button>
-			<span class="tsep"></span>
-			<button
-				type="button"
-				class="tbtn"
-				onclick={() => decorative('Управление звуком доступно только в платной версии.')}
-			>
-				🔊
-			</button>
-			<button type="button" class="tbtn" onclick={about}> ❓ </button>
-		</div>
-
-		<div class="main">
-			<aside class="nav">
-				<h4>Панель навигации</h4>
-				{#each navItems as item (item.name)}
-					<div
-						class="nav-item"
-						onclick={() =>
-							decorative(`Раздел «${item.name}» доступен в полной версии конфигурации.`)}
+	<div class="layer" class:shake>
+		<header class="top">
+			<a class="home" href={resolve('/')} aria-label="В игровой зал">←</a>
+			<h1>1С: <em>ПОГРОМИСТ</em></h1>
+			<span class="mode-tag">{isOrders ? 'Приказы 1С' : 'Классика'}</span>
+			<div class="top-actions">
+				{#if inGame}
+					<button
+						type="button"
+						class="icon-btn"
+						onclick={() => game.pause()}
+						aria-label="Пауза (Esc)"
 					>
-						<span class="arr">▶</span>{item.icon}
-						{item.name}
-					</div>
-				{/each}
-			</aside>
+						⏸
+					</button>
+				{/if}
+				<button
+					type="button"
+					class="icon-btn"
+					onclick={toggleMute}
+					aria-pressed={muted}
+					aria-label="Звук (M)"
+				>
+					{muted ? '🔇' : '🔊'}
+				</button>
+			</div>
+		</header>
 
-			<div class="workspace" bind:this={host}>
-				<div class="form-head">
-					<h1>Обработка «Симон говорит»</h1>
-					<span class="ver">v8.3.24.0001 • внедрено в 2015 г., поддержка закончилась в 2016-м</span>
-					<span class="spacer"></span>
-					<label>
-						Режим:
-						<select value={store.mode} disabled={!store.isMenu} onchange={handleModeChange}>
-							<option value={SimonMode.Orders}>Подчинённость («1С говорит»)</option>
-							<option value={SimonMode.Classic}>Симон (классика)</option>
-						</select>
-					</label>
+		<section class="hud" aria-label="Показатели">
+			{#if isOrders}
+				<div class="chip">
+					<span>Очки</span>
+					{#key game.score}<b class="bump">{game.score}</b>{/key}
 				</div>
-
-				<div class="hud">
-					<div class="cell">Проведено: <b>{store.score}</b></div>
-					<div class="cell">Серия: <b>x{store.combo}</b></div>
-					<div class="cell">Уровень: <b>{store.level}</b></div>
-					<div class="cell">Приказ №: <b>{store.round}</b></div>
-					<div class="cell">
-						Нарушения:
-						{#each [0, 1, 2] as index (index)}
-							<span class="warn" class:lost={index >= store.lives}>⚠</span>
-						{/each}
-					</div>
-					<div class="cell">Рекорд предприятия: <b>{store.best}</b></div>
+				<div class="chip" class:hot={game.combo >= 5}>
+					<span>Комбо</span>
+					<b>×{game.combo}{game.combo >= 5 ? ' 🔥' : ''}</b>
 				</div>
-
-				<div class="console">
-					<div class="console-head">
-						<span>Служебные сообщения</span>
-						<span>Журнал регистрации</span>
-					</div>
-					<div class="console-lines" bind:this={consoleEl}>
-						{#each store.lines as line (line.id)}
-							<div>
-								<span class="t">{line.time}</span>
-								<span class={lineClass(line.kind)}>{line.text}</span>
-							</div>
+				<div class="chip">
+					<span>Уровень {game.level}</span>
+					<div class="pips" aria-label="Прогресс уровня">
+						{#each { length: ORDERS_PER_LEVEL }, i (i)}
+							<i class:on={i < game.ordersInLevel}></i>
 						{/each}
 					</div>
 				</div>
+				<div class="chip">
+					<span>Жизни</span>
+					<div class="hearts">
+						{#each { length: MAX_LIVES }, i (i)}
+							<svg
+								viewBox="0 0 24 24"
+								class:lost={i >= game.lives}
+								class:burst={i === lostHeart}
+								aria-hidden="true"
+							>
+								<path d={HEART} />
+							</svg>
+						{/each}
+					</div>
+				</div>
+			{:else}
+				<div class="chip">
+					<span>Раунд</span>
+					{#key game.round}<b class="bump">{game.round}</b>{/key}
+				</div>
+			{/if}
+			<div class="chip">
+				<span>Рекорд</span>
+				<b>{game.best}</b>
+			</div>
+		</section>
 
-				<div class="order">
-					<div
-						class="order-text"
-						class:warn-text={store.isOrders &&
-							!store.orderSay &&
-							store.state === SimonState.OrdersAwaiting}
+		<main class="play">
+			<div class="speech-row">
+				<SimonMascot mood={game.mood} lookAt={game.pressedPad ?? game.litPad} />
+				<div class="bubble {bubbleTone}" class:glitch aria-live="polite">
+					<p class="headline">{game.headline}</p>
+					<div class="timer" aria-hidden="true">
+						<i class:low={timerPct <= 30} style="width: {timerPct}%"></i>
+					</div>
+				</div>
+			</div>
+
+			<div class="pad-area">
+				<div class="pad-box">
+					<SimonPads
+						litPad={game.litPad}
+						pressedPad={game.pressedPad}
+						pressCount={game.pressCount}
+						locked={!game.acceptsPads}
+						dimmed={onBreak}
+						onPress={press}
 					>
-						{#if showSayOrder}
-							<span class="prefix">1С говорит:</span> нажмите «{orderLabel}»!
+						{#if isOrders}
+							<button
+								type="button"
+								class="skip"
+								tabindex="-1"
+								disabled={!game.canSkip}
+								onpointerdown={(event) => {
+									event.preventDefault();
+									game.skip();
+								}}
+							>
+								<b>Пропуск</b>
+								<small>пробел</small>
+							</button>
 						{:else}
-							{store.orderText}
+							<div class="round">
+								<b>{game.phase === 'menu' ? '—' : game.round}</b>
+								<small>{game.phase === 'input' ? `${game.step}/${game.round}` : 'раунд'}</small>
+							</div>
 						{/if}
-					</div>
-					<div class="timer">
-						<i style="width: {store.timerPercent}%"></i>
-					</div>
-				</div>
+					</SimonPads>
 
-				<SimonPads {store} onPress={press} />
-
-				<div class="actions">
-					<button type="button" class="btn primary" disabled={!store.canStart} onclick={start}>
-						▶ Начать смену
-					</button>
-
-					{#if store.isOrders && !store.isMenu && !store.isGameOver}
-						<button type="button" class="btn" disabled={!store.canSkip} onclick={skip}>
-							⏭ Пропустить (команда не от 1С)
-						</button>
-					{/if}
-
-					{#if !store.isMenu && !store.isGameOver}
-						<button type="button" class="btn" onclick={abortToMenu}> ⏹ Завершить смену </button>
-					{/if}
-
-					<span class="spacer"></span>
-
-					<span class="legend">
-						<span class="ok">● цветные кнопки — игровое поле</span>
-						<span class="no">— серые элементы — обёртка 1С (кликабельны, но бесполезны)</span>
-					</span>
-				</div>
-
-				<div class="hint">
-					<b>Как играть.</b>
-					Режим «Подчинённость»: выполняйте команды, только если они начинаются с
-					<b>«1С говорит»</b>. Если команда исходит не от 1С — жмите
-					<b>«Пропустить»</b> (или Пробел). Неверное действие = ⚠ нарушение, три нарушения = конец
-					смены. Режим «Симон»: запомните мигания кнопок и повторите последовательность. Клавиши 1–4
-					— кнопки, Пробел — пропуск, Enter — начать смену.<br />
-					<i>© ООО «Франчайзи-Юг». Любое совпадение с реальной 1С случайно, но проводки сойдутся.</i
-					>
+					{#each pops as p (p.id)}
+						<div class="pop {p.tone}">{p.text}</div>
+					{/each}
 				</div>
 			</div>
-		</div>
+		</main>
 
-		<div class="statusbar">
-			<span>{store.statusText}</span>
-			<span>Демо-версия • Лицензия: 1 рабочее место • Поддержка: бессрочно*</span>
-		</div>
+		<footer class="statusbar">
+			<span class="dot" class:bad={game.phase === 'fail' || game.phase === 'gameover'}></span>
+			{game.status}
+		</footer>
 	</div>
 
-	{#if failureVisible}
-		<div class="overlay show">
-			<div class="modal">
-				<div class="modal-title">Ошибка 1С:Предприятия</div>
-				<div class="modal-body">
-					<div class="ic">⚠️</div>
-					<div>
-						{store.failureTitle}
-						<br /><br />
-						Осталось нарушений до увольнения: {Math.max(store.lives, 0)} из 3.
-					</div>
+	<!-- Эффекты -->
+	<div class="fx" aria-hidden="true">
+		{#each particles as p (p.id)}
+			<i
+				class="part"
+				style="left: {p.x}px; top: {p.y}px; background: {p.color}; --dx: {p.dx}px; --dy: {p.dy}px; --r: {p.rot}deg"
+			></i>
+		{/each}
+
+		{#each puffs as p (p.id)}
+			<i class="puff" style="left: {p.left}%"></i>
+		{/each}
+
+		{#if crit}
+			{#key crit}
+				<div class="crit-fx">
+					<div class="white"></div>
+					<div class="rays"></div>
+					<div class="word">КРИТ!</div>
 				</div>
-				<div class="modal-actions">
-					<button type="button" class="mbtn primary" onclick={acknowledgeFailure}> ОК </button>
-					<button type="button" class="mbtn" onclick={abortToMenu}> Завершить смену </button>
+			{/key}
+		{/if}
+
+		{#if levelBanner !== null}
+			<div class="levelup">
+				<div class="stripe"></div>
+				<div class="level-text">
+					Уровень {levelBanner}
+					<small>приказы становятся бодрее</small>
+				</div>
+			</div>
+		{/if}
+	</div>
+
+	<div class="flash" class:on={flash} aria-hidden="true"></div>
+
+	<!-- Экраны -->
+	{#if game.phase === 'menu'}
+		<div class="overlay">
+			<div class="win">
+				<div class="win-bar">
+					<span class="win-logo">1С</span>
+					<span class="win-title">Погромист: Предприятие 8.3 — Конфигуратор смены</span>
+					<span class="win-btns" aria-hidden="true"><i></i><i></i><i></i></span>
+				</div>
+				<div class="win-body">
+					<nav class="win-nav">
+						<button
+							type="button"
+							class:on={menuTab === 'shifts'}
+							onclick={() => (menuTab = 'shifts')}
+						>
+							📋 Смены
+						</button>
+						<button
+							type="button"
+							class:on={menuTab === 'rules'}
+							onclick={() => (menuTab = 'rules')}
+						>
+							📖 Регламент
+						</button>
+						<span class="nav-dead">❓ Справка (нет)</span>
+						<a class="nav-link" href={resolve('/')}>🚪 В игровой зал</a>
+					</nav>
+
+					<div class="win-content">
+						{#if menuTab === 'shifts'}
+							<h2>Выберите <span>смену</span></h2>
+							<div class="docs">
+								<div class="doc-row head">
+									<span></span><span>Документ</span><span>Рекорд</span><span></span>
+								</div>
+								<div class="doc-row">
+									<span>🧠</span>
+									<span>
+										<b>Классика</b>
+										<small>Повтори растущую последовательность. Одна ошибка — конец.</small>
+									</span>
+									<span>{bests.classic} р.</span>
+									<button type="button" class="btn blue" onclick={() => start('classic')}>
+										Провести
+									</button>
+								</div>
+								<div class="doc-row">
+									<span>📢</span>
+									<span>
+										<b>Приказы 1С</b>
+										<small>Только «1С говорит:», остальное — мимо.</small>
+									</span>
+									<span>{bests.orders}</span>
+									<button type="button" class="btn green" onclick={() => start('orders')}>
+										Провести
+									</button>
+								</div>
+							</div>
+						{:else}
+							<h2>Регламент <span>смены</span></h2>
+							<h3>🧠 Классика</h3>
+							<p>
+								1С показывает последовательность — повтори её. Каждый раунд добавляется шаг, после
+								5, 9 и 13 шагов показ ускоряется. На каждое нажатие — 3 секунды.
+							</p>
+							<h3>📢 Приказы 1С</h3>
+							<ul>
+								<li>Жми, только если приказ начинается с <q>1С говорит:</q></li>
+								<li>
+									Главбух, директор, «1С говорила», «1С гаварит» — не начальство: жми
+									<b>Пропуск</b> или жди
+								</li>
+								<li>☕ Перекур — ничего не трогай до конца таймера</li>
+								<li>Подсветка кнопок иногда врёт. «Ещё…» — лотерея: жизнь или премия</li>
+								<li>Быстрый ответ — КРИТ, серия без ошибок — множитель до ×5</li>
+							</ul>
+						{/if}
+						<p class="keys">
+							<kbd>1</kbd>–<kbd>4</kbd> кнопки · <kbd>Пробел</kbd> пропуск · <kbd>Esc</kbd> пауза ·
+							<kbd>M</kbd> звук · <kbd>Enter</kbd> «Провести»
+						</p>
+					</div>
 				</div>
 			</div>
 		</div>
-	{/if}
-
-	{#if store.isGameOver}
-		<div class="overlay show">
-			<div class="modal">
-				<div class="modal-title info">Сеанс завершён</div>
-				<div class="modal-body">
-					<div class="ic">ℹ️</div>
-					<div>
-						Три нарушения подряд. Ваш результат —
-						<b>{store.score}</b> очков («~{Math.floor(store.score / 10)} проведённых документов») — передан
-						в отдел кадров и бухгалтерию.
-						<br /><br />
-						Рекорд предприятия: <b>{store.best}</b>.
-					</div>
+	{:else if game.phase === 'gameover'}
+		<div class="overlay">
+			<article class="paper">
+				<div class="paper-hdr">ООО «РОГА И КОПЫТА» · ПРИКАЗ № {game.score}-К</div>
+				<h2>Об окончании смены</h2>
+				<p>
+					Сотрудник <b>Погромист</b> (должность: <b>{rank.name}</b>) провёл смену и
+					{isOrders ? 'набрал' : 'прошёл'}
+				</p>
+				<div class="paper-score">
+					{game.score}
+					<small>{isOrders ? 'очков' : 'раундов'}</small>
 				</div>
-				<div class="modal-actions">
-					<button type="button" class="mbtn primary" onclick={restartAndStart}>
-						Начать заново
+				<p>
+					{#if isOrders}
+						Уровень: <b>{game.level}</b> · Лучшее комбо: <b>×{game.bestCombo}</b> ·
+					{/if}
+					Рекорд: <b>{game.best}</b>
+				</p>
+				<p class="quip"><i>Основание: база упала. {rank.quip}</i></p>
+				<div class="sign">
+					<span>Главбух: <u>&nbsp;Иванова&nbsp;</u></span>
+					<span>{endTime}</span>
+				</div>
+				<div class="stamp" class:good={game.newRecord}>
+					{game.newRecord ? 'ПРЕМИЯ' : 'УВОЛЕН'}
+				</div>
+				<div class="actions">
+					<button type="button" class="btn green" onclick={() => start(game.mode)}>
+						↻ Выйти на смену
 					</button>
-					<button type="button" class="mbtn" onclick={restartToMenu}> В меню </button>
+					<button type="button" class="btn ghost" onclick={() => game.toMenu()}>В меню</button>
+				</div>
+			</article>
+		</div>
+	{:else if game.paused}
+		<div class="overlay">
+			<div class="card">
+				<h2>Пауза</h2>
+				<p class="sub">1С перезагружается… подождите</p>
+				<div class="actions">
+					<button type="button" class="btn green" onclick={() => game.resume()}>▶ Продолжить</button
+					>
+					<button type="button" class="btn ghost" onclick={() => game.toMenu()}>Меню</button>
 				</div>
 			</div>
 		</div>
@@ -645,820 +583,1244 @@
 </div>
 
 <style>
-	.simon-app {
+	.simon-root {
+		--s-bg: #140d2e;
+		--s-panel: #221850;
+		--s-line: #0a0620;
+		--s-text: #fff;
+		--s-muted: #b6acdf;
+		--s-gold: #ffd21f;
+		--s-green: #2ed573;
+		--s-red: #ff4757;
+		--s-orange: #ff7b1f;
+		--s-display: 'Russo One', 'Arial Black', sans-serif;
+		--s-body: 'Rubik', system-ui, sans-serif;
+
 		position: fixed;
 		inset: 0;
-		z-index: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 16px;
+		z-index: 10;
 		overflow: hidden;
-		background:
-			radial-gradient(900px 480px at 78% -12%, rgba(255, 210, 77, 0.16), transparent 62%),
-			radial-gradient(760px 460px at 8% 112%, rgba(72, 199, 160, 0.14), transparent 60%),
-			radial-gradient(1200px 700px at 50% 18%, #365f8d 0%, #224363 55%, #12263b 100%);
-		font-family: Tahoma, Arial, sans-serif;
-		font-size: 13px;
-		color: #1b1b1b;
+		isolation: isolate;
+		color: var(--s-text);
+		font-family: var(--s-body);
+		user-select: none;
+		background: var(--s-bg);
 	}
 
-	.simon-app::before {
-		content: '';
-		position: absolute;
-		inset: -40px;
-		pointer-events: none;
-		background-image:
-			linear-gradient(rgba(154, 186, 226, 0.055) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(154, 186, 226, 0.055) 1px, transparent 1px);
-		background-size: 44px 44px;
-		transform: rotate(-1.2deg);
-		mask-image: radial-gradient(78% 68% at 50% 34%, #000 28%, transparent 92%);
-	}
-
-	.simon-app::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-		background:
-			radial-gradient(120% 100% at 50% 42%, transparent 52%, rgba(3, 9, 17, 0.62) 100%),
-			linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 18%, rgba(0, 0, 0, 0.14) 100%);
-	}
-	:global(html, body) {
-		width: 100%;
-		height: 100%;
-		margin: 0;
-		overflow: hidden;
-		overscroll-behavior: none;
-	}
-
-	.simon-app {
-		position: fixed;
-		inset: 0;
-		z-index: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 16px 16px 64px;
-		overflow: hidden;
-		background: #102434;
-		font-family: Tahoma, Arial, sans-serif;
-		font-size: 13px;
-		color: #1b1b1b;
-	}
-	.desktop {
+	.layer {
 		position: absolute;
 		inset: 0;
 		z-index: 1;
-		pointer-events: none;
-		overflow: hidden;
-		background:
-			radial-gradient(920px 520px at 78% -10%, rgba(255, 210, 77, 0.14), transparent 62%),
-			radial-gradient(760px 460px at 6% 112%, rgba(72, 199, 160, 0.12), transparent 60%),
-			linear-gradient(180deg, #2b6d8d 0%, #1d536e 42%, #143c53 74%, #0e2c3f 100%);
+		display: grid;
+		grid-template-rows: auto auto minmax(0, 1fr) auto;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 10px;
+		padding: max(10px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
 	}
 
-	.desktop-icons {
-		position: absolute;
-		top: 18px;
-		left: 18px;
-		display: flex;
-		flex-direction: column;
-		gap: 18px;
-		opacity: 0.62;
+	.layer > * {
+		width: 100%;
+		max-width: 920px;
+		justify-self: center;
 	}
 
-	.desktop-icon {
-		width: 78px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 5px;
-		font-size: 24px;
-		filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+	.shake {
+		animation: shake 0.4s;
 	}
 
-	.desktop-icon small {
-		font-size: 10px;
-		line-height: 1.2;
-		text-align: center;
-		color: #eaf4ff;
-		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+	@keyframes shake {
+		20% {
+			translate: -8px 2px;
+		}
+		40% {
+			translate: 7px -3px;
+		}
+		60% {
+			translate: -5px 1px;
+		}
+		80% {
+			translate: 3px 0;
+		}
 	}
 
-	.desktop-logo {
-		position: absolute;
-		right: 4vw;
-		bottom: 12vh;
-		font-size: min(34vw, 380px);
-		font-weight: 800;
-		color: rgba(255, 210, 0, 0.055);
-		text-shadow: 0 0 90px rgba(255, 210, 0, 0.06);
-		user-select: none;
+	/* Перекур: экран лениво покачивается, снизу тёплый оттенок. */
+	.coffee .layer {
+		animation: sway 2.6s ease-in-out infinite;
 	}
 
-	.scanlines {
+	.coffee::after {
+		content: '';
 		position: absolute;
 		inset: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			rgba(255, 255, 255, 0.022) 0px,
-			rgba(255, 255, 255, 0.022) 1px,
-			transparent 1px,
-			transparent 3px
-		);
-		mix-blend-mode: screen;
-		opacity: 0.5;
-	}
-
-	.vignette {
-		position: absolute;
-		inset: 0;
-		background: radial-gradient(
-			120% 100% at 50% 42%,
-			transparent 52%,
-			rgba(2, 8, 14, 0.62) 100%
-		);
-	}
-
-	.taskbar {
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		height: 36px;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 0 8px;
-		background: linear-gradient(#e8e8e8, #cfcfcf);
-		border-top: 1px solid #8f8f8f;
-		box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.22);
-		font-size: 11px;
-		color: #222;
-	}
-
-	.start {
-		padding: 3px 12px;
-		border: 1px solid #7b5d00;
-		border-radius: 3px;
-		background: linear-gradient(#ffe066, #f0b400);
-		font-weight: 700;
-		color: #5b3a00;
-	}
-
-	.task-item {
-		padding: 3px 10px;
-		border: 1px solid #98a0a8;
-		border-radius: 3px;
-		background: linear-gradient(#f8f8f8, #d8dde2);
-		color: #203448;
-	}
-
-	.task-item.active {
-		background: linear-gradient(#ffffff, #e7eef6);
-		border-color: #5f7c9d;
-		font-weight: 700;
-	}
-
-	.tray {
-		margin-left: auto;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 3px 8px;
-		border: 1px solid #a5adb5;
-		border-radius: 3px;
-		background: linear-gradient(#f2f2f2, #dfe2e6);
-		color: #333;
-	}
-	.window {
-		position: relative;
 		z-index: 2;
-		width: min(1000px, 100%);
-		height: min(780px, calc(100vh - 96px));
-		height: min(780px, calc(100dvh - 96px));
-		min-height: 420px;
-		display: flex;
-		flex-direction: column;
-		background: #f2f2f2;
-		border: 1px solid #2b3a48;
-		border-radius: 6px 6px 4px 4px;
-		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-		overflow: hidden;
+		pointer-events: none;
+		background: radial-gradient(ellipse at 50% 120%, rgba(120, 70, 30, 0.35), transparent 60%);
 	}
 
-	.window {
-		width: min(1000px, 97vw);
-		max-height: 96vh;
-		display: flex;
-		flex-direction: column;
-		background: #f2f2f2;
-		border: 1px solid #2b3a48;
-		border-radius: 6px 6px 4px 4px;
-		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-		overflow: hidden;
-	}
-	.workspace {
-		scrollbar-gutter: stable;
-		overscroll-behavior: contain;
+	@keyframes sway {
+		25% {
+			transform: rotate(-0.6deg) translateX(-3px);
+		}
+		75% {
+			transform: rotate(0.6deg) translateX(3px);
+		}
 	}
 
-	.console-lines {
-		scrollbar-gutter: stable;
+	/* ---------- Верхняя панель ---------- */
+
+	.top {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.home,
+	.icon-btn {
+		display: grid;
+		place-items: center;
+		width: 40px;
+		height: 40px;
+		flex: none;
+		border: 3px solid var(--s-line);
+		border-radius: 12px;
+		background: var(--s-panel);
+		color: var(--s-text);
+		font-size: 18px;
+		text-decoration: none;
+		cursor: pointer;
+		box-shadow: 0 4px 0 var(--s-line);
+	}
+
+	.home:active,
+	.icon-btn:active {
+		translate: 0 3px;
+		box-shadow: 0 1px 0 var(--s-line);
+	}
+
+	h1 {
+		margin: 0;
+		font: 400 clamp(18px, 3vw, 28px) / 1 var(--s-display);
+		color: var(--s-gold);
+		text-shadow: 0 3px 0 #b3361b;
+		white-space: nowrap;
+	}
+
+	h1 em {
+		font-style: normal;
+		color: var(--s-text);
+		text-shadow: 0 3px 0 var(--s-line);
+	}
+
+	.mode-tag {
+		padding: 4px 10px;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.08);
+		color: var(--s-muted);
+		font-size: 13px;
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.top-actions {
+		display: flex;
+		gap: 8px;
+		margin-left: auto;
+	}
+
+	/* ---------- HUD ---------- */
+
+	.hud {
+		display: flex;
+		justify-content: center;
+		gap: 8px;
+	}
+
+	.chip {
+		position: relative;
+		flex: 1 1 0;
+		min-width: 0;
+		max-width: 150px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		padding: 6px 8px;
+		border: 3px solid var(--s-line);
+		border-radius: 12px;
+		background: var(--s-panel);
+		box-shadow: 0 4px 0 var(--s-line);
+	}
+
+	.chip span {
+		color: var(--s-muted);
+		font-size: 12px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		white-space: nowrap;
+	}
+
+	.chip b {
+		font: 400 26px / 1.1 var(--s-display);
+		color: var(--s-gold);
+		white-space: nowrap;
+	}
+
+	.chip b.bump {
+		animation: bump 0.35s;
+	}
+
+	@keyframes bump {
+		40% {
+			transform: scale(1.35);
+			color: #fff;
+		}
+	}
+
+	.chip.hot {
+		border-color: var(--s-orange);
+		box-shadow:
+			0 4px 0 var(--s-line),
+			0 0 22px rgba(255, 123, 31, 0.55);
+	}
+
+	.chip.hot::after {
+		content: '';
+		position: absolute;
+		inset: -14px 10% auto;
+		z-index: -1;
+		height: 22px;
+		background: radial-gradient(ellipse at 50% 100%, rgba(255, 140, 30, 0.9), transparent 70%);
+		filter: blur(4px);
+		animation: flame 0.25s infinite alternate;
+	}
+
+	@keyframes flame {
+		to {
+			transform: scaleY(1.35) translateY(-3px);
+			opacity: 0.7;
+		}
+	}
+
+	.pips {
+		display: flex;
+		gap: 3px;
+		padding: 6px 0 5px;
+	}
+
+	.pips i {
+		width: 9px;
+		height: 9px;
+		border-radius: 2px;
+		background: rgba(255, 255, 255, 0.14);
+	}
+
+	.pips i.on {
+		background: var(--s-gold);
+		box-shadow: 0 0 6px var(--s-gold);
+		animation: pip 0.4s;
+	}
+
+	@keyframes pip {
+		50% {
+			transform: scale(1.8);
+		}
+	}
+
+	.hearts {
+		display: flex;
+		gap: 3px;
+		padding-top: 2px;
+	}
+
+	.hearts svg {
+		width: 24px;
+		height: 24px;
+		fill: var(--s-red);
+		filter: drop-shadow(0 2px 0 var(--s-line));
+		transition: opacity 0.2s;
+	}
+
+	.hearts svg.lost {
+		opacity: 0.18;
+		filter: grayscale(1);
+	}
+
+	.hearts svg.burst {
+		animation: heart 0.6s;
+	}
+
+	@keyframes heart {
+		40% {
+			transform: scale(1.8) rotate(-12deg);
+			opacity: 1;
+			filter: none;
+		}
+	}
+
+	/* ---------- Игровая зона ---------- */
+
+	.play {
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.speech-row {
+		--mascot-size: clamp(70px, 12dvh, 110px);
+		flex: none;
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		width: 100%;
+		max-width: 720px;
+		margin: 0 auto;
+	}
+
+	.bubble {
+		position: relative;
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 10px;
+		min-height: clamp(76px, 12dvh, 108px);
+		padding: 12px 16px;
+		border: 4px solid var(--s-line);
+		border-radius: 18px;
+		background: #fff8e6;
+		color: #1a1130;
+		box-shadow: 0 6px 0 var(--s-line);
+		transition:
+			background 0.15s,
+			border-color 0.15s;
+	}
+
+	.bubble::before {
+		content: '';
+		position: absolute;
+		left: -14px;
+		top: 50%;
+		translate: 0 -50%;
+		border: 10px solid transparent;
+		border-right: 12px solid var(--s-line);
+		border-left: 0;
+	}
+
+	.bubble.good {
+		background: #e3ffe9;
+	}
+
+	.bubble.bad {
+		background: #ffe3e6;
+		border-color: #7c1220;
+	}
+
+	.bubble.break {
+		background: #e8f4ff;
+	}
+
+	.bubble.glitch {
+		animation: glitch 0.35s steps(2) 2;
+	}
+
+	@keyframes glitch {
+		0% {
+			clip-path: inset(10% 0 60% 0);
+			translate: -6px 0;
+			filter: hue-rotate(90deg);
+		}
+		50% {
+			clip-path: inset(50% 0 20% 0);
+			translate: 6px 0;
+		}
+		100% {
+			clip-path: none;
+			translate: 0;
+			filter: none;
+		}
+	}
+
+	.headline {
+		margin: 0;
+		font: 400 clamp(16px, 2.4vw + 6px, 26px) / 1.2 var(--s-display);
 		overflow-wrap: anywhere;
 	}
 
-	.statusbar {
+	.timer {
+		height: 12px;
+		border-radius: 999px;
+		background: rgba(26, 17, 48, 0.15);
 		overflow: hidden;
 	}
 
-	.statusbar span {
+	.timer i {
+		display: block;
+		height: 100%;
+		border-radius: inherit;
+		background: repeating-linear-gradient(
+				-45deg,
+				rgba(255, 255, 255, 0.25) 0 8px,
+				transparent 8px 16px
+			)
+			var(--s-green);
+		box-shadow: 0 0 10px var(--s-green);
+	}
+
+	.timer i.low {
+		background-color: var(--s-red);
+		box-shadow: 0 0 10px var(--s-red);
+	}
+
+	.pad-area {
+		flex: 1;
+		min-height: 0;
+		container-type: size;
+		display: grid;
+		place-items: center;
+	}
+
+	.pad-box {
+		position: relative;
+		/* запас под тень и обводку круга */
+		width: min(calc(100cqw - 24px), calc(100cqh - 30px), 520px);
+	}
+
+	.skip,
+	.round {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		border-radius: 50%;
+		color: var(--s-text);
+		text-align: center;
+	}
+
+	.skip {
+		border: 0;
+		background: transparent;
+		font: inherit;
+		cursor: pointer;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.skip:not(:disabled):hover,
+	.skip:not(:disabled):active {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.skip:disabled {
+		cursor: default;
+		opacity: 0.45;
+	}
+
+	.skip b,
+	.round b {
+		font: 400 11cqi / 1 var(--s-display);
+		color: var(--s-gold);
+		text-transform: uppercase;
+	}
+
+	.round b {
+		font-size: 30cqi;
+	}
+
+	.skip small,
+	.round small {
+		margin-top: 4cqi;
+		font-size: max(10px, 9cqi);
+		color: var(--s-muted);
+		font-weight: 600;
+	}
+
+	.pop {
+		position: absolute;
+		left: 50%;
+		top: 30%;
+		translate: -50% 0;
+		z-index: 5;
+		pointer-events: none;
+		font: 400 clamp(22px, 5cqmin, 40px) / 1 var(--s-display);
+		color: var(--s-gold);
+		text-shadow:
+			0 3px 0 var(--s-line),
+			0 0 16px rgba(255, 210, 31, 0.6);
+		white-space: nowrap;
+		animation: pop-rise 1s ease-out forwards;
+	}
+
+	.pop.crit {
+		color: var(--s-orange);
+		scale: 1.25;
+	}
+
+	.pop.life {
+		top: 45%;
+		color: var(--s-red);
+	}
+
+	@keyframes pop-rise {
+		from {
+			opacity: 0;
+			transform: translateY(20px) scale(0.7);
+		}
+		20% {
+			opacity: 1;
+			transform: translateY(0) scale(1.1);
+		}
+		to {
+			opacity: 0;
+			transform: translateY(-60px) scale(1);
+		}
+	}
+
+	/* ---------- Строка состояния ---------- */
+
+	.statusbar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+		padding: 6px 12px;
+		border-radius: 10px;
+		background: rgba(10, 6, 32, 0.75);
+		color: var(--s-muted);
+		font-size: 13px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.dot {
+		width: 8px;
+		height: 8px;
+		flex: none;
+		border-radius: 50%;
+		background: var(--s-green);
+		box-shadow: 0 0 6px var(--s-green);
+	}
+
+	.dot.bad {
+		background: var(--s-red);
+		box-shadow: 0 0 6px var(--s-red);
+	}
+
+	/* ---------- Эффекты ---------- */
+
+	.fx {
+		position: absolute;
+		inset: 0;
+		z-index: 22;
+		pointer-events: none;
+		overflow: hidden;
+		container-type: size;
+	}
+
+	.part {
+		position: absolute;
+		width: 10px;
+		height: 10px;
+		border-radius: 2px;
+		animation: part 0.9s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+	}
+
+	@keyframes part {
+		to {
+			transform: translate(var(--dx), var(--dy)) rotate(var(--r));
+			opacity: 0;
+		}
+	}
+
+	.puff {
+		position: absolute;
+		bottom: 8%;
+		width: 18px;
+		height: 70px;
+		border-radius: 50%;
+		background: radial-gradient(ellipse, rgba(255, 255, 255, 0.35), transparent 70%);
+		filter: blur(5px);
+		animation: puff 2.4s ease-in forwards;
+	}
+
+	@keyframes puff {
+		from {
+			transform: translateY(0) scaleX(1);
+			opacity: 0;
+		}
+		30% {
+			opacity: 1;
+		}
+		to {
+			transform: translateY(-260px) scaleX(2.6);
+			opacity: 0;
+		}
+	}
+
+	.crit-fx {
+		position: absolute;
+		inset: 0;
+	}
+
+	.crit-fx .white {
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(circle at 50% 55%, rgba(255, 240, 180, 0.75), transparent 60%);
+		animation: fade 0.35s forwards;
+	}
+
+	.crit-fx .rays {
+		position: absolute;
+		left: 50%;
+		top: 55%;
+		width: 140cqmax;
+		aspect-ratio: 1;
+		translate: -50% -50%;
+		border-radius: 50%;
+		background: repeating-conic-gradient(rgba(255, 210, 31, 0.35) 0 8deg, transparent 8deg 22deg);
+		mask: radial-gradient(circle, #000 10%, transparent 60%);
+		animation: rays 0.9s ease-out forwards;
+	}
+
+	.crit-fx .word {
+		position: absolute;
+		left: 50%;
+		top: 40%;
+		translate: -50% -50%;
+		font: 400 clamp(48px, 10cqmin, 84px) / 1 var(--s-display);
+		color: var(--s-orange);
+		-webkit-text-stroke: 3px #1a1130;
+		text-shadow:
+			0 6px 0 #1a1130,
+			0 0 30px rgba(255, 123, 31, 0.8);
+		animation: crit-word 0.9s cubic-bezier(0.2, 1.6, 0.4, 1) forwards;
+	}
+
+	@keyframes fade {
+		to {
+			opacity: 0;
+		}
+	}
+
+	@keyframes rays {
+		from {
+			opacity: 0;
+			transform: rotate(0) scale(0.4);
+		}
+		25% {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+			transform: rotate(40deg) scale(1);
+		}
+	}
+
+	@keyframes crit-word {
+		from {
+			scale: 3;
+			opacity: 0;
+			rotate: -10deg;
+		}
+		25% {
+			scale: 1;
+			opacity: 1;
+			rotate: -4deg;
+		}
+		80% {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+			scale: 1.1;
+		}
+	}
+
+	.levelup {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
+	}
+
+	.stripe {
+		position: absolute;
+		left: -10%;
+		right: -10%;
+		top: calc(42% - 60px);
+		height: 120px;
+		opacity: 0.95;
+		background: repeating-linear-gradient(-45deg, var(--s-gold) 0 26px, #1a1130 26px 52px);
+		transform: skewY(-4deg);
+		animation: stripe 1.4s ease-in-out forwards;
+	}
+
+	@keyframes stripe {
+		from {
+			clip-path: inset(0 100% 0 0);
+		}
+		25%,
+		75% {
+			clip-path: inset(0 0 0 0);
+		}
+		to {
+			clip-path: inset(0 0 0 100%);
+		}
+	}
+
+	.level-text {
+		position: absolute;
+		top: 42%;
+		translate: 0 -50%;
+		padding: 10px 28px;
+		border: 4px solid var(--s-gold);
+		border-radius: 14px;
+		background: #1a1130;
+		color: var(--s-gold);
+		font: 400 clamp(30px, 7cqmin, 48px) / 1.1 var(--s-display);
+		text-align: center;
+		text-transform: uppercase;
+		animation: banner 1.4s ease-out forwards;
+	}
+
+	.level-text small {
+		display: block;
+		color: #fff;
+		font: 600 14px var(--s-body);
+		text-transform: none;
+	}
+
+	@keyframes banner {
+		from {
+			opacity: 0;
+			scale: 0.5;
+		}
+		15% {
+			opacity: 1;
+			scale: 1.08;
+		}
+		25%,
+		80% {
+			opacity: 1;
+			scale: 1;
+		}
+		to {
+			opacity: 0;
+		}
+	}
+
+	.flash {
+		position: absolute;
+		inset: 0;
+		z-index: 21;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.35s;
+		background: radial-gradient(circle, rgba(255, 60, 60, 0.5), rgba(255, 0, 60, 0.2) 70%);
+	}
+
+	.flash.on {
+		opacity: 1;
+		transition: none;
+	}
+
+	/* ---------- Оверлеи ---------- */
+
+	.overlay {
+		position: absolute;
+		inset: 0;
+		z-index: 30;
+		display: grid;
+		place-items: center;
+		padding: 16px;
+		overflow-y: auto;
+		background: rgba(8, 4, 24, 0.78);
+		backdrop-filter: blur(4px);
+	}
+
+	.btn {
+		padding: 12px 22px;
+		border: 3px solid var(--s-line);
+		border-radius: 14px;
+		color: #fff;
+		font: 400 17px / 1 var(--s-display);
+		cursor: pointer;
+		box-shadow: 0 5px 0 var(--s-line);
+		transition: filter 0.12s;
+	}
+
+	.btn:hover {
+		filter: brightness(1.1);
+	}
+
+	.btn:active {
+		translate: 0 3px;
+		box-shadow: 0 2px 0 var(--s-line);
+	}
+
+	.btn:focus-visible,
+	.icon-btn:focus-visible,
+	.home:focus-visible,
+	.win-nav button:focus-visible,
+	.nav-link:focus-visible {
+		outline: 3px solid var(--s-gold);
+		outline-offset: 2px;
+	}
+
+	.btn.green {
+		background: linear-gradient(180deg, #3be37f, #1fa856);
+	}
+
+	.btn.blue {
+		background: linear-gradient(180deg, #5b9dff, #2f6ad8);
+	}
+
+	.btn.ghost {
+		background: var(--s-panel);
+	}
+
+	.actions {
+		display: flex;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-top: 18px;
+	}
+
+	kbd {
+		padding: 1px 6px;
+		border-radius: 5px;
+		background: rgba(26, 17, 48, 0.12);
+		font: 600 12px var(--s-body);
+	}
+
+	/* Пауза */
+	.card {
+		width: min(440px, 100%);
+		padding: 22px;
+		border: 4px solid var(--s-line);
+		border-radius: 22px;
+		background: linear-gradient(180deg, #2b2063, #1c1445);
+		box-shadow: 0 10px 0 var(--s-line);
+		text-align: center;
+	}
+
+	.card h2 {
+		margin: 0;
+		font: 400 clamp(26px, 5vw, 40px) / 1.1 var(--s-display);
+		color: var(--s-gold);
+		text-shadow: 0 4px 0 #b3361b;
+	}
+
+	.sub {
+		margin: 6px 0 0;
+		color: var(--s-muted);
+		font-weight: 600;
+	}
+
+	/* Меню: окно «Конфигуратора» */
+	.win {
+		width: min(780px, 100%);
+		overflow: hidden;
+		border: 3px solid #1a1130;
+		border-radius: 10px;
+		background: #f2efe6;
+		color: #1a1130;
+		box-shadow: 0 14px 0 rgba(0, 0, 0, 0.4);
+		animation: win-pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1);
+	}
+
+	@keyframes win-pop {
+		from {
+			transform: scale(0.85);
+			opacity: 0;
+		}
+	}
+
+	.win-bar {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 12px;
+		border-bottom: 3px solid #1a1130;
+		background: linear-gradient(180deg, #ffd84a, #f2b400);
+		font: 700 14px var(--s-body);
+	}
+
+	.win-title {
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.titlebar {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 6px 10px;
-		background: linear-gradient(#5b8ec4, #3f6b9e);
+
+	.win-logo {
+		padding: 1px 7px;
+		border-radius: 4px;
+		background: #e8352b;
 		color: #fff;
-		font-weight: bold;
-		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
-		user-select: none;
+		font: 400 14px var(--s-display);
 	}
 
-	.app-ic {
-		width: 16px;
-		height: 16px;
-		border-radius: 3px;
-		flex: none;
-		background: linear-gradient(135deg, #ffd24d, #e8a200);
-		box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
-	}
-
-	.tb-title {
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.tb-title span {
-		font-weight: normal;
-		opacity: 0.85;
-	}
-
-	.tb-btns {
-		margin-left: auto;
+	.win-btns {
 		display: flex;
-		gap: 6px;
-		flex: none;
-	}
-
-	.tb-btn {
-		width: 26px;
-		height: 20px;
-		border: 1px solid rgba(0, 0, 0, 0.35);
-		border-radius: 3px;
-		background: linear-gradient(#fdfdfd, #d8dee6);
-		color: #223;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 11px;
-		cursor: pointer;
-		font-family: inherit;
-	}
-
-	.tb-btn:hover {
-		background: linear-gradient(#fff, #e8f1fb);
-	}
-
-	.tb-btn.close:hover {
-		background: #e0392f;
-		color: #fff;
-	}
-
-	.menubar {
-		display: flex;
-		background: #e9edf2;
-		border-bottom: 1px solid #9aa5b1;
-	}
-
-	.menu {
-		position: relative;
-	}
-
-	.menu-title {
-		padding: 4px 12px;
-		cursor: default;
-		user-select: none;
-	}
-
-	.menu-title:hover,
-	.menu.open .menu-title {
-		background: #cfe0f2;
-	}
-
-	.dropdown {
-		position: absolute;
-		top: 100%;
-		left: 0;
-		min-width: 240px;
-		background: #fff;
-		border: 1px solid #8b98a5;
-		box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.25);
-		display: none;
-		z-index: 50;
-		padding: 2px;
-		margin: 0;
-	}
-
-	.menu.open .dropdown {
-		display: block;
-	}
-
-	.dropdown li {
-		list-style: none;
-		padding: 5px 10px;
-		white-space: nowrap;
-	}
-
-	.dropdown li:hover {
-		background: #dbe9f8;
-		cursor: pointer;
-	}
-
-	.dropdown li.dis {
-		color: #9aa3ad;
-		cursor: not-allowed;
-	}
-
-	.dropdown li.dis:hover {
-		background: #fff;
-	}
-
-	.dropdown hr {
-		border: none;
-		border-top: 1px solid #e2e6ea;
-		margin: 2px 4px;
-	}
-
-	.toolbar {
-		display: flex;
-		gap: 2px;
-		padding: 4px 6px;
-		align-items: center;
-		background: linear-gradient(#f7f7f7, #e4e7ea);
-		border-bottom: 1px solid #9aa5b1;
-	}
-
-	.tbtn {
-		display: flex;
-		align-items: center;
 		gap: 5px;
-		padding: 4px 10px;
-		border: 1px solid transparent;
+		margin-left: auto;
+	}
+
+	.win-btns i {
+		width: 14px;
+		height: 14px;
 		border-radius: 3px;
-		background: transparent;
-		font-family: inherit;
-		font-size: 12px;
-		cursor: pointer;
-		color: #222;
+		background: #1a1130;
+		opacity: 0.25;
 	}
 
-	.tbtn:hover {
-		background: #e3edf8;
-		border-color: #aac4de;
+	.win-btns i:last-child {
+		background: #e8352b;
+		opacity: 1;
 	}
 
-	.tsep {
-		width: 1px;
-		height: 20px;
-		background: #c8ced6;
-		margin: 0 4px;
+	.win-body {
+		display: grid;
+		grid-template-columns: 180px minmax(0, 1fr);
+		min-height: 320px;
 	}
 
-	.main {
-		flex: 1;
-		display: flex;
-		min-height: 0;
-	}
-
-	.nav {
-		width: 230px;
-		flex: none;
-		background: #f7f8fa;
-		border-right: 1px solid #9aa5b1;
-		padding: 8px;
-		overflow: auto;
-	}
-
-	.nav h4 {
-		font-size: 12px;
-		color: #5a6b7c;
-		margin: 2px 0 6px;
-	}
-
-	.nav-item {
-		display: flex;
-		gap: 6px;
-		align-items: center;
-		padding: 4px 6px;
-		border-radius: 3px;
-		cursor: not-allowed;
-		color: #455260;
-	}
-
-	.nav-item:hover {
-		background: #eef2f6;
-	}
-
-	.nav-item .arr {
-		color: #8a97a3;
-		font-size: 10px;
-	}
-
-	.workspace {
-		flex: 1;
-		padding: 12px;
+	.win-nav {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
-		overflow: auto;
-	}
-
-	.form-head {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		flex-wrap: wrap;
-	}
-
-	.form-head h1 {
-		font-size: 16px;
-		color: #1f3f5f;
-	}
-
-	.form-head .ver {
-		color: #7a8896;
-		font-size: 11px;
-	}
-
-	select,
-	.btn {
-		font-family: inherit;
-		font-size: 12px;
-	}
-
-	select {
-		padding: 3px 6px;
-		border: 1px solid #9aa5b1;
-		border-radius: 3px;
-		background: #fff;
-	}
-
-	.spacer {
-		flex: 1;
-	}
-
-	.hud {
-		display: flex;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-
-	.hud .cell {
-		background: #fff;
-		border: 1px solid #9aa5b1;
-		border-radius: 4px;
-		padding: 5px 10px;
-		display: flex;
-		gap: 6px;
-		align-items: center;
-	}
-
-	.hud .cell b {
+		padding: 10px 0;
+		border-right: 2px solid #c9c1aa;
+		background: #e2dccb;
 		font-size: 14px;
 	}
 
-	.warn {
-		color: #d35400;
+	.win-nav button,
+	.nav-dead,
+	.nav-link {
+		padding: 8px 14px;
+		border: 0;
+		border-left: 4px solid transparent;
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		text-decoration: none;
 	}
 
-	.warn.lost {
-		color: #c9ced4;
+	.win-nav button,
+	.nav-link {
+		cursor: pointer;
 	}
 
-	.console {
+	.win-nav button:hover,
+	.nav-link:hover {
+		background: rgba(255, 255, 255, 0.5);
+	}
+
+	.win-nav button.on {
+		border-left-color: #e8352b;
 		background: #fff;
-		border: 1px solid #9aa5b1;
-		border-radius: 4px;
-		flex: none;
+		font-weight: 800;
 	}
 
-	.console-head {
-		padding: 3px 8px;
-		background: linear-gradient(#f4f6f8, #e7eaee);
-		border-bottom: 1px solid #9aa5b1;
-		font-size: 11px;
-		color: #5a6b7c;
-		display: flex;
-		justify-content: space-between;
+	.nav-dead {
+		color: #9a907a;
 	}
 
-	.console-lines {
-		height: 88px;
-		overflow-y: auto;
-		padding: 6px 8px;
-		font-size: 12px;
+	.nav-link {
+		margin-top: auto;
+	}
+
+	.win-content {
+		padding: 18px 20px;
+	}
+
+	.win-content h2 {
+		margin: 0;
+		font: 400 30px var(--s-display);
+	}
+
+	.win-content h2 span {
+		color: #e8352b;
+	}
+
+	.win-content h3 {
+		margin: 14px 0 4px;
+		font: 400 18px var(--s-display);
+	}
+
+	.win-content p,
+	.win-content ul {
+		margin: 0;
+		font-size: 14px;
 		line-height: 1.5;
 	}
 
-	.console-lines .t {
-		color: #93a0ad;
-		margin-right: 6px;
+	.win-content ul {
+		padding-left: 18px;
 	}
 
-	.console-lines .ok {
-		color: #1e7d3c;
+	.win-content q {
+		color: #e8352b;
+		font-weight: 800;
+		quotes: '«' '»';
 	}
 
-	.console-lines .err {
-		color: #b03a2e;
-	}
-
-	.console-lines .cmd {
-		color: #1a4f8b;
-		font-weight: bold;
-	}
-
-	.order {
-		background: #fff;
-		border: 1px solid #9aa5b1;
-		border-radius: 4px;
-		min-height: 84px;
-		flex: none;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		padding: 10px 16px;
-		gap: 8px;
-	}
-
-	.order-text {
-		font-size: 21px;
-		font-weight: bold;
-		color: #243447;
-		text-align: center;
-		min-height: 28px;
-	}
-
-	.order-text .prefix {
-		color: #1a6b1a;
-	}
-
-	.order-text.warn-text {
-		color: #8a5a00;
-	}
-
-	.timer {
-		height: 8px;
-		background: #e5e9ee;
-		border-radius: 4px;
+	.docs {
+		margin-top: 14px;
 		overflow: hidden;
+		border: 2px solid #c9c1aa;
+		border-radius: 6px;
+		font-size: 14px;
 	}
 
-	.timer > i {
+	.doc-row {
+		display: grid;
+		grid-template-columns: 26px minmax(0, 1fr) 90px auto;
+		align-items: center;
+		gap: 10px;
+		padding: 10px;
+		border-top: 1px solid #ddd5c0;
+		background: #fff;
+	}
+
+	.doc-row:hover {
+		background: #fff6cf;
+	}
+
+	.doc-row.head {
+		border-top: 0;
+		background: #ece6d6;
+		color: #6b6150;
+		font-size: 12px;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.doc-row small {
 		display: block;
-		height: 100%;
-		width: 0;
-		background: linear-gradient(90deg, #57c46a, #2f9e4f);
+		color: #6b6150;
 	}
 
-	.actions {
-		display: flex;
-		gap: 10px;
-		align-items: center;
-		flex-wrap: wrap;
-		flex: none;
+	.doc-row .btn {
+		padding: 8px 14px;
+		border-width: 2px;
+		font-size: 14px;
+		box-shadow: 0 3px 0 var(--s-line);
 	}
 
-	.btn {
-		padding: 8px 18px;
-		border: 1px solid #8fa3b8;
-		border-radius: 4px;
-		background: linear-gradient(#fff, #dde5ee);
+	.win-content .keys {
+		margin-top: 14px;
+		color: #6b6150;
 		font-size: 13px;
-		font-weight: bold;
-		cursor: pointer;
-		color: #1f3f5f;
-		font-family: inherit;
+		line-height: 1.8;
 	}
 
-	.btn:hover:not(:disabled) {
-		background: linear-gradient(#fff, #cfe0f2);
-	}
-
-	.btn.primary {
-		background: linear-gradient(#57a85f, #3c8a46);
-		border-color: #2c6b34;
-		color: #fff;
-	}
-
-	.btn.primary:hover:not(:disabled) {
-		background: linear-gradient(#63b96b, #439a4e);
-	}
-
-	.btn:disabled {
-		opacity: 0.55;
-		cursor: not-allowed;
-	}
-
-	.legend {
-		display: flex;
-		gap: 16px;
-		font-size: 11px;
-		color: #6a7683;
-	}
-
-	.legend .ok {
-		color: #1e7d3c;
-	}
-
-	.legend .no {
-		color: #9aa3ad;
-	}
-
-	.hint {
-		font-size: 12px;
-		color: #55606c;
-		background: #eef2f6;
-		border: 1px dashed #b9c4cf;
-		border-radius: 4px;
-		padding: 8px 10px;
-		line-height: 1.6;
-		flex: none;
-	}
-
-	.hint b {
-		color: #1f3f5f;
-	}
-
-	.statusbar {
-		display: flex;
-		justify-content: space-between;
-		gap: 10px;
-		padding: 4px 10px;
-		background: linear-gradient(#eef1f4, #dde3e9);
-		border-top: 1px solid #9aa5b1;
-		font-size: 11px;
-		color: #455260;
-	}
-
-	.overlay {
-		position: fixed;
-		inset: 0;
-		background: rgba(15, 25, 35, 0.45);
-		display: none;
-		align-items: center;
-		justify-content: center;
-		z-index: 100;
-	}
-
-	.overlay.show {
-		display: flex;
-	}
-
-	.modal {
-		width: min(450px, 92vw);
-		background: #fff;
-		border: 1px solid #6f7d8c;
-		box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
-		border-radius: 4px;
-		overflow: hidden;
-		animation: pop 0.18s ease-out;
-	}
-
-	.modal-title {
-		padding: 8px 12px;
-		font-weight: bold;
-		color: #b03a2e;
-		background: linear-gradient(#f6f8fa, #e9edf1);
-		border-bottom: 1px solid #d5dbe1;
-	}
-
-	.modal-title.info {
-		color: #1f5fa8;
-	}
-
-	.modal-body {
-		padding: 16px 14px;
-		display: flex;
-		gap: 12px;
-		align-items: flex-start;
-		font-size: 13px;
-		line-height: 1.55;
-	}
-
-	.modal-body .ic {
-		font-size: 26px;
-		line-height: 1;
-	}
-
-	.modal-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 8px;
-		padding: 10px 12px;
-		border-top: 1px solid #e4e8ec;
-		background: #fafbfc;
-	}
-
-	.mbtn {
-		padding: 5px 22px;
-		font-family: inherit;
-		font-size: 12px;
-		border: 1px solid #8fa3b8;
-		border-radius: 3px;
-		background: linear-gradient(#fff, #e2e8ef);
-		cursor: pointer;
-	}
-
-	.mbtn:hover {
-		background: #dbe9f8;
-	}
-
-	.mbtn.primary {
-		background: linear-gradient(#57a85f, #3c8a46);
-		border-color: #2c6b34;
-		color: #fff;
-	}
-
-	.window {
+	/* Конец смены: приказ на бумаге */
+	.paper {
 		position: relative;
-		z-index: 1;
+		width: min(460px, 100%);
+		padding: 28px 30px 22px;
+		border-radius: 4px;
+		color: #1a1130;
+		background: repeating-linear-gradient(transparent 0 27px, #e9e4d4 27px 28px) #fffdf5;
+		box-shadow:
+			0 0 0 1px #d9d2bd,
+			10px 14px 0 rgba(0, 0, 0, 0.35);
+		transform: rotate(-1.5deg);
+		animation: paper-in 0.5s cubic-bezier(0.2, 1.2, 0.4, 1);
 	}
 
-	@keyframes pop {
+	@keyframes paper-in {
 		from {
-			transform: scale(0.94);
+			transform: translateY(80px) rotate(6deg);
 			opacity: 0;
 		}
-		to {
-			transform: scale(1);
-			opacity: 1;
+	}
+
+	.paper-hdr {
+		color: #6b6150;
+		font: 800 12px var(--s-body);
+		letter-spacing: 0.12em;
+		text-align: center;
+	}
+
+	.paper h2 {
+		margin: 6px 0 14px;
+		font: 400 26px var(--s-display);
+		text-align: center;
+	}
+
+	.paper p {
+		margin: 0 0 8px;
+		font-size: 15px;
+		line-height: 1.6;
+	}
+
+	.paper-score {
+		font: 400 54px / 1.1 var(--s-display);
+		color: #e8352b;
+	}
+
+	.paper-score small {
+		color: #1a1130;
+		font-size: 18px;
+	}
+
+	.paper .quip {
+		color: #6b6150;
+	}
+
+	.sign {
+		display: flex;
+		justify-content: space-between;
+		align-items: end;
+		margin-top: 12px;
+		color: #2f3e9e;
+		font:
+			700 22px 'Caveat',
+			cursive;
+	}
+
+	.stamp {
+		position: absolute;
+		right: 18px;
+		top: 40%;
+		padding: 6px 14px;
+		border: 5px solid #e8352b;
+		border-radius: 10px;
+		color: #e8352b;
+		font: 400 30px var(--s-display);
+		opacity: 0.85;
+		mix-blend-mode: multiply;
+		transform: rotate(-14deg);
+		animation: stamp 0.45s 0.5s cubic-bezier(0.2, 1.8, 0.4, 1) both;
+	}
+
+	.stamp.good {
+		border-color: #1f9d55;
+		color: #1f9d55;
+	}
+
+	@keyframes stamp {
+		from {
+			transform: rotate(-14deg) scale(3);
+			opacity: 0;
 		}
 	}
 
-	@media (max-width: 820px) {
-		.nav {
+	/* ---------- Адаптив ---------- */
+
+	@media (max-width: 640px) {
+		.layer {
+			gap: 8px;
+			padding-inline: 10px;
+		}
+
+		.mode-tag {
 			display: none;
 		}
 
-		.order-text {
+		.chip {
+			padding: 4px 2px;
+		}
+
+		.chip span {
+			font-size: 9px;
+		}
+
+		.chip b {
 			font-size: 17px;
 		}
+
+		.hearts svg {
+			width: 15px;
+			height: 15px;
+		}
+
+		.pips i {
+			width: 5px;
+			height: 5px;
+		}
+
+		.win-body {
+			grid-template-columns: 1fr;
+		}
+
+		.win-nav {
+			flex-direction: row;
+			flex-wrap: wrap;
+			padding: 0;
+			border-right: 0;
+			border-bottom: 2px solid #c9c1aa;
+		}
+
+		.nav-dead {
+			display: none;
+		}
+
+		.nav-link {
+			margin: 0 0 0 auto;
+		}
+
+		.win-title {
+			font-size: 12px;
+		}
+
+		.doc-row {
+			grid-template-columns: 22px minmax(0, 1fr) auto;
+		}
+
+		.doc-row > :nth-child(3) {
+			display: none;
+		}
+
+		.paper {
+			padding: 22px 18px 18px;
+		}
+
+		.stamp {
+			top: 30%;
+			font-size: 24px;
+		}
 	}
 
-		@media (max-width: 820px) {
-		.nav {
+	/* На тач-экранах подсказки про клавиатуру не нужны. */
+	@media (pointer: coarse) {
+		.skip small,
+		.win-content .keys {
 			display: none;
-		}
-
-		.order-text {
-			font-size: 17px;
-		}
-
-		.pad-btn {
-			min-height: 92px;
-		}
-
-		.desktop-icons {
-			display: none;
-		}
-
-		.simon-app {
-			padding-bottom: 56px;
 		}
 	}
 
-	@media (max-height: 560px) {
-		.taskbar {
+	@media (prefers-reduced-motion: reduce) {
+		.shake,
+		.coffee .layer,
+		.pop,
+		.levelup *,
+		.bubble.glitch,
+		.chip b.bump,
+		.chip.hot::after,
+		.hearts svg.burst,
+		.pips i.on,
+		.win,
+		.paper,
+		.stamp {
+			animation: none !important;
+		}
+
+		.crit-fx,
+		.puff,
+		.stripe {
 			display: none;
-		}
-
-		.simon-app {
-			padding-bottom: 16px;
-		}
-
-		.window {
-			height: min(780px, calc(100vh - 32px));
-			height: min(780px, calc(100dvh - 32px));
 		}
 	}
 </style>
