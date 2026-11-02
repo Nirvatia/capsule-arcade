@@ -30,6 +30,7 @@ export const SCORE_TABLE: ScoreTable = {
 		APPLE: 700,
 		PEAR: 1000,
 		MELON: 1000,
+		BANANA: 2000,
 		GALAXIAN: 2000,
 		BELL: 3000,
 		KEY: 5000

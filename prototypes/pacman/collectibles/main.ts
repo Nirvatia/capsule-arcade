@@ -31,6 +31,7 @@ const ITEMS: Array<{ name: string; draw: Item }> = [
 	{ name: 'Pretzel', draw: fruit(FRUIT.PRETZEL) },
 	{ name: 'Apple', draw: fruit(FRUIT.APPLE) },
 	{ name: 'Pear', draw: fruit(FRUIT.PEAR) },
+	{ name: 'Banana', draw: fruit(FRUIT.BANANA) },
 	{ name: 'Melon', draw: fruit(FRUIT.MELON) },
 	{ name: 'Galaxian', draw: fruit(FRUIT.GALAXIAN) },
 	{ name: 'Bell', draw: fruit(FRUIT.BELL) },

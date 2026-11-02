@@ -214,7 +214,7 @@ nothing in stage 3).
   plays it as her own hero (`HeroView`), berserk as her powered look; her death, the abyss
   and the level after work as Pac-Man's. Her own berserk / BFG-charge art: stage 8.
 - v3 2.2 (seventh chat): the fruit follows the arcade orders per hero
-  (`fruitForLevel(level, profile)`; Ms. Pac-Man's melon stands in for the banana; her
+  (`fruitForLevel(level, profile)`; her
   random fruit from level 8 is fixed per level so the HUD row and the board agree). Test:
   `logic/bonuses/fruitOrder.test.ts`.
 - v3 2.3–2.5 (seventh chat): after a respawn (or before the first move) the hero faces
@@ -232,3 +232,6 @@ nothing in stage 3).
 - v3 2.7 (seventh chat, the owner's meaning: _remove_ the fade): the session's first game
   starts at once, since the menu already shows level 1's world (`Director.startGame`,
   `playedOnce`); later games still fade in.
+- Banana (seventh chat, the owner's request): `render/items/fruit/BananaView` in the
+  outlined item style (a fat diagonal crescent, brown stem and tip), 2000 points, Ms.
+  Pac-Man's level-7 fruit; shown in the `collectibles` prototype.

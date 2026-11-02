@@ -11,6 +11,7 @@ import { PRETZEL_ART } from './PretzelView';
 import { APPLE_ART } from './AppleView';
 import { PEAR_ART } from './PearView';
 import { MELON_ART } from './MelonView';
+import { BANANA_ART } from './BananaView';
 import { GALAXIAN_ART } from './GalaxianView';
 import { BELL_ART } from './BellView';
 import { KEY_ART } from './KeyView';
@@ -24,6 +25,7 @@ const ART: Record<FruitKind, CollectibleArt> = {
 	[FRUIT.APPLE]: APPLE_ART,
 	[FRUIT.PEAR]: PEAR_ART,
 	[FRUIT.MELON]: MELON_ART,
+	[FRUIT.BANANA]: BANANA_ART,
 	[FRUIT.GALAXIAN]: GALAXIAN_ART,
 	[FRUIT.BELL]: BELL_ART,
 	[FRUIT.KEY]: KEY_ART

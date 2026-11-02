@@ -5,6 +5,7 @@ export const FRUIT = {
 	PRETZEL: 'PRETZEL',
 	APPLE: 'APPLE',
 	PEAR: 'PEAR',
+	BANANA: 'BANANA',
 	MELON: 'MELON',
 	GALAXIAN: 'GALAXIAN',
 	BELL: 'BELL',
@@ -22,6 +23,7 @@ export const FRUIT_ORDER: readonly FruitKind[] = [
 	FRUIT.APPLE,
 	FRUIT.PEAR,
 	FRUIT.MELON,
+	FRUIT.BANANA,
 	FRUIT.GALAXIAN,
 	FRUIT.BELL,
 	FRUIT.KEY
@@ -65,6 +67,11 @@ export const FRUIT_CATALOG: readonly FruitInfo[] = [
 		description: 'Повышенный бонус, требует короткого отклонения от маршрута.'
 	},
 	{
+		kind: FRUIT.BANANA,
+		name: 'Banana',
+		description: 'Фрукт Мисс Пакман на седьмом уровне.'
+	},
+	{
 		kind: FRUIT.MELON,
 		name: 'Melon',
 		description: 'Высокий бонус, требует отклонения от безопасного маршрута.'
@@ -103,10 +110,7 @@ export const PACMAN_FRUIT_BY_LEVEL: readonly FruitKind[] = [
 	FRUIT.KEY
 ];
 
-/**
- * Ms. Pac-Man's fruit for levels 1–7 (arcade order; the melon stands in for the banana,
- * which the game does not have); from level 8 one of these at random.
- */
+/** Ms. Pac-Man's fruit for levels 1–7 (arcade order); from level 8 one of these at random. */
 export const MS_FRUIT_BY_LEVEL: readonly FruitKind[] = [
 	FRUIT.CHERRY,
 	FRUIT.STRAWBERRY,
@@ -114,7 +118,7 @@ export const MS_FRUIT_BY_LEVEL: readonly FruitKind[] = [
 	FRUIT.PRETZEL,
 	FRUIT.APPLE,
 	FRUIT.PEAR,
-	FRUIT.MELON
+	FRUIT.BANANA
 ];
 
 /** A fixed pseudo-random 0..1 per level, so the HUD row and the board agree. */
