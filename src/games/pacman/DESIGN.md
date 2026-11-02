@@ -157,8 +157,9 @@ chiptune sound (`config/arcadeConfig.ts`).
 
 ## 10. Flow and screens
 
-- Menu (profile, high score, language) → fade → READY (5 s with a jingle on a new game,
-  2 s after a death or a level change) → play.
+- Menu (profile, high score, language) → READY (5 s with a jingle on a new game,
+  2 s after a death or a level change) → play. The session's first game starts at once
+  (the menu already shows level 1); later games go through a fade.
 - Pause from READY, play, death and level clear; it resumes the same moment. A hidden tab
   or a lost window focus pauses on its own.
 - Death: the level shatters into ice-like shards along the corridors from the death point,

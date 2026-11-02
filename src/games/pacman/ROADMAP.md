@@ -26,17 +26,14 @@ nothing in stage 3).
 
 1. ~~**Refactor to solid game-dev code**~~. Done (see Done).
 
-2. ~~**Bugs**~~ (done but 2.7, see there).
+2. ~~**Bugs**~~. Done (see Done).
    1. ~~**Boss levels for Ms. Pac-Man too**~~. Done (see Done).
    2. ~~**Fruit order**~~. Done (see Done).
    3. ~~**Respawn heading**~~. Done (see Done).
    4. ~~**Lair door for the ghosts**~~. Done (see Done).
    5. ~~**No chevron on the hell boss**~~. Done (see Done).
    6. ~~**Blink before the start**~~. Done (see Done).
-   7. **No fade on the very first start**: not reproduced. Measured in the browser (the
-      fade layer's opacity every frame): start by button and by Enter both fade out and in
-      over ~0.8 s; `director.test.ts` covers it. The owner rechecks; if it still shows, note
-      the exact steps (build or dev, from the arcade home or a reload, which browser).
+   7. ~~**No fade on the first start**~~. Done (see Done).
    8. ~~**Pac-Man during the season turn**~~. Done (see Done).
 
 3. **Sound and tools** (Sonnet).
@@ -231,4 +228,7 @@ nothing in stage 3).
   next level spawns him at its start (`RenderPipeline`). Found on the way: the hero's size
   `Spring` blew up on a long frame (explicit Euler, dt up to 0.1 s), which drew a giant
   Pac-Man for a frame after the turn, after a death or on any hitch; it now integrates in
-  1/120 s sub-steps (`render/actors/hero/spring.test.ts`). 2.7 not reproduced.
+  1/120 s sub-steps (`render/actors/hero/spring.test.ts`).
+- v3 2.7 (seventh chat, the owner's meaning: _remove_ the fade): the session's first game
+  starts at once, since the menu already shows level 1's world (`Director.startGame`,
+  `playedOnce`); later games still fade in.

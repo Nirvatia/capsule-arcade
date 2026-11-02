@@ -56,6 +56,8 @@ export class Director {
 	private readonly context: GameStateContext;
 	private current: GameState;
 	private fadeValue: ScreenFade | null = null;
+	/** A game was started this session (the first start skips the fade). */
+	private playedOnce = false;
 	private pauseAfterFade = false;
 
 	constructor(events: EventBus<PacmanEventMap>, level: LevelLoader) {
@@ -132,10 +134,18 @@ export class Director {
 		if (this.current.name !== 'menu' && this.current.name !== 'game-over') {
 			return;
 		}
-		this.fadeTo(() => {
+		const start = (): void => {
 			this.context.level.startNewGame();
 			this.setState(new ReadyState('intro'));
-		});
+		};
+		// the menu already shows level 1's world: the session's first game starts without a fade
+		if (!this.playedOnce && this.current.name === 'menu') {
+			this.playedOnce = true;
+			start();
+			return;
+		}
+		this.playedOnce = true;
+		this.fadeTo(start);
 	}
 
 	/** Ends READY early (skip) or on its own timer. */

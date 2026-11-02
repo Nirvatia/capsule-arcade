@@ -36,19 +36,22 @@ function startToReady(director: Director): void {
 	run(director, FADE + 0.01);
 }
 
+/** Plays the session's first game (no fade) and returns to the menu. */
+function backAtMenu(director: Director): void {
+	director.startGame();
+	director.returnToMenu();
+	run(director, FADE + 0.01);
+	expect(director.stateName).toBe('menu');
+}
+
 afterEach(() => {
 	vi.restoreAllMocks();
 });
 
 describe('game flow', () => {
-	it('starts a game behind a fade and plays the intro READY with its jingle', () => {
+	it("starts the session's first game at once and plays the intro READY with its jingle", () => {
 		const { director, cues } = setup();
 		director.startGame();
-		expect(director.transitioning).toBe(true);
-		expect(director.stateName).toBe('menu');
-		run(director, FLOW.screenFade / 2);
-		expect(director.flow.fade).toBeGreaterThan(0);
-		run(director, FADE);
 		expect(director.transitioning).toBe(false);
 		expect(director.stateName).toBe('ready');
 		expect(director.flow.phase).toBe('intro');
@@ -57,8 +60,22 @@ describe('game flow', () => {
 		expect(director.stateName).toBe('playing');
 	});
 
+	it('starts every later game behind a fade', () => {
+		const { director } = setup();
+		backAtMenu(director);
+		director.startGame();
+		expect(director.transitioning).toBe(true);
+		expect(director.stateName).toBe('menu');
+		run(director, FLOW.screenFade / 2);
+		expect(director.flow.fade).toBeGreaterThan(0);
+		run(director, FADE);
+		expect(director.transitioning).toBe(false);
+		expect(director.stateName).toBe('ready');
+	});
+
 	it('ignores input while a fade runs', () => {
 		const { director } = setup();
+		backAtMenu(director);
 		director.startGame();
 		director.returnToMenu();
 		director.showPlaying();
@@ -167,6 +184,7 @@ describe('game flow', () => {
 
 	it('defers an auto-pause requested during a fade until the fade ends', () => {
 		const { director } = setup();
+		backAtMenu(director);
 		director.startGame();
 		run(director, 0.1);
 		director.autoPause();

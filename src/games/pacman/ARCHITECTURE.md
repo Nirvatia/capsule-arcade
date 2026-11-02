@@ -100,7 +100,7 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (GameHud, Arc
 ## Game flow
 
 ```
-menu ──fade──▶ ready(intro 5 s, jingle) ──▶ playing ──▶ death ──▶ ready(short 2 s)
+menu ──(fade, not on the session's 1st game)──▶ ready(intro 5 s, jingle) ──▶ playing ──▶ death ──▶ ready(short 2 s)
                   ▲   skip: Enter                │  │          └─ no lives ─▶ game-over
                   │                              │  └─▶ level-clear (season turn) ─▶ ready(short)
 game-over ─fade───┘  (input locked 1 s)          └─ Easter egg ──fade──▶ arcade ready(short)
