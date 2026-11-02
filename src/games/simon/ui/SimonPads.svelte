@@ -5,13 +5,22 @@
 	interface Props {
 		litPad: Pad | null;
 		pressedPad: Pad | null;
+		pressCount?: number;
 		locked: boolean;
 		dimmed?: boolean;
 		onPress: (pad: Pad) => void;
 		children?: Snippet;
 	}
 
-	let { litPad, pressedPad, locked, dimmed = false, onPress, children }: Props = $props();
+	let {
+		litPad,
+		pressedPad,
+		pressCount = 0,
+		locked,
+		dimmed = false,
+		onPress,
+		children
+	}: Props = $props();
 
 	const ICONS: Readonly<Record<Pad, string>> = { 0: '✔', 1: '💾', 2: '✖', 3: '⚡' };
 
@@ -34,6 +43,11 @@
 			aria-label="{pad + 1}: {PAD_LABELS[pad]}"
 			onpointerdown={(event) => handleDown(event, pad)}
 		>
+			{#if pressedPad === pad}
+				{#key pressCount}
+					<span class="ring" aria-hidden="true"></span>
+				{/key}
+			{/if}
 			<span class="face">
 				<span class="ico" aria-hidden="true">{ICONS[pad]}</span>
 				<span class="lbl">{PAD_LABELS[pad]}</span>
@@ -68,6 +82,7 @@
 		--c: #2ed573;
 		--c-dark: #12703a;
 		position: relative;
+		overflow: hidden;
 		padding: 0;
 		border: 0;
 		cursor: pointer;
@@ -122,7 +137,31 @@
 	}
 
 	.pad.pressed {
-		transform: scale(0.97);
+		transform: scale(0.94);
+		box-shadow:
+			inset 0 6px 14px rgba(0, 0, 0, 0.35),
+			0 0 30px var(--c);
+	}
+
+	.ring {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		width: 20px;
+		height: 20px;
+		margin: -10px 0 0 -10px;
+		border: 4px solid rgba(255, 255, 255, 0.9);
+		border-radius: 50%;
+		pointer-events: none;
+		animation: ring 0.45s ease-out forwards;
+	}
+
+	@keyframes ring {
+		to {
+			transform: scale(14);
+			opacity: 0;
+			border-width: 1px;
+		}
 	}
 
 	.locked .pad:not(.lit) {

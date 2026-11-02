@@ -1,276 +1,359 @@
 <script lang="ts">
-	import type { Mood } from '../logic/types';
+	import type { Mood, Pad } from '../logic/types';
 
 	interface Props {
 		mood?: Mood;
+		/** Кнопка, на которую смотрит маскот. */
+		lookAt?: Pad | null;
 	}
 
-	let { mood = 'normal' }: Props = $props();
+	let { mood = 'normal', lookAt = null }: Props = $props();
+
+	const LOOK: Readonly<Record<Pad, [number, number]>> = {
+		0: [-4, -3],
+		1: [4, -3],
+		2: [-4, 4],
+		3: [4, 4]
+	};
+
+	const look = $derived(lookAt === null ? [0, 0] : LOOK[lookAt]);
 </script>
 
-<div class="mascot-box" data-mood={mood}>
-	<svg class="mascot" viewBox="0 0 200 210" aria-hidden="true">
-		<rect
-			x="20"
-			y="20"
-			width="160"
-			height="170"
-			rx="34"
-			fill="#ffd21f"
-			stroke="#1a1130"
-			stroke-width="8"
-		/>
-		<path
-			d="M38 42 q62 -18 124 0"
-			stroke="rgba(255,255,255,0.5)"
-			stroke-width="8"
-			fill="none"
-			stroke-linecap="round"
-		/>
-		<text x="100" y="80" text-anchor="middle" class="logo">1С</text>
-
-		<g class="eye-open">
-			<ellipse cx="70" cy="115" rx="18" ry="21" fill="#fff" stroke="#1a1130" stroke-width="5" />
-			<ellipse cx="130" cy="115" rx="18" ry="21" fill="#fff" stroke="#1a1130" stroke-width="5" />
-			<circle cx="74" cy="119" r="7" fill="#1a1130" />
-			<circle cx="126" cy="119" r="7" fill="#1a1130" />
-			<circle cx="77" cy="115" r="2.2" fill="#fff" />
-			<circle cx="129" cy="115" r="2.2" fill="#fff" />
+<div class="mascot" data-mood={mood}>
+	<svg viewBox="0 0 200 210" aria-hidden="true">
+		<g class="arm l">
+			<rect x="-14" y="120" width="40" height="16" rx="8" />
+		</g>
+		<g class="arm r">
+			<rect x="174" y="120" width="40" height="16" rx="8" />
 		</g>
 
-		<g class="eye-happy">
-			<path
-				d="M54 116 q16 -18 32 0"
-				stroke="#1a1130"
-				stroke-width="6"
-				fill="none"
-				stroke-linecap="round"
-			/>
-			<path
-				d="M114 116 q16 -18 32 0"
-				stroke="#1a1130"
-				stroke-width="6"
-				fill="none"
-				stroke-linecap="round"
-			/>
-		</g>
+		<g class="body">
+			<rect class="shell" x="20" y="20" width="160" height="170" rx="34" />
+			<path class="shine" d="M38 42 q62 -18 124 0" />
+			<text class="logo" x="100" y="80" text-anchor="middle">1С</text>
 
-		<g class="eye-shock">
-			<circle cx="70" cy="115" r="20" fill="#fff" stroke="#1a1130" stroke-width="5" />
-			<circle cx="130" cy="115" r="20" fill="#fff" stroke="#1a1130" stroke-width="5" />
-			<circle cx="70" cy="115" r="4.5" fill="#1a1130" />
-			<circle cx="130" cy="115" r="4.5" fill="#1a1130" />
-		</g>
+			<ellipse class="eye" cx="70" cy="115" rx="18" ry="21" />
+			<ellipse class="eye" cx="130" cy="115" rx="18" ry="21" />
+			<g class="pupils" style="transform: translate({look[0]}px, {look[1]}px)">
+				<circle cx="72" cy="117" r="7" />
+				<circle cx="128" cy="117" r="7" />
+			</g>
+			<rect class="lid" x="50" y="92" width="40" height="44" rx="18" />
+			<rect class="lid" x="110" y="92" width="40" height="44" rx="18" />
 
-		<g class="brows">
-			<path d="M48 94 l40 12" stroke="#1a1130" stroke-width="7" stroke-linecap="round" />
-			<path d="M152 94 l-40 12" stroke="#1a1130" stroke-width="7" stroke-linecap="round" />
-		</g>
+			<g class="happy-eyes">
+				<path d="M54 118 q16 -18 32 0" />
+				<path d="M114 118 q16 -18 32 0" />
+			</g>
+			<g class="brows">
+				<path d="M48 92 l40 12" />
+				<path d="M152 92 l-40 12" />
+			</g>
 
-		<g class="mouth-smile">
-			<path
-				d="M76 158 q24 18 48 0"
-				fill="none"
-				stroke="#1a1130"
-				stroke-width="6"
-				stroke-linecap="round"
-			/>
-		</g>
+			<path class="m-smile" d="M76 158 q24 18 48 0" />
+			<ellipse class="m-shout" cx="100" cy="164" rx="18" ry="13" />
+			<g class="m-grit">
+				<rect x="78" y="154" width="44" height="14" rx="5" />
+				<path d="M78 161 h44 M92 154 v14 M106 154 v14" />
+			</g>
 
-		<g class="mouth-shout">
-			<ellipse cx="100" cy="164" rx="18" ry="13" fill="#7c1220" stroke="#1a1130" stroke-width="5" />
-			<ellipse cx="100" cy="170" rx="9" ry="4" fill="#ff6b6b" />
-		</g>
+			<g class="cup">
+				<path class="cup-steam" d="M92 144 q4 -6 0 -12" />
+				<path class="cup-steam s2" d="M108 144 q-4 -6 0 -12" />
+				<rect x="82" y="150" width="38" height="28" rx="7" />
+				<path d="M120 156 q13 3 0 15" />
+			</g>
 
-		<g class="mouth-grit">
-			<rect
-				x="78"
-				y="154"
-				width="44"
-				height="14"
-				rx="5"
-				fill="#fff"
-				stroke="#1a1130"
-				stroke-width="5"
-			/>
-			<path d="M78 161 h44 M92 154 v14 M106 154 v14" stroke="#1a1130" stroke-width="3" />
-		</g>
-
-		<g class="coffee-cup">
-			<path class="steam" d="M92 142 q4 -6 0 -12" />
-			<path class="steam steam-2" d="M108 142 q-4 -6 0 -12" />
-			<rect
-				x="82"
-				y="148"
-				width="38"
-				height="28"
-				rx="7"
-				fill="#fff"
-				stroke="#1a1130"
-				stroke-width="5"
-			/>
-			<path d="M120 154 q13 3 0 15" fill="none" stroke="#1a1130" stroke-width="5" />
+			<g class="fume">
+				<path d="M40 20 q-8 -14 4 -26" />
+				<path d="M160 20 q8 -14 -4 -26" />
+			</g>
 		</g>
 	</svg>
 </div>
 
 <style>
-	.mascot-box {
+	.mascot {
+		--ink: #1a1130;
 		flex: none;
-		width: var(--mascot-size, 120px);
-		animation: simon-mascot-bob 3.2s ease-in-out infinite;
-		filter: drop-shadow(7px 8px 0 rgba(0, 0, 0, 0.28));
+		width: var(--mascot-size, 110px);
+		filter: drop-shadow(5px 6px 0 rgba(0, 0, 0, 0.28));
+		animation: bob 3.2s ease-in-out infinite;
 	}
 
-	.mascot {
+	svg {
 		display: block;
 		width: 100%;
-		height: auto;
+		overflow: visible;
+	}
+
+	/* ----- Детали ----- */
+
+	.arm rect {
+		fill: #ffd21f;
+		stroke: var(--ink);
+		stroke-width: 6;
+	}
+
+	.arm {
+		transform-box: fill-box;
+	}
+	.arm.l {
+		transform-origin: 100% 50%;
+	}
+	.arm.r {
+		transform-origin: 0% 50%;
+	}
+
+	.shell {
+		fill: #ffd21f;
+		stroke: var(--ink);
+		stroke-width: 8;
+		transition: fill 0.2s;
+	}
+
+	.shine {
+		fill: none;
+		stroke: rgba(255, 255, 255, 0.5);
+		stroke-width: 8;
+		stroke-linecap: round;
 	}
 
 	.logo {
-		font-family: 'Russo One', 'Arial Black', sans-serif;
-		font-size: 36px;
+		font:
+			400 36px 'Russo One',
+			sans-serif;
 		fill: #e8352b;
 		stroke: #fff;
 		stroke-width: 1.2px;
 		paint-order: stroke;
 	}
 
-	.mascot g {
-		transition: opacity 0.15s;
+	.eye {
+		fill: #fff;
+		stroke: var(--ink);
+		stroke-width: 5;
 	}
 
-	.eye-happy,
-	.eye-shock,
-	.brows,
-	.mouth-shout,
-	.mouth-grit,
-	.coffee-cup {
-		opacity: 0;
+	.pupils {
+		fill: var(--ink);
+		transition: transform 0.15s;
 	}
 
-	.eye-open {
-		animation: simon-mascot-blink 4.2s infinite;
+	.pupils circle {
 		transform-box: fill-box;
 		transform-origin: center;
+		transition: transform 0.15s;
 	}
 
-	@keyframes simon-mascot-blink {
-		0%,
-		93%,
-		100% {
-			transform: scaleY(1);
-		}
-		95.5% {
-			transform: scaleY(0.12);
-		}
+	.lid {
+		fill: #ffd21f;
+		transform-box: fill-box;
+		transform-origin: 50% 0;
+		animation: blink 4.2s infinite;
 	}
 
-	.mascot-box[data-mood='normal'] .eye-open {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='normal'] .mouth-smile {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='happy'] {
-		animation:
-			simon-mascot-hop 0.45s cubic-bezier(0.3, 1.8, 0.4, 1),
-			simon-mascot-bob 3.2s ease-in-out infinite 0.45s;
-	}
-
-	.mascot-box[data-mood='happy'] .eye-open {
-		opacity: 0;
-	}
-
-	.mascot-box[data-mood='happy'] .eye-happy {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='happy'] .mouth-smile {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='shout'] .mouth-smile {
-		opacity: 0;
-	}
-
-	.mascot-box[data-mood='shout'] .mouth-shout {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='shock'] {
-		animation:
-			simon-mascot-shock 0.4s ease,
-			simon-mascot-bob 3.2s ease-in-out infinite 0.4s;
-	}
-
-	.mascot-box[data-mood='shock'] .eye-open {
-		opacity: 0;
-	}
-
-	.mascot-box[data-mood='shock'] .eye-shock {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='shock'] .mouth-smile {
-		opacity: 0;
-	}
-
-	.mascot-box[data-mood='shock'] .mouth-shout {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='angry'] {
-		animation:
-			simon-mascot-quake 0.4s ease,
-			simon-mascot-bob 3.2s ease-in-out infinite 0.4s;
-	}
-
-	.mascot-box[data-mood='angry'] .brows {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='angry'] .mouth-smile {
-		opacity: 0;
-	}
-
-	.mascot-box[data-mood='angry'] .mouth-grit {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='coffee'] .eye-open {
-		opacity: 0;
-	}
-
-	.mascot-box[data-mood='coffee'] .eye-happy {
-		opacity: 1;
-	}
-
-	.mascot-box[data-mood='coffee'] .mouth-smile {
-		opacity: 0;
-	}
-
-	.mascot-box[data-mood='coffee'] .coffee-cup {
-		opacity: 1;
-	}
-
-	.steam {
+	.happy-eyes path,
+	.brows path,
+	.m-smile,
+	.fume path,
+	.cup-steam {
 		fill: none;
+		stroke: var(--ink);
+		stroke-width: 6;
+		stroke-linecap: round;
+	}
+
+	.brows path {
+		stroke-width: 7;
+	}
+
+	.m-shout {
+		fill: #7c1220;
+		stroke: var(--ink);
+		stroke-width: 5;
+	}
+
+	.m-grit rect,
+	.cup rect {
+		fill: #fff;
+		stroke: var(--ink);
+		stroke-width: 5;
+	}
+
+	.m-grit path {
+		stroke: var(--ink);
+		stroke-width: 3;
+	}
+
+	.cup > path:last-child {
+		fill: none;
+		stroke: var(--ink);
+		stroke-width: 5;
+	}
+
+	.cup-steam {
 		stroke: #fff;
 		stroke-width: 3.5;
-		stroke-linecap: round;
-		opacity: 0.85;
-		animation: simon-mascot-steam 2.2s ease-in-out infinite;
+		animation: cup-steam 2.2s ease-in-out infinite;
 	}
 
-	.steam-2 {
+	.cup-steam.s2 {
 		animation-delay: 1s;
 	}
 
-	@keyframes simon-mascot-steam {
+	.fume path {
+		stroke: #fff;
+		opacity: 0.8;
+		animation: fume 0.6s ease-in-out infinite alternate;
+	}
+
+	/* ----- Настроения: по умолчанию всё лишнее скрыто ----- */
+
+	.happy-eyes,
+	.brows,
+	.m-shout,
+	.m-grit,
+	.cup,
+	.fume {
+		display: none;
+	}
+
+	[data-mood='happy'] .happy-eyes,
+	[data-mood='coffee'] .happy-eyes {
+		display: block;
+	}
+
+	[data-mood='happy'] .eye,
+	[data-mood='happy'] .pupils,
+	[data-mood='happy'] .lid,
+	[data-mood='coffee'] .eye,
+	[data-mood='coffee'] .pupils,
+	[data-mood='coffee'] .lid {
+		display: none;
+	}
+
+	[data-mood='shout'] .m-smile,
+	[data-mood='shock'] .m-smile,
+	[data-mood='angry'] .m-smile,
+	[data-mood='coffee'] .m-smile {
+		display: none;
+	}
+
+	[data-mood='shout'] .m-shout,
+	[data-mood='shock'] .m-shout,
+	[data-mood='angry'] .m-grit,
+	[data-mood='angry'] .brows,
+	[data-mood='angry'] .fume,
+	[data-mood='coffee'] .cup {
+		display: block;
+	}
+
+	[data-mood='angry'] .shell {
+		fill: #ff8a3d;
+	}
+
+	[data-mood='shock'] .pupils circle {
+		transform: scale(0.55);
+	}
+
+	[data-mood='shout'] .arm.r {
+		animation: wave-r 0.35s ease-in-out infinite alternate;
+	}
+	[data-mood='shout'] .arm.l {
+		animation: wave-l 0.35s ease-in-out infinite alternate;
+	}
+
+	[data-mood='happy'] .arm.r {
+		transform: rotate(-60deg);
+	}
+	[data-mood='happy'] .arm.l {
+		transform: rotate(60deg);
+	}
+
+	[data-mood='happy'] .body {
+		transform-box: fill-box;
+		transform-origin: 50% 100%;
+		animation: hop 0.5s cubic-bezier(0.3, 1.8, 0.4, 1);
+	}
+
+	[data-mood='angry'] {
+		animation:
+			quake 0.4s ease,
+			bob 3.2s ease-in-out infinite 0.4s;
+	}
+
+	[data-mood='shock'] {
+		animation:
+			shock 0.4s ease,
+			bob 3.2s ease-in-out infinite 0.4s;
+	}
+
+	@keyframes bob {
+		0%,
+		100% {
+			transform: translateY(0) rotate(-2deg);
+		}
+		50% {
+			transform: translateY(-6px) rotate(2deg);
+		}
+	}
+
+	@keyframes blink {
+		0%,
+		93%,
+		100% {
+			transform: scaleY(0);
+		}
+		95.5% {
+			transform: scaleY(1);
+		}
+	}
+
+	@keyframes wave-r {
+		from {
+			transform: rotate(-35deg);
+		}
+		to {
+			transform: rotate(-70deg);
+		}
+	}
+
+	@keyframes wave-l {
+		from {
+			transform: rotate(35deg);
+		}
+		to {
+			transform: rotate(70deg);
+		}
+	}
+
+	@keyframes hop {
+		40% {
+			transform: translateY(-14px) scale(1.05, 0.95);
+		}
+	}
+
+	@keyframes quake {
+		25% {
+			transform: translateX(-8px) rotate(-4deg);
+		}
+		50% {
+			transform: translateX(8px) rotate(4deg);
+		}
+		75% {
+			transform: translateX(-5px);
+		}
+	}
+
+	@keyframes shock {
+		35% {
+			transform: scale(1.08);
+		}
+	}
+
+	@keyframes cup-steam {
 		0% {
 			transform: translateY(0);
 			opacity: 0;
@@ -284,63 +367,16 @@
 		}
 	}
 
-	@keyframes simon-mascot-bob {
-		0%,
-		100% {
-			transform: translateY(0) rotate(-2deg);
-		}
-		50% {
-			transform: translateY(-8px) rotate(2deg);
-		}
-	}
-
-	@keyframes simon-mascot-hop {
-		0% {
-			transform: translateY(0);
-		}
-		35% {
-			transform: translateY(-22px) scale(1.05, 0.95);
-		}
-		70% {
-			transform: translateY(2px) scale(0.97, 1.04);
-		}
-		100% {
-			transform: translateY(0);
-		}
-	}
-
-	@keyframes simon-mascot-quake {
-		0%,
-		100% {
-			transform: translateX(0);
-		}
-		25% {
-			transform: translateX(-8px) rotate(-4deg);
-		}
-		50% {
-			transform: translateX(8px) rotate(4deg);
-		}
-		75% {
-			transform: translateX(-5px);
-		}
-	}
-
-	@keyframes simon-mascot-shock {
-		0% {
-			transform: scale(1);
-		}
-		35% {
-			transform: scale(1.07);
-		}
-		100% {
-			transform: scale(1);
+	@keyframes fume {
+		to {
+			transform: translateY(-5px);
+			opacity: 0.3;
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.mascot-box,
-		.eye-open,
-		.steam {
+		.mascot,
+		.mascot * {
 			animation: none !important;
 		}
 	}

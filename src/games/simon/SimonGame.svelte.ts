@@ -93,6 +93,8 @@ export class SimonGame {
 	litPad = $state<Pad | null>(null);
 	/** Кнопка, которую только что нажал игрок. */
 	pressedPad = $state<Pad | null>(null);
+	/** Счётчик нажатий — чтобы UI мог перезапускать анимацию даже на ту же кнопку. */
+	pressCount = $state(0);
 	/** Остаток таймера, 1 → 0. */
 	timer = $state(0);
 
@@ -193,6 +195,7 @@ export class SimonGame {
 		if (!this.acceptsPads) return;
 
 		this.pressedPad = pad;
+		this.pressCount += 1;
 		this.pressMs = 0;
 		this.emit({ type: 'pad', pad, playback: false });
 
