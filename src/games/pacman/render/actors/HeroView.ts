@@ -89,7 +89,7 @@ export class HeroView {
 			power: options.look === 'energized' || options.look === 'berserk',
 			ending: Boolean(options.ending),
 			dying: options.dying,
-			invulnerable: player.isInvulnerable
+			invulnerable: player.isInvulnerable && options.shield !== false
 		});
 		this.hero.draw(ctx);
 	}

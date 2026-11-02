@@ -60,6 +60,9 @@ const LIGHT = (() => {
 	return { x: -0.55 / n, y: -0.83 / n };
 })();
 
+/** Longest integration step of a Spring, seconds (stable for its stiffness). */
+const SPRING_STEP = 1 / 120;
+
 /** A damped spring towards a target: overshoot and settle. */
 export class Spring {
 	value: number;
@@ -67,10 +70,18 @@ export class Spring {
 	constructor(value: number) {
 		this.value = value;
 	}
+	/**
+	 * Semi-implicit Euler in sub-steps of at most SPRING_STEP: one long frame (a hitch, or
+	 * the first frame after the hero was not drawn for a while) must not blow it up.
+	 */
 	step(target: number, dt: number, stiffness = 260, damping = 16): void {
-		const a = (target - this.value) * stiffness - this.velocity * damping;
-		this.velocity += a * dt;
-		this.value += this.velocity * dt;
+		const n = Math.max(1, Math.ceil(dt / SPRING_STEP));
+		const h = dt / n;
+		for (let i = 0; i < n; i++) {
+			const a = (target - this.value) * stiffness - this.velocity * damping;
+			this.velocity += a * h;
+			this.value += this.velocity * h;
+		}
 	}
 }
 

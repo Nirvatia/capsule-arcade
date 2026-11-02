@@ -80,12 +80,14 @@ export class SharedLayers {
 	private playerOptions(frame: RenderFrame): PlayerDrawOptions {
 		const { level } = frame;
 		const dying = frame.state === 'death';
+		const shield = frame.state === 'playing';
 		if (level.hellMode) {
 			const doom = level.doom;
 			return {
 				look: doom && doom.berserkActive ? 'berserk' : 'normal',
 				charge: doom && doom.bfgCharging ? doom.bfgChargeProgress : 0,
-				dying
+				dying,
+				shield
 			};
 		}
 		const combat = level.combat;
@@ -98,6 +100,6 @@ export class SharedLayers {
 		const left =
 			level.profile === 'ms-pacman' ? (hypnosis?.overdriveTimer ?? 0) : (combat?.powerTimer ?? 0);
 		const ending = powered && left < 2;
-		return { look: powered ? 'energized' : 'normal', charge: 0, dying, ending };
+		return { look: powered ? 'energized' : 'normal', charge: 0, dying, ending, shield };
 	}
 }

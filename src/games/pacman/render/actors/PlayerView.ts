@@ -15,6 +15,11 @@ export interface PlayerDrawOptions {
 	readonly dying: boolean;
 	/** The energizer is in its last seconds. */
 	readonly ending?: boolean;
+	/**
+	 * Show the respawn shield's blink. Off outside play: the shield waits through READY
+	 * and only ticks once the level runs, so it would blink on a hero standing still.
+	 */
+	readonly shield?: boolean;
 }
 
 interface Palette {
@@ -213,7 +218,15 @@ export class PlayerView {
 			return;
 		}
 		this.drawTrail(ctx, layout, L);
-		this.drawBody(ctx, cx, cy, S, L, options.charge, player.isInvulnerable);
+		this.drawBody(
+			ctx,
+			cx,
+			cy,
+			S,
+			L,
+			options.charge,
+			player.isInvulnerable && options.shield !== false
+		);
 		ctx.restore();
 	}
 

@@ -20,6 +20,9 @@ import type { DebugRenderFlags } from './debug/DebugOverlayView';
 
 /** Same as the page background, so a full fade reads as an empty stage. */
 
+/** Seconds over which the hero fades out at the end of the season turn's lights. */
+const HERO_FADE = 0.3;
+
 /** Light of the season turn into a season; into a boss world it takes the boss palette. */
 const SEASON_LIGHT = { light: 0xffe3a0, gap: 0xfff4d6 };
 
@@ -189,9 +192,14 @@ export class RenderPipeline {
 				elapsed: flow.elapsed,
 				...this.turnStyle(next)
 			});
-			// Pac-Man stays on the last dot until the world has turned
-			if (flow.elapsed < FLOW.levelClear.lights + FLOW.levelClear.turn) {
+			// Pac-Man stays on the last dot while the lights run, fades as the world starts to
+			// turn and is gone until the next level spawns him at its start (READY)
+			const fade = (FLOW.levelClear.lights - flow.elapsed) / HERO_FADE;
+			if (fade > 0) {
+				this.ctx.save();
+				this.ctx.globalAlpha = Math.min(1, fade);
 				this.shared.drawPlayer(screen, layout);
+				this.ctx.restore();
 			}
 		}
 		if (this.debugView && this.debugFlags) {

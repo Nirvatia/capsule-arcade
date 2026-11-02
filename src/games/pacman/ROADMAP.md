@@ -19,23 +19,25 @@ makes outside the chat. The model named per stage is a suggestion.
 
 ## Order
 
-**1 → 2 → … → 10.** Stage 2 is next.
+**1 → 2 → … → 10.** Stage 3 is next (4.2, the hypnosis, may come first: it depends on
+nothing in stage 3).
 
 ## Plan
 
 1. ~~**Refactor to solid game-dev code**~~. Done (see Done).
 
-2. **Bugs** (Sonnet).
+2. ~~**Bugs**~~ (done but 2.7, see there).
    1. ~~**Boss levels for Ms. Pac-Man too**~~. Done (see Done).
    2. ~~**Fruit order**~~. Done (see Done).
    3. ~~**Respawn heading**~~. Done (see Done).
    4. ~~**Lair door for the ghosts**~~. Done (see Done).
    5. ~~**No chevron on the hell boss**~~. Done (see Done).
-   6. Pac-Man blinks before the game starts.
-   7. No screen fade on the very first start of a game (`Director.startGame`).
-   8. Level change: the season turn keeps Pac-Man's sprite on screen until the next level
-      starts (`RenderPipeline`, drawn while `lights` + `turn` run); hide him during the
-      animation and spawn him once the new level is in place.
+   6. ~~**Blink before the start**~~. Done (see Done).
+   7. **No fade on the very first start**: not reproduced. Measured in the browser (the
+      fade layer's opacity every frame): start by button and by Enter both fade out and in
+      over ~0.8 s; `director.test.ts` covers it. The owner rechecks; if it still shows, note
+      the exact steps (build or dev, from the arcade home or a reload, which browser).
+   8. ~~**Pac-Man during the season turn**~~. Done (see Done).
 
 3. **Sound and tools** (Sonnet).
    1. **Mute** button and key (`M`), and a **volume** slider; both saved in
@@ -223,3 +225,10 @@ makes outside the chat. The model named per stage is a suggestion.
   angle). The lair gate slides open for a ghost leaving the lair or coming home as eyes
   and shuts after it (`MeadowLevelRenderer.updateGhostGate`; the Easter egg's door still
   wins). The hell boss lost its heading chevron (the imps keep theirs).
+- v3 2.6–2.8 (seventh chat): the respawn shield's blink shows only in play
+  (`PlayerDrawOptions.shield`; the shield waits through READY, so the hero blinked while
+  standing still). In the season turn Pac-Man fades out at the end of the lights and the
+  next level spawns him at its start (`RenderPipeline`). Found on the way: the hero's size
+  `Spring` blew up on a long frame (explicit Euler, dt up to 0.1 s), which drew a giant
+  Pac-Man for a frame after the turn, after a death or on any hitch; it now integrates in
+  1/120 s sub-steps (`render/actors/hero/spring.test.ts`). 2.7 not reproduced.
