@@ -2,7 +2,7 @@
 // layout (maze, meadow, stream, bridge, cabins, pond, lamps, trees) and differ in colours,
 // one landmark, a few decorations, the food sprites and the weather. A theme holds those.
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
-import type { MeadowDecor } from './MeadowBake';
+import type { WorldDecor as MeadowDecor } from '../../common/worldDecor';
 
 /** Drawing helpers of the bake, shared with the theme hooks (same seeded stream). */
 export interface BakeKit {
