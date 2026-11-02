@@ -31,7 +31,11 @@ import {
 } from './DoomHazards';
 import type { DoomAttackKind } from './DoomAttackCore';
 import { DoomBossService } from './DoomBossService';
-import { createMinion, minionPosition } from './DoomMinions';
+import { minionPosition } from './DoomMinions';
+import type { DoomArena } from './DoomArena';
+import type { DoomMinionSwarm } from './DoomMinionSwarm';
+import { pickSeals } from './DoomTargeting';
+import type { SealPickContext } from './DoomTargeting';
 import { DoomPickupService } from './DoomPickupService';
 import { findDoomCorners } from './DoomMapValidation';
 
@@ -218,16 +222,16 @@ describe('doom boss', () => {
 			boss.update(STEP, player);
 		}
 		const internals = boss as unknown as {
-			minions: ReturnType<typeof createMinion>[];
+			swarm: DoomMinionSwarm;
 			model: { beginTelegraph(kind: string, duration: number): void };
 		};
-		internals.minions.push(createMinion('clyde', boss.tile));
+		internals.swarm.spawn(boss.tile, boss.hp);
 		internals.model.beginTelegraph('brood', 10);
-		const before = minionPosition(internals.minions[0]);
+		const before = minionPosition(boss.minionList[0]);
 		for (let i = 0; i < 60; i += 1) {
 			boss.update(STEP, player);
 		}
-		const after = minionPosition(internals.minions[0]);
+		const after = minionPosition(boss.minionList[0]);
 		expect(after).not.toEqual(before);
 	});
 
@@ -266,6 +270,22 @@ function skipIntro(boss: DoomBossService, player: PlayerService): void {
 	for (let t = 0; t < INTRO_DURATION + 0.1; t += STEP) {
 		boss.update(STEP, player);
 	}
+}
+
+function sealContext(
+	grid: GridService,
+	player: PlayerService,
+	boss: DoomBossService,
+	arena: DoomArena
+): SealPickContext {
+	return {
+		grid,
+		player,
+		playerTile: player.tile,
+		bossTile: boss.tile,
+		playerSpeed: player.baseSpeed,
+		protectedTileKeys: arena.protectedKeys
+	};
 }
 
 /** Drive the boss into `phase` and wait for the transition to end. */
@@ -425,28 +445,23 @@ describe('doom boss attacks', () => {
 		walk(player, pathTo(grid, player.tile, { x: 2, y: 23 }));
 		player.setDesiredDirection('RIGHT');
 		player.update(STEP);
-		const internals = boss as unknown as {
-			pickSeals(
-				player: PlayerService,
-				tile: { x: number; y: number },
-				n: number
-			): Array<{ x: number; y: number }>;
-			pendingSeals: Array<{ x: number; y: number; warn: number; total: number }>;
-			updateArena(dt: number, player: PlayerService): void;
-		};
-		const seals = internals.pickSeals(player, player.tile, 3);
+		const { arena } = boss as unknown as { arena: DoomArena };
+		const seals = pickSeals(sealContext(grid, player, boss, arena), 3);
 		expect(seals.length).toBeGreaterThanOrEqual(2);
 		// the first seal lies on the row ahead, where a player running on arrives in time
 		const aim = seals[0];
 		expect(aim.y).toBe(23);
 		expect(aim.x).toBeGreaterThan(player.tile.x + 1);
-		for (const seal of seals) {
-			internals.pendingSeals.push({ ...seal, warn: SEAL_TELEGRAPH, total: SEAL_TELEGRAPH });
-		}
+		arena.queueSeals(seals);
 		let hit = false;
 		for (let t = 0; t < SEAL_TELEGRAPH + 0.1; t += STEP) {
 			player.update(STEP);
-			internals.updateArena(STEP, player);
+			arena.update(STEP, player, {
+				phase: boss.phase,
+				transitioning: false,
+				position: boss.position,
+				echoSpeed: 1
+			});
 			hit = boss.consumeHazardHit() || hit;
 		}
 		expect(hit).toBe(true);
@@ -454,8 +469,8 @@ describe('doom boss attacks', () => {
 
 	it('pull slows only running away, corruption spares pickups', () => {
 		const { grid, player, boss } = makeWorld();
-		const internals = boss as unknown as { pullTimer: number; corruptionValue: number };
-		internals.pullTimer = 3;
+		const { arena } = boss as unknown as { arena: DoomArena };
+		arena.startPull(3);
 		// player spawn is below the boss: running DOWN is running away
 		player.setDesiredDirection('DOWN');
 		player.update(0.05);
@@ -464,8 +479,8 @@ describe('doom boss attacks', () => {
 		}
 		player.setDesiredDirection('UP');
 		player.update(0.2);
-		internals.pullTimer = 0;
-		internals.corruptionValue = 1;
+		arena.startPull(0);
+		(arena as unknown as { corruptionValue: number }).corruptionValue = 1;
 		const ability = new DoomAbilityService(grid, boss);
 		for (const pickup of ability.pickupList) {
 			expect(boss.isCorrupted(pickup.tile.x, pickup.tile.y)).toBe(false);
@@ -478,19 +493,10 @@ describe('doom boss attacks', () => {
 		const { grid, player, boss } = makeWorld();
 		skipIntro(boss, player);
 		enterPhase(boss, player, 2);
-		const internals = boss as unknown as {
-			pickSeals(
-				player: PlayerService,
-				tile: { x: number; y: number },
-				n: number
-			): Array<{ x: number; y: number }>;
-			pendingSeals: Array<{ x: number; y: number; warn: number; total: number }>;
-		};
-		const seals = internals.pickSeals(player, player.tile, 3);
+		const { arena } = boss as unknown as { arena: DoomArena };
+		const seals = pickSeals(sealContext(grid, player, boss, arena), 3);
 		expect(seals.length).toBeGreaterThanOrEqual(2);
-		for (const seal of seals) {
-			internals.pendingSeals.push({ ...seal, warn: 0.1, total: 0.1 });
-		}
+		arena.queueSeals(seals, 0.1);
 		for (let i = 0; i < 12; i += 1) {
 			boss.update(STEP, player);
 		}
