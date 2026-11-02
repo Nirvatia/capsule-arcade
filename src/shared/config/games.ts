@@ -39,7 +39,6 @@ export const games: GameConfig[] = [
 		title: 'SIMON 1C',
 		genre: 'MEMORY',
 		status: 'ready',
-		progress: 80,
 		route: '/games/simon',
 		defaultScore: 0
 	}

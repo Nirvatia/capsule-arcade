@@ -1,5 +1,5 @@
 <script lang="ts">
-	type Mood = 'normal' | 'happy' | 'shock' | 'angry' | 'coffee' | 'shout';
+	import type { Mood } from '../logic/types';
 
 	interface Props {
 		mood?: Mood;
@@ -39,8 +39,20 @@
 		</g>
 
 		<g class="eye-happy">
-			<path d="M54 116 q16 -18 32 0" stroke="#1a1130" stroke-width="6" fill="none" stroke-linecap="round" />
-			<path d="M114 116 q16 -18 32 0" stroke="#1a1130" stroke-width="6" fill="none" stroke-linecap="round" />
+			<path
+				d="M54 116 q16 -18 32 0"
+				stroke="#1a1130"
+				stroke-width="6"
+				fill="none"
+				stroke-linecap="round"
+			/>
+			<path
+				d="M114 116 q16 -18 32 0"
+				stroke="#1a1130"
+				stroke-width="6"
+				fill="none"
+				stroke-linecap="round"
+			/>
 		</g>
 
 		<g class="eye-shock">
@@ -71,14 +83,32 @@
 		</g>
 
 		<g class="mouth-grit">
-			<rect x="78" y="154" width="44" height="14" rx="5" fill="#fff" stroke="#1a1130" stroke-width="5" />
+			<rect
+				x="78"
+				y="154"
+				width="44"
+				height="14"
+				rx="5"
+				fill="#fff"
+				stroke="#1a1130"
+				stroke-width="5"
+			/>
 			<path d="M78 161 h44 M92 154 v14 M106 154 v14" stroke="#1a1130" stroke-width="3" />
 		</g>
 
 		<g class="coffee-cup">
 			<path class="steam" d="M92 142 q4 -6 0 -12" />
 			<path class="steam steam-2" d="M108 142 q-4 -6 0 -12" />
-			<rect x="82" y="148" width="38" height="28" rx="7" fill="#fff" stroke="#1a1130" stroke-width="5" />
+			<rect
+				x="82"
+				y="148"
+				width="38"
+				height="28"
+				rx="7"
+				fill="#fff"
+				stroke="#1a1130"
+				stroke-width="5"
+			/>
 			<path d="M120 154 q13 3 0 15" fill="none" stroke="#1a1130" stroke-width="5" />
 		</g>
 	</svg>
@@ -87,7 +117,7 @@
 <style>
 	.mascot-box {
 		flex: none;
-		width: clamp(110px, 19vh, 180px);
+		width: var(--mascot-size, 120px);
 		animation: simon-mascot-bob 3.2s ease-in-out infinite;
 		filter: drop-shadow(7px 8px 0 rgba(0, 0, 0, 0.28));
 	}
@@ -307,9 +337,11 @@
 		}
 	}
 
-	@media (max-width: 760px) {
-		.mascot-box {
-			width: clamp(84px, 14vh, 120px);
+	@media (prefers-reduced-motion: reduce) {
+		.mascot-box,
+		.eye-open,
+		.steam {
+			animation: none !important;
 		}
 	}
 </style>

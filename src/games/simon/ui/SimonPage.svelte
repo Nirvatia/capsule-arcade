@@ -1,1445 +1,1195 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { SimonGame } from '../core/GameMain';
-	import { SimonEvent } from '../core/Events';
-	import { SimonMode, SimonState, type SimonPadId } from '../core/SimonTypes';
-	import SimonBackground from './SimonBackground.svelte';
+	import { resolve } from '$app/paths';
+	import { getSavedScore, saveScore } from '$shared/utils/scoreStore';
+	import { SimonAudio } from '../audio';
+	import { ORDERS_PER_LEVEL, MAX_LIVES } from '../logic/orders';
+	import type { Mode, Pad } from '../logic/types';
+	import { SimonGame, type Fx } from '../SimonGame.svelte';
 	import SimonMascot from './SimonMascot.svelte';
 	import SimonPads from './SimonPads.svelte';
-	import SimonTicker from './SimonTicker.svelte';
-	import { SvelteSimonAdapter } from './SvelteSimonAdapter';
-	import { SimonUiStore } from './SimonUiStore.svelte';
 
-	interface FxPop {
-		readonly id: number;
-		readonly text: string;
-		readonly cls: string;
-		readonly offset: number;
+	interface Pop {
+		id: number;
+		text: string;
+		tone: 'good' | 'crit' | 'bad' | 'life';
 	}
 
-	interface BannerFx {
-		readonly id: number;
-		readonly title: string;
-		readonly sub: string;
+	const SCORE_KEYS: Record<Mode, string> = { classic: 'simon', orders: 'simon_orders' };
+
+	const game = new SimonGame({
+		load: (mode) => Number.parseInt(getSavedScore(SCORE_KEYS[mode], 0), 10) || 0,
+		save: (mode, score) => void saveScore(SCORE_KEYS[mode], score)
+	});
+	const audio = new SimonAudio();
+
+	let muted = $state(audio.muted);
+	let shake = $state(false);
+	let flash = $state(false);
+	let pops = $state<Pop[]>([]);
+	let banner = $state<string | null>(null);
+	let lostHeart = $state(-1);
+	let bests = $state<Record<Mode, number>>({ classic: 0, orders: 0 });
+
+	let timers: ReturnType<typeof setTimeout>[] = [];
+	let popId = 0;
+
+	function later(fn: () => void, ms: number): void {
+		const id = setTimeout(() => {
+			timers = timers.filter((t) => t !== id);
+			fn();
+		}, ms);
+		timers.push(id);
 	}
 
-	const store = new SimonUiStore();
+	function pop(text: string, tone: Pop['tone']): void {
+		const id = ++popId;
+		pops = [...pops, { id, text, tone }];
+		later(() => (pops = pops.filter((p) => p.id !== id)), 1000);
+	}
 
-	let game: SimonGame | null = null;
-	let host: HTMLDivElement | undefined = $state(undefined);
-	let shakeOn = $state(false);
-	let flashOn = $state(false);
-	let pops = $state<FxPop[]>([]);
-	let banner = $state<BannerFx | null>(null);
-	let nextFxId = 1;
-	let levelSeen = $state(1);
-	let lastLives = $state(3);
-	let burstIndex = $state(-1);
-	let bannerTimer: ReturnType<typeof setTimeout> | null = null;
+	function handleFx(fx: Fx): void {
+		audio.play(fx);
+
+		switch (fx.type) {
+			case 'success':
+				if (game.mode === 'orders') {
+					pop(`+${fx.points}`, fx.crit ? 'crit' : 'good');
+					if (fx.lottery === 'life') pop('+1 ❤', 'life');
+				}
+				break;
+			case 'fail':
+				lostHeart = game.mode === 'orders' ? game.lives : -1;
+				shake = flash = true;
+				later(() => (flash = false), 160);
+				later(() => (shake = false), 420);
+				later(() => (lostHeart = -1), 600);
+				break;
+			case 'levelUp':
+				banner = `Уровень ${fx.level}`;
+				later(() => (banner = null), 1300);
+				break;
+			case 'gameOver':
+				refreshBests();
+				break;
+		}
+	}
+
+	function refreshBests(): void {
+		bests = {
+			classic: Number.parseInt(getSavedScore(SCORE_KEYS.classic, 0), 10) || 0,
+			orders: Number.parseInt(getSavedScore(SCORE_KEYS.orders, 0), 10) || 0
+		};
+	}
 
 	onMount(() => {
-		if (!host) {
-			return;
-		}
+		refreshBests();
+		const offFx = game.onFx(handleFx);
 
-		const instance = new SimonGame();
-		const bridge = new SvelteSimonAdapter(instance, store);
-		game = instance;
-		bridge.connect();
-
-		const unsubAccepted = instance.on(SimonEvent.OrderAccepted, (payload) => {
-			spawnPop(`+${payload.scoreDelta}`, payload.crit ? 'crit' : '');
-
-			if (payload.crit) {
-				spawnPop('КРИТ!', 'crit', 46);
-			}
-
-			if (payload['break']) {
-				spawnPop('☕ ПЕРЕКУР ЗАСЧИТАН', 'life', 20);
-			}
-
-			if (payload.lottery === 'life') {
-				spawnPop('ИЗ «ЕЩЁ…» ВЫПАЛО: +1 ЖИЗНЬ ❤', 'life', 72);
-			}
-
-			if (payload.lottery === 'bonus500') {
-				spawnPop('+500! ПРЕМИЯ ИЗ КУБЫШКИ', 'crit', 72);
-			}
-
-			if (payload.lottery === 'bonus200') {
-				spawnPop('+200 БОНУС', '', 72);
-			}
-		});
-
-		const unsubRejected = instance.on(SimonEvent.OrderRejected, () => {
-			triggerBad();
-			spawnPop('ОШИБКА!', 'bad', 28);
-		});
-
-		const onKey = (event: KeyboardEvent): void => {
-			if (event.code !== 'KeyM' || event.repeat) {
-				return;
-			}
-			event.preventDefault();
-			toggleMute();
-		};
-
-		window.addEventListener('keydown', onKey);
-
-		void instance.init(host).catch((error: unknown) => {
-			console.error('[SimonPage] init failed', error);
+		let last = performance.now();
+		let raf = requestAnimationFrame(function loop(now) {
+			game.tick(now - last);
+			last = now;
+			raf = requestAnimationFrame(loop);
 		});
 
 		return () => {
-			window.removeEventListener('keydown', onKey);
-			unsubAccepted();
-			unsubRejected();
-			bridge.disconnect();
-			instance.destroy();
-			game = null;
-
-			if (bannerTimer) {
-				clearTimeout(bannerTimer);
-			}
+			cancelAnimationFrame(raf);
+			offFx();
+			for (const id of timers) clearTimeout(id);
+			audio.destroy();
 		};
 	});
 
-	$effect(() => {
-		const level = store.level;
-
-		if (level > levelSeen) {
-			showBanner(`УРОВЕНЬ ${level}!`, 'приказы становятся бодрее');
-		}
-
-		if (level !== levelSeen) {
-			levelSeen = level;
-		}
-	});
-
-	$effect(() => {
-		const lives = store.lives;
-
-		if (lives < lastLives) {
-			burstIndex = lives;
-			setTimeout(() => {
-				burstIndex = -1;
-			}, 520);
-		}
-
-		if (lives !== lastLives) {
-			lastLives = lives;
-		}
-	});
-
-	const failureVisible = $derived(
-		store.state === SimonState.FailureOrders ||
-			store.state === SimonState.FailureClassic
-	);
-	const isMenu = $derived(store.state === SimonState.Menu);
-	const isGameOver = $derived(store.state === SimonState.GameOver);
-	const isPaused = $derived(store.state === SimonState.Paused);
-	const isOrders = $derived(store.mode === SimonMode.Orders);
-	const mascotMood = $derived(store.mascotMood);
-	const bossTag = $derived(store.bossTag);
-	const flavorText = $derived(store.flavorText);
-	const isBreak = $derived(store.isBreak);
-	const ordersPerLevel = $derived(store.ordersPerLevel);
-	const pipCount = $derived(store.pipCount);
-	const pips = $derived(
-		Array.from({ length: ordersPerLevel }, (_, index) => index < pipCount)
-	);
-	const comboHot = $derived(store.comboHot);
-	const muted = $derived(store.muted);
-	const canSkip = $derived(
-		isOrders &&
-			store.state === SimonState.OrdersAwaiting &&
-			!isBreak &&
-			!isPaused
-	);
-	const showSkip = $derived(
-		isOrders && !isMenu && !isGameOver && !isBreak && !isPaused
-	);
-	const showAbort = $derived(!isMenu && !isGameOver && !isPaused);
-	const newRecord = $derived(
-		store.isGameOver && store.score > 0 && store.score >= store.best
-	);
-
-	const rank = $derived.by(() => {
-		if (store.score >= 15000) {
-			return {
-				name: 'ГУРУ 1С',
-				quip: 'О тебе слагают легенды в курилке.'
-			};
-		}
-
-		if (store.score >= 10000) {
-			return {
-				name: 'АРХИТЕКТОР ХАОСА',
-				quip: 'Конфигурация боится тебя.'
-			};
-		}
-
-		if (store.score >= 6000) {
-			return {
-				name: 'ВЕДУЩИЙ ПОГРОМИСТ',
-				quip: 'Главбух смотрит с уважением.'
-			};
-		}
-
-		if (store.score >= 2500) {
-			return {
-				name: 'ПРОГРОМИСТ',
-				quip: 'База жива. Пока.'
-			};
-		}
-
-		return {
-			name: 'КУРСАНТ 1С',
-			quip: 'Тебе доверили только скрепки.'
-		};
-	});
-
-	function spawnPop(text: string, cls = '', offset = 0): void {
-		const id = nextFxId++;
-		pops = [...pops, { id, text, cls, offset }];
-
-		setTimeout(() => {
-			pops = pops.filter((pop) => pop.id !== id);
-		}, 950);
-	}
-
-	function showBanner(title: string, sub: string): void {
-		if (bannerTimer) {
-			clearTimeout(bannerTimer);
-		}
-
-		banner = {
-			id: nextFxId++,
-			title,
-			sub
-		};
-
-		bannerTimer = setTimeout(() => {
-			banner = null;
-		}, 1200);
-	}
-
-	function triggerBad(): void {
-		flashOn = true;
-		shakeOn = true;
-
-		setTimeout(() => {
-			flashOn = false;
-		}, 140);
-
-		setTimeout(() => {
-			shakeOn = false;
-		}, 420);
-	}
-
-	function press(pad: SimonPadId): void {
-		game?.pressPad(pad);
+	function start(mode: Mode): void {
+		audio.unlock();
+		game.start(mode);
 	}
 
 	function toggleMute(): void {
-		game?.toggleMute();
+		audio.setMuted(!audio.muted);
+		muted = audio.muted;
 	}
 
-	function startOrders(): void {
-		game?.requestStartMode(SimonMode.Orders);
+	function press(pad: Pad): void {
+		audio.unlock();
+		game.press(pad);
 	}
 
-	function startClassic(): void {
-		game?.requestStartMode(SimonMode.Classic);
-	}
-
-	function skip(): void {
-		game?.skip();
-	}
-
-	function acknowledgeFailure(): void {
-		game?.acknowledgeFailure();
-	}
-
-	function resume(): void {
-		game?.resume();
-	}
-
-	function restartToMenu(): void {
-		game?.requestRestart();
-	}
-
-	function restartAndStart(): void {
-		if (!game) {
+	function onKeydown(event: KeyboardEvent): void {
+		if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+		const target = event.target;
+		if (
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target instanceof HTMLSelectElement
+		) {
 			return;
 		}
+		// На кнопке/ссылке Enter и Пробел оставляем браузеру — пусть сработает сам элемент.
+		const onControl = target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement;
 
-		game.requestRestart();
-		game.requestStart();
+		audio.unlock();
+		let handled = true;
+
+		if (event.key >= '1' && event.key <= '4') {
+			game.press((Number(event.key) - 1) as Pad);
+		} else if (event.code === 'KeyM') {
+			toggleMute();
+		} else if (event.key === 'Escape') {
+			game.togglePause();
+		} else if (event.key === ' ' && !onControl) {
+			if (game.paused) game.resume();
+			else game.skip();
+		} else if (event.key === 'Enter' && !onControl) {
+			if (game.paused) game.resume();
+			else if (game.phase === 'menu' || game.phase === 'gameover') start(game.mode);
+			else handled = false;
+		} else {
+			handled = false;
+		}
+
+		if (handled) event.preventDefault();
 	}
+
+	function onVisibility(): void {
+		if (document.hidden) game.pause();
+	}
+
+	const isOrders = $derived(game.mode === 'orders');
+	const inGame = $derived(game.phase !== 'menu' && game.phase !== 'gameover');
+	const bubbleTone = $derived(
+		game.phase === 'fail'
+			? 'bad'
+			: game.phase === 'feedback' || game.phase === 'cleared'
+				? 'good'
+				: game.order?.kind === 'break' && game.phase === 'order'
+					? 'break'
+					: ''
+	);
+	const timerPct = $derived(Math.round(game.timer * 100));
+
+	const rank = $derived.by(() => {
+		const s = game.score;
+		const tiers: [number, string, string][] = isOrders
+			? [
+					[15000, 'Гуру 1С', 'О тебе слагают легенды в курилке.'],
+					[9000, 'Архитектор хаоса', 'Конфигурация боится тебя.'],
+					[5000, 'Ведущий программист', 'Главбух смотрит с уважением.'],
+					[2000, 'Программист 1С', 'База жива. Пока.'],
+					[0, 'Стажёр', 'Тебе доверили только скрепки.']
+				]
+			: [
+					[25, 'Гуру 1С', 'Помнишь все проводки с 2007 года.'],
+					[18, 'Архитектор', 'Память как у регистра накопления.'],
+					[12, 'Программист 1С', 'Пакеты проводишь не глядя.'],
+					[6, 'Оператор', 'Неплохо, но кофе нужен.'],
+					[0, 'Стажёр', 'Зато честно.']
+				];
+		const [, name, quip] = tiers.find(([min]) => s >= min) ?? tiers[tiers.length - 1]!;
+		return { name, quip };
+	});
 </script>
 
-<div class="simon-arcade" class:shake={shakeOn}>
-	<SimonBackground />
+<svelte:head>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+	<link
+		href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;600;800&display=swap"
+		rel="stylesheet"
+	/>
+</svelte:head>
 
-	<div class="game-shell" bind:this={host}>
-		<header class="marquee">
-			<div class="lights" aria-hidden="true"></div>
-			<div class="title-row">
-				<span class="star">★</span>
-				<h1>1С: <em>ПОГРОМИСТ</em></h1>
-				<span class="star">★</span>
-			</div>
-			<p class="subtitle">
-				СИМОН ГОВОРИТ: ПОГРОМИСТА ★ АРКАДНЫЙ РЕЖИМ ★ СМЕНА №8
-			</p>
-			<div class="lights" aria-hidden="true"></div>
-		</header>
+<svelte:window onkeydown={onKeydown} onblur={() => game.pause()} />
+<svelte:document onvisibilitychange={onVisibility} />
 
-		<section class="hud" aria-label="Игровые показатели">
-			<div class="chip score">
-				<span class="chip-label">ОЧКИ</span>
-				<b>{store.score}</b>
-			</div>
+<div class="simon-root" class:shake>
+	<header class="top">
+		<a class="home" href={resolve('/')} aria-label="В игровой зал">←</a>
+		<h1>1С: <em>ПОГРОМИСТ</em></h1>
+		<span class="mode-tag">{isOrders ? 'Приказы 1С' : 'Классика'}</span>
+		<div class="top-actions">
+			{#if inGame}
+				<button
+					type="button"
+					class="icon-btn"
+					onclick={() => game.pause()}
+					aria-label="Пауза (Esc)"
+				>
+					⏸
+				</button>
+			{/if}
+			<button
+				type="button"
+				class="icon-btn"
+				onclick={toggleMute}
+				aria-pressed={muted}
+				aria-label="Звук (M)"
+			>
+				{muted ? '🔇' : '🔊'}
+			</button>
+		</div>
+	</header>
 
-			<div class="chip combo" class:hot={comboHot}>
-				<span class="chip-label">КОМБО</span>
-				<b>
-					×{store.combo}
-					{#if comboHot}
-						<span class="flame">🔥</span>
-					{/if}
-				</b>
-			</div>
-
+	<section class="hud" aria-label="Показатели">
+		{#if isOrders}
 			<div class="chip">
-				<span class="chip-label">УРОВЕНЬ</span>
-				<b>{store.level}</b>
-				{#if isOrders}
-					<div class="pips">
-						{#each pips as lit, index (index)}
-							<i class:on={lit}></i>
-						{/each}
-					</div>
-				{/if}
+				<span>Очки</span>
+				<b>{game.score}</b>
 			</div>
-
+			<div class="chip" class:hot={game.combo >= 5}>
+				<span>Комбо</span>
+				<b>×{game.combo}{game.combo >= 5 ? ' 🔥' : ''}</b>
+			</div>
 			<div class="chip">
-				<span class="chip-label">ПРИКАЗ</span>
-				<b>№{String(store.round).padStart(4, '0')}</b>
-			</div>
-
-			<div class="chip">
-				<span class="chip-label">РЕКОРД</span>
-				<b>{store.best}</b>
-			</div>
-
-			<div class="chip lives-chip">
-				<span class="chip-label">ЖИЗНИ</span>
-				<div class="lives">
-					{#each [0, 1, 2] as index (index)}
-						<svg
-							class="heart"
-							class:lost={index >= store.lives}
-							class:burst={index === burstIndex}
-							viewBox="0 0 24 24"
-							aria-hidden="true"
-						>
-							<path
-								d="M12 21s-8-5.3-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.7-8 11-8 11z"
-							/>
-						</svg>
+				<span>Уровень {game.level}</span>
+				<div class="pips" aria-label="Прогресс уровня">
+					{#each { length: ORDERS_PER_LEVEL }, i (i)}
+						<i class:on={i < game.ordersInLevel}></i>
 					{/each}
 				</div>
 			</div>
-
-			<div class="chip sound-chip">
-				<span class="chip-label">ЗВУК</span>
-				<button
-					type="button"
-					class="sound-btn"
-					class:off={muted}
-					aria-pressed={muted}
-					title="Звук (M)"
-					onclick={toggleMute}
-				>
-					{muted ? '🔇' : '🔊'}
-				</button>
+			<div class="chip">
+				<span>Жизни</span>
+				<b class="hearts">
+					{#each { length: MAX_LIVES }, i (i)}
+						<span class:lost={i >= game.lives} class:burst={i === lostHeart}>❤</span>
+					{/each}
+				</b>
 			</div>
-		</section>
+		{:else}
+			<div class="chip">
+				<span>Раунд</span>
+				<b>{game.round}</b>
+			</div>
+		{/if}
+		<div class="chip">
+			<span>Рекорд</span>
+			<b>{game.best}</b>
+		</div>
+	</section>
 
-		<section class="stage">
-			<div class="stage-row">
-				<SimonMascot mood={mascotMood} />
+	<main class="play">
+		<div class="speech-row">
+			<SimonMascot mood={game.mood} />
+			<div class="bubble {bubbleTone}" aria-live="polite">
+				<p class="headline">{game.headline}</p>
+				<div class="timer" aria-hidden="true">
+					<i class:low={timerPct <= 30} style="width: {timerPct}%"></i>
+				</div>
+			</div>
+		</div>
 
-				<div class="speech">
-					<span class="boss-tag">
-						{bossTag}
-					</span>
-					<div class="order-text">
-						{store.orderText || 'Ожидание приказа…'}
-					</div>
-					{#if flavorText}
-						<div class="order-flavor">
-							{flavorText}
+		<div class="pad-area">
+			<div class="pad-box">
+				<SimonPads
+					litPad={game.litPad}
+					pressedPad={game.pressedPad}
+					locked={!game.acceptsPads}
+					dimmed={game.order?.kind === 'break' && game.phase === 'order'}
+					onPress={press}
+				>
+					{#if isOrders}
+						<button
+							type="button"
+							class="skip"
+							tabindex="-1"
+							disabled={!game.canSkip}
+							onpointerdown={(event) => {
+								event.preventDefault();
+								game.skip();
+							}}
+						>
+							<b>Пропуск</b>
+							<small>пробел</small>
+						</button>
+					{:else}
+						<div class="round">
+							<b>{game.phase === 'menu' ? '—' : game.round}</b>
+							<small>{game.phase === 'input' ? `${game.step}/${game.round}` : 'раунд'}</small>
 						</div>
 					{/if}
-					<div class="timer">
-						<i
-							class:low={store.timerPercent <= 28}
-							class:mid={store.timerPercent > 28 && store.timerPercent <= 55}
-							style="width: {store.timerPercent}%"
-						></i>
-					</div>
-				</div>
+				</SimonPads>
+
+				{#each pops as p (p.id)}
+					<div class="pop {p.tone}">{p.text}</div>
+				{/each}
 			</div>
+		</div>
+	</main>
 
-			{#each pops as pop (pop.id)}
-				<div class="pop-fx {pop.cls}" style="top: calc(38% - {pop.offset}px);">
-					{pop.text}
-				</div>
-			{/each}
-		</section>
+	<footer class="statusbar">
+		<span
+			class="dot"
+			class:bad={game.phase === 'fail' || game.phase === 'gameover'}
+			aria-hidden="true"
+		></span>
+		{game.status}
+	</footer>
 
-		<section class="controls">
-			<SimonPads {store} onPress={press} breakMode={isBreak} />
-
-			<div class="actions">
-				{#if showSkip}
-					<button
-						type="button"
-						class="btn ghost"
-						disabled={!canSkip}
-						onclick={skip}
-					>
-						⏭ Пропустить
-					</button>
-				{/if}
-
-				{#if showAbort}
-					<button type="button" class="btn danger" onclick={restartToMenu}>
-						⏹ В меню
-					</button>
-				{/if}
-			</div>
-		</section>
-
-		<SimonTicker />
-	</div>
-
-	<div class="scan" aria-hidden="true"></div>
-	<div class="vig" aria-hidden="true"></div>
-	<div class="flash" class:on={flashOn} aria-hidden="true"></div>
+	<div class="flash" class:on={flash} aria-hidden="true"></div>
 
 	{#if banner}
-		<div class="banner" aria-hidden="true">
-			<h2>{banner.title}</h2>
-			<p>{banner.sub}</p>
-		</div>
+		<div class="banner" aria-hidden="true">{banner}</div>
 	{/if}
 
-	{#if isMenu}
+	{#if game.phase === 'menu'}
+		<div class="overlay">
+			<div class="card menu">
+				<h2>1С: ПОГРОМИСТ</h2>
+				<p class="sub">Симон говорит — а 1С приказывает</p>
+
+				<div class="modes">
+					<article class="mode" class:selected={game.mode === 'classic'}>
+						<h3>🧠 Классика</h3>
+						<p>
+							Настоящий Simon: 1С показывает последовательность, ты повторяешь. Каждый раунд — на
+							шаг длиннее и быстрее. Одна ошибка — конец смены.
+						</p>
+						<div class="mode-foot">
+							<span>Рекорд: <b>{bests.classic}</b></span>
+							<button type="button" class="btn blue" onclick={() => start('classic')}>Играть</button
+							>
+						</div>
+					</article>
+
+					<article class="mode" class:selected={game.mode === 'orders'}>
+						<h3>📢 Приказы 1С</h3>
+						<ul>
+							<li>Жми, только если приказ начинается с <q>1С говорит:</q></li>
+							<li>Главбух, директор, «1С говорила» — не начальство: жми <b>Пропуск</b> или жди</li>
+							<li>☕ Перекур — ничего не трогай до конца таймера</li>
+							<li>Подсветка кнопок иногда врёт. «Ещё…» — лотерея</li>
+						</ul>
+						<div class="mode-foot">
+							<span>Рекорд: <b>{bests.orders}</b></span>
+							<button type="button" class="btn green" onclick={() => start('orders')}>Играть</button
+							>
+						</div>
+					</article>
+				</div>
+
+				<p class="keys">
+					<kbd>1</kbd>–<kbd>4</kbd> кнопки · <kbd>Пробел</kbd> пропуск · <kbd>Esc</kbd> пауза ·
+					<kbd>M</kbd> звук · <kbd>Enter</kbd> старт
+				</p>
+			</div>
+		</div>
+	{:else if game.phase === 'gameover'}
 		<div class="overlay">
 			<div class="card">
-				<h2>1С: ПОГРОМИСТ</h2>
-				<p class="tag">СИМОН ГОВОРИТ: ПОГРОМИСТА</p>
-
-				<ul class="rules">
-					<li>🗣️ 1С раздаёт приказы — жми нужную кнопку, пока не сгорел таймер.</li>
-					<li>☕ Приказ «ПЕРЕКУР» — не жми ничего. Просто дыши.</li>
-					<li>⚡ Кнопка «ЕЩЁ…» — лотерея: может выпасть жизнь или премия.</li>
-					<li>🔥 Комбо растёт — очки множатся до ×5. Быстрый ответ = КРИТ!</li>
-					<li>⌨️ Клавиши 1–4 работают. ESC — пауза, M — звук. 3 жизни — и смена окончена.</li>
-				</ul>
-
-				<div class="card-actions">
-					<button type="button" class="bigbtn green" onclick={startOrders}>
-						▶ ПРИКАЗЫ
-					</button>
-					<button type="button" class="bigbtn blue" onclick={startClassic}>
-						🧠 КЛАССИКА
-					</button>
-					<button type="button" class="bigbtn dark" onclick={toggleMute}>
-						{muted ? '🔇 ЗВУК ВЫКЛ' : '🔊 ЗВУК ВКЛ'}
-					</button>
-				</div>
-
-				<p class="hint">ИЛИ ЖМИ ENTER ★ МОНЕТКА УЖЕ В АВТОМАТЕ</p>
-			</div>
-		</div>
-	{/if}
-
-	{#if failureVisible}
-		<div class="overlay">
-			<div class="card error">
-				<h2>ОШИБКА СМЕНЫ</h2>
-				<p class="text">{store.failureTitle}</p>
-				<p class="text">
-					Осталось нарушений до увольнения: {Math.max(store.lives, 0)} из 3.
-				</p>
-
-				<div class="card-actions">
-					<button type="button" class="bigbtn green" onclick={acknowledgeFailure}>
-						ОК
-					</button>
-					<button type="button" class="bigbtn red" onclick={restartToMenu}>
-						ЗАВЕРШИТЬ СМЕНУ
-					</button>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if isGameOver}
-		<div class="overlay">
-			<div class="card error">
-				<h2>БАЗА УПАЛА 💥</h2>
-				<p class="tag">СМЕНА ОКОНЧЕНА</p>
-
-				{#if newRecord}
-					<div class="newrec">★ НОВЫЙ РЕКОРД! ★</div>
+				<h2 class="bad-title">База упала 💥</h2>
+				{#if game.newRecord}
+					<p class="record">★ Новый рекорд! ★</p>
 				{/if}
-
-				<div class="final-score">
-					{store.score}
-				</div>
+				<div class="final">{game.score}</div>
+				<p class="sub">{isOrders ? 'очков' : 'раундов пройдено'}</p>
 
 				<div class="stats">
-					<div>
-						<span class="stat-label">УРОВЕНЬ</span>
-						<b>{store.level}</b>
-					</div>
-					<div>
-						<span class="stat-label">ЛУЧШЕЕ КОМБО</span>
-						<b>×{store.bestCombo}</b>
-					</div>
-					<div>
-						<span class="stat-label">РЕКОРД</span>
-						<b>{store.best}</b>
-					</div>
+					{#if isOrders}
+						<div><span>Уровень</span><b>{game.level}</b></div>
+						<div><span>Лучшее комбо</span><b>×{game.bestCombo}</b></div>
+					{/if}
+					<div><span>Рекорд</span><b>{game.best}</b></div>
 				</div>
 
-				<div class="rank">
-					{rank.name}
-				</div>
-				<div class="rank-quip">
-					{rank.quip}
-				</div>
+				<p class="rank">{rank.name}</p>
+				<p class="quip">{rank.quip}</p>
 
-				<div class="card-actions">
-					<button type="button" class="bigbtn green" onclick={restartAndStart}>
-						↻ ЕЩЁ РАЗ
-					</button>
-					<button type="button" class="bigbtn blue" onclick={restartToMenu}>
-						МЕНЮ
-					</button>
+				<div class="actions">
+					<button type="button" class="btn green" onclick={() => start(game.mode)}>↻ Ещё раз</button
+					>
+					<button type="button" class="btn ghost" onclick={() => game.toMenu()}>Меню</button>
 				</div>
 			</div>
 		</div>
-	{/if}
-
-	{#if isPaused}
+	{:else if game.paused}
 		<div class="overlay">
 			<div class="card">
-				<h2>ПАУЗА</h2>
-				<p class="tag">1С ПЕРЕЗАГРУЖАЕТСЯ… ПОДОЖДИТЕ</p>
-
-				<div class="card-actions">
-					<button type="button" class="bigbtn green" onclick={resume}>
-						▶ ПРОДОЛЖИТЬ
-					</button>
-					<button type="button" class="bigbtn blue" onclick={restartToMenu}>
-						МЕНЮ
-					</button>
-					<button type="button" class="bigbtn dark" onclick={toggleMute}>
-						{muted ? '🔇 ЗВУК ВЫКЛ' : '🔊 ЗВУК ВКЛ'}
-					</button>
+				<h2>Пауза</h2>
+				<p class="sub">1С перезагружается… подождите</p>
+				<div class="actions">
+					<button type="button" class="btn green" onclick={() => game.resume()}>▶ Продолжить</button
+					>
+					<button type="button" class="btn ghost" onclick={() => game.toMenu()}>Меню</button>
 				</div>
-
-				<p class="hint">ESC — ПАУЗА / ПРОДОЛЖИТЬ ★ M — ЗВУК</p>
 			</div>
 		</div>
 	{/if}
 </div>
 
 <style>
-	:global(html, body) {
-		width: 100%;
-		height: 100%;
-		margin: 0;
-		overflow: hidden;
-		overscroll-behavior: none;
-	}
-
-	.simon-arcade {
-		--ink: #1a1130;
-		--deep: #0b071f;
-		--yellow: #ffd21f;
-		--red: #ff4757;
-		--green: #2ed573;
-		--blue: #3f8cff;
-		--cyan: #39e6ff;
-		--pink: #ff5fa2;
-		--orange: #ffab1f;
-		--font-display: 'Russo One', 'Arial Black', sans-serif;
-		--font-body: 'Rubik', system-ui, sans-serif;
-		--font-pixel: 'Press Start 2P', monospace;
-		--font-hand: 'Caveat', cursive;
+	.simon-root {
+		--s-bg: #140d2e;
+		--s-panel: #221850;
+		--s-line: #0a0620;
+		--s-text: #fff;
+		--s-muted: #b6acdf;
+		--s-gold: #ffd21f;
+		--s-green: #2ed573;
+		--s-red: #ff4757;
+		--s-blue: #3f8cff;
+		--s-display: 'Russo One', 'Arial Black', sans-serif;
+		--s-body: 'Rubik', system-ui, sans-serif;
 
 		position: fixed;
 		inset: 0;
+		z-index: 10;
+		display: grid;
+		grid-template-rows: auto auto minmax(0, 1fr) auto;
+		gap: 10px;
+		padding: max(10px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
 		overflow: hidden;
-		color: #fff;
-		font-family: var(--font-body);
+		color: var(--s-text);
+		font-family: var(--s-body);
 		user-select: none;
-		background: linear-gradient(180deg, #1c1246, #130b2e 58%, #0d0822);
+		background:
+			radial-gradient(ellipse at 50% 0%, rgba(255, 210, 31, 0.1), transparent 60%),
+			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 32px 32px,
+			linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 32px 32px,
+			var(--s-bg);
 	}
 
-	.simon-arcade.shake {
-		animation: simon-shake 0.4s;
+	.top,
+	.hud,
+	.play,
+	.statusbar {
+		width: 100%;
+		max-width: 920px;
+		justify-self: center;
 	}
 
-	@keyframes simon-shake {
-		0%,
-		100% {
-			transform: translate(0, 0);
+	.shake {
+		animation: shake 0.4s;
+	}
+
+	@keyframes shake {
+		20% {
+			translate: -8px 2px;
 		}
-		15% {
-			transform: translate(-10px, 3px);
-		}
-		30% {
-			transform: translate(9px, -4px);
-		}
-		45% {
-			transform: translate(-7px, 2px);
+		40% {
+			translate: 7px -3px;
 		}
 		60% {
-			transform: translate(6px, -2px);
+			translate: -5px 1px;
 		}
 		80% {
-			transform: translate(-3px, 1px);
+			translate: 3px 0;
 		}
 	}
 
-	.scan,
-	.vig,
-	.flash {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-	}
+	/* ---------- Верхняя панель ---------- */
 
-	.scan {
-		z-index: 3;
-		opacity: 0.28;
-		background: repeating-linear-gradient(
-			0deg,
-			rgba(0, 0, 0, 0.08) 0 2px,
-			transparent 2px 4px
-		);
-	}
-
-	.vig {
-		z-index: 3;
-		box-shadow: inset 0 0 190px rgba(5, 2, 20, 0.88);
-	}
-
-	.flash {
-		z-index: 40;
-		opacity: 0;
-		transition: opacity 0.35s;
-		background: radial-gradient(
-			circle at 50% 50%,
-			rgba(255, 60, 60, 0.45),
-			rgba(255, 0, 60, 0.15) 70%
-		);
-	}
-
-	.flash.on {
-		opacity: 1;
-		transition: opacity 0s;
-	}
-
-	.game-shell {
-		position: relative;
-		z-index: 2;
-		min-height: 100dvh;
-		width: min(1120px, 96vw);
-		margin: 0 auto;
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		padding: 12px 8px;
-	}
-
-	.marquee {
-		flex: none;
-		background: linear-gradient(180deg, rgba(46, 29, 99, 0.92), rgba(22, 12, 52, 0.92));
-		border: 4px solid var(--deep);
-		border-radius: 18px;
-		padding: 8px 14px 10px;
-		text-align: center;
-		box-shadow:
-			0 10px 0 rgba(0, 0, 0, 0.25),
-			0 0 44px rgba(255, 210, 31, 0.08);
-	}
-
-	.lights {
-		height: 10px;
-		background-image: radial-gradient(
-			circle at 5px 5px,
-			rgba(255, 210, 31, 0.95) 3px,
-			rgba(255, 210, 31, 0.18) 4px,
-			transparent 5px
-		);
-		background-size: 26px 10px;
-		filter: drop-shadow(0 0 4px rgba(255, 210, 31, 0.55));
-		animation: simon-bulb 1s steps(2) infinite;
-	}
-
-	@keyframes simon-bulb {
-		0%,
-		49% {
-			opacity: 1;
-		}
-		50%,
-		100% {
-			opacity: 0.22;
-		}
-	}
-
-	.title-row {
+	.top {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		gap: 14px;
-		margin-top: 6px;
+		gap: 12px;
 	}
 
-	.title-row h1 {
+	.home,
+	.icon-btn {
+		display: grid;
+		place-items: center;
+		width: 40px;
+		height: 40px;
+		flex: none;
+		border: 3px solid var(--s-line);
+		border-radius: 12px;
+		background: var(--s-panel);
+		color: var(--s-text);
+		font-size: 18px;
+		text-decoration: none;
+		cursor: pointer;
+		box-shadow: 0 4px 0 var(--s-line);
+	}
+
+	.home:active,
+	.icon-btn:active {
+		translate: 0 3px;
+		box-shadow: 0 1px 0 var(--s-line);
+	}
+
+	h1 {
 		margin: 0;
-		font-family: var(--font-display);
-		font-size: clamp(28px, 5vw, 54px);
-		line-height: 1;
-		letter-spacing: 0.04em;
-		color: var(--yellow);
-		transform: rotate(-1deg);
-		text-shadow:
-			0 3px 0 #e8352b,
-			0 6px 0 rgba(0, 0, 0, 0.35),
-			0 0 26px rgba(255, 210, 31, 0.35);
+		font: 400 clamp(18px, 3vw, 28px) / 1 var(--s-display);
+		color: var(--s-gold);
+		text-shadow: 0 3px 0 #b3361b;
+		white-space: nowrap;
 	}
 
-	.title-row em {
+	h1 em {
 		font-style: normal;
-		color: #fff;
+		color: var(--s-text);
+		text-shadow: 0 3px 0 var(--s-line);
 	}
 
-	.star {
-		color: var(--yellow);
-		font-size: clamp(16px, 2.5vw, 28px);
-		text-shadow: 0 0 12px rgba(255, 210, 31, 0.75);
-		animation: simon-spin 6s linear infinite;
+	.mode-tag {
+		padding: 4px 10px;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.08);
+		color: var(--s-muted);
+		font-size: 13px;
+		font-weight: 600;
+		white-space: nowrap;
 	}
 
-	.title-row .star:last-child {
-		animation-direction: reverse;
+	.top-actions {
+		display: flex;
+		gap: 8px;
+		margin-left: auto;
 	}
 
-	@keyframes simon-spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	.subtitle {
-		margin: 7px 0 4px;
-		font-family: var(--font-pixel);
-		font-size: clamp(7px, 1.1vw, 10px);
-		letter-spacing: 2px;
-		color: var(--cyan);
-		text-shadow: 0 0 10px rgba(57, 230, 255, 0.7);
-	}
+	/* ---------- HUD ---------- */
 
 	.hud {
-		flex: none;
 		display: flex;
-		flex-wrap: wrap;
 		justify-content: center;
-		align-items: stretch;
 		gap: 8px;
 	}
 
 	.chip {
-		min-width: 92px;
-		padding: 7px 10px;
-		border-radius: 14px;
-		background: rgba(13, 8, 34, 0.82);
-		border: 2px solid rgba(255, 255, 255, 0.08);
-		box-shadow: 0 6px 0 rgba(0, 0, 0, 0.26);
-		display: grid;
-		justify-items: center;
-		gap: 3px;
+		flex: 1 1 0;
+		max-width: 150px;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		padding: 6px 8px;
+		border: 3px solid var(--s-line);
+		border-radius: 12px;
+		background: var(--s-panel);
+		box-shadow: 0 4px 0 var(--s-line);
 	}
 
-	.chip-label {
-		font-family: var(--font-pixel);
-		font-size: 7px;
-		letter-spacing: 1px;
-		color: #8fd8ff;
+	.chip span {
+		color: var(--s-muted);
+		font-size: 11px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		white-space: nowrap;
 	}
 
 	.chip b {
-		font-family: var(--font-display);
-		font-size: clamp(16px, 2vw, 22px);
-		line-height: 1;
+		font: 400 20px / 1.1 var(--s-display);
+		color: var(--s-gold);
+		white-space: nowrap;
 	}
 
-	.chip.score b {
-		font-family: var(--font-pixel);
-		font-size: clamp(12px, 1.5vw, 16px);
-		color: var(--yellow);
-		text-shadow: 0 0 10px rgba(255, 210, 31, 0.55);
-	}
-
-	.chip.combo b {
-		color: var(--orange);
-	}
-
-	.chip.combo.hot b {
-		color: #ff5230;
-		animation: simon-hot-pulse 0.45s ease-in-out infinite;
-	}
-
-	.flame {
-		display: inline-block;
-		animation: simon-hot-pulse 0.3s infinite;
-	}
-
-	@keyframes simon-hot-pulse {
-		50% {
-			transform: scale(1.18);
-		}
+	.chip.hot {
+		border-color: #ff7b1f;
+		box-shadow:
+			0 4px 0 var(--s-line),
+			0 0 18px rgba(255, 123, 31, 0.45);
 	}
 
 	.pips {
 		display: flex;
 		gap: 3px;
-		margin-top: 3px;
+		padding: 5px 0 4px;
 	}
 
 	.pips i {
-		width: 7px;
-		height: 7px;
+		width: 9px;
+		height: 9px;
 		border-radius: 2px;
-		background: #332a63;
-		box-shadow: inset 0 0 0 1px #0b071f;
+		background: rgba(255, 255, 255, 0.14);
 	}
 
 	.pips i.on {
-		background: var(--cyan);
-		box-shadow: 0 0 6px var(--cyan);
+		background: var(--s-gold);
+		box-shadow: 0 0 6px var(--s-gold);
 	}
 
-	.lives {
+	.hearts span {
+		display: inline-block;
+		color: var(--s-red);
+		transition: opacity 0.2s;
+	}
+
+	.hearts span.lost {
+		opacity: 0.18;
+		filter: grayscale(1);
+	}
+
+	.hearts span.burst {
+		animation: heart-burst 0.6s;
+	}
+
+	@keyframes heart-burst {
+		40% {
+			scale: 1.8;
+			opacity: 1;
+			filter: none;
+		}
+	}
+
+	/* ---------- Игровая зона ---------- */
+
+	.play {
+		min-height: 0;
 		display: flex;
-		gap: 4px;
-		padding-top: 2px;
+		flex-direction: column;
+		gap: 12px;
 	}
 
-	.heart {
-		width: 24px;
-		height: 22px;
-	}
-
-	.heart path {
-		fill: #ff4d6d;
-		stroke: #7c0f2b;
-		stroke-width: 2;
-	}
-
-	.heart.lost path {
-		fill: #3a3356;
-		stroke: #241d45;
-	}
-
-	.heart.burst {
-		animation: simon-heart-burst 0.5s;
-	}
-
-	@keyframes simon-heart-burst {
-		0% {
-			transform: scale(1);
-		}
-		30% {
-			transform: scale(1.6) rotate(-14deg);
-		}
-		100% {
-			transform: scale(1);
-		}
-	}
-
-	.sound-chip {
-		min-width: 74px;
-	}
-
-	.sound-btn {
-		border: 0;
-		padding: 0;
-		background: transparent;
-		font-size: 20px;
-		line-height: 1;
-		cursor: pointer;
-		filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.4));
-		transition:
-			transform 0.06s,
-			filter 0.15s,
-			opacity 0.15s;
-	}
-
-	.sound-btn:hover {
-		filter: brightness(1.18) drop-shadow(0 2px 0 rgba(0, 0, 0, 0.4));
-	}
-
-	.sound-btn:active {
-		transform: translateY(2px);
-	}
-
-	.sound-btn.off {
-		opacity: 0.55;
-	}
-
-	.stage {
-		flex: 1;
-		min-height: 220px;
-		position: relative;
-		display: grid;
-		place-items: center;
-		padding: 8px 0;
-	}
-
-	.stage-row {
-		width: min(920px, 96vw);
+	.speech-row {
+		--mascot-size: clamp(64px, 11dvh, 110px);
+		flex: none;
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		gap: clamp(14px, 3vw, 34px);
+		gap: 14px;
+		max-width: 720px;
+		width: 100%;
+		margin: 0 auto;
 	}
 
-	.speech {
+	.bubble {
 		position: relative;
 		flex: 1;
 		min-width: 0;
-		max-width: 660px;
-		background: #fffdf2;
-		color: var(--ink);
-		border: 5px solid #14102e;
-		border-radius: 26px;
-		padding: 16px 18px;
-		box-shadow: 9px 9px 0 rgba(0, 0, 0, 0.3);
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 10px;
+		min-height: clamp(76px, 12dvh, 108px);
+		padding: 12px 16px;
+		border: 4px solid var(--s-line);
+		border-radius: 18px;
+		background: #fff8e6;
+		color: #1a1130;
+		box-shadow: 0 6px 0 var(--s-line);
+		transition:
+			background 0.15s,
+			border-color 0.15s;
 	}
 
-	.speech::before {
+	.bubble::before {
 		content: '';
 		position: absolute;
-		left: -22px;
-		top: 46px;
-		width: 24px;
-		height: 24px;
-		background: #fffdf2;
-		border-left: 5px solid #14102e;
-		border-bottom: 5px solid #14102e;
-		transform: rotate(45deg);
+		left: -14px;
+		top: 50%;
+		translate: 0 -50%;
+		border: 10px solid transparent;
+		border-right: 12px solid var(--s-line);
+		border-left: 0;
 	}
 
-	.boss-tag {
-		display: inline-block;
-		font-family: var(--font-display);
-		font-size: clamp(11px, 1.4vw, 15px);
-		letter-spacing: 1px;
-		background: #e8352b;
-		color: #fff;
-		padding: 4px 12px;
-		border-radius: 8px;
-		transform: rotate(-2deg);
-		box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+	.bubble.good {
+		background: #e3ffe9;
 	}
 
-	.order-text {
-		margin: 10px 0 12px;
-		font-family: var(--font-display);
-		font-size: clamp(20px, 3vw, 34px);
-		line-height: 1.18;
+	.bubble.bad {
+		background: #ffe3e6;
+		border-color: #7c1220;
 	}
 
-	.order-flavor {
-		margin-top: 4px;
-		font-family: var(--font-hand);
-		font-size: clamp(16px, 1.9vw, 22px);
-		color: #7a5f2c;
-		transform: rotate(-0.6deg);
+	.bubble.break {
+		background: #e8f4ff;
+	}
+
+	.headline {
+		margin: 0;
+		font: 400 clamp(16px, 2.4vw + 6px, 26px) / 1.2 var(--s-display);
+		overflow-wrap: anywhere;
 	}
 
 	.timer {
-		height: 16px;
-		background: #241a4d;
-		border: 3px solid #14102e;
-		border-radius: 10px;
+		height: 10px;
+		border-radius: 999px;
+		background: rgba(26, 17, 48, 0.15);
 		overflow: hidden;
 	}
 
 	.timer i {
-		position: relative;
 		display: block;
 		height: 100%;
-		width: 100%;
-		border-radius: 6px;
-		background: var(--green);
-		transition: width 0.08s linear;
-		overflow: hidden;
-	}
-
-	.timer i::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		border-radius: 6px;
-		background: repeating-linear-gradient(
-			45deg,
-			rgba(255, 255, 255, 0.25) 0 8px,
-			transparent 8px 16px
-		);
-		animation: simon-stripe 0.7s linear infinite;
-	}
-
-	@keyframes simon-stripe {
-		to {
-			background-position: 22px 0;
-		}
-	}
-
-	.timer i.mid {
-		background: #ffb020;
+		border-radius: inherit;
+		background: var(--s-green);
 	}
 
 	.timer i.low {
-		background: var(--red);
-		animation: simon-timer-pulse 0.3s infinite;
+		background: var(--s-red);
 	}
 
-	@keyframes simon-timer-pulse {
-		50% {
-			filter: brightness(1.7);
-		}
-	}
-
-	.pop-fx {
-		position: absolute;
-		left: 50%;
-		z-index: 30;
-		transform: translateX(-50%);
-		font-family: var(--font-display);
-		font-size: 24px;
-		color: var(--yellow);
-		pointer-events: none;
-		white-space: nowrap;
-		text-shadow:
-			0 3px 0 rgba(0, 0, 0, 0.55),
-			0 0 16px rgba(255, 210, 31, 0.5);
-		animation: simon-pop-rise 0.95s ease-out forwards;
-	}
-
-	.pop-fx.crit {
-		color: #fff;
-		font-size: 32px;
-		text-shadow:
-			0 3px 0 #e8352b,
-			0 0 20px #ff4757;
-	}
-
-	.pop-fx.life {
-		color: #ff8fa8;
-	}
-
-	.pop-fx.bad {
-		color: #ff6a5e;
-	}
-
-	@keyframes simon-pop-rise {
-		0% {
-			opacity: 0;
-			transform: translate(-50%, 0) scale(0.6);
-		}
-		25% {
-			opacity: 1;
-			transform: translate(-50%, -40px) scale(1.1);
-		}
-		100% {
-			opacity: 0;
-			transform: translate(-50%, -140px) scale(1);
-		}
-	}
-
-	.controls {
-		flex: none;
+	.pad-area {
+		flex: 1;
+		min-height: 0;
+		container-type: size;
 		display: grid;
-		justify-items: center;
-		gap: 18px;
-		padding-bottom: clamp(56px, 14vh, 150px);
+		place-items: center;
 	}
 
-	.actions {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		gap: 10px;
+	.pad-box {
+		position: relative;
+		/* запас под тень и обводку круга */
+		width: min(calc(100cqw - 24px), calc(100cqh - 30px), 520px);
 	}
 
-	.btn {
-		border: 0;
-		border-radius: 14px;
-		padding: 10px 16px;
-		font-family: inherit;
-		font-size: 14px;
-		font-weight: 700;
-		color: #fff;
-		cursor: pointer;
-		background: linear-gradient(#63a6ff, #2f6fe0);
-		box-shadow: 0 7px 0 #173e93;
-		transition:
-			transform 0.06s,
-			box-shadow 0.06s,
-			filter 0.15s;
-	}
-
-	.btn:hover:not(:disabled) {
-		filter: brightness(1.08);
-	}
-
-	.btn:active:not(:disabled) {
-		transform: translateY(4px);
-		box-shadow: 0 3px 0 #173e93;
-	}
-
-	.btn:disabled {
-		opacity: 0.55;
-		cursor: not-allowed;
-	}
-
-	.btn.ghost {
-		background: linear-gradient(#63a6ff, #2f6fe0);
-		box-shadow: 0 7px 0 #173e93;
-	}
-
-	.btn.danger {
-		background: linear-gradient(#ff6a5e, #e02f2f);
-		box-shadow: 0 7px 0 #8f1414;
-	}
-
-	.banner {
-		position: fixed;
-		inset: 0;
-		z-index: 55;
+	.skip,
+	.round {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		width: 100%;
+		height: 100%;
+		border-radius: 50%;
+		color: var(--s-text);
+		text-align: center;
+	}
+
+	.skip {
+		border: 0;
+		background: transparent;
+		font: inherit;
+		cursor: pointer;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.skip:not(:disabled):hover,
+	.skip:not(:disabled):active {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.skip:disabled {
+		cursor: default;
+		opacity: 0.45;
+	}
+
+	.skip b,
+	.round b {
+		font: 400 13cqi / 1 var(--s-display);
+		color: var(--s-gold);
+	}
+
+	.skip b {
+		font-size: 11cqi;
+		text-transform: uppercase;
+	}
+
+	.round b {
+		font-size: 30cqi;
+	}
+
+	.skip small,
+	.round small {
+		margin-top: 4cqi;
+		font-size: max(10px, 9cqi);
+		color: var(--s-muted);
+		font-weight: 600;
+	}
+
+	.pop {
+		position: absolute;
+		left: 50%;
+		top: 30%;
+		translate: -50% 0;
+		z-index: 5;
 		pointer-events: none;
-		animation: simon-banner 1.1s ease forwards;
-	}
-
-	.banner h2 {
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: clamp(40px, 8vw, 84px);
-		color: var(--yellow);
+		font: 400 clamp(22px, 5cqmin, 40px) / 1 var(--s-display);
+		color: var(--s-gold);
 		text-shadow:
-			0 4px 0 #e8352b,
-			0 8px 0 rgba(0, 0, 0, 0.4),
-			0 0 40px rgba(255, 210, 31, 0.7);
+			0 3px 0 var(--s-line),
+			0 0 16px rgba(255, 210, 31, 0.6);
+		white-space: nowrap;
+		animation: pop-rise 1s ease-out forwards;
 	}
 
-	.banner p {
-		margin-top: 10px;
-		font-family: var(--font-pixel);
-		font-size: clamp(8px, 1.4vw, 12px);
-		color: var(--cyan);
-		text-shadow: 0 0 10px var(--cyan);
+	.pop.crit {
+		color: #ff7b1f;
+		scale: 1.25;
 	}
 
-	@keyframes simon-banner {
-		0% {
+	.pop.life {
+		top: 45%;
+		color: var(--s-red);
+	}
+
+	@keyframes pop-rise {
+		from {
 			opacity: 0;
-			transform: scale(0.5);
+			transform: translateY(20px) scale(0.7);
 		}
-		18% {
+		20% {
 			opacity: 1;
-			transform: scale(1.1);
+			transform: translateY(0) scale(1.1);
 		}
-		30% {
-			transform: scale(1);
+		to {
+			opacity: 0;
+			transform: translateY(-60px) scale(1);
 		}
+	}
+
+	/* ---------- Строка состояния ---------- */
+
+	.statusbar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+		padding: 6px 12px;
+		border-radius: 10px;
+		background: rgba(0, 0, 0, 0.3);
+		color: var(--s-muted);
+		font-size: 13px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.dot {
+		width: 8px;
+		height: 8px;
+		flex: none;
+		border-radius: 50%;
+		background: var(--s-green);
+		box-shadow: 0 0 6px var(--s-green);
+	}
+
+	.dot.bad {
+		background: var(--s-red);
+		box-shadow: 0 0 6px var(--s-red);
+	}
+
+	/* ---------- Эффекты ---------- */
+
+	.flash {
+		position: absolute;
+		inset: 0;
+		z-index: 20;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.35s;
+		background: radial-gradient(circle, rgba(255, 60, 60, 0.35), rgba(255, 0, 60, 0.12) 70%);
+	}
+
+	.flash.on {
+		opacity: 1;
+		transition: none;
+	}
+
+	.banner {
+		position: absolute;
+		left: 50%;
+		top: 40%;
+		z-index: 25;
+		translate: -50% -50%;
+		padding: 14px 30px;
+		border: 4px solid var(--s-line);
+		border-radius: 16px;
+		background: var(--s-gold);
+		color: #1a1130;
+		font: 400 clamp(26px, 6vw, 48px) / 1 var(--s-display);
+		box-shadow: 0 8px 0 var(--s-line);
+		pointer-events: none;
+		animation: banner 1.3s ease-out forwards;
+	}
+
+	@keyframes banner {
+		from {
+			opacity: 0;
+			scale: 0.5;
+		}
+		15% {
+			opacity: 1;
+			scale: 1.08;
+		}
+		25%,
 		80% {
+			scale: 1;
 			opacity: 1;
 		}
-		100% {
+		to {
 			opacity: 0;
-			transform: scale(1.06);
 		}
 	}
+
+	/* ---------- Оверлеи ---------- */
 
 	.overlay {
-		position: fixed;
+		position: absolute;
 		inset: 0;
-		z-index: 60;
+		z-index: 30;
 		display: grid;
 		place-items: center;
 		padding: 16px;
-		background: rgba(6, 3, 20, 0.78);
+		overflow-y: auto;
+		background: rgba(8, 4, 24, 0.78);
 		backdrop-filter: blur(4px);
 	}
 
 	.card {
-		width: min(640px, 94vw);
-		max-height: 94dvh;
-		overflow: auto;
-		background: linear-gradient(180deg, #2b1d5e, #160e34);
-		border: 3px solid #080416;
-		border-radius: 24px;
+		width: min(440px, 100%);
 		padding: 22px;
+		border: 4px solid var(--s-line);
+		border-radius: 22px;
+		background: linear-gradient(180deg, #2b2063, #1c1445);
+		box-shadow: 0 10px 0 var(--s-line);
 		text-align: center;
-		box-shadow:
-			0 18px 0 rgba(0, 0, 0, 0.32),
-			0 0 60px rgba(255, 210, 31, 0.08);
+	}
+
+	.card.menu {
+		width: min(760px, 100%);
 	}
 
 	.card h2 {
 		margin: 0;
-		font-family: var(--font-display);
-		font-size: clamp(28px, 4.5vw, 44px);
-		line-height: 1.05;
-		color: var(--yellow);
-		text-shadow:
-			0 3px 0 #e8352b,
-			0 6px 0 rgba(0, 0, 0, 0.35);
+		font: 400 clamp(26px, 5vw, 40px) / 1.1 var(--s-display);
+		color: var(--s-gold);
+		text-shadow: 0 4px 0 #b3361b;
 	}
 
-	.card.error h2 {
-		color: #ff6a5e;
-		text-shadow:
-			0 3px 0 #7c0f2b,
-			0 6px 0 rgba(0, 0, 0, 0.35);
+	.card h2.bad-title {
+		color: var(--s-red);
+		text-shadow: 0 4px 0 var(--s-line);
 	}
 
-	.tag {
-		margin: 8px 0 12px;
-		font-family: var(--font-pixel);
-		font-size: 9px;
-		letter-spacing: 2px;
-		color: var(--cyan);
+	.sub {
+		margin: 6px 0 0;
+		color: var(--s-muted);
+		font-weight: 600;
 	}
 
-	.rules {
-		margin: 0 auto 18px;
-		max-width: 460px;
-		display: flex;
-		flex-direction: column;
-		gap: 9px;
-		padding: 0;
+	.modes {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 14px;
+		margin-top: 18px;
 		text-align: left;
 	}
 
-	.rules li {
-		list-style: none;
-		font-size: clamp(13px, 1.6vw, 16px);
-		font-weight: 600;
-		color: #e8e4ff;
-		background: #120b2e;
-		border: 3px solid var(--deep);
-		border-radius: 12px;
-		padding: 8px 12px;
-		box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
-	}
-
-	.text {
-		margin: 0 auto 14px;
-		max-width: 52ch;
-		line-height: 1.5;
-		color: #e8e4ff;
-	}
-
-	.card-actions {
+	.mode {
 		display: flex;
-		justify-content: center;
-		flex-wrap: wrap;
-		gap: 12px;
+		flex-direction: column;
+		gap: 8px;
+		padding: 16px;
+		border: 3px solid var(--s-line);
+		border-radius: 16px;
+		background: rgba(0, 0, 0, 0.22);
 	}
 
-	.bigbtn {
-		border: 0;
-		border-radius: 18px;
-		padding: 13px 24px;
-		font-family: var(--font-display);
-		font-size: 18px;
-		letter-spacing: 0.03em;
-		color: #fff;
-		cursor: pointer;
-		transition:
-			transform 0.06s,
-			filter 0.15s;
+	.mode.selected {
+		border-color: rgba(255, 210, 31, 0.5);
 	}
 
-	.bigbtn:hover {
-		filter: brightness(1.08);
+	.mode h3 {
+		margin: 0;
+		font: 400 20px / 1.2 var(--s-display);
 	}
 
-	.bigbtn:active {
-		transform: translateY(5px);
-	}
-
-	.bigbtn.green {
-		background: linear-gradient(#5ce96f, #1fae3f);
-		box-shadow:
-			0 10px 0 #0e6b24,
-			0 18px 26px rgba(0, 0, 0, 0.35);
-	}
-
-	.bigbtn.blue {
-		background: linear-gradient(#63a6ff, #2f6fe0);
-		box-shadow:
-			0 10px 0 #173e93,
-			0 18px 26px rgba(0, 0, 0, 0.35);
-	}
-
-	.bigbtn.red {
-		background: linear-gradient(#ff6a5e, #e02f2f);
-		box-shadow:
-			0 10px 0 #8f1414,
-			0 18px 26px rgba(0, 0, 0, 0.35);
-	}
-
-	.bigbtn.dark {
-		background: linear-gradient(#4a3a86, #2a1d5c);
-		box-shadow:
-			0 10px 0 #150e33,
-			0 18px 26px rgba(0, 0, 0, 0.35);
-	}
-
-	.hint {
-		margin-top: 14px;
-		font-family: var(--font-pixel);
-		font-size: 8px;
-		color: #9d8dff;
-		letter-spacing: 1px;
-	}
-
-	.newrec {
-		display: inline-block;
-		font-family: var(--font-display);
+	.mode p,
+	.mode ul {
+		margin: 0;
 		font-size: 14px;
-		background: var(--yellow);
-		color: var(--ink);
-		padding: 4px 12px;
-		border-radius: 8px;
-		transform: rotate(-2deg);
-		box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
-		animation: simon-hot-pulse 0.5s infinite;
-		margin-bottom: 6px;
+		line-height: 1.45;
+		color: #ddd6ff;
 	}
 
-	.final-score {
-		font-family: var(--font-pixel);
-		font-size: clamp(20px, 3.4vw, 32px);
-		color: var(--yellow);
-		margin: 12px 0 4px;
-		text-shadow: 0 0 16px rgba(255, 210, 31, 0.6);
+	.mode ul {
+		padding-left: 18px;
+	}
+
+	.mode li + li {
+		margin-top: 4px;
+	}
+
+	.mode q {
+		color: var(--s-gold);
+		font-weight: 800;
+		quotes: '«' '»';
+	}
+
+	.mode-foot {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		margin-top: auto;
+		padding-top: 6px;
+		color: var(--s-muted);
+		font-size: 14px;
+	}
+
+	.mode-foot b {
+		color: var(--s-gold);
+	}
+
+	.btn {
+		padding: 12px 22px;
+		border: 3px solid var(--s-line);
+		border-radius: 14px;
+		color: #fff;
+		font: 400 17px / 1 var(--s-display);
+		cursor: pointer;
+		box-shadow: 0 5px 0 var(--s-line);
+		transition: filter 0.12s;
+	}
+
+	.btn:hover {
+		filter: brightness(1.1);
+	}
+
+	.btn:active {
+		translate: 0 3px;
+		box-shadow: 0 2px 0 var(--s-line);
+	}
+
+	.btn:focus-visible,
+	.icon-btn:focus-visible,
+	.home:focus-visible {
+		outline: 3px solid var(--s-gold);
+		outline-offset: 2px;
+	}
+
+	.btn.green {
+		background: linear-gradient(180deg, #3be37f, #1fa856);
+	}
+
+	.btn.blue {
+		background: linear-gradient(180deg, #5b9dff, #2f6ad8);
+	}
+
+	.btn.ghost {
+		background: var(--s-panel);
+	}
+
+	.keys {
+		margin: 16px 0 0;
+		color: var(--s-muted);
+		font-size: 13px;
+		line-height: 1.8;
+	}
+
+	kbd {
+		padding: 1px 6px;
+		border-radius: 5px;
+		background: rgba(255, 255, 255, 0.12);
+		color: #fff;
+		font: 600 12px var(--s-body);
+	}
+
+	.record {
+		margin: 8px 0 0;
+		color: var(--s-gold);
+		font: 400 18px var(--s-display);
+		animation: blink 0.8s steps(2) infinite;
+	}
+
+	@keyframes blink {
+		50% {
+			opacity: 0.35;
+		}
+	}
+
+	.final {
+		margin-top: 8px;
+		font: 400 clamp(48px, 12vw, 72px) / 1 var(--s-display);
+		color: var(--s-gold);
+		text-shadow: 0 5px 0 var(--s-line);
 	}
 
 	.stats {
 		display: flex;
-		gap: 10px;
 		justify-content: center;
-		flex-wrap: wrap;
-		margin: 14px 0;
+		gap: 10px;
+		margin-top: 16px;
 	}
 
 	.stats div {
-		background: #120b2e;
-		border: 3px solid var(--deep);
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: 8px;
 		border-radius: 12px;
-		padding: 8px 14px;
-		min-width: 104px;
+		background: rgba(0, 0, 0, 0.25);
 	}
 
-	.stat-label {
-		display: block;
-		font-family: var(--font-pixel);
-		font-size: 6px;
-		color: #8fd8ff;
-		letter-spacing: 1px;
-		margin-bottom: 5px;
+	.stats span {
+		color: var(--s-muted);
+		font-size: 12px;
 	}
 
 	.stats b {
-		font-family: var(--font-display);
-		font-size: 18px;
+		font: 400 20px var(--s-display);
 	}
 
 	.rank {
-		font-family: var(--font-display);
-		font-size: clamp(18px, 3vw, 26px);
-		color: var(--cyan);
-		text-shadow: 0 0 14px rgba(57, 230, 255, 0.6);
-		margin-top: 4px;
+		margin: 16px 0 0;
+		font: 400 22px var(--s-display);
+		color: var(--s-gold);
 	}
 
-	.rank-quip {
-		font-family: var(--font-hand);
-		font-size: 22px;
-		color: #ffd9b0;
-		margin: 4px 0 12px;
+	.quip {
+		margin: 4px 0 0;
+		color: var(--s-muted);
+		font-style: italic;
 	}
 
-	@media (max-width: 760px) {
-		.stage-row {
-			flex-direction: column;
-			gap: 10px;
+	.actions {
+		display: flex;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-top: 20px;
+	}
+
+	/* ---------- Адаптив ---------- */
+
+	@media (max-width: 640px) {
+		.simon-root {
+			gap: 8px;
 		}
 
-		.speech {
-			width: 100%;
-			max-width: none;
-		}
-
-		.speech::before {
+		.mode-tag {
 			display: none;
 		}
 
-		.controls {
-			padding-bottom: clamp(48px, 12vh, 110px);
-		}
-
 		.chip {
-			min-width: 76px;
-			padding: 5px 8px;
+			padding: 4px 4px;
 		}
 
-		.sound-chip {
-			min-width: 62px;
+		.chip span {
+			font-size: 9px;
 		}
 
-		.order-text {
-			font-size: clamp(18px, 4.4vw, 26px);
+		.chip b {
+			font-size: 16px;
+		}
+
+		.pips i {
+			width: 6px;
+			height: 6px;
+		}
+
+		.modes {
+			grid-template-columns: 1fr;
+		}
+
+		.card {
+			padding: 18px 14px;
 		}
 	}
 
-	@media (max-height: 700px) {
-		.controls {
-			padding-bottom: clamp(36px, 8vh, 84px);
+	/* На тач-экранах подсказки про клавиатуру не нужны. */
+	@media (pointer: coarse) {
+		.skip small,
+		.keys {
+			display: none;
 		}
+	}
 
-		.stage {
-			min-height: 160px;
+	@media (prefers-reduced-motion: reduce) {
+		.shake,
+		.pop,
+		.banner,
+		.record,
+		.hearts span.burst {
+			animation: none;
 		}
 	}
 </style>
