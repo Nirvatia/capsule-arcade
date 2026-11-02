@@ -27,7 +27,8 @@ export default defineConfig(
 		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
 		languageOptions: {
 			parserOptions: {
-				projectService: true,
+				// The prototypes sit outside the SvelteKit tsconfig; lint them with the default project.
+				projectService: { allowDefaultProject: ['prototypes/pacman/*/*.svelte'] },
 				extraFileExtensions: ['.svelte'],
 				parser: ts.parser
 			}

@@ -31,41 +31,28 @@ export class DeathState implements GameState {
 	}
 
 	enter(ctx: GameStateContext): void {
-		ctx.level.ensure();
+		const { player, grid } = ctx.level.ensure();
 		if (ctx.level.secretMode) {
 			this.clock = new StateClock<DeathPhase>([
 				{ name: 'fold', duration: FLOW.arcade.death.fold },
 				{ name: 'pause', duration: FLOW.arcade.death.pause }
 			]);
 		}
-		const player = ctx.level.player;
-		if (player) {
-			const position = player.position;
-			if (
-				Number.isFinite(position.x) &&
-				Number.isFinite(position.y) &&
-				position.x >= 0 &&
-				position.y >= 0
-			) {
-				this.centerX = position.x;
-				this.centerY = position.y;
-				this.hasCenter = true;
-			} else {
-				console.error('DeathState.enter', 'invalid player position', position);
-			}
+		const position = player.position;
+		if (
+			Number.isFinite(position.x) &&
+			Number.isFinite(position.y) &&
+			position.x >= 0 &&
+			position.y >= 0
+		) {
+			this.centerX = position.x;
+			this.centerY = position.y;
 		} else {
-			console.error('DeathState.enter', 'player is not initialized');
+			console.error('DeathState.enter', 'invalid player position', position);
+			this.centerX = grid.width / 2;
+			this.centerY = grid.height / 2;
 		}
-		if (!this.hasCenter) {
-			const grid = ctx.level.grid;
-			if (grid) {
-				this.centerX = grid.width / 2;
-				this.centerY = grid.height / 2;
-				this.hasCenter = true;
-			} else {
-				console.error('DeathState.enter', 'grid is not initialized');
-			}
-		}
+		this.hasCenter = true;
 		ctx.level.emitHud();
 	}
 

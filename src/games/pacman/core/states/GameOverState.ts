@@ -21,11 +21,8 @@ export class GameOverState implements GameState {
 	}
 
 	enter(ctx: GameStateContext): void {
-		ctx.level.ensure();
-
-		const combat = ctx.level.combat;
-
-		if (combat && combat.result !== 'none') {
+		const { combat } = ctx.level.ensure();
+		if (combat.result !== 'none') {
 			saveScore('pacman', combat.score);
 		}
 

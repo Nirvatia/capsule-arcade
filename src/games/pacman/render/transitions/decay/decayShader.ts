@@ -1,10 +1,6 @@
 import { DECAY_BAND, REBUILD_BAND } from './decayTimeline';
 import { DECAY_OUTSIDE_RATE } from './decayField';
 
-export const DECAY_VERTEX = `#version 300 es
-in vec2 aPos;
-void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
-
 /**
  * The level decay, as one full-screen pass over the rendered world layer.
  *
