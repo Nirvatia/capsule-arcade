@@ -2,24 +2,19 @@ import type { PlayerService } from '../actors/PlayerService';
 import type { GhostService } from '../actors/GhostService';
 import type { LevelProgress } from '../level/LevelProgress';
 import type { ScoreModel } from '../level/ScoreModel';
-import type { GhostModel, GhostKind } from '../actors/GhostModel';
+import type { GhostModel } from '../actors/GhostModel';
 import type { PacmanGameResult, PacmanEventMap } from '../../core/Events';
 import type { EventBus } from '../../engine/EventBus';
 import type { GameProfile, HypnosisService } from './HypnosisService';
 import type { LairCodeService } from './LairCodeService';
 import { SCORE_TABLE } from '../../config/scoreConfig';
-import { ACTOR_CONTACT_DISTANCE_SQ } from '../../config/actorConfig';
+import { NearMissTracker, classicContact, msContact } from './ghostContact';
 import { debugLog } from '../debug/debugLog';
 import { ARCADE } from '../../config/arcadeConfig';
 
 const DEFAULT_POWER_DURATION = 6;
 /** Gameplay freezes this long when a ghost is eaten, so the bite lands. */
 const HIT_STOP = 0.12;
-/** A ghost this close (tiles²) without touching, then this far again, is a near miss. */
-const NEAR_MISS_SQ = 0.95 * 0.95;
-const NEAR_MISS_CLEAR_SQ = 1.6 * 1.6;
-/** One near miss per ghost per this many seconds. */
-const NEAR_MISS_COOLDOWN = 3;
 
 export class CombatService {
 	private readonly player: PlayerService;
@@ -49,9 +44,7 @@ export class CombatService {
 	private finalRoundValue = false;
 	private arcadeLostValue = false;
 	private hitStopValue = 0;
-	/** Ghosts brushing past Pac-Man right now, and each ghost's near-miss cooldown. */
-	private readonly closeGhosts = new Set<GhostKind>();
-	private readonly nearMissCooldown = new Map<GhostKind, number>();
+	private readonly nearMiss: NearMissTracker;
 
 	constructor(
 		player: PlayerService,
@@ -99,6 +92,7 @@ export class CombatService {
 		this.events = events;
 		this.hypnosis = hypnosis;
 		this.lairCode = lairCode ?? null;
+		this.nearMiss = new NearMissTracker(events);
 	}
 
 	get lives(): number {
@@ -272,9 +266,7 @@ export class CombatService {
 		}
 
 		this.ghosts.setPowerActive(this.powerTimerValue > 0);
-		for (const [kind, left] of this.nearMissCooldown) {
-			this.nearMissCooldown.set(kind, Math.max(0, left - dt));
-		}
+		this.nearMiss.tick(dt);
 		this.checkCollisions();
 	}
 
@@ -415,133 +407,27 @@ export class CombatService {
 	}
 
 	private checkCollisions(): void {
-		if (this.rulesProfile === 'ms-pacman') {
-			this.checkMsCollisions();
+		const position = this.player.position;
+		const contact =
+			this.rulesProfile === 'ms-pacman'
+				? msContact(
+						position,
+						this.player.isInvulnerable,
+						this.hypnosis.overdriveActive,
+						this.ghosts.list
+					)
+				: classicContact(position, this.player.isInvulnerable, this.ghosts.list, (ghost, d2) =>
+						this.nearMiss.observe(ghost, d2, position)
+					);
+		if (!contact) {
 			return;
 		}
-
-		if (this.player.isInvulnerable) {
-			return;
-		}
-
-		const playerPosition = this.player.position;
-
-		if (!Number.isFinite(playerPosition.x) || !Number.isFinite(playerPosition.y)) {
-			console.error('CombatService.checkCollisions', 'invalid player position', playerPosition);
-			return;
-		}
-
-		for (const ghost of this.ghosts.list) {
-			if (ghost.state !== 'active' && ghost.state !== 'frightened') {
-				continue;
-			}
-
-			const ghostPosition = ghost.position;
-
-			if (!Number.isFinite(ghostPosition.x) || !Number.isFinite(ghostPosition.y)) {
-				console.error('CombatService.checkCollisions', 'invalid ghost position', {
-					kind: ghost.kind,
-					position: ghostPosition
-				});
-				continue;
-			}
-
-			const dx = playerPosition.x - ghostPosition.x;
-			const dy = playerPosition.y - ghostPosition.y;
-			const d2 = dx * dx + dy * dy;
-
-			if (d2 > ACTOR_CONTACT_DISTANCE_SQ) {
-				if (ghost.state === 'active') {
-					this.trackNearMiss(ghost, d2);
-				}
-				continue;
-			}
-
-			if (ghost.state === 'frightened') {
-				this.eatGhost(ghost);
-			} else {
-				this.killPlayerByGhost(ghost.kind);
-			}
-
-			break;
-		}
-	}
-
-	/** A ghost came within a whisker and Pac-Man got away: one `near-miss` effect. */
-	private trackNearMiss(ghost: GhostModel, d2: number): void {
-		if (d2 <= NEAR_MISS_SQ) {
-			this.closeGhosts.add(ghost.kind);
-			return;
-		}
-		if (d2 < NEAR_MISS_CLEAR_SQ || !this.closeGhosts.delete(ghost.kind)) {
-			return;
-		}
-		if ((this.nearMissCooldown.get(ghost.kind) ?? 0) > 0) {
-			return;
-		}
-		this.nearMissCooldown.set(ghost.kind, NEAR_MISS_COOLDOWN);
-		const p = this.player.position;
-		const g = ghost.position;
-		this.events.emit('fx:event', {
-			kind: 'near-miss',
-			x: p.x,
-			y: p.y,
-			gx: g.x,
-			gy: g.y,
-			ghost: ghost.kind
-		});
-	}
-
-	private checkMsCollisions(): void {
-		const playerPosition = this.player.position;
-
-		if (!Number.isFinite(playerPosition.x) || !Number.isFinite(playerPosition.y)) {
-			console.error('CombatService.checkMsCollisions', 'invalid player position', playerPosition);
-			return;
-		}
-
-		for (const ghost of this.ghosts.list) {
-			const state = ghost.state;
-
-			if (state === 'lair' || state === 'exiting' || state === 'eyes' || state === 'hypnotized') {
-				continue;
-			}
-
-			const ghostPosition = ghost.position;
-
-			if (!Number.isFinite(ghostPosition.x) || !Number.isFinite(ghostPosition.y)) {
-				console.error('CombatService.checkMsCollisions', 'invalid ghost position', {
-					kind: ghost.kind,
-					position: ghostPosition
-				});
-				continue;
-			}
-
-			const dx = playerPosition.x - ghostPosition.x;
-			const dy = playerPosition.y - ghostPosition.y;
-
-			if (dx * dx + dy * dy > ACTOR_CONTACT_DISTANCE_SQ) {
-				continue;
-			}
-
-			if (this.hypnosis.overdriveActive) {
-				this.hypnosis.handleContact(ghost.kind, this.ghosts);
-				break;
-			}
-
-			if (this.player.isInvulnerable) {
-				continue;
-			}
-
-			if (state === 'enraged') {
-				this.killPlayerByEnraged(ghost.kind);
-				break;
-			}
-
-			if (state === 'active' || state === 'frightened') {
-				this.killPlayerByGhost(ghost.kind);
-				break;
-			}
+		if (contact.kind === 'eat') {
+			this.eatGhost(contact.ghost);
+		} else if (contact.kind === 'overdrive') {
+			this.hypnosis.handleContact(contact.ghost.kind, this.ghosts);
+		} else {
+			this.handleDeath(`ghost:${contact.ghost.kind}${contact.enraged ? ':enraged' : ''}`);
 		}
 	}
 
@@ -602,14 +488,6 @@ export class CombatService {
 		}
 	}
 
-	private killPlayerByGhost(kind: GhostKind): void {
-		this.handleDeath(`ghost:${kind}`);
-	}
-
-	private killPlayerByEnraged(kind: GhostKind): void {
-		this.handleDeath(`ghost:${kind}:enraged`);
-	}
-
 	private handleDeath(reason: string): void {
 		if (this.deathActiveValue || this.gameOverValue || this.completedValue) {
 			return;
@@ -635,7 +513,7 @@ export class CombatService {
 			lives: this.livesValue
 		});
 
-		this.closeGhosts.clear();
+		this.nearMiss.clear();
 		this.deathsValue += 1;
 		this.livesValue = Math.max(0, this.livesValue - 1);
 		debugLog(this.events, 'damage', `player died (${safeReason})`, this.livesValue);

@@ -6,20 +6,17 @@ import type { GhostDirection, GhostKind, GhostState, GhostTile } from './GhostMo
 import { isLairTile, resolveExitTarget } from '../maze/LairExit';
 import type { ArcadeRoundTuning } from '../../config/arcadeConfig';
 import { arcadeChaseTarget } from './arcadeTargets';
+import {
+	DIRECTIONS,
+	SCATTER_TARGETS,
+	ahead,
+	chaseTarget,
+	distanceSq,
+	fleeTarget,
+	nearestDotTarget,
+	oppositeDirection
+} from './ghostTargets';
 
-const VECTORS: Record<GhostDirection, { x: number; y: number }> = {
-	UP: { x: 0, y: -1 },
-	DOWN: { x: 0, y: 1 },
-	LEFT: { x: -1, y: 0 },
-	RIGHT: { x: 1, y: 0 }
-};
-const DIRECTIONS: readonly GhostDirection[] = ['UP', 'LEFT', 'DOWN', 'RIGHT'];
-const SCATTER_TARGETS: Record<GhostKind, GhostTile> = {
-	BLINKY: { x: 22, y: 2 },
-	PINKY: { x: 2, y: 2 },
-	INKY: { x: 22, y: 23 },
-	CLYDE: { x: 2, y: 23 }
-};
 const FALLBACK_EXIT_TARGET: GhostTile = { x: 12, y: 9 };
 const EXIT_DELAYS: Record<GhostKind, number> = {
 	BLINKY: 0,
@@ -265,7 +262,7 @@ export class GhostService {
 				if (!direction) {
 					break;
 				}
-				const target = this.targetFor(ghost.tile, direction);
+				const target = ahead(ghost.tile, direction, 1);
 				if (
 					!this.grid.isGhostWalkable(
 						target.x,
@@ -359,10 +356,10 @@ export class GhostService {
 	private chooseDirection(ghost: GhostModel): GhostDirection | null {
 		const allowLair = ghost.state === 'exiting' || ghost.state === 'eyes';
 		const facing = ghost.facing;
-		const opposite = facing ? this.oppositeDirection(facing) : null;
+		const opposite = facing ? oppositeDirection(facing) : null;
 		const candidates: GhostDirection[] = [];
 		for (const direction of DIRECTIONS) {
-			const target = this.targetFor(ghost.tile, direction);
+			const target = ahead(ghost.tile, direction, 1);
 			if (this.grid.isGhostWalkable(target.x, target.y, allowLair)) {
 				candidates.push(direction);
 			}
@@ -385,8 +382,8 @@ export class GhostService {
 		let best: GhostDirection | null = null;
 		let bestScore = Number.POSITIVE_INFINITY;
 		for (const direction of choices) {
-			const candidate = this.targetFor(ghost.tile, direction);
-			const score = this.distanceSq(candidate, targetTile);
+			const candidate = ahead(ghost.tile, direction, 1);
+			const score = distanceSq(candidate, targetTile);
 			if (score < bestScore) {
 				bestScore = score;
 				best = direction;
@@ -404,13 +401,13 @@ export class GhostService {
 			return this.exitTargetValue;
 		}
 		if (ghost.state === 'hypnotized') {
-			return this.nearestDotTarget(ghost) ?? SCATTER_TARGETS[ghost.kind];
+			return nearestDotTarget(this.grid, this.progress, ghost.tile) ?? SCATTER_TARGETS[ghost.kind];
 		}
 		if (ghost.state === 'enraged') {
 			return this.player.tile;
 		}
 		if (ghost.state === 'frightened') {
-			return this.fleeTarget(ghost);
+			return fleeTarget(ghost.kind, ghost.tile, this.player.tile);
 		}
 		if (this.mode === 'scatter') {
 			return SCATTER_TARGETS[ghost.kind];
@@ -433,101 +430,11 @@ export class GhostService {
 				}
 			});
 		}
-		if (ghost.kind === 'BLINKY') {
-			return playerTile;
-		}
-		if (ghost.kind === 'PINKY') {
-			return this.ahead(playerTile, playerFacing, 4);
-		}
-		if (ghost.kind === 'INKY') {
-			const pivot = this.ahead(playerTile, playerFacing, 2);
-			const blinky = this.ghostById('BLINKY');
-			if (!blinky) {
-				return pivot;
-			}
-			return {
-				x: pivot.x + (pivot.x - blinky.tile.x),
-				y: pivot.y + (pivot.y - blinky.tile.y)
-			};
-		}
-		const distance = this.distanceSq(ghost.tile, playerTile);
-		if (distance > 64) {
-			return playerTile;
-		}
-		return SCATTER_TARGETS.CLYDE;
-	}
-
-	private fleeTarget(ghost: GhostModel): GhostTile {
-		const playerTile = this.player.tile;
-		const dx = ghost.tile.x - playerTile.x;
-		const dy = ghost.tile.y - playerTile.y;
-		if (dx === 0 && dy === 0) {
-			return SCATTER_TARGETS[ghost.kind];
-		}
-		return {
-			x: ghost.tile.x + dx * 2,
-			y: ghost.tile.y + dy * 2
-		};
-	}
-
-	private nearestDotTarget(ghost: GhostModel): GhostTile | null {
-		let best: GhostTile | null = null;
-		let bestScore = Number.POSITIVE_INFINITY;
-		for (let y = 0; y < this.grid.height; y += 1) {
-			for (let x = 0; x < this.grid.width; x += 1) {
-				if (this.grid.tileAt(x, y) !== 'DT') {
-					continue;
-				}
-				if (this.progress.isCollected(x, y)) {
-					continue;
-				}
-				const candidate: GhostTile = { x, y };
-				const score = this.distanceSq(ghost.tile, candidate);
-				if (score < bestScore) {
-					bestScore = score;
-					best = candidate;
-				}
-			}
-		}
-		return best;
-	}
-
-	private ahead(point: GhostTile, direction: GhostDirection | null, steps: number): GhostTile {
-		if (!direction) {
-			return point;
-		}
-		const vector = VECTORS[direction];
-		return {
-			x: point.x + vector.x * steps,
-			y: point.y + vector.y * steps
-		};
-	}
-
-	private targetFor(tile: GhostTile, direction: GhostDirection): GhostTile {
-		const vector = VECTORS[direction];
-		return {
-			x: tile.x + vector.x,
-			y: tile.y + vector.y
-		};
-	}
-
-	private oppositeDirection(direction: GhostDirection): GhostDirection {
-		if (direction === 'UP') {
-			return 'DOWN';
-		}
-		if (direction === 'DOWN') {
-			return 'UP';
-		}
-		if (direction === 'LEFT') {
-			return 'RIGHT';
-		}
-		return 'LEFT';
-	}
-
-	private distanceSq(a: GhostTile, b: GhostTile): number {
-		const dx = a.x - b.x;
-		const dy = a.y - b.y;
-		return dx * dx + dy * dy;
+		return chaseTarget(ghost.kind, ghost.tile, {
+			player: playerTile,
+			playerFacing,
+			blinky: this.ghostById('BLINKY')?.tile ?? null
+		});
 	}
 
 	private ghostById(kind: GhostKind): GhostModel | undefined {
