@@ -29,7 +29,7 @@ size of one tile.
 - A new game starts on level 1 with 3 lives and runs until the lives are gone.
 - Level `n` is a season: 1 summer, 2 autumn, 3 winter, 4 spring, then again
   (`logic/level/SeasonCatalog.ts`). Every 5th level is the hell for Pac-Man; Ms. Pac-Man
-  gets the season instead. Later boss worlds take levels 10, 15, … (plan stage 8).
+  gets the season instead. Later boss worlds take levels 10, 15, … (plan stage 4).
 - Level 7 hides the way into the secret level (§8, the arcade); after it the run continues
   on the level after the one it was entered from.
 - Score and lives carry over between levels. Extra life at 10 000 points, then every
@@ -73,7 +73,7 @@ backs off up close (`logic/actors/GhostService.ts`). Their eyes look where they 
   dots turn into points, +500, and the arcade starts. Clearing the dots first just ends
   the level.
 - **Echo clone**: at 60 % of the dots a token appears for 8 s; taking it releases one clone
-  of Pac-Man for 4 s that runs to the densest dots and eats them. _Planned (stage 10.6)_:
+  of Pac-Man for 4 s that runs to the densest dots and eats them. _Planned (stage 3.1)_:
   a rare bonus at a random place that sets off a riot of 7–9 clones for 2–3 s, eating
   everything they find and dying on ghosts.
 
@@ -145,7 +145,7 @@ chiptune sound (`config/arcadeConfig.ts`).
 - Energizer: a shockwave, the season's particles, an edge pulse. Fruit and egg: a burst of
   the season's particles and a pop-up. Extra life: "1UP". A ghost brushing past: a whoosh.
 - One style for all seasons, coloured by the season. The hell and the arcade keep their
-  own effects. _Planned (stage 10.7)_: livelier rings, a teleport effect, new teleporters.
+  own effects. _Planned (stages 3.3, 6.5)_: livelier rings, a teleport effect, new teleporters.
 
 ## 10. Flow and screens
 
