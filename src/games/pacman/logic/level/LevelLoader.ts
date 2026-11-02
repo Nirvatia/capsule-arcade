@@ -308,7 +308,6 @@ export class LevelLoader {
 		if (this.secretModeValue) {
 			return;
 		}
-		this.profileValue = 'pacman';
 		this.changeLevel(() => {
 			this.levelNumber = HELL_LEVEL_INTERVAL;
 		});
@@ -372,9 +371,12 @@ export class LevelLoader {
 		return { level, ...this.worldOf(level, false) };
 	}
 
-	/** Which world a level number is: the hell every HELL_LEVEL_INTERVAL, else a season. */
+	/**
+	 * Which world a level number is: the hell every HELL_LEVEL_INTERVAL (for both heroes),
+	 * else a season.
+	 */
 	private worldOf(level: number, secret: boolean): { hell: boolean; season: SeasonData } {
-		const hell = !secret && this.profileValue === 'pacman' && level % HELL_LEVEL_INTERVAL === 0;
+		const hell = !secret && level % HELL_LEVEL_INTERVAL === 0;
 		const season = secret ? secretSeason() : hell ? hellSeason() : seasonForLevel(level);
 		return { hell, season };
 	}

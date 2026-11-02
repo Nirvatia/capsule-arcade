@@ -26,13 +26,7 @@ makes outside the chat. The model named per stage is a suggestion.
 1. ~~**Refactor to solid game-dev code**~~. Done (see Done).
 
 2. **Bugs** (Sonnet).
-   1. **Boss levels for Ms. Pac-Man too** (owner's decision): today the hell is Pac-Man's
-      only (`LevelLoader.worldOf`, `profile === 'pacman'`), so Ms. Pac-Man saw a summer on
-      level 5. Route every 5th level to the boss world for both heroes. In the hell she
-      plays with the hell's own kit (weapons, pickups; the overdrive and hypnosis have no
-      ghosts to work on there) and keeps her own look: check what `PlayerView` draws for
-      her in the hell and whether her death and the boss reward work. Update
-      `logic/level/levelRouting.test.ts` and `DESIGN.md` §2/§7.
+   1. ~~**Boss levels for Ms. Pac-Man too**~~. Done (see Done).
    2. **Fruit order** (`logic/bonuses/fruitCatalog.ts`): today one fruit per level from a
       mixed list, and Ms. Pac-Man always random (a bell on level 1). Follow the originals:
       Pac-Man cherry, strawberry, orange ×2, apple ×2, melon ×2, Galaxian ×2, bell ×2, then
@@ -222,3 +216,7 @@ makes outside the chat. The model named per stage is a suggestion.
     (`ARCHITECTURE.md`, Rules of thumb); moving folders would have cost more than it
     gives.
   - New tests: `ghostContact.test.ts`, `levelRouting.test.ts` (74 tests in all).
+- v3 2.1 (seventh chat): every 5th level is the hell for both heroes
+  (`LevelLoader.worldOf`; the dev Hell button no longer switches to Pac-Man). Ms. Pac-Man
+  plays it as her own hero (`HeroView`), berserk as her powered look; her death, the abyss
+  and the level after work as Pac-Man's. Her own berserk / BFG-charge art: stage 8.

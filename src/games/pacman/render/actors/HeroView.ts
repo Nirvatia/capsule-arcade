@@ -3,7 +3,7 @@
 // overdrive) and its last seconds, the death and the respawn shield into the hero's state, and
 // the game's cues into acting (a glow at the lips per dot, a real bite for fruit, the egg and
 // ghosts). The hell keeps PlayerView for Pac-Man (berserk and the BFG charge are its own
-// looks); the arcade draws its own sprites.
+// looks); Ms. Pac-Man plays the hell as this hero too. The arcade draws its own sprites.
 import type { PlayerService } from '../../logic/actors/PlayerService';
 import type { PacmanAudioCue } from '../../core/Events';
 import type { GridLayout } from '../maze/GridView';
@@ -77,7 +77,8 @@ export class HeroView {
 			y: layout.offsetY + pos.y * S,
 			angle: this.angle,
 			moving: !options.dying && this.speed > 0.5,
-			power: options.look === 'energized',
+			// in the hell Ms. Pac-Man's berserk shows as her powered look (her own art: stage 8)
+			power: options.look === 'energized' || options.look === 'berserk',
 			ending: Boolean(options.ending),
 			dying: options.dying,
 			invulnerable: player.isInvulnerable

@@ -28,8 +28,7 @@ size of one tile.
 
 - A new game starts on level 1 with 3 lives and runs until the lives are gone.
 - Level `n` is a season: 1 summer, 2 autumn, 3 winter, 4 spring, then again
-  (`logic/level/SeasonCatalog.ts`). Every 5th level is the hell for Pac-Man; Ms. Pac-Man
-  gets the season instead (_planned, stage 2.1_: the boss world for both heroes). Later boss worlds take levels 10, 15, … (plan stage 6).
+  (`logic/level/SeasonCatalog.ts`). Every 5th level is the hell, for both heroes. Later boss worlds take levels 10, 15, … (plan stage 6).
 - Level 7 hides the way into the secret level (§8, the arcade); after it the run continues
   on the level after the one it was entered from.
 - Score and lives carry over between levels. Extra life at 10 000 points, then every
@@ -101,6 +100,9 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   particles thrown up at the front. The next level starts in place, without a fade.
 
 ## 7. The hell (boss level)
+
+Both heroes play it with the hell's own kit (weapons, pickups); Ms. Pac-Man's overdrive and
+hypnosis have no ghosts to work on here, and her berserk shows as her powered look.
 
 Level 5 (Pac-Man only): a burnt version of the meadow with lava, pentagrams and teleporter
 pads, and no ghosts but their lord.

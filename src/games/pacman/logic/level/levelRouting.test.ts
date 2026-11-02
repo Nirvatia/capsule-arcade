@@ -24,8 +24,8 @@ describe('level routing', () => {
 		expect(seasons).toEqual(['summer', 'autumn', 'winter', 'spring']);
 	});
 
-	it('every fifth level is the hell for Pac-Man', () => {
-		const loader = newRun('pacman');
+	it.each(['pacman', 'ms-pacman'] as const)('every fifth level is the hell (%s)', (profile) => {
+		const loader = newRun(profile);
 		for (let level = 1; level < 5; level += 1) {
 			expect(loader.hellMode).toBe(false);
 			loader.advanceLevel();
@@ -33,16 +33,8 @@ describe('level routing', () => {
 		expect(loader.level).toBe(5);
 		expect(loader.hellMode).toBe(true);
 		expect(loader.ensure().doom).not.toBeNull();
+		expect(loader.peekNextLevel().hell).toBe(false);
 		loader.advanceLevel();
-		expect(loader.hellMode).toBe(false);
-	});
-
-	it('Ms. Pac-Man gets the season on the fifth level (current design, see ROADMAP 2.1)', () => {
-		const loader = newRun('ms-pacman');
-		for (let level = 1; level < 5; level += 1) {
-			loader.advanceLevel();
-		}
-		expect(loader.level).toBe(5);
 		expect(loader.hellMode).toBe(false);
 	});
 });

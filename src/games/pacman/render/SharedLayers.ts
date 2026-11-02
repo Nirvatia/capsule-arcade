@@ -67,12 +67,12 @@ export class SharedLayers {
 			return;
 		}
 		if (frame.level.profile === 'ms-pacman') {
-			// Ms. Pac-Man the heroine (stage 10.4)
+			// Ms. Pac-Man the heroine, the hell included
 			this.msHeroView.draw(frame.ctx, player, layout, frame.time, this.playerOptions(frame));
 		} else if (frame.level.hellMode) {
 			this.playerView.draw(frame.ctx, player, layout, frame.time, this.playerOptions(frame));
 		} else {
-			// the season levels: Pac-Man the hero (stage 10.3)
+			// the season levels: Pac-Man the hero
 			this.heroView.draw(frame.ctx, player, layout, frame.time, this.playerOptions(frame));
 		}
 	}
