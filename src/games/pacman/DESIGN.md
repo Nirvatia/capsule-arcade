@@ -64,9 +64,12 @@ backs off up close (`logic/actors/GhostService.ts`). Their eyes look where they 
 ## 5. Bonuses
 
 - **Fruit**: two per level, after 70 and 170 dots, on a fixed pad, for the season's fruit
-  time (12–14 s), blinking as it runs out. The kind follows the level: cherry 100,
-  strawberry 300, orange 500, pretzel 500, apple 700, pear 1000, melon 1000, Galaxian 2000,
-  bell 3000, key 5000 (then key). Ms. Pac-Man gets a random fruit.
+  time (12–14 s), blinking as it runs out. Values: cherry 100, strawberry 300, orange
+  500, pretzel 500, apple 700, pear 1000, melon 1000, Galaxian 2000, bell 3000, key 5000.
+  The kind follows the arcade orders (`logic/bonuses/fruitCatalog.ts`): Pac-Man cherry,
+  strawberry, orange ×2, apple ×2, melon ×2, Galaxian ×2, bell ×2, then the key; Ms.
+  Pac-Man cherry, strawberry, orange, pretzel, apple, pear, melon (for the arcade's banana)
+  on levels 1–7, then one of those at random, fixed per level so the HUD row agrees.
 - **Lair code and the Easter egg** (level 7): eat (or, for Ms. Pac-Man, hypnotise) the
   ghosts in the order Blinky, Pinky, Inky, Clyde. Every ghost stops and vanishes (1.2 s:
   it swells, shrinks and rises as it fades, sparks in its colour) and is gone for the rest

@@ -27,10 +27,7 @@ makes outside the chat. The model named per stage is a suggestion.
 
 2. **Bugs** (Sonnet).
    1. ~~**Boss levels for Ms. Pac-Man too**~~. Done (see Done).
-   2. **Fruit order** (`logic/bonuses/fruitCatalog.ts`): today one fruit per level from a
-      mixed list, and Ms. Pac-Man always random (a bell on level 1). Follow the originals:
-      Pac-Man cherry, strawberry, orange ×2, apple ×2, melon ×2, Galaxian ×2, bell ×2, then
-      key; Ms. Pac-Man a fixed order for levels 1–7, random after.
+   2. ~~**Fruit order**~~. Done (see Done).
    3. After a death the hero respawns facing his last direction (e.g. down); respawn
       facing the start direction.
    4. The lair door does not open when ghosts leave the lair (`MeadowWorld.setLairGate`
@@ -220,3 +217,7 @@ makes outside the chat. The model named per stage is a suggestion.
   (`LevelLoader.worldOf`; the dev Hell button no longer switches to Pac-Man). Ms. Pac-Man
   plays it as her own hero (`HeroView`), berserk as her powered look; her death, the abyss
   and the level after work as Pac-Man's. Her own berserk / BFG-charge art: stage 8.
+- v3 2.2 (seventh chat): the fruit follows the arcade orders per hero
+  (`fruitForLevel(level, profile)`; Ms. Pac-Man's melon stands in for the banana; her
+  random fruit from level 8 is fixed per level so the HUD row and the board agree). Test:
+  `logic/bonuses/fruitOrder.test.ts`.

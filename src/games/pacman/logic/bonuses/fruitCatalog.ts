@@ -13,6 +13,7 @@ export const FRUIT = {
 
 export type FruitKind = (typeof FRUIT)[keyof typeof FRUIT];
 
+/** Every fruit kind, by value (the dev panel lists them in this order). */
 export const FRUIT_ORDER: readonly FruitKind[] = [
 	FRUIT.CHERRY,
 	FRUIT.STRAWBERRY,
