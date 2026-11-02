@@ -85,27 +85,60 @@ export const FRUIT_CATALOG: readonly FruitInfo[] = [
 	}
 ];
 
-export function fruitForLevel(level: number): FruitKind {
+/** Pac-Man's fruit by level (arcade order), the key from level 13 on. */
+export const PACMAN_FRUIT_BY_LEVEL: readonly FruitKind[] = [
+	FRUIT.CHERRY,
+	FRUIT.STRAWBERRY,
+	FRUIT.ORANGE,
+	FRUIT.ORANGE,
+	FRUIT.APPLE,
+	FRUIT.APPLE,
+	FRUIT.MELON,
+	FRUIT.MELON,
+	FRUIT.GALAXIAN,
+	FRUIT.GALAXIAN,
+	FRUIT.BELL,
+	FRUIT.BELL,
+	FRUIT.KEY
+];
+
+/**
+ * Ms. Pac-Man's fruit for levels 1–7 (arcade order; the melon stands in for the banana,
+ * which the game does not have); from level 8 one of these at random.
+ */
+export const MS_FRUIT_BY_LEVEL: readonly FruitKind[] = [
+	FRUIT.CHERRY,
+	FRUIT.STRAWBERRY,
+	FRUIT.ORANGE,
+	FRUIT.PRETZEL,
+	FRUIT.APPLE,
+	FRUIT.PEAR,
+	FRUIT.MELON
+];
+
+/** A fixed pseudo-random 0..1 per level, so the HUD row and the board agree. */
+function levelRandom(level: number): number {
+	const v = Math.sin(level * 12.9898 + 4.1414) * 43758.5453;
+	return v - Math.floor(v);
+}
+
+/** The fruit of `level` for a hero: the arcade orders, Ms. Pac-Man's random from level 8. */
+export function fruitForLevel(
+	level: number,
+	profile: 'pacman' | 'ms-pacman' = 'pacman'
+): FruitKind {
 	if (!Number.isFinite(level) || level < 1) {
 		console.error('fruitCatalog.fruitForLevel', 'invalid level', level);
 	}
 	const safeLevel = Number.isFinite(level) && level >= 1 ? Math.floor(level) : 1;
-	const index = Math.min(safeLevel - 1, FRUIT_ORDER.length - 1);
-	const kind = FRUIT_ORDER[Math.max(0, index)];
-	if (!kind) {
-		console.error('fruitCatalog.fruitForLevel', 'missing fruit kind', { level, index });
-		return FRUIT.KEY;
+	if (profile === 'ms-pacman') {
+		const table = MS_FRUIT_BY_LEVEL;
+		const index =
+			safeLevel <= table.length
+				? safeLevel - 1
+				: Math.floor(levelRandom(safeLevel) * table.length) % table.length;
+		return table[index];
 	}
-	return kind;
-}
-
-export function randomFruitKind(): FruitKind {
-	const index = Math.floor(Math.random() * FRUIT_ORDER.length);
-	const clamped = Math.min(Math.max(0, index), FRUIT_ORDER.length - 1);
-	const kind = FRUIT_ORDER[clamped];
-	if (!kind) {
-		console.error('fruitCatalog.randomFruitKind', 'missing fruit kind', { index });
-		return FRUIT.KEY;
-	}
-	return kind;
+	const table = PACMAN_FRUIT_BY_LEVEL;
+	return table[Math.min(safeLevel, table.length) - 1];
 }

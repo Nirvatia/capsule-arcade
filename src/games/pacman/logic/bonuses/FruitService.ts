@@ -8,7 +8,7 @@ import type { GameProfile } from '../rules/HypnosisService';
 import type { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
 import type { FruitKind } from './fruitCatalog';
-import { fruitForLevel, randomFruitKind } from './fruitCatalog';
+import { fruitForLevel } from './fruitCatalog';
 import { SCORE_TABLE } from '../../config/scoreConfig';
 import { ACTOR_CONTACT_DISTANCE_SQ } from '../../config/actorConfig';
 import { debugLog } from '../debug/debugLog';
@@ -31,7 +31,7 @@ export class FruitService {
 	private timerValue = 0;
 	private fruitDurationValue = DEFAULT_FRUIT_DURATION;
 	private spawnedCountValue = 0;
-	/** The arcade round's fruit; null: by level (or random for Ms. Pac-Man). */
+	/** The arcade round's fruit; null: by level and hero (`fruitForLevel`). */
 	private kindOverride: FruitKind | null = null;
 
 	constructor(
@@ -162,10 +162,7 @@ export class FruitService {
 	}
 
 	private spawn(forced?: FruitKind): void {
-		const kind =
-			forced ??
-			this.kindOverride ??
-			(this.profileValue === 'ms-pacman' ? randomFruitKind() : fruitForLevel(this.levelValue));
+		const kind = forced ?? this.kindOverride ?? fruitForLevel(this.levelValue, this.profileValue);
 		const tile = this.chooseSpawnTile();
 		if (!tile) {
 			return;

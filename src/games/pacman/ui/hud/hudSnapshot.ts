@@ -114,7 +114,7 @@ export function buildHudSnapshot(
 	} else {
 		const n = Math.max(1, level.level);
 		for (let i = Math.max(1, n - FRUIT_ROW + 1); i <= n; i++) {
-			fruits.push(fruitForLevel(i));
+			fruits.push(fruitForLevel(i, level.profile));
 		}
 	}
 	const score = level.score;
