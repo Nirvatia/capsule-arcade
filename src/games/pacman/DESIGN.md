@@ -104,7 +104,7 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
 Both heroes play it with the hell's own kit (weapons, pickups); Ms. Pac-Man's overdrive and
 hypnosis have no ghosts to work on here, and her berserk shows as her powered look.
 
-Level 5 (Pac-Man only): a burnt version of the meadow with lava, pentagrams and teleporter
+Level 5 (and every 5th): a burnt version of the meadow with lava, pentagrams and teleporter
 pads, and no ghosts but their lord.
 
 - **Boss: Blinky, lord of hell** — a red demon ghost, one tile in size, 1500 HP, three
