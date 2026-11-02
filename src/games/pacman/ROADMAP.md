@@ -26,10 +26,13 @@ makes outside the chat. The model named per stage is a suggestion.
 1. ~~**Refactor to solid game-dev code**~~. Done (see Done).
 
 2. **Bugs** (Sonnet).
-   1. Level 5 played as a summer level. In the code the hell is Pac-Man's only
-      (`LevelLoader.worldOf`, `profile === 'pacman'`); Ms. Pac-Man gets the season by
-      design. Pac-Man's level 5 is the hell (`logic/level/levelRouting.test.ts`). The owner
-      decides whether Ms. Pac-Man gets the hell too (update that test then).
+   1. **Boss levels for Ms. Pac-Man too** (owner's decision): today the hell is Pac-Man's
+      only (`LevelLoader.worldOf`, `profile === 'pacman'`), so Ms. Pac-Man saw a summer on
+      level 5. Route every 5th level to the boss world for both heroes. In the hell she
+      plays with the hell's own kit (weapons, pickups; the overdrive and hypnosis have no
+      ghosts to work on there) and keeps her own look: check what `PlayerView` draws for
+      her in the hell and whether her death and the boss reward work. Update
+      `logic/level/levelRouting.test.ts` and `DESIGN.md` §2/§7.
    2. **Fruit order** (`logic/bonuses/fruitCatalog.ts`): today one fruit per level from a
       mixed list, and Ms. Pac-Man always random (a bell on level 1). Follow the originals:
       Pac-Man cherry, strawberry, orange ×2, apple ×2, melon ×2, Galaxian ×2, bell ×2, then
@@ -61,12 +64,25 @@ makes outside the chat. The model named per stage is a suggestion.
       spawns at a random place and sets off a riot of 7–9 Pac-Man clones for 2–3 s that
       eat everything they find (dots, fruit) and die on contact with ghosts. Today's
       `EchoCloneView` look stays until stage 8.
-   2. **Hypnosis for Ms. Pac-Man** (`logic/rules/HypnosisService.ts`): useful only half the
-      time, because a hypnotised ghost does not take the best route through the food. Found
-      in stage 1: it heads for the dot nearest _in a straight line_
-      (`logic/actors/ghostTargets.nearestDotTarget`), through walls, so it often walks
-      away from food behind a wall. Make it plan by path length (BFS) towards the most dots
-      per second (nearest dense cluster, no backtracking over eaten corridors).
+   2. **Hypnosis for Ms. Pac-Man, two modes** (owner's design;
+      `logic/rules/HypnosisService.ts`, `logic/actors/ghostTargets.ts`). Today the
+      hypnotised ghost heads for the dot nearest _in a straight line_
+      (`nearestDotTarget`), through walls, so it is useful only half the time.
+      - When a ghost is hypnotised, plan once for the time it has (hypnosis left, its
+        speed): walk the maze by path length (BFS over ghost-walkable tiles) and count how
+        many dots it can really eat in that time, greedily from cluster to cluster (no
+        doubling back over eaten corridors).
+      - Enough food (at least a threshold of dots, a config value): **feeder** mode, it
+        follows that route and eats.
+      - Too little or too far: **hunter** mode, it chases the nearest other ghost by path
+        and eats it on contact (eyes home, points like Pac-Man's ghost chain).
+      - The mode is fixed for the whole hypnosis; a new hypnosis (moved to another ghost)
+        plans again. It may end with nothing eaten, as a wasted Pac-Man energizer can.
+      - Open points for the plan: the threshold and the chain points; whether hunted
+        ghosts react; how the mode reads on screen (eye colour now, art in stage 8).
+      - Tests: the feeder's route beats the straight-line pick on a maze with food behind
+        a wall; the hunter is chosen when the food is gone or out of reach; the mode
+        does not flip mid-hypnosis.
    3. **Hell lighting, phase 3**: in the ash storm the lights that follow Pac-Man flicker
       like a strobe and do not help visibility (`render/doom/DoomLightmap.ts`, the night
       pass in `DoomWorld`); make them calm and useful.

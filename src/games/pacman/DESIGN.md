@@ -29,7 +29,7 @@ size of one tile.
 - A new game starts on level 1 with 3 lives and runs until the lives are gone.
 - Level `n` is a season: 1 summer, 2 autumn, 3 winter, 4 spring, then again
   (`logic/level/SeasonCatalog.ts`). Every 5th level is the hell for Pac-Man; Ms. Pac-Man
-  gets the season instead. Later boss worlds take levels 10, 15, … (plan stage 6).
+  gets the season instead (_planned, stage 2.1_: the boss world for both heroes). Later boss worlds take levels 10, 15, … (plan stage 6).
 - Level 7 hides the way into the secret level (§8, the arcade); after it the run continues
   on the level after the one it was entered from.
 - Score and lives carry over between levels. Extra life at 10 000 points, then every
@@ -47,7 +47,10 @@ size of one tile.
 - **Overdrive (Ms. Pac-Man)**: instead of scaring, an energizer starts a 5 s overdrive.
   Touching a ghost hypnotises it for 4 s (+200); it then eats dots for her. Touching another
   moves the hypnosis over (+200) and frees the first, scared. A ghost that wakes up on its
-  own is enraged for 2 s (faster, deadly).
+  own is enraged for 2 s (faster, deadly). _Planned (stage 4.2)_: on hypnosis the ghost
+  picks one mode for its whole time: **feeder** (follows the route, by path length, that
+  eats the most dots it can reach in time) or, when there is too little food in reach,
+  **hunter** (chases and eats the other ghosts).
 - **Death**: touching an active ghost costs a life; the board shatters and rebuilds from
   the respawn point (§10). No lives left: game over.
 
