@@ -126,7 +126,7 @@ pads, and no ghosts but their lord.
   explodes), berserk (a fist: faster, bites the boss, minions extend it), medkit.
 - **Reward**: when the boss dies a heart appears where it fell and an exit at the far end;
   taking either ends the level as a win, the heart also gives +1 life.
-- Direction rule: every actor shows where it heads (eyes; hell actors add a small chevron
+- Direction rule: every actor shows where it heads (eyes; the imps add a small chevron; the boss's eyes are enough
   on the tile's leading edge; Pac-Man has his mouth).
 
 ## 8. The arcade (secret level)

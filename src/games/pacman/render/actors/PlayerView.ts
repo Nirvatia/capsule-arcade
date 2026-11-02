@@ -258,14 +258,19 @@ export class PlayerView {
 		}
 		this.last = { x: pos.x, y: pos.y };
 
-		const target = facingAngle(player.facing, this.angle);
-		let turn = target - this.angle;
-		while (turn > Math.PI) turn -= TAU;
-		while (turn < -Math.PI) turn += TAU;
-		if (Math.abs(turn) > 1 && this.turnKick <= 0) {
-			this.turnKick = 1;
+		if (!player.facing) {
+			// a fresh start or a respawn: face the start direction, not the last heading
+			this.angle = 0;
+		} else {
+			const target = facingAngle(player.facing, this.angle);
+			let turn = target - this.angle;
+			while (turn > Math.PI) turn -= TAU;
+			while (turn < -Math.PI) turn += TAU;
+			if (Math.abs(turn) > 1 && this.turnKick <= 0) {
+				this.turnKick = 1;
+			}
+			this.angle = lerpAngle(this.angle, target, Math.min(1, dt * 45));
 		}
-		this.angle = lerpAngle(this.angle, target, Math.min(1, dt * 45));
 
 		const running = this.speed > 0.5;
 		this.chomp += dt * (running ? 11 : 2.5);

@@ -8,10 +8,17 @@ import { MeadowWorld } from './MeadowWorld';
 import type { MeadowTheme } from './MeadowTheme';
 import type { PacmanFx } from '../../../core/Events';
 import { LevelFx } from '../../fx/LevelFx';
+import type { GridService } from '../../../logic/maze/GridService';
+import type { GhostModel } from '../../../logic/actors/GhostModel';
 
 /** Share of eaten dots at which the season's weather rises, then the night falls. */
 const WEATHER_AT = 0.5;
 const NIGHT_AT = 0.75;
+/** A ghost leaving the lair or coming home this close (tiles) to the gate opens it. */
+const GATE_REACH = 1.6;
+/** Gate speed, share of the full slide per second, opening and closing. */
+const GATE_OPEN_RATE = 7;
+const GATE_CLOSE_RATE = 3;
 
 /**
  * Meadow seasons (spring, summer, autumn, winter) from the owner's mock-ups: the baked
@@ -28,6 +35,9 @@ export class MeadowLevelRenderer implements LevelRenderer, WorldPreview {
 	private readonly fx = new LevelFx();
 	private fxWorld: MeadowWorld | null = null;
 	private fxTheme: MeadowTheme | null = null;
+	/** How far the ghosts' traffic holds the lair gate open, 0..1 (eased). */
+	private ghostGate = 0;
+	private gateTiles: { grid: GridService; tiles: Array<{ x: number; y: number }> } | null = null;
 
 	constructor(shared: SharedLayers, themeFor: (season: string) => MeadowTheme | null) {
 		this.shared = shared;
@@ -76,7 +86,10 @@ export class MeadowLevelRenderer implements LevelRenderer, WorldPreview {
 		if (amp > 0 && !frame.paused) {
 			ctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
 		}
-		world.setLairGate(level.egg?.doorOpen ?? 0);
+		if (!frame.paused) {
+			this.updateGhostGate(level.grid, level.ghosts?.list ?? [], frame.dt);
+		}
+		world.setLairGate(Math.max(level.egg?.doorOpen ?? 0, this.ghostGate));
 		world.drawWorld(ctx);
 		world.drawMood(ctx);
 		world.drawFood(ctx, (x, y) => progress.isCollected(x, y));
@@ -110,6 +123,43 @@ export class MeadowLevelRenderer implements LevelRenderer, WorldPreview {
 		world.drawOverlay(ctx);
 		this.fx.drawScreen(ctx, frame.width, frame.height);
 		return layout;
+	}
+
+	/** Opens the gate for a ghost leaving the lair or coming home as eyes, then shuts it. */
+	private updateGhostGate(
+		grid: GridService | null,
+		ghosts: readonly GhostModel[],
+		dt: number
+	): void {
+		let wanted = 0;
+		if (grid) {
+			if (this.gateTiles?.grid !== grid) {
+				const tiles: Array<{ x: number; y: number }> = [];
+				for (let y = 0; y < grid.height; y += 1) {
+					for (let x = 0; x < grid.width; x += 1) {
+						if (grid.tileAt(x, y) === 'LE') {
+							tiles.push({ x: x + 0.5, y: y + 0.5 });
+						}
+					}
+				}
+				this.gateTiles = { grid, tiles };
+			}
+			const tiles = this.gateTiles.tiles;
+			const near = ghosts.some((ghost) => {
+				if (ghost.state !== 'exiting' && ghost.state !== 'eyes') {
+					return false;
+				}
+				const p = ghost.position;
+				return tiles.some((t) => Math.hypot(p.x - t.x, p.y - t.y) < GATE_REACH);
+			});
+			wanted = near ? 1 : 0;
+		}
+		const rate = wanted > this.ghostGate ? GATE_OPEN_RATE : GATE_CLOSE_RATE;
+		const step = Math.min(1, dt * rate);
+		this.ghostGate += (wanted - this.ghostGate) * step;
+		if (Math.abs(wanted - this.ghostGate) < 0.002) {
+			this.ghostGate = wanted;
+		}
 	}
 
 	/** The next level's world, untouched and in its morning mood, for the season turn. */

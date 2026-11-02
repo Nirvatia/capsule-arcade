@@ -2,7 +2,7 @@ import type { DoomDirection } from '../../logic/doom/DoomGraph';
 import type { DoomShape, DoomStateName } from '../../logic/doom/DoomBossModel';
 import type { GridLayout } from '../maze/GridView';
 import type { EyeStyle, GhostShape, HornStyle } from './hellGhost';
-import { dirAngle, drawEyes, drawHeading, drawHorns, ghostPath, glow, noise } from './hellGhost';
+import { dirAngle, drawEyes, drawHorns, ghostPath, glow, noise } from './hellGhost';
 
 /** Everything the view needs about one body (the boss or its phase-3 echo). */
 export interface BossSnapshot {
@@ -119,8 +119,8 @@ const ECHO_SKIN: Skin = {
  * Phase 1: dark red, small horns, a closed scowl.
  * Phase 2: lava cracks, longer glowing horns, a torn skirt, a fanged grin.
  * Phase 3: burning from inside, a second pair of horns, a skirt of flames.
- * The eyes look where it is heading (on the wind-up: at the player); a chevron on the
- * tile's leading edge repeats it. Wind-up: it swells and shivers, the grin glows.
+ * The eyes look where it is heading (on the wind-up: at the player); no chevron, the
+ * eyes are enough for the boss (the imps keep theirs). Wind-up: it swells and shivers, the grin glows.
  * Dash: stretched along the heading with afterimages. Stunned: spiral eyes.
  */
 export class HellBlinkyView {
@@ -211,17 +211,6 @@ export class HellBlinkyView {
 
 		if (phase >= 3 && !snap.echo) {
 			this.drawFlames(ctx, x, y, shape, skin, t);
-		}
-		if (!stunned && !transition && snap.state !== 'INTRO') {
-			drawHeading(
-				ctx,
-				x,
-				y,
-				S,
-				heading,
-				snap.echo ? '190,150,255' : '255,90,40',
-				0.55 + 0.35 * pulse
-			);
 		}
 		ctx.restore();
 	}

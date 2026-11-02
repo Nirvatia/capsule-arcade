@@ -28,12 +28,9 @@ makes outside the chat. The model named per stage is a suggestion.
 2. **Bugs** (Sonnet).
    1. ~~**Boss levels for Ms. Pac-Man too**~~. Done (see Done).
    2. ~~**Fruit order**~~. Done (see Done).
-   3. After a death the hero respawns facing his last direction (e.g. down); respawn
-      facing the start direction.
-   4. The lair door does not open when ghosts leave the lair (`MeadowWorld.setLairGate`
-      is only driven by the Easter egg); open it for every ghost going out.
-   5. The hell boss shows a heading chevron (`render/doom/HellBlinkyView`, `drawHeading`):
-      remove it from the boss; its eyes already show the heading.
+   3. ~~**Respawn heading**~~. Done (see Done).
+   4. ~~**Lair door for the ghosts**~~. Done (see Done).
+   5. ~~**No chevron on the hell boss**~~. Done (see Done).
    6. Pac-Man blinks before the game starts.
    7. No screen fade on the very first start of a game (`Director.startGame`).
    8. Level change: the season turn keeps Pac-Man's sprite on screen until the next level
@@ -221,3 +218,8 @@ makes outside the chat. The model named per stage is a suggestion.
   (`fruitForLevel(level, profile)`; Ms. Pac-Man's melon stands in for the banana; her
   random fruit from level 8 is fixed per level so the HUD row and the board agree). Test:
   `logic/bonuses/fruitOrder.test.ts`.
+- v3 2.3–2.5 (seventh chat): after a respawn (or before the first move) the hero faces
+  the start direction, not the last heading (`HeroView`, `PlayerView`: no facing → start
+  angle). The lair gate slides open for a ghost leaving the lair or coming home as eyes
+  and shuts after it (`MeadowLevelRenderer.updateGhostGate`; the Easter egg's door still
+  wins). The hell boss lost its heading chevron (the imps keep theirs).

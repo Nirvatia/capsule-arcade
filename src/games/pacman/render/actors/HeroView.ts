@@ -21,11 +21,14 @@ function facingAngle(facing: string | null, fallback: number): number {
 	return fallback;
 }
 
+/** The heading a hero shows before its first move (0: facing right). */
+const START_ANGLE = 0;
+
 export class HeroView {
 	constructor(private readonly hero: Hero) {}
 
 	private lastTime = -1;
-	private angle = 0;
+	private angle = START_ANGLE;
 	private last: { x: number; y: number } | null = null;
 	/** Smoothed speed, tiles per second. */
 	private speed = 0;
@@ -64,12 +67,17 @@ export class HeroView {
 			this.speed += (moved / dt - this.speed) * Math.min(1, dt * 12);
 		}
 		this.last = { x: pos.x, y: pos.y };
-		// turn fast but not in one frame: the hero reads the turn
-		const target = facingAngle(player.facing, this.angle);
-		let turn = target - this.angle;
-		while (turn > Math.PI) turn -= Math.PI * 2;
-		while (turn < -Math.PI) turn += Math.PI * 2;
-		this.angle += turn * Math.min(1, dt * 30);
+		if (!player.facing) {
+			// a fresh start or a respawn: face the start direction, not the last heading
+			this.angle = START_ANGLE;
+		} else {
+			// turn fast but not in one frame: the hero reads the turn
+			const target = facingAngle(player.facing, this.angle);
+			let turn = target - this.angle;
+			while (turn > Math.PI) turn -= Math.PI * 2;
+			while (turn < -Math.PI) turn += Math.PI * 2;
+			this.angle += turn * Math.min(1, dt * 30);
+		}
 
 		this.hero.setRadius(S * RADIUS);
 		this.hero.update(dt, {
