@@ -1,12 +1,12 @@
-export class SeededRNG {
+/** mulberry32: маленький быстрый детерминированный генератор. */
+export class Rng {
 	private state: number;
 
 	constructor(seed: number) {
-		this.state = seed >>> 0;
+		this.state = seed >>> 0 || 1;
 	}
 
-	// Следующее число в [0, 1).
-	public next(): number {
+	next(): number {
 		this.state = (this.state + 0x6d2b79f5) | 0;
 		let t = this.state;
 		t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -14,8 +14,11 @@ export class SeededRNG {
 		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 	}
 
-	// Целое в [0, max).
-	public nextInt(max: number): number {
+	int(max: number): number {
 		return Math.floor(this.next() * max);
+	}
+
+	range(min: number, max: number): number {
+		return min + this.next() * (max - min);
 	}
 }
