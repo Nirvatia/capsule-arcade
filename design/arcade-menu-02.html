@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Павильон досуга</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Tektur:wght@500;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --enamel: #f1f5f2; --mint: #cfe4de; --teal: #0e4a4f; --red: #ff3a1d; --glass: #070d0f; --cream: #e6ddc4;
+  --f-head: "Unbounded", "Arial Rounded MT Bold", sans-serif;
+  --f-hud: "Tektur", "Arial Narrow", sans-serif;
+  --f-hand: "Caveat", cursive;
+  --bar: 64px;
+  --redgloss: linear-gradient(180deg, #ff6a50, var(--red) 45%, #d92a10);
+}
+* { box-sizing: border-box; margin: 0; }
+html { background: #061a1c; }
+body { color: var(--teal); font: 500 17px/1.35 var(--f-hud); overflow-x: hidden; }
+button, a { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+/* ===== TOPBAR ===== */
+.topbar {
+  position: sticky; top: 0; z-index: 30; height: var(--bar); padding: 0 12px;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
+  background: linear-gradient(180deg, #fbfdfb, #e2ebe7); border-bottom: 3px solid var(--teal);
+  box-shadow: 0 3px 0 #b9c8c3, 0 10px 22px rgba(0,0,0,.45);
+}
+.pill {
+  height: 44px; display: flex; align-items: center; gap: 10px; border: 0; border-radius: 22px; cursor: pointer; text-decoration: none; color: var(--teal);
+  background: linear-gradient(180deg, #fff, #e3ece8);
+  box-shadow: 0 0 0 2px var(--teal), inset 0 -3px 0 rgba(14,74,79,.12), 0 3px 0 2px rgba(14,74,79,.25);
+  transition: transform .1s, box-shadow .1s;
+}
+.pill:active { transform: translateY(2px); box-shadow: 0 0 0 2px var(--teal), inset 0 -1px 0 rgba(14,74,79,.12), 0 1px 0 2px rgba(14,74,79,.25); }
+.pill:focus-visible { outline-color: var(--red); }
+.back { padding: 0 20px 0 4px; }
+.knob { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 28%, #ff9a82, var(--red) 55%, #b81d08); box-shadow: inset 0 -2px 0 rgba(0,0,0,.2), 0 0 0 2px #fff; transition: box-shadow .15s; }
+.knob svg { width: 20px; height: 20px; color: #fff; transition: transform .15s; }
+.back:hover .knob { box-shadow: inset 0 -2px 0 rgba(0,0,0,.2), 0 0 0 2px #fff, 0 0 16px 3px rgba(255,58,29,.7); }
+.back:hover .knob svg { transform: translateX(-3px); }
+.back b, .snd b { font: 700 14px var(--f-head); text-transform: uppercase; letter-spacing: .02em; }
+.where {
+  justify-self: center; height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 18px; border-radius: 10px;
+  background: #dfe8e4; box-shadow: inset 0 2px 5px rgba(14,74,79,.28), 0 1px 0 #fff;
+  font: 700 14px var(--f-hud); letter-spacing: .16em; text-transform: uppercase; white-space: nowrap;
+}
+.where i { width: 9px; height: 9px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px 2px rgba(255,58,29,.7); }
+.where small { padding-left: 12px; border-left: 2px solid #b4c4bf; font: 500 12px var(--f-hud); letter-spacing: .14em; color: #5b8b8a; }
+.snd { padding: 0 5px 0 16px; }
+.sw { position: relative; width: 50px; height: 34px; border-radius: 17px; background: #0c2326; box-shadow: inset 0 3px 6px #000; transition: background .15s; }
+.sw i { position: absolute; top: 4px; left: 4px; width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(180deg, #fff, #9fb2ac); box-shadow: 0 2px 3px rgba(0,0,0,.5); transition: transform .15s; }
+.snd[aria-pressed="true"] .sw { background: var(--redgloss); }
+.snd[aria-pressed="true"] .sw i { transform: translateX(16px); }
+
+/* ===== МИР: плоское панно ===== */
+.world { position: relative; isolation: isolate; overflow: hidden; min-height: calc(100vh - var(--bar)); }
+.bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; }
+.world::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .5; mix-blend-mode: multiply;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 11px), repeating-linear-gradient(90deg, rgba(0,0,0,.22) 0 1px, transparent 1px 11px); }
+.world::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,.55) 100%); }
+.rays { transform-origin: 800px 560px; animation: spin 360s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.cl1 { animation: float 50s ease-in-out infinite alternate; }
+.cl2 { animation: float 70s ease-in-out infinite alternate-reverse; }
+.cl3 { animation: float 40s ease-in-out infinite alternate; }
+@keyframes float { to { transform: translateX(90px); } }
+.ship { animation: drift 150s linear infinite; }
+@keyframes drift { from { transform: translateX(-120px); } to { transform: translateX(2100px); } }
+
+.scene { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 40px 20px 110px; display: grid; grid-template-columns: 1fr minmax(0, 560px) 1fr; gap: 40px; align-items: start; }
+.poster, .honor { display: none; }
+@media (min-width: 1180px) { .poster, .honor { display: block; } }
+.poster {
+  justify-self: end; width: 200px; margin-top: 190px; padding: 12px; transform: rotate(-2deg); background: #efe9d6;
+  border: 6px solid var(--red); border-radius: 4px; text-align: center; box-shadow: 0 14px 26px rgba(0,0,0,.55);
+}
+.poster svg { width: 100%; display: block; margin-bottom: 8px; }
+.poster b { display: block; font: 900 19px/1.1 var(--f-head); text-transform: uppercase; letter-spacing: -.02em; }
+.poster span { display: block; margin: 10px -12px -12px; padding: 7px; background: var(--red); color: #fff; font: 700 12px var(--f-hud); letter-spacing: .16em; text-transform: uppercase; }
+.honor {
+  position: relative; justify-self: start; width: 230px; margin-top: 260px; padding: 16px 14px 12px; transform: rotate(1.5deg);
+  border-radius: 10px; background: linear-gradient(180deg, #fff, #e3ece8); box-shadow: 0 0 0 3px var(--teal), 0 14px 26px rgba(0,0,0,.55);
+}
+.honor::before, .honor::after { content: ""; position: absolute; top: 8px; width: 8px; height: 8px; border-radius: 50%; background: #9fb2ac; box-shadow: inset 0 1px 1px rgba(0,0,0,.4); }
+.honor::before { left: 8px; } .honor::after { right: 8px; }
+.honor h2 { margin-bottom: 10px; text-align: center; font: 900 15px var(--f-head); text-transform: uppercase; color: var(--red); }
+.honor ol { list-style: none; padding: 0; display: grid; gap: 8px; }
+.honor li { display: grid; grid-template-columns: 34px 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; }
+.honor .medal { grid-row: span 2; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: radial-gradient(circle at 50% 30%, var(--p1), var(--p2)); box-shadow: 0 0 0 2px var(--teal); }
+.honor .medal svg { width: 20px; height: 20px; }
+.honor li b { font: 700 13px var(--f-head); text-transform: uppercase; }
+.honor li span { font: 700 13px var(--f-hud); letter-spacing: .1em; color: #5b8b8a; }
+
+/* ===== АВТОМАТ ===== */
+.machine {
+  position: relative; z-index: 2; padding: 16px 52px 24px; border-radius: 48px 48px 20px 20px;
+  background: linear-gradient(90deg, #d0dbd7 0, #fff 10%, #eef3f0 50%, #fff 90%, #cbd6d2 100%);
+  box-shadow: inset 0 3px 0 #fff, inset 0 -6px 0 rgba(14,74,79,.15), 0 0 0 3px var(--teal), 0 34px 50px rgba(0,0,0,.6);
+}
+.feet { position: absolute; left: 0; right: 0; bottom: -26px; display: flex; justify-content: space-between; padding: 0 44px; z-index: -1; }
+.feet i { width: 72px; height: 28px; border-radius: 0 0 10px 10px; background: linear-gradient(#b8c9c4, #5f7571); }
+.machine::after { content: ""; position: absolute; left: -5%; right: -5%; bottom: -44px; height: 40px; z-index: -2; background: radial-gradient(ellipse, rgba(0,0,0,.7), transparent 70%); }
+
+.tube { position: absolute; top: 108px; bottom: 170px; width: 22px; border-radius: 11px; overflow: hidden; background: linear-gradient(90deg, rgba(255,255,255,.7), rgba(255,255,255,.08) 38%, rgba(0,0,0,.3)), linear-gradient(180deg, #ff6a4d, #c4180a); box-shadow: 0 0 0 3px #b6c6c1, 0 0 0 5px var(--teal), 0 0 16px rgba(255,58,29,.55); }
+.tube.l { left: 15px; } .tube.r { right: 15px; }
+.tube::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, rgba(255,255,255,.8) 0 2px, transparent 3px) 0 0 / 22px 38px, radial-gradient(circle, rgba(255,255,255,.5) 0 1.5px, transparent 2.5px) 8px 14px / 22px 52px; animation: rise 5s linear infinite; }
+@keyframes rise { to { background-position: 0 -190px, 8px -246px; } }
+
+.sign {
+  display: flex; align-items: center; gap: 14px; margin: 0 0 16px; padding: 10px 16px 10px 12px; border-radius: 24px;
+  background: linear-gradient(180deg, #fff, #f2f8f5 55%, #dcebe5);
+  box-shadow: inset 0 0 0 3px #b9c8c3, inset 0 0 26px rgba(255,205,140,.65), 0 0 0 3px var(--teal), 0 0 30px rgba(255,200,140,.25);
+}
+.logo { flex: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 28%, #ff8a6e, var(--red) 55%, #a81808); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--teal), 0 0 18px rgba(255,58,29,.6); }
+.logo svg { width: 36px; height: 36px; color: #fff; }
+.sign h1 { font: 900 clamp(28px, 7.4vw, 46px)/.95 var(--f-head); letter-spacing: -.03em; color: var(--red); text-transform: uppercase; text-shadow: 0 0 14px rgba(255,58,29,.3); }
+.sign small { display: block; margin-top: 4px; font: 700 11px var(--f-hud); letter-spacing: .2em; text-transform: uppercase; color: var(--teal); }
+.lamps { margin-left: auto; display: flex; flex-direction: column; gap: 6px; }
+.lamps i { width: 10px; height: 10px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px 2px rgba(255,58,29,.8); }
+.lamps i:nth-child(2) { background: #ffb02e; box-shadow: 0 0 8px 2px rgba(255,176,46,.8); animation: blink 3.2s infinite; }
+.lamps i:nth-child(3) { background: #35e0cf; box-shadow: 0 0 8px 2px rgba(53,224,207,.8); }
+@keyframes blink { 0%, 88%, 100% { opacity: 1; } 92% { opacity: .2; } }
+
+/* купол */
+.dome {
+  --cap: min(84px, calc((min(100vw - 40px, 560px) - 104px - 40px) / 5));
+  position: relative; padding: 46px 18px 16px; border-radius: 50% 50% 16px 16px / 44% 44% 16px 16px;
+  background: radial-gradient(ellipse at 50% 100%, rgba(255,90,50,.45), rgba(255,58,29,.06) 62%), linear-gradient(180deg, #0d1719, #071012);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,.28), inset 0 0 40px rgba(0,0,0,.85), 0 0 0 5px #b6c6c1, 0 0 0 8px var(--teal);
+}
+.dome::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(115deg, rgba(255,255,255,.22), rgba(255,255,255,0) 28%), radial-gradient(ellipse at 22% 10%, rgba(255,255,255,.18), transparent 30%); }
+.ring { height: 12px; margin: 10px -4px 0; border-radius: 6px; background: linear-gradient(180deg, #fff, #9fb2ac); box-shadow: 0 2px 0 var(--teal); }
+.row { display: flex; justify-content: center; min-height: calc(var(--cap) * .9); }
+.row + .row { margin-top: calc(var(--cap) * -.1); }
+.row:last-child { min-height: var(--cap); }
+.cap { position: relative; z-index: 1; width: var(--cap); height: var(--cap); margin: 0 calc(var(--cap) * -.02); padding: 0; border: 0; background: none; cursor: pointer; transform: translateX(var(--dx, 0)); transition: transform .15s; }
+.cap:hover, .cap.sel { z-index: 5; transform: translate(var(--dx, 0), -8px) scale(1.08); }
+.cap.gone { visibility: hidden; }
+.cap:focus-visible { outline-offset: -2px; border-radius: 50%; }
+.ball { position: absolute; inset: 0; overflow: hidden; border-radius: 50%; transform: rotate(var(--r, 0deg));
+  background: radial-gradient(circle at 50% 80%, var(--p1), var(--p2) 75%) top / 100% 50% no-repeat, linear-gradient(180deg, #fff, #cbd8d4) bottom / 100% 50% no-repeat;
+  box-shadow: inset -7px -10px 18px rgba(0,0,0,.32), inset 5px 5px 10px rgba(255,255,255,.4), 0 10px 16px rgba(0,0,0,.55); }
+.ball::before { content: ""; position: absolute; left: 0; right: 0; top: 46%; height: 8%; background: linear-gradient(180deg, #8aa09a, #e9f0ed 45%, #6d837d); }
+.ball .ico { position: absolute; left: 50%; top: 9%; width: 38%; height: 38%; transform: translateX(-50%); color: #fff; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.ball .n { position: absolute; left: 0; right: 0; top: 58%; text-align: center; font: 700 calc(var(--cap) * .18)/1 var(--f-hud); color: var(--p2); letter-spacing: .02em; }
+.cap::after { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: radial-gradient(circle at 30% 22%, rgba(255,255,255,.85) 0, rgba(255,255,255,0) 18%), radial-gradient(circle at 72% 86%, rgba(255,255,255,.22), transparent 26%); }
+.cap.sel .ball { box-shadow: inset -7px -10px 18px rgba(0,0,0,.32), inset 5px 5px 10px rgba(255,255,255,.4), 0 0 0 3px #fff, 0 0 28px 8px var(--p1); }
+
+/* пульт */
+.panel {
+  position: relative; margin-top: 18px; padding: 14px; border-radius: 22px; display: grid; gap: 14px; align-items: center;
+  grid-template-columns: 92px 1fr 100px; grid-template-areas: "s s s" "g i b";
+  background: linear-gradient(180deg, #dce7e3, #c8d8d3); box-shadow: inset 0 3px 8px rgba(14,74,79,.25), inset 0 -2px 0 #fff;
+}
+.gauge { grid-area: g; width: 100%; }
+.gauge text { font: 700 9px var(--f-hud); letter-spacing: .1em; fill: var(--teal); }
+#needle { transform-origin: 50px 50px; transform: rotate(-110deg); transition: transform .7s cubic-bezier(.3, 1.7, .5, 1); }
+#needle g { transform-origin: 50px 50px; animation: tremble .25s infinite alternate; }
+@keyframes tremble { to { transform: rotate(2.2deg); } }
+.steps { grid-area: i; counter-reset: s; list-style: none; padding: 8px 6px; display: flex; justify-content: space-around; border-radius: 12px; background: var(--enamel); box-shadow: inset 0 2px 6px rgba(14,74,79,.2); }
+.steps li { display: flex; flex-direction: column; align-items: center; gap: 4px; font: 700 11px var(--f-hud); letter-spacing: .1em; text-transform: uppercase; }
+.steps li::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 13px; }
+
+/* паспорт: фиксированная высота, контент не двигает пульт */
+.screen { grid-area: s; position: relative; overflow: hidden; height: 248px; padding: 14px 16px; border-radius: 14px; background: var(--glass); color: #ff6b52; box-shadow: inset 0 0 22px rgba(255,58,29,.25), inset 0 3px 8px #000; text-shadow: 0 0 8px rgba(255,58,29,.55); }
+.screen::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: repeating-linear-gradient(180deg, rgba(0,0,0,.25) 0 1px, transparent 1px 3px); }
+.scan { position: absolute; left: 0; right: 0; top: -35%; height: 35%; z-index: 2; pointer-events: none; background: linear-gradient(180deg, transparent, rgba(255,100,70,.3), transparent); animation: sweep .7s ease-out; }
+@keyframes sweep { to { top: 105%; } }
+.p-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; height: 26px; border-bottom: 1px dashed #5a2a24; font: 500 11px var(--f-hud); letter-spacing: .16em; text-transform: uppercase; color: #b4503f; }
+.p-head span:first-child { display: flex; align-items: center; gap: 8px; }
+.p-head span:first-child::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px 2px rgba(255,58,29,.8); }
+.tag { padding: 1px 10px; border: 1px solid #b4503f; border-radius: 999px; }
+.p-title { display: flex; align-items: center; gap: 10px; height: 40px; margin-top: 6px; }
+.p-title svg { flex: none; width: 30px; height: 30px; color: #ff5a40; filter: drop-shadow(0 0 6px rgba(255,58,29,.6)); }
+.p-name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 700 clamp(20px, 5.2vw, 30px)/1.1 var(--f-head); letter-spacing: -.02em; text-transform: uppercase; color: #ff5a40; }
+.p-desc { height: 2.5em; margin: 2px 0 8px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 16px; line-height: 1.25; }
+.p-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+.p-grid small { display: block; margin-bottom: 4px; font: 500 10px var(--f-hud); letter-spacing: .16em; text-transform: uppercase; color: #b4503f; }
+.p-grid b { font: 700 20px/1 var(--f-hud); color: #ff5a40; }
+.pips { display: flex; gap: 4px; padding-top: 4px; }
+.pips i { width: 20px; height: 9px; background: #3a1a16; }
+.pips i.on { background: #ff5a40; box-shadow: 0 0 8px rgba(255,90,60,.9); }
+.wide { grid-column: 1 / 3; }
+.digits { display: flex; gap: 3px; }
+.digits i { min-width: 24px; padding: 0 3px; text-align: center; font: normal 700 22px/30px var(--f-hud); color: #ff5a40; background: #170908; border: 1px solid #3a1a16; border-radius: 3px; }
+.idle { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.idle b { font: 700 24px var(--f-head); letter-spacing: -.01em; text-transform: uppercase; }
+.idle b::after { content: ""; display: inline-block; width: 12px; height: 22px; margin-left: 8px; vertical-align: -3px; background: #ff5a40; animation: cur 1s steps(1) infinite; }
+.idle span { font: 500 13px var(--f-hud); letter-spacing: .14em; text-transform: uppercase; color: #b4503f; }
+@keyframes cur { 50% { opacity: 0; } }
+
+.go {
+  grid-area: b; justify-self: end; width: 100px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border: 0; border-radius: 50%; cursor: pointer; color: #fff; background: radial-gradient(circle at 35% 28%, #ff9a82, var(--red) 50%, #a81808);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.5), 0 0 0 5px #fff, 0 0 0 8px var(--teal), 0 7px 0 8px #09353a;
+  font: 700 12px var(--f-hud); letter-spacing: .12em; text-transform: uppercase; transition: transform .1s, box-shadow .1s;
+}
+.go svg { width: 34px; height: 34px; }
+.go:hover:not(:disabled) { box-shadow: inset 0 2px 0 rgba(255,255,255,.5), 0 0 0 5px #fff, 0 0 0 8px var(--teal), 0 7px 0 8px #09353a, 0 0 28px 8px rgba(255,58,29,.7); }
+.go:active:not(:disabled) { transform: translateY(5px); box-shadow: inset 0 2px 0 rgba(255,255,255,.5), 0 0 0 5px #fff, 0 0 0 8px var(--teal), 0 2px 0 8px #09353a; }
+.go:disabled { filter: grayscale(.85) brightness(.85); cursor: default; }
+.go.turn svg { animation: crank .65s ease-in-out; }
+@keyframes crank { to { transform: rotate(720deg); } }
+.note { position: absolute; right: 16px; bottom: -24px; z-index: 3; padding: 6px 14px 8px; transform: rotate(-4deg); background: #f4e9a6; color: #3a3320; font: 600 21px/1 var(--f-hand); box-shadow: 2px 4px 0 rgba(0,0,0,.2); }
+.note::before { content: ""; position: absolute; top: -9px; left: 50%; width: 46px; height: 16px; margin-left: -23px; transform: rotate(3deg); background: rgba(255,255,255,.55); }
+
+/* лоток: фиксированная высота */
+.tray { position: relative; height: 140px; display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 20px; margin: 34px 6px 0; padding: 22px 24px 10px; overflow: hidden; border-radius: 16px 16px 38px 38px / 16px 16px 26px 26px; background: #0a1011; box-shadow: inset 0 8px 18px #000, 0 0 0 4px #b9c8c3, 0 0 0 7px var(--teal); }
+.tray::before { content: "Выдача"; position: absolute; top: 7px; left: 50%; transform: translateX(-50%); font: 700 10px var(--f-hud); letter-spacing: .3em; text-transform: uppercase; color: #3f6b6e; }
+.tray-empty { position: absolute; inset: 0; display: grid; place-items: center; color: #6b3a33; font: 700 13px var(--f-hud); letter-spacing: .18em; text-transform: uppercase; }
+.tray-info { min-width: 0; visibility: hidden; }
+.tray.full .tray-empty { visibility: hidden; } .tray.full .tray-info { visibility: visible; }
+.tc { position: relative; width: 84px; height: 84px; opacity: 0; }
+.tray.full .tc { opacity: 1; }
+.tc::before { content: ""; position: absolute; left: 50%; top: 50%; width: 170px; height: 170px; margin: -85px; border-radius: 50%; opacity: 0; transition: opacity .5s; background: radial-gradient(circle, var(--p1), transparent 65%); }
+.tc.open::before { opacity: .6; }
+.tc i { position: absolute; left: 0; right: 0; z-index: 1; transition: transform .55s cubic-bezier(.3, 1.6, .5, 1); }
+.tc .t { top: 0; height: 50%; z-index: 2; border-radius: 84px 84px 0 0; background: radial-gradient(circle at 50% 120%, var(--p1), var(--p2) 70%); box-shadow: inset 3px 3px 8px rgba(255,255,255,.4); }
+.tc .b { bottom: 0; height: 50%; border-radius: 0 0 84px 84px; background: linear-gradient(180deg, #fff, #cbd8d4); box-shadow: inset -4px -4px 8px rgba(0,0,0,.25); }
+.tc.open .t { transform: translate(-8px, -30px) rotate(-24deg); }
+.toy { position: absolute; left: 50%; top: 50%; z-index: 1; width: 44px; height: 44px; margin: -36px 0 0 -22px; color: #fff; opacity: 0; transform: scale(.3); transition: transform .45s .15s cubic-bezier(.3, 1.8, .5, 1), opacity .2s .15s; filter: drop-shadow(0 0 6px var(--p1)); }
+.tc.open .toy { opacity: 1; transform: none; }
+.tray-info .k { font: 500 11px var(--f-hud); letter-spacing: .16em; text-transform: uppercase; color: #b4503f; }
+.tray-info .gn { margin: 4px 0 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 700 22px/1.1 var(--f-head); text-transform: uppercase; color: #ff5a40; text-shadow: 0 0 8px rgba(255,58,29,.6); }
+.launch { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 22px; border-radius: 21px; color: #fff; text-decoration: none; background: var(--redgloss); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 0 0 2px #7a1608, 0 0 16px rgba(255,58,29,.6); font: 700 15px var(--f-hud); letter-spacing: .1em; text-transform: uppercase; }
+
+.batch { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 52px; color: var(--teal); font: 700 13px var(--f-hud); letter-spacing: .16em; text-transform: uppercase; }
+.batch[hidden] { display: none; }
+.batch button { width: 40px; height: 40px; border: 0; border-radius: 50%; cursor: pointer; color: var(--teal); background: linear-gradient(180deg, #fff, #cfdbd7); font: 700 18px var(--f-hud); box-shadow: 0 0 0 2px var(--teal); }
+.batch button:disabled { opacity: .35; cursor: default; }
+.toast { position: fixed; left: 50%; bottom: 22px; z-index: 50; max-width: calc(100% - 32px); padding: 10px 20px; border-radius: 999px; background: var(--glass); color: #ff7a63; border: 2px solid #1d3a3d; font: 700 15px var(--f-hud); letter-spacing: .05em; text-align: center; visibility: hidden; transform: translate(-50%, 160%); transition: transform .25s, visibility .25s; }
+.toast.show { visibility: visible; transform: translate(-50%, 0); }
+.fly { position: fixed; z-index: 60; pointer-events: none; border-radius: 50%; }
+
+/* ===== АДАПТИВ ===== */
+@media (max-width: 1099px) { .scene { grid-template-columns: minmax(0, 560px); justify-content: center; } }
+@media (max-width: 760px) { .where { display: none; } .topbar { grid-template-columns: auto auto; justify-content: space-between; } }
+@media (max-width: 640px) {
+  .topbar { padding: 0 10px; }
+  .scene { padding: 22px 10px 100px; }
+  .machine { padding: 12px 10px 20px; border-radius: 34px 34px 16px 16px; }
+  .tube { display: none; }
+  .sign { padding: 8px 12px 8px 8px; gap: 10px; }
+  .logo { width: 44px; height: 44px; } .logo svg { width: 30px; height: 30px; }
+  .dome { --cap: calc((100vw - 20px - 20px - 20px - 14px) / 5); padding: 38px 10px 14px; }
+  .panel { grid-template-columns: 78px 1fr 88px; padding: 12px; gap: 10px; }
+  .screen { height: 240px; padding: 12px 14px; }
+  .p-desc { font-size: 15px; }
+  .steps li { font-size: 9px; letter-spacing: .06em; } .steps li::before { width: 20px; height: 20px; font-size: 11px; }
+  .go { width: 86px; height: 86px; } .go svg { width: 28px; height: 28px; }
+  .note { right: 8px; bottom: -26px; font-size: 19px; }
+  .tray { margin: 36px 2px 0; height: 128px; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; padding: 22px 16px 8px; }
+  .tc { width: 64px; height: 64px; } .toy { width: 34px; height: 34px; margin: -28px 0 0 -17px; }
+  .tray-info .gn { font-size: 19px; margin-bottom: 8px; }
+  .launch { height: 38px; padding: 0 18px; font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tube::after, #needle g, .idle b::after, .go.turn svg, .lamps i, .scan, .rays, .cl1, .cl2, .cl3, .ship { animation: none; }
+  #needle, .cap, .tc i, .toy, .toast, .sw i { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="pill back" href="#" aria-label="Назад">
+    <span class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H6M11 6l-6 6 6 6"/></svg></span>
+    <b>Назад</b>
+  </a>
+  <div class="where"><i></i>Павильон досуга<small>Зал 5</small></div>
+  <button class="pill snd" id="snd" aria-pressed="true" aria-label="Звук"><b>Звук</b><span class="sw"><i></i></span></button>
+</header>
+
+<div class="world">
+  <svg class="bg" id="bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <path id="ray" d="M800 560L640 -1000H960Z"/>
+      <pattern id="frieze" width="56" height="26" patternUnits="userSpaceOnUse">
+        <rect width="56" height="26" fill="#e6ddc4"/>
+        <path d="M4 22L14 4 24 22Z" fill="#ff3a1d"/>
+        <path d="M42 4L52 13 42 22 32 13Z" fill="#0e4a4f"/>
+      </pattern>
+      <filter id="grain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/>
+        <feColorMatrix type="saturate" values="0"/>
+      </filter>
+    </defs>
+
+    <rect width="1600" height="900" fill="#0a3034"/>
+    <rect y="170" width="1600" height="730" fill="#0d3a3f"/>
+    <rect y="300" width="1600" height="600" fill="#114650"/>
+    <rect y="410" width="1600" height="490" fill="#16545b"/>
+    <rect y="500" width="1600" height="400" fill="#1c6266"/>
+    <rect y="575" width="1600" height="325" fill="#256f70"/>
+
+    <g class="rays" fill="#fff" opacity=".05">
+      <use href="#ray"/><use href="#ray" transform="rotate(20 800 560)"/><use href="#ray" transform="rotate(40 800 560)"/>
+      <use href="#ray" transform="rotate(60 800 560)"/><use href="#ray" transform="rotate(80 800 560)"/><use href="#ray" transform="rotate(100 800 560)"/>
+      <use href="#ray" transform="rotate(120 800 560)"/><use href="#ray" transform="rotate(140 800 560)"/><use href="#ray" transform="rotate(160 800 560)"/>
+      <use href="#ray" transform="rotate(180 800 560)"/><use href="#ray" transform="rotate(200 800 560)"/><use href="#ray" transform="rotate(220 800 560)"/>
+      <use href="#ray" transform="rotate(240 800 560)"/><use href="#ray" transform="rotate(260 800 560)"/><use href="#ray" transform="rotate(280 800 560)"/>
+      <use href="#ray" transform="rotate(300 800 560)"/><use href="#ray" transform="rotate(320 800 560)"/><use href="#ray" transform="rotate(340 800 560)"/>
+    </g>
+
+    <circle cx="800" cy="560" r="420" fill="#ff6a3d" opacity=".07"/>
+    <circle cx="800" cy="560" r="355" fill="#ff6a3d" opacity=".12"/>
+    <circle cx="800" cy="560" r="295" fill="#e04e2c"/>
+    <circle cx="800" cy="560" r="240" fill="#ec6236"/>
+    <circle cx="800" cy="560" r="185" fill="#f47a44"/>
+
+    <g fill="#e6ddc4" opacity=".16">
+      <g class="cl1"><rect x="90" y="250" width="270" height="24" rx="12"/><rect x="150" y="228" width="140" height="30" rx="15"/></g>
+      <g class="cl2"><rect x="1150" y="330" width="300" height="22" rx="11"/><rect x="1230" y="310" width="120" height="28" rx="14"/></g>
+      <g class="cl3"><rect x="520" y="140" width="210" height="18" rx="9"/><rect x="1080" y="120" width="150" height="16" rx="8"/></g>
+    </g>
+
+    <g class="ship">
+      <g transform="translate(0 205)">
+        <path d="M-120 0H-96" stroke="#e6ddc4" stroke-width="2"/>
+        <path d="M-430 -14H-120V14H-430L-414 0Z" fill="#e6ddc4"/>
+        <text x="-272" y="5" text-anchor="middle" font-family="Tektur, sans-serif" font-weight="700" font-size="14" letter-spacing="2" fill="#ff3a1d">ДОСУГ — ДЕЛО КОЛЛЕКТИВА</text>
+        <path d="M-86 -10L-118 -36H-98L-76 -8ZM-86 10L-118 36H-98L-76 8Z" fill="#ff3a1d"/>
+        <ellipse rx="100" ry="28" fill="#e6ddc4"/>
+        <path d="M-60 -22V22M-20 -27V27M20 -27V27M60 -22V22" stroke="#c9bf9f" stroke-width="3"/>
+        <path d="M-99 0H99" stroke="#ff3a1d" stroke-width="6"/>
+        <rect x="-24" y="26" width="48" height="12" rx="6" fill="#0e4a4f"/>
+      </g>
+    </g>
+
+    <g fill="#1a5d62">
+      <rect x="170" y="500" width="120" height="270"/><rect x="190" y="440" width="80" height="60"/><rect x="205" y="390" width="50" height="50"/>
+      <rect x="222" y="330" width="16" height="60"/><path d="M225 330L230 262 235 330Z"/>
+      <rect x="0" y="580" width="130" height="190"/><rect x="310" y="600" width="90" height="170"/><rect x="410" y="555" width="70" height="215"/><rect x="490" y="620" width="120" height="150"/>
+      <rect x="1246" y="300" width="8" height="470"/><circle cx="1250" cy="420" r="18"/><circle cx="1250" cy="350" r="10"/><rect x="1249" y="240" width="2" height="70"/>
+      <rect x="1050" y="590" width="130" height="180"/><rect x="1290" y="560" width="100" height="210"/><rect x="1410" y="600" width="190" height="170"/><rect x="1190" y="630" width="50" height="140"/>
+      <rect x="620" y="610" width="360" height="160"/>
+    </g>
+    <path d="M230 248l3.5 7.2 8 1.1-5.8 5.6 1.4 7.9-7.1-3.8-7.1 3.8 1.4-7.9-5.8-5.6 8-1.1z" fill="#ff3a1d"/>
+
+    <path id="rail" d="M-40 640Q800 560 1640 640" fill="none"/>
+    <g fill="#e6ddc4">
+      <rect x="196" y="620" width="8" height="150"/><rect x="186" y="618" width="28" height="6"/>
+      <rect x="496" y="605" width="8" height="165"/><rect x="486" y="603" width="28" height="6"/>
+      <rect x="1096" y="605" width="8" height="165"/><rect x="1086" y="603" width="28" height="6"/>
+      <rect x="1396" y="620" width="8" height="150"/><rect x="1386" y="618" width="28" height="6"/>
+    </g>
+    <use href="#rail" stroke="#e6ddc4" stroke-width="7"/>
+    <g>
+      <rect x="-80" y="-32" width="160" height="26" rx="13" fill="#e6ddc4"/>
+      <rect x="-80" y="-14" width="160" height="5" fill="#ff3a1d"/>
+      <g fill="#0e4a4f"><rect x="-58" y="-27" width="18" height="9" rx="3"/><rect x="-32" y="-27" width="18" height="9" rx="3"/><rect x="-6" y="-27" width="18" height="9" rx="3"/><rect x="20" y="-27" width="18" height="9" rx="3"/><rect x="46" y="-27" width="18" height="9" rx="3"/></g>
+      <animateMotion dur="48s" repeatCount="indefinite" rotate="auto"><mpath href="#rail"/></animateMotion>
+    </g>
+
+    <g fill="#0b3236">
+      <rect x="0" y="660" width="160" height="110"/>
+      <path d="M260 770V690A90 90 0 0 1 440 690V770Z"/>
+      <rect x="470" y="700" width="130" height="70"/>
+      <rect x="1000" y="690" width="140" height="80"/>
+      <rect x="1160" y="640" width="110" height="130"/><rect x="1180" y="600" width="70" height="40"/>
+      <rect x="1300" y="680" width="120" height="90"/><rect x="1440" y="650" width="160" height="120"/>
+    </g>
+    <ellipse cx="350" cy="660" rx="122" ry="15" fill="none" stroke="#0b3236" stroke-width="6"/>
+    <g fill="#ffd58a" opacity=".75">
+      <rect x="20" y="690" width="14" height="8"/><rect x="60" y="710" width="14" height="8"/><rect x="100" y="690" width="14" height="8"/>
+      <rect x="490" y="720" width="14" height="8"/><rect x="540" y="740" width="14" height="8"/>
+      <rect x="1020" y="710" width="14" height="8"/><rect x="1080" y="730" width="14" height="8"/>
+      <rect x="1180" y="660" width="14" height="8"/><rect x="1230" y="690" width="14" height="8"/><rect x="1200" y="720" width="14" height="8"/>
+      <rect x="1460" y="680" width="14" height="8"/><rect x="1520" y="700" width="14" height="8"/><rect x="1560" y="680" width="14" height="8"/>
+    </g>
+
+    <rect y="766" width="1600" height="4" fill="#e6ddc4"/>
+    <rect y="770" width="1600" height="26" fill="url(#frieze)"/>
+    <rect y="796" width="1600" height="4" fill="#e6ddc4"/>
+    <rect y="800" width="1600" height="100" fill="#061a1c"/>
+
+    <rect width="1600" height="900" filter="url(#grain)" opacity=".07"/>
+  </svg>
+
+  <main class="scene">
+    <aside class="poster" aria-hidden="true">
+      <svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="70" fill="#ff3a1d"/><g fill="none" stroke="#efe9d6" stroke-width="5"><ellipse cx="75" cy="75" rx="58" ry="22"/><ellipse cx="75" cy="75" rx="58" ry="22" transform="rotate(60 75 75)"/><ellipse cx="75" cy="75" rx="58" ry="22" transform="rotate(120 75 75)"/></g><circle cx="75" cy="75" r="11" fill="#efe9d6"/></svg>
+      <b>Отдых — это тоже труд</b><span>Досуг коллектива</span>
+    </aside>
+
+    <section class="machine" aria-label="Автомат с капсулами">
+      <i class="tube l"></i><i class="tube r"></i>
+      <div class="sign">
+        <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></div>
+        <div><h1>Досуг</h1><small>Автомат капсул · модель ДЦ-5</small></div>
+        <div class="lamps"><i></i><i></i><i></i></div>
+      </div>
+
+      <div class="dome"><div id="rows"></div></div>
+      <div class="ring"></div>
+
+      <div class="panel">
+        <div class="screen" id="screen" aria-live="polite"></div>
+        <svg class="gauge" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="47" fill="#f7faf8" stroke="#0e4a4f" stroke-width="3"/>
+          <circle cx="50" cy="50" r="37" fill="none" stroke="#0e4a4f" stroke-width="6" stroke-dasharray="1.6 8.4" transform="rotate(-90 50 50)"/>
+          <path d="M71 79A34 34 0 0 0 84 62" fill="none" stroke="#ff3a1d" stroke-width="5"/>
+          <text x="50" y="72" text-anchor="middle">ПОЛИМЕР</text>
+          <g id="needle"><g><path d="M50 50L47 22L50 12L53 22Z" fill="#ff3a1d"/></g></g>
+          <circle cx="50" cy="50" r="6" fill="#0e4a4f"/>
+        </svg>
+        <ol class="steps"><li>Выбери</li><li>Выдай</li><li>Играй</li></ol>
+        <button class="go" id="go" disabled aria-label="Выдать капсулу">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 9V3M12 3h4M12 15v6M12 21H8"/></svg>Выдать
+        </button>
+        <div class="note">Жать до щелчка!</div>
+      </div>
+
+      <div class="tray" id="tray">
+        <span class="tray-empty">Лоток пуст</span>
+        <div class="tc" id="tc"><span class="toy" id="toy"></span><i class="t"></i><i class="b"></i></div>
+        <div class="tray-info"><div class="k" id="tk">&nbsp;</div><div class="gn" id="tn">&nbsp;</div><a class="launch" id="launch" href="#">Запустить ▶</a></div>
+      </div>
+      <div class="feet"><i></i><i></i></div>
+    </section>
+
+    <aside class="honor" aria-label="Доска почёта"><h2>Доска почёта</h2><ol id="honor"></ol></aside>
+  </main>
+</div>
+
+<nav class="batch" id="batch" hidden aria-label="Партии"></nav>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const ICONS = {
+  snake: '<path d="M4 18c3 0 3-6 6-6s3 6 6 6 4-5 4-9"/><circle cx="20" cy="6" r="1.8" fill="currentColor" stroke="none"/>',
+  bricks: '<path d="M3 5h8v4H3zM13 5h8v4h-8zM7 11h10v4H7z"/><circle cx="12" cy="20" r="1.9" fill="currentColor" stroke="none"/>',
+  pong: '<path d="M4 5v9M20 10v9"/><circle cx="11" cy="12" r="2.1" fill="currentColor" stroke="none"/>',
+  ufo: '<ellipse cx="12" cy="13" rx="9.5" ry="3.5"/><path d="M7.5 11a4.5 4.5 0 0 1 9 0M8 19l-1 2M16 19l1 2M12 18v3"/>',
+  mine: '<circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
+  maze: '<path d="M3 3h18v18H3zM7 3v10h4M15 7v14M11 7h4M7 17h4"/>',
+  flag: '<path d="M5 21V4h13l-3 4 3 4H5"/>',
+  ship: '<path d="M3 15h18l-3 5H6zM7 15V9h7v6M10 9V4l5 2.5-5 1.5"/>',
+  rock: '<path d="M8 3l7 1 5 5-1 7-6 4-7-2-3-6 2-6z"/><circle cx="10" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="14.5" cy="14" r="1.8"/>',
+  tower: '<path d="M7 17h11v4H7zM5 12h11v5H5zM8 7h11v5H8zM6 3h9v4"/>',
+  cards: '<rect x="3" y="5" width="9" height="13" rx="1.5"/><rect x="12" y="7" width="9" height="13" rx="1.5" fill="currentColor"/>',
+  atom: '<g fill="currentColor" stroke="none"><circle cx="12" cy="12" r="2"/><path d="M10.25 8.97L7.25 3.77A9.5 9.5 0 0 1 16.75 3.77L13.75 8.97A3.5 3.5 0 0 0 10.25 8.97ZM15.5 12L21.5 12A9.5 9.5 0 0 1 16.75 20.23L13.75 15.03A3.5 3.5 0 0 0 15.5 12ZM10.25 15.03L7.25 20.23A9.5 9.5 0 0 1 2.5 12L8.5 12A3.5 3.5 0 0 0 10.25 15.03Z"/></g>'
+};
+const svg = (k, cls = "") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
+
+const GAMES = [
+  { n: "Змейка",      d: "Расти и не врезайся в себя.",   r: 48200,  g: "Аркада",      lvl: 2, pl: "1",   ico: "snake",  p1: "#c9ef7a", p2: "#4f8a10" },
+  { n: "Кирпичи",     d: "Разбей стену шариком.",         r: 31750,  g: "Аркада",      lvl: 3, pl: "1",   ico: "bricks", p1: "#ffb36b", p2: "#d0490a" },
+  { n: "Пинг-понг",   d: "Дуэль двух ракеток.",           r: 12900,  g: "Спорт",       lvl: 2, pl: "1–2", ico: "pong",   p1: "#9fdcff", p2: "#1d6fb8" },
+  { n: "Вторжение",   d: "Остановите армаду сверху.",     r: 96400,  g: "Экшен",       lvl: 4, pl: "1",   ico: "ufo",    p1: "#d5a8ff", p2: "#6e32b8" },
+  { n: "Сапёр",       d: "Одна ошибка — и конец.",        r: 5300,   g: "Головоломка", lvl: 3, pl: "1",   ico: "mine",   p1: "#cfd8dc", p2: "#4a626c" },
+  { n: "Лабиринт",    d: "Найди выход из корпуса.",       r: 22100,  g: "Головоломка", lvl: 3, pl: "1",   ico: "maze",   p1: "#a5f6ec", p2: "#0f8a80" },
+  { n: "Гонка",       d: "Обгоняй на пустом шоссе.",      r: 67800,  g: "Спорт",       lvl: 3, pl: "1",   ico: "flag",   p1: "#ffd27a", p2: "#c97a00" },
+  { n: "Морской бой", d: "Найди флот противника.",        r: 8400,   g: "Стратегия",   lvl: 1, pl: "1–2", ico: "ship",   p1: "#a9b8ff", p2: "#3343b0" },
+  { n: "Астероиды",   d: "Дрейфуй и стреляй.",            r: 74500,  g: "Экшен",       lvl: 4, pl: "1",   ico: "rock",   p1: "#f3e2b8", p2: "#9a7438" },
+  { n: "Башня",       d: "Складывай блоки точно.",        r: 19600,  g: "Аркада",      lvl: 2, pl: "1",   ico: "tower",  p1: "#ffa8c8", p2: "#c02a66" },
+  { n: "Память",      d: "Найди все пары.",               r: 3100,   g: "Головоломка", lvl: 1, pl: "1",   ico: "cards",  p1: "#7fe0d0", p2: "#0e5f66" },
+  { n: "Реактор",     d: "Держи нейтроны под контролем.", r: 118000, g: "Экшен",       lvl: 5, pl: "1",   ico: "atom",   p1: "#ff8a6a", p2: "#c4180a" }
+];
+const ROWS = [1, 2, 3, 4, 5], PER_PAGE = 15;
+const MAXREC = Math.max(...GAMES.map(g => g.r));
+let page = 1, sel = null, busy = false, sound = true, gone = null;
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, "0");
+const fmt = n => n.toLocaleString("ru-RU");
+const pal = g => `--p1:${g.p1};--p2:${g.p2}`;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const rnd = i => { const x = Math.sin(i * 12.9898 + 1) * 43758.5453; return x - Math.floor(x); };
+if (reduce) $("bg").pauseAnimations();
+
+let ac;
+function tone(f1, f2, d, wave = "square", v = .05, t0 = 0) {
+  if (!sound) return;
+  ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+  const t = ac.currentTime + t0, o = ac.createOscillator(), g = ac.createGain();
+  o.type = wave; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d);
+}
+const sTick = () => tone(1100, 800, .04, "square", .04);
+const sCrank = () => { for (let k = 0; k < 6; k++) tone(320 + k * 25, 180, .035, "square", .05, k * .1); };
+const sThunk = () => tone(190, 50, .2, "sine", .3);
+const sPop = () => tone(420, 1000, .1, "triangle", .14);
+$("snd").addEventListener("click", e => { sound = !sound; e.currentTarget.setAttribute("aria-pressed", sound); if (sound) sTick(); });
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.id); toast.id = setTimeout(() => el.classList.remove("show"), 2600); }
+
+$("honor").innerHTML = [...GAMES].sort((a, b) => b.r - a.r).slice(0, 3)
+  .map(g => `<li style="${pal(g)}"><span class="medal">${svg(g.ico)}</span><b>${g.n}</b><span>${fmt(g.r)}</span></li>`).join("");
+
+function fill(n) {
+  const counts = ROWS.map(() => 0), pages = Math.ceil(GAMES.length / PER_PAGE);
+  let left = n;
+  for (let r = ROWS.length - 1; r >= 0 && left > 0; r--) { counts[r] = Math.min(ROWS[r], left); left -= counts[r]; }
+  return pages > 1 ? counts : counts.slice(counts.findIndex(c => c > 0));
+}
+function render() {
+  const pages = Math.ceil(GAMES.length / PER_PAGE);
+  page = Math.min(Math.max(page, 1), pages);
+  const start = (page - 1) * PER_PAGE, items = GAMES.slice(start, start + PER_PAGE);
+  let k = 0;
+  $("rows").innerHTML = fill(items.length).map(cnt => {
+    let h = '<div class="row">';
+    for (let j = 0; j < cnt; j++) {
+      const i = start + k++, g = GAMES[i];
+      h += `<button class="cap" style="${pal(g)};--r:${Math.round((rnd(i) - .5) * 40)}deg;--dx:${Math.round((rnd(i + 40) - .5) * 8)}px" data-i="${i}" aria-pressed="false" aria-label="Капсула ${pad(i + 1)}: ${g.n}"><span class="ball">${svg(g.ico, "ico")}<span class="n">${pad(i + 1)}</span></span></button>`;
+    }
+    return h + "</div>";
+  }).join("");
+  sel = null; $("go").disabled = true; show(null);
+  $("batch").hidden = pages < 2;
+  $("batch").innerHTML = `<button data-p="${page - 1}" ${page === 1 ? "disabled" : ""} aria-label="Предыдущая партия">&lsaquo;</button>Партия ${page} из ${pages}<button data-p="${page + 1}" ${page === pages ? "disabled" : ""} aria-label="Следующая партия">&rsaquo;</button>`;
+}
+
+function show(i) {
+  const s = $("screen"), scan = reduce ? "" : '<div class="scan"></div>';
+  if (i == null) {
+    s.innerHTML = `${scan}<div class="idle"><b>Выберите капсулу</b><span>В куполе капсул: ${GAMES.length}</span><span>Полимер в норме</span></div>`;
+    $("needle").style.transform = "rotate(-110deg)"; return;
+  }
+  const g = GAMES[i];
+  s.innerHTML = `${scan}
+    <div class="p-head"><span>Капсула ${pad(i + 1)}</span><span class="tag">${g.g}</span></div>
+    <div class="p-title">${svg(g.ico)}<div class="p-name">${g.n}</div></div>
+    <div class="p-desc">${g.d}</div>
+    <div class="p-grid">
+      <div><small>Сложность</small><div class="pips">${[1, 2, 3, 4, 5].map(x => `<i class="${x <= g.lvl ? "on" : ""}"></i>`).join("")}</div></div>
+      <div><small>Игроков</small><b>${g.pl}</b></div>
+      <div class="wide"><small>Рекорд</small><div class="digits">${String(g.r).padStart(6, "0").split("").map(c => `<i>${c}</i>`).join("")}</div></div>
+    </div>`;
+  $("needle").style.transform = `rotate(${-110 + (g.r / MAXREC) * 220}deg)`;
+}
+$("rows").addEventListener("pointerover", e => { const c = e.target.closest(".cap"); if (c && !busy && +c.dataset.i !== show.last) { show(+c.dataset.i); show.last = +c.dataset.i; } });
+$("rows").addEventListener("pointerleave", () => { if (!busy) { show(sel); show.last = null; } });
+$("rows").addEventListener("focusin", e => { const c = e.target.closest(".cap"); if (c && !busy) show(+c.dataset.i); });
+$("rows").addEventListener("click", e => {
+  const c = e.target.closest(".cap"); if (!c || busy) return;
+  document.querySelectorAll(".cap.sel").forEach(x => { x.classList.remove("sel"); x.setAttribute("aria-pressed", "false"); });
+  c.classList.add("sel"); c.setAttribute("aria-pressed", "true");
+  sel = +c.dataset.i; $("go").disabled = false; show(sel); sTick();
+});
+
+$("go").addEventListener("click", () => {
+  if (busy) return;
+  if (sel == null) { toast("Сначала выберите капсулу."); return; }
+  busy = true; $("go").classList.add("turn"); sCrank();
+  const i = sel, cap = document.querySelector(`.cap[data-i="${i}"]`);
+  setTimeout(() => { $("go").classList.remove("turn"); drop(cap, i); }, reduce ? 0 : 650);
+});
+function drop(cap, i) {
+  const g = GAMES[i];
+  if (gone) gone.classList.remove("gone");
+  $("tray").classList.remove("full"); $("tc").classList.remove("open");
+  const ball = cap.querySelector(".ball"), a = ball.getBoundingClientRect(), tc = $("tc").getBoundingClientRect();
+  $("tc").style.cssText = pal(g); $("toy").innerHTML = svg(g.ico);
+  cap.classList.remove("sel"); cap.classList.add("gone"); cap.setAttribute("aria-pressed", "false"); gone = cap;
+  const land = () => {
+    $("tk").textContent = `Выдано: капсула ${pad(i + 1)}`; $("tn").textContent = g.n;
+    $("launch").dataset.i = i; $("tray").classList.add("full"); sThunk();
+    setTimeout(() => { $("tc").classList.add("open"); sPop(); busy = false; sel = null; $("go").disabled = true; show(null); }, reduce ? 0 : 280);
+  };
+  if (reduce) { land(); return; }
+  const fly = ball.cloneNode(true);
+  fly.classList.add("fly");
+  fly.style.cssText = `${pal(g)};--cap:${a.width}px;left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px;--r:${cap.style.getPropertyValue("--r")}`;
+  document.body.append(fly);
+  const dx = tc.left + tc.width / 2 - (a.left + a.width / 2), dy = tc.top + tc.height / 2 - (a.top + a.height / 2), s = tc.width / a.width;
+  const T = (x, y) => `translate(${x}px, ${y}px) scale(${s})`;
+  fly.animate([
+    { transform: "translate(0,0) scale(1)", easing: "cubic-bezier(.5,0,.9,.55)" },
+    { transform: T(dx, dy), offset: .78, easing: "ease-out" },
+    { transform: T(dx, dy - 16), offset: .89, easing: "ease-in" },
+    { transform: T(dx, dy) }
+  ], { duration: 850, fill: "forwards" }).finished.then(() => { fly.remove(); land(); });
+}
+$("launch").addEventListener("click", e => { e.preventDefault(); toast(`Запуск: «${GAMES[+e.currentTarget.dataset.i].n}». Здесь — переход на страницу игры.`); });
+$("batch").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; page = +b.dataset.p; render(); });
+document.addEventListener("click", e => { if (e.target.closest("a[href='#']")) e.preventDefault(); });
+render();
+</script>
+</body>
+</html>
