@@ -6,11 +6,11 @@
 		place: string;
 		hall?: string;
 		backHref?: Pathname;
-		sound: boolean;
-		onSoundToggle: () => void;
+		sound?: boolean;
+		onSoundToggle?: () => void;
 	}
 
-	let { place, hall, backHref, sound, onSoundToggle }: Props = $props();
+	let { place, hall, backHref, sound = false, onSoundToggle }: Props = $props();
 </script>
 
 <header class="topbar">
@@ -37,9 +37,11 @@
 		{#if hall}<small>{hall}</small>{/if}
 	</div>
 
-	<button class="pill snd" aria-pressed={sound} aria-label="Звук" onclick={onSoundToggle}>
-		<b>Звук</b><span class="sw"><i></i></span>
-	</button>
+	{#if onSoundToggle}
+		<button class="pill snd" aria-pressed={sound} aria-label="Звук" onclick={onSoundToggle}>
+			<b>Звук</b><span class="sw"><i></i></span>
+		</button>
+	{/if}
 </header>
 
 <style>
