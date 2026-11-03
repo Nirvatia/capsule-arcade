@@ -62,3 +62,15 @@ export function stackHeight(board: Cell[][]): number {
 	const top = board.findIndex((row) => row.some((c) => c !== 0));
 	return top === -1 ? 0 : ROWS - top;
 }
+
+export function countHoles(board: Cell[][]): number {
+	let holes = 0;
+	for (let x = 0; x < COLS; x++) {
+		let covered = false;
+		for (let y = 0; y < ROWS; y++) {
+			if (board[y][x] !== 0) covered = true;
+			else if (covered) holes++;
+		}
+	}
+	return holes;
+}

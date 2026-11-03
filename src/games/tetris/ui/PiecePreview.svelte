@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { pieceCells } from '../core/pieces';
 	import type { PieceType } from '../core/types';
-	import { colorOf, paintCell } from '../render/sprites';
+	import { colorOf, paintCell } from '../theme/palette';
 
 	interface Props {
 		type: PieceType | null;

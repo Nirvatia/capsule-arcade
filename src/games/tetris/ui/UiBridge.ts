@@ -1,6 +1,6 @@
 import { SpinKind, type ClearResult, type GameState } from '../core/types';
 import type { EventBus } from '../engine/EventBus';
-import { bestScore, loadRecords, submitRecord } from '../records';
+import { isBetter, loadRecords, submitRecord } from '../records';
 import { CalloutTone, ui, type Callout } from './store.svelte';
 
 const LINE_TITLES = ['', 'РЯД!', 'ДВА РЯДА!', 'ТРОЙКА!', 'ТЕТРИС!'];
@@ -30,15 +30,16 @@ export class UiBridge {
 	private readonly unsubscribe: (() => void)[];
 
 	constructor(bus: EventBus) {
-		ui.records = loadRecords();
-		ui.best = bestScore(ui.records);
+		ui.records = loadRecords(ui.mode);
 		ui.result = null;
 		ui.callout = null;
 		ui.levelUp = null;
 		ui.countdown = null;
 
 		this.unsubscribe = [
-			bus.on('reset', () => {
+			bus.on('reset', (e) => {
+				ui.mode = e.mode;
+				ui.records = loadRecords(e.mode);
 				ui.result = null;
 				ui.callout = null;
 				ui.levelUp = null;
@@ -47,11 +48,14 @@ export class UiBridge {
 			bus.on('clear', (e) => (ui.callout = describeClear(e, ++this.key))),
 			bus.on('levelUp', (e) => (ui.levelUp = { key: ++this.key, level: e.level })),
 			bus.on('gameOver', (summary) => {
-				const previousBest = ui.best;
+				const previousBest = ui.records[0];
 				const { list, rank } = submitRecord(summary);
 				ui.records = list;
-				ui.best = bestScore(list);
-				ui.result = { summary, rank, newBest: previousBest > 0 && summary.score > previousBest };
+				ui.result = {
+					summary,
+					rank,
+					newBest: rank === 0 && isBetter(summary.mode, previousBest, summary)
+				};
 			})
 		];
 	}
@@ -61,6 +65,7 @@ export class UiBridge {
 		ui.score = state.score;
 		ui.lines = state.lines;
 		ui.level = state.level;
+		ui.elapsedMs = Math.floor(state.elapsedMs / 100) * 100;
 		ui.hold = state.hold;
 		ui.holdUsed = state.holdUsed;
 		ui.combo = Math.max(0, state.combo);

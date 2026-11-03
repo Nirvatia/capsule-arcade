@@ -1,4 +1,5 @@
-import type { ClearResult, Phase, PieceType } from '../core/types';
+import type { ModeId } from '../core/modes';
+import type { ClearResult, EndReason, Phase, PieceType } from '../core/types';
 
 export interface CellPos {
 	x: number;
@@ -6,6 +7,11 @@ export interface CellPos {
 }
 
 export interface GameSummary {
+	mode: ModeId;
+	reason: EndReason;
+	seed: number;
+	timeMs: number;
+	holes: number;
 	score: number;
 	lines: number;
 	level: number;
@@ -16,7 +22,7 @@ export interface GameSummary {
 }
 
 export interface GameEvents {
-	reset: Record<string, never>;
+	reset: { mode: ModeId; seed: number };
 	phase: { phase: Phase };
 	countdown: { step: number };
 	spawn: { type: PieceType };

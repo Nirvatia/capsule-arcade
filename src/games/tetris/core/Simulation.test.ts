@@ -11,18 +11,32 @@ import {
 	TICK_MS
 } from '../config';
 import { EventBus, type GameEvents } from '../engine/EventBus';
+import { countHoles } from './board';
+import { ModeId } from './modes';
 import { pieceCells } from './pieces';
 import { Simulation } from './Simulation';
-import { Action, Phase, PieceType, SpinKind, type Cell, type PieceType as Piece } from './types';
+import {
+	Action,
+	EndReason,
+	Phase,
+	PieceType,
+	SpinKind,
+	type Cell,
+	type PieceType as Piece
+} from './types';
+import { normalizeSettings } from '../settings';
 
 function run(sim: Simulation, ms: number): void {
 	for (let t = 0; t < ms; t += TICK_MS) sim.update(TICK_MS);
 }
 
-function startWith(queue: Piece[]): { sim: Simulation; bus: EventBus } {
+function startWith(
+	queue: Piece[],
+	mode: ModeId = ModeId.MARATHON
+): { sim: Simulation; bus: EventBus } {
 	const bus = new EventBus();
 	const sim = new Simulation(bus);
-	sim.start();
+	sim.start({ mode, seed: 7 });
 	sim.state.queue = [...queue, PieceType.O, PieceType.O, PieceType.O, PieceType.O, PieceType.O];
 	run(sim, COUNTDOWN_STEPS * COUNTDOWN_STEP_MS + TICK_MS);
 	return { sim, bus };
@@ -128,5 +142,72 @@ describe('Simulation', () => {
 		expect(over).toBe(true);
 		run(sim, 2000);
 		expect(sim.state.phase).toBe(Phase.GAMEOVER);
+	});
+
+	it('produces the same game for the same seed', () => {
+		const play = (seed: number): string => {
+			const sim = new Simulation(new EventBus());
+			sim.start({ seed });
+			run(sim, COUNTDOWN_STEPS * COUNTDOWN_STEP_MS + TICK_MS);
+			for (let i = 0; i < 30 && sim.state.phase !== Phase.GAMEOVER; i++) {
+				sim.press(i % 3 === 0 ? Action.LEFT : Action.ROTATE_CW);
+				run(sim, TICK_MS);
+				sim.releaseAll();
+				sim.press(Action.HARD_DROP);
+				run(sim, CLEAR_MS + TICK_MS * 2);
+				sim.releaseAll();
+			}
+			return JSON.stringify([sim.state.board, sim.state.queue, sim.state.score]);
+		};
+		expect(play(12345)).toBe(play(12345));
+		expect(play(12345)).not.toBe(play(54321));
+	});
+
+	it('finishes the sprint when the line goal is reached', () => {
+		const { sim, bus } = startWith([PieceType.I], ModeId.SPRINT);
+		let reason: string | null = null;
+		bus.on('gameOver', (e) => (reason = e.reason));
+		sim.state.lines = 39;
+		fillRow(sim.state.board, ROWS - 1, [3, 4, 5, 6]);
+		sim.press(Action.HARD_DROP);
+		run(sim, CLEAR_MS + TICK_MS * 2);
+		expect(reason).toBe(EndReason.GOAL);
+		expect(sim.state.phase).toBe(Phase.GAMEOVER);
+		expect(sim.state.level).toBe(1);
+	});
+
+	it('stops the ultra mode when the clock runs out', () => {
+		const { sim, bus } = startWith([PieceType.O], ModeId.ULTRA);
+		let summary: GameEvents['gameOver'] | null = null;
+		bus.on('gameOver', (e) => (summary = e));
+		sim.state.elapsedMs = 119900;
+		run(sim, 200);
+		expect(summary).not.toBeNull();
+		expect(summary!.reason).toBe(EndReason.TIME);
+		expect(summary!.timeMs).toBe(120000);
+	});
+
+	it('counts covered holes', () => {
+		const { sim } = startWith([PieceType.O]);
+		const board = sim.state.board;
+		board[ROWS - 3][2] = PieceType.J;
+		board[ROWS - 1][5] = PieceType.J;
+		expect(countHoles(board)).toBe(2);
+	});
+
+	it('moves to the wall instantly with zero ARR', () => {
+		const { sim } = startWith([PieceType.O]);
+		sim.configureInput(100, 0);
+		sim.press(Action.RIGHT);
+		run(sim, 110);
+		expect(sim.state.active?.x).toBe(8);
+	});
+
+	it('clamps broken settings to safe values', () => {
+		const s = normalizeSettings({ dasMs: -5, arrMs: 'x', ghost: 1, sound: false });
+		expect(s.dasMs).toBe(60);
+		expect(s.arrMs).toBe(40);
+		expect(s.ghost).toBe(true);
+		expect(s.sound).toBe(false);
 	});
 });

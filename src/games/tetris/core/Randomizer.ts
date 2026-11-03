@@ -1,13 +1,14 @@
 import { ALL_PIECES } from './pieces';
+import { createRng, type Rng } from './random';
 import type { PieceType } from './types';
 
 export class Randomizer {
 	private bag: PieceType[] = [];
+	private rng: Rng = createRng(1);
 
-	constructor(private readonly random: () => number = Math.random) {}
-
-	reset(): void {
+	reset(seed: number): void {
 		this.bag = [];
+		this.rng = createRng(seed);
 	}
 
 	next(): PieceType {
@@ -22,7 +23,7 @@ export class Randomizer {
 	private refill(): void {
 		const bag = [...ALL_PIECES];
 		for (let i = bag.length - 1; i > 0; i--) {
-			const j = Math.floor(this.random() * (i + 1));
+			const j = Math.floor(this.rng() * (i + 1));
 			[bag[i], bag[j]] = [bag[j], bag[i]];
 		}
 		this.bag = bag;

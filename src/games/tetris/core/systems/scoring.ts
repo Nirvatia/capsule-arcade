@@ -57,7 +57,9 @@ export function scoreLock(state: GameState, rows: number[], spin: SpinKind): Cle
 
 	state.score += points;
 	state.lines += count;
-	state.level = Math.max(state.level, levelForLines(state.lines));
+	if (state.mode.levelUp) {
+		state.level = Math.max(state.level, levelForLines(state.lines, state.mode.startLevel));
+	}
 	state.maxCombo = Math.max(state.maxCombo, state.combo);
 	if (count === 4) state.tetrises += 1;
 	if (spin !== SpinKind.NONE) state.spins += 1;

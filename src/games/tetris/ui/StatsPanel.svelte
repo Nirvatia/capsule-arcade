@@ -51,7 +51,7 @@
 			</div>
 			<div class="stats__row">
 				<dt class="t-label">Рекорд бригады</dt>
-				<dd class="stats__gold">{pad(Math.max(ui.best, ui.score), 6)}</dd>
+				<dd class="stats__gold">{pad(Math.max(ui.records[0]?.score ?? 0, ui.score), 6)}</dd>
 			</div>
 		</dl>
 		<div class="stats__plan">

@@ -1,6 +1,8 @@
 import type { GameModule } from '$shared/core/types';
+import { Haptics } from './audio/Haptics';
 import { Sfx } from './audio/Sfx';
 import { MAX_TICKS_PER_FRAME, TICK_MS } from './config';
+import type { ModeId } from './core/modes';
 import { Simulation } from './core/Simulation';
 import { Action, Phase } from './core/types';
 import { EventBus } from './engine/EventBus';
@@ -8,7 +10,8 @@ import { GameLoop } from './engine/GameLoop';
 import { Gestures } from './input/Gestures';
 import { Keyboard } from './input/Keyboard';
 import { BoardRenderer } from './render/BoardRenderer';
-import { persistMuted, ui } from './ui/store.svelte';
+import { saveSettings, type Settings } from './settings';
+import { ui } from './ui/store.svelte';
 import { UiBridge } from './ui/UiBridge';
 
 export class GameMain implements GameModule {
@@ -18,6 +21,7 @@ export class GameMain implements GameModule {
 	private renderer: BoardRenderer | null = null;
 	private bridge: UiBridge | null = null;
 	private sfx: Sfx | null = null;
+	private haptics: Haptics | null = null;
 	private keyboard: Keyboard | null = null;
 	private gestures: Gestures | null = null;
 	private loop: GameLoop | null = null;
@@ -28,7 +32,8 @@ export class GameMain implements GameModule {
 		renderer.mount(canvasParent);
 		this.renderer = renderer;
 		this.bridge = new UiBridge(this.bus);
-		this.sfx = new Sfx(this.bus, ui.muted);
+		this.sfx = new Sfx(this.bus, !ui.settings.sound);
+		this.haptics = new Haptics(this.bus);
 		this.keyboard = new Keyboard(this);
 		this.gestures = new Gestures(renderer.canvas, this.sim, () => renderer.cssCellSize);
 		this.loop = new GameLoop(
@@ -41,6 +46,7 @@ export class GameMain implements GameModule {
 			}
 		);
 
+		this.applySettings(ui.settings);
 		this.sfx.attach();
 		this.keyboard.attach();
 		this.gestures.attach();
@@ -61,6 +67,7 @@ export class GameMain implements GameModule {
 		this.keyboard?.destroy();
 		this.gestures?.destroy();
 		this.sfx?.destroy();
+		this.haptics?.destroy();
 		this.bridge?.destroy();
 		this.renderer?.destroy();
 		this.bus.clear();
@@ -72,13 +79,13 @@ export class GameMain implements GameModule {
 		this.renderer?.resize(cellSize);
 	}
 
-	start(): void {
-		this.sim.start();
+	start(mode: ModeId = ui.mode): void {
+		this.sim.start({ mode });
 	}
 
 	confirm(): void {
 		const phase = this.sim.state.phase;
-		if (phase === Phase.IDLE || phase === Phase.GAMEOVER) this.sim.start();
+		if (phase === Phase.IDLE || phase === Phase.GAMEOVER) this.start();
 		else if (phase === Phase.PAUSED) this.sim.togglePause();
 	}
 
@@ -114,8 +121,20 @@ export class GameMain implements GameModule {
 	}
 
 	toggleMute(): void {
-		ui.muted = !ui.muted;
-		persistMuted(ui.muted);
-		this.sfx?.setMuted(ui.muted);
+		this.updateSettings({ sound: !ui.settings.sound });
+	}
+
+	updateSettings(patch: Partial<Settings>): void {
+		const next = { ...ui.settings, ...patch };
+		ui.settings = next;
+		saveSettings(next);
+		this.applySettings(next);
+	}
+
+	private applySettings(settings: Settings): void {
+		this.sim.configureInput(settings.dasMs, settings.arrMs);
+		this.renderer?.setGhost(settings.ghost);
+		this.sfx?.setMuted(!settings.sound);
+		this.haptics?.setEnabled(settings.vibration);
 	}
 }

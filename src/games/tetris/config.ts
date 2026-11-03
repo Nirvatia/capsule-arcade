@@ -30,8 +30,8 @@ export function gravityMs(level: number): number {
 	return Math.max(1, Math.pow(0.8 - l * 0.007, l) * 1000);
 }
 
-export function levelForLines(lines: number): number {
-	return Math.min(MAX_LEVEL, START_LEVEL + Math.floor(Math.max(0, lines) / LINES_PER_LEVEL));
+export function levelForLines(lines: number, startLevel = START_LEVEL): number {
+	return Math.min(MAX_LEVEL, startLevel + Math.floor(Math.max(0, lines) / LINES_PER_LEVEL));
 }
 
 export const SOFT_DROP_POINTS = 1;

@@ -45,13 +45,13 @@
 		<button
 			type="button"
 			class="t-icon-btn"
-			aria-label={ui.muted ? 'Включить звук' : 'Выключить звук'}
+			aria-label={ui.settings.sound ? 'Выключить звук' : 'Включить звук'}
 			title="Звук [M]"
 			onclick={() => game.toggleMute()}
 		>
 			<svg viewBox="0 0 24 24" aria-hidden="true">
 				<path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
-				{#if ui.muted}
+				{#if !ui.settings.sound}
 					<path
 						d="M16 9l6 6M22 9l-6 6"
 						fill="none"

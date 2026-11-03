@@ -1,4 +1,3 @@
-import { ARR_MS, DAS_MS } from '../../config';
 import { Action, type GameState } from '../types';
 
 export interface InputCommands {
@@ -59,10 +58,16 @@ export function processInput(state: GameState, dt: number, cmd: InputCommands): 
 
 	const before = input.dasTimer;
 	input.dasTimer += dt;
-	if (input.dasTimer < DAS_MS) return;
-	input.arrTimer = before < DAS_MS ? ARR_MS + input.dasTimer - DAS_MS : input.arrTimer + dt;
-	while (input.arrTimer >= ARR_MS) {
-		input.arrTimer -= ARR_MS;
+	if (input.dasTimer < input.dasMs) return;
+	const arr = Math.max(0, input.arrMs);
+	input.arrTimer = before < input.dasMs ? arr + input.dasTimer - input.dasMs : input.arrTimer + dt;
+	if (arr === 0) {
+		while (cmd.shift(input.shiftDir));
+		input.arrTimer = 0;
+		return;
+	}
+	while (input.arrTimer >= arr) {
+		input.arrTimer -= arr;
 		if (!cmd.shift(input.shiftDir)) {
 			input.arrTimer = 0;
 			break;

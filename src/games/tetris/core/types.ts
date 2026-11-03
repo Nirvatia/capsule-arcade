@@ -1,3 +1,5 @@
+import type { GameMode } from './modes';
+
 export const Phase = {
 	IDLE: 'idle',
 	COUNTDOWN: 'countdown',
@@ -65,7 +67,17 @@ export interface ClearResult {
 	points: number;
 }
 
+export const EndReason = {
+	TOPOUT: 'topout',
+	GOAL: 'goal',
+	TIME: 'time'
+} as const;
+
+export type EndReason = (typeof EndReason)[keyof typeof EndReason];
+
 export interface InputState {
+	dasMs: number;
+	arrMs: number;
 	held: Set<Action>;
 	queue: Action[];
 	shiftDir: -1 | 0 | 1;
@@ -74,6 +86,10 @@ export interface InputState {
 }
 
 export interface GameState {
+	seed: number;
+	mode: GameMode;
+	elapsedMs: number;
+	endReason: EndReason | null;
 	phase: Phase;
 	phaseTime: number;
 	resumePhase: Phase;

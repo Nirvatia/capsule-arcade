@@ -7,7 +7,9 @@ import {
 	TOPOUT_MS
 } from '../config';
 import type { CellPos, EventBus } from '../engine/EventBus';
-import { dropDistance, fits, fullRows, placePiece, removeRows } from './board';
+import { countHoles, dropDistance, fits, fullRows, placePiece, removeRows } from './board';
+import { MODES, ModeId, type GameMode } from './modes';
+import { randomSeed } from './random';
 import { pieceCells, spawnPosition } from './pieces';
 import { Randomizer } from './Randomizer';
 import { createState, resetState } from './state';
@@ -15,7 +17,20 @@ import { fallInterval, stepFall } from './systems/fall';
 import { processInput, type InputCommands } from './systems/input';
 import { rotate, shift } from './systems/movement';
 import { detectSpin, scoreLock } from './systems/scoring';
-import { Action, Phase, SpinKind, type ActivePiece, type GameState, type PieceType } from './types';
+import {
+	Action,
+	EndReason,
+	Phase,
+	SpinKind,
+	type ActivePiece,
+	type GameState,
+	type PieceType
+} from './types';
+
+export interface StartOptions {
+	mode?: ModeId;
+	seed?: number;
+}
 
 interface PhaseStep {
 	duration?: number;
@@ -73,47 +88,55 @@ export class Simulation {
 		},
 		[Phase.PLAYING]: {
 			enter: () => {
-				if (!this.state.active && !this.spawnNext()) this.enter(Phase.TOPOUT);
+				if (!this.state.active && !this.spawnNext()) this.topOut();
 			},
-			update: (dt) => this.play(dt)
+			update: (dt) => {
+				this.tickClock(dt);
+				if (this.state.phase === Phase.PLAYING) this.play(dt);
+			}
 		},
 		[Phase.CLEARING]: {
 			duration: CLEAR_MS,
+			update: (dt) => this.tickClock(dt),
 			finish: () => {
 				if (this.state.clearing) removeRows(this.state, this.state.clearing.rows);
 				this.state.clearing = null;
+				const goal = this.state.mode.goalLines;
+				if (goal !== null && this.state.lines >= goal) return this.endGame(EndReason.GOAL);
 				return Phase.PLAYING;
 			}
 		},
 		[Phase.TOPOUT]: {
 			duration: TOPOUT_MS,
-			enter: () => {
-				const s = this.state;
-				s.active = null;
-				s.input.queue.length = 0;
-				this.bus.emit('gameOver', {
-					score: s.score,
-					lines: s.lines,
-					level: s.level,
-					pieces: s.pieces,
-					tetrises: s.tetrises,
-					spins: s.spins,
-					maxCombo: s.maxCombo
-				});
-			},
 			finish: () => Phase.GAMEOVER
 		}
 	};
 
 	constructor(private readonly bus: EventBus) {}
 
-	start(): void {
+	start(options: StartOptions = {}): void {
+		const mode: GameMode = MODES[options.mode ?? this.state.mode.id];
+		if (!mode) {
+			throw new Error(`[Tetris/Simulation] Unknown mode ${String(options.mode)}`);
+		}
+		const seed = options.seed ?? randomSeed();
 		resetState(this.state);
-		this.randomizer.reset();
+		this.state.mode = mode;
+		this.state.seed = seed;
+		this.state.level = mode.startLevel;
+		this.randomizer.reset(seed);
 		for (let i = 0; i < PREVIEW_COUNT; i++) this.state.queue.push(this.randomizer.next());
 		this.state.resumePhase = Phase.PLAYING;
-		this.bus.emit('reset', {});
+		this.bus.emit('reset', { mode: mode.id, seed });
 		this.enter(Phase.COUNTDOWN);
+	}
+
+	configureInput(dasMs: number, arrMs: number): void {
+		if (!(dasMs >= 0) || !(arrMs >= 0)) {
+			throw new Error(`[Tetris/Simulation] Invalid input timing das=${dasMs} arr=${arrMs}`);
+		}
+		this.state.input.dasMs = dasMs;
+		this.state.input.arrMs = arrMs;
 	}
 
 	togglePause(): void {
@@ -170,6 +193,42 @@ export class Simulation {
 		this.scenario[phase].enter?.();
 	}
 
+	private tickClock(dt: number): void {
+		const s = this.state;
+		s.elapsedMs += dt;
+		const limit = s.mode.timeLimitMs;
+		if (limit !== null && s.elapsedMs >= limit) {
+			s.elapsedMs = limit;
+			this.enter(this.endGame(EndReason.TIME));
+		}
+	}
+
+	private endGame(reason: EndReason): Phase {
+		const s = this.state;
+		s.endReason = reason;
+		s.active = null;
+		s.input.queue.length = 0;
+		this.bus.emit('gameOver', {
+			mode: s.mode.id,
+			reason,
+			seed: s.seed,
+			timeMs: Math.round(s.elapsedMs),
+			holes: countHoles(s.board),
+			score: s.score,
+			lines: s.lines,
+			level: s.level,
+			pieces: s.pieces,
+			tetrises: s.tetrises,
+			spins: s.spins,
+			maxCombo: s.maxCombo
+		});
+		return reason === EndReason.TOPOUT ? Phase.TOPOUT : Phase.GAMEOVER;
+	}
+
+	private topOut(): void {
+		this.enter(this.endGame(EndReason.TOPOUT));
+	}
+
 	private play(dt: number): void {
 		processInput(this.state, dt, this.commands);
 		if (this.state.phase !== Phase.PLAYING || !this.state.active) return;
@@ -196,7 +255,7 @@ export class Simulation {
 		const ok = swap === null ? this.spawnNext() : this.spawn(swap);
 		s.holdUsed = true;
 		this.bus.emit('hold', { type: current });
-		if (!ok) this.enter(Phase.TOPOUT);
+		if (!ok) this.topOut();
 	}
 
 	private lockActive(): void {
@@ -208,7 +267,7 @@ export class Simulation {
 		s.pieces += 1;
 		this.bus.emit('lock', { cells: absoluteCells(piece), type: piece.type });
 		if (!visible) {
-			this.enter(Phase.TOPOUT);
+			this.topOut();
 			return;
 		}
 
@@ -225,7 +284,7 @@ export class Simulation {
 			this.enter(Phase.CLEARING);
 			return;
 		}
-		if (!this.spawnNext()) this.enter(Phase.TOPOUT);
+		if (!this.spawnNext()) this.topOut();
 	}
 
 	private spawnNext(): boolean {

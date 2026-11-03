@@ -18,7 +18,8 @@ import {
 	type PieceType
 } from '../core/types';
 import type { CellPos, EventBus } from '../engine/EventBus';
-import { colorOf, SpriteSheet } from './sprites';
+import { colorOf, WELL } from '../theme/palette';
+import { SpriteSheet } from './sprites';
 
 interface Particle {
 	x: number;
@@ -68,6 +69,7 @@ export class BoardRenderer {
 	private lastClear: ClearResult | null = null;
 	private collapse: { shift: number[]; t: number } | null = null;
 	private lastPhase: Phase = Phase.IDLE;
+	private showGhost = true;
 	private readonly unsubscribe: (() => void)[];
 
 	constructor(bus: EventBus) {
@@ -90,6 +92,10 @@ export class BoardRenderer {
 			bus.on('gameOver', () => (this.shake = Math.max(this.shake, this.cell * 0.3))),
 			bus.on('reset', () => this.resetEffects())
 		];
+	}
+
+	setGhost(visible: boolean): void {
+		this.showGhost = visible;
 	}
 
 	get cssCellSize(): number {
@@ -147,7 +153,7 @@ export class BoardRenderer {
 		this.drawTrails(dt);
 		this.drawBoard(state, dt);
 		if (state.active && (state.phase === Phase.PLAYING || state.phase === Phase.PAUSED)) {
-			this.drawGhost(state);
+			if (this.showGhost) this.drawGhost(state);
 			this.drawActive(state);
 		}
 		this.drawFlashes(dt);
@@ -194,15 +200,15 @@ export class BoardRenderer {
 		const c = this.cell;
 
 		const grad = ctx.createLinearGradient(0, 0, 0, bg.height);
-		grad.addColorStop(0, '#1a0b09');
-		grad.addColorStop(1, '#241310');
+		grad.addColorStop(0, WELL.top);
+		grad.addColorStop(1, WELL.bottom);
 		ctx.fillStyle = grad;
 		ctx.fillRect(0, 0, bg.width, bg.height);
 
-		ctx.fillStyle = 'rgba(255, 230, 190, 0.018)';
+		ctx.fillStyle = WELL.stripe;
 		for (let x = 0; x < COLS; x += 2) ctx.fillRect(x * c, 0, c, bg.height);
 
-		ctx.fillStyle = 'rgba(255, 230, 190, 0.09)';
+		ctx.fillStyle = WELL.dot;
 		const dot = Math.max(1, Math.round(c * 0.06));
 		for (let x = 1; x < COLS; x++) {
 			for (let y = 1; y < VISIBLE_ROWS; y++) {
@@ -219,7 +225,7 @@ export class BoardRenderer {
 			bg.height * 0.75
 		);
 		vignette.addColorStop(0, 'rgba(0,0,0,0)');
-		vignette.addColorStop(1, 'rgba(0,0,0,0.45)');
+		vignette.addColorStop(1, WELL.vignette);
 		ctx.fillStyle = vignette;
 		ctx.fillRect(0, 0, bg.width, bg.height);
 		return bg;
@@ -461,9 +467,9 @@ export class BoardRenderer {
 		const y = h * (1 - this.sweep);
 		const band = this.cell * 3;
 		const g = ctx.createLinearGradient(0, y - band, 0, y + band);
-		g.addColorStop(0, 'rgba(255, 215, 126, 0)');
-		g.addColorStop(0.5, `rgba(255, 215, 126, ${0.35 * (1 - this.sweep * 0.6)})`);
-		g.addColorStop(1, 'rgba(255, 215, 126, 0)');
+		g.addColorStop(0, `rgba(${WELL.gold}, 0)`);
+		g.addColorStop(0.5, `rgba(${WELL.gold}, ${0.35 * (1 - this.sweep * 0.6)})`);
+		g.addColorStop(1, `rgba(${WELL.gold}, 0)`);
 		ctx.fillStyle = g;
 		ctx.fillRect(0, y - band, this.canvas.width, band * 2);
 	}
@@ -478,8 +484,8 @@ export class BoardRenderer {
 		const ctx = this.ctx;
 		const depth = this.cell * 5;
 		const g = ctx.createLinearGradient(0, 0, 0, depth);
-		g.addColorStop(0, `rgba(230, 30, 20, ${0.4 * k * pulse})`);
-		g.addColorStop(1, 'rgba(230, 30, 20, 0)');
+		g.addColorStop(0, `rgba(${WELL.danger}, ${0.4 * k * pulse})`);
+		g.addColorStop(1, `rgba(${WELL.danger}, 0)`);
 		ctx.fillStyle = g;
 		ctx.fillRect(0, 0, this.canvas.width, depth);
 	}
