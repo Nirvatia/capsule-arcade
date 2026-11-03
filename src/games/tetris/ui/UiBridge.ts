@@ -1,9 +1,10 @@
 import { SpinKind, type ClearResult, type GameState } from '../core/types';
 import type { EventBus } from '../engine/EventBus';
+import { MODES } from '../core/modes';
 import { isBetter, loadRecords, submitRecord } from '../records';
+import { LINE_TITLES } from '../theme/texts';
+import { Announcer } from './Announcer';
 import { CalloutTone, ui, type Callout } from './store.svelte';
-
-const LINE_TITLES = ['', 'РЯД!', 'ДВА РЯДА!', 'ТРОЙКА!', 'ТЕТРИС!'];
 
 function describeClear(result: ClearResult, key: number): Callout {
 	const parts: string[] = [];
@@ -28,6 +29,7 @@ export class UiBridge {
 	private key = 0;
 	private nextKey = '';
 	private readonly unsubscribe: (() => void)[];
+	private readonly announcer: Announcer;
 
 	constructor(bus: EventBus) {
 		ui.records = loadRecords(ui.mode);
@@ -35,6 +37,12 @@ export class UiBridge {
 		ui.callout = null;
 		ui.levelUp = null;
 		ui.countdown = null;
+		ui.radio = { key: ++this.key, text: 'Радиоточка ждёт начала смены. Не переключайтесь.' };
+		this.announcer = new Announcer(
+			bus,
+			(text) => (ui.radio = { key: ++this.key, text }),
+			() => (MODES[ui.mode].rankByTime ? 0 : (ui.records[0]?.score ?? 0))
+		);
 
 		this.unsubscribe = [
 			bus.on('reset', (e) => {
@@ -60,7 +68,8 @@ export class UiBridge {
 		];
 	}
 
-	sync(state: GameState): void {
+	sync(state: GameState, frameMs: number): void {
+		this.announcer.tick(state, frameMs);
 		ui.phase = state.phase;
 		ui.score = state.score;
 		ui.lines = state.lines;
@@ -78,6 +87,7 @@ export class UiBridge {
 	}
 
 	destroy(): void {
+		this.announcer.destroy();
 		for (const off of this.unsubscribe) off();
 	}
 }

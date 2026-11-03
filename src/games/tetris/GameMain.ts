@@ -42,7 +42,7 @@ export class GameMain implements GameModule {
 			(dt) => this.sim.update(dt),
 			(frameMs) => {
 				renderer.render(this.sim.state, frameMs);
-				this.bridge?.sync(this.sim.state);
+				this.bridge?.sync(this.sim.state, frameMs);
 			}
 		);
 

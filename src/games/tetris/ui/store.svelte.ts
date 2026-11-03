@@ -40,6 +40,7 @@ export const ui = $state({
 	elapsedMs: 0,
 	settings: loadSettings(),
 	callout: null as Callout | null,
+	radio: { key: 0, text: '' },
 	levelUp: null as { key: number; level: number } | null,
 	countdown: null as { key: number; step: number } | null,
 	result: null as GameResult | null,
