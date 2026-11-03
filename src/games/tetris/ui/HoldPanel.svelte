@@ -76,10 +76,9 @@
 
 	.hold__stamp {
 		position: absolute;
-		right: -16px;
-		top: 30px;
+		right: 40px;
+		bottom: 8px;
 		font-size: 11px;
-		background: rgba(239, 229, 204, 0.6);
 	}
 
 	.hold--compact {
