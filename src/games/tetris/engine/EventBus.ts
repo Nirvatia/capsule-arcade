@@ -1,28 +1,63 @@
-import type { TetrisEvent } from '../core/Events';
+import type { ClearResult, Phase, PieceType } from '../core/types';
 
-export type EventHandler = (payload?: unknown) => void;
+export interface CellPos {
+	x: number;
+	y: number;
+}
+
+export interface GameSummary {
+	score: number;
+	lines: number;
+	level: number;
+	pieces: number;
+	tetrises: number;
+	spins: number;
+	maxCombo: number;
+}
+
+export interface GameEvents {
+	reset: Record<string, never>;
+	phase: { phase: Phase };
+	countdown: { step: number };
+	spawn: { type: PieceType };
+	move: { dx: number };
+	rotate: { kicked: boolean };
+	hold: { type: PieceType };
+	hardDrop: { cells: CellPos[]; distance: number; type: PieceType };
+	lock: { cells: CellPos[]; type: PieceType };
+	clear: ClearResult;
+	levelUp: { level: number };
+	gameOver: GameSummary;
+}
+
+export type GameEventName = keyof GameEvents;
+
+type Handler<K extends GameEventName> = (payload: GameEvents[K]) => void;
 
 export class EventBus {
-	private handlers = new Map<TetrisEvent, Set<EventHandler>>();
+	private readonly handlers = new Map<GameEventName, Set<(payload: never) => void>>();
 
-	on(event: TetrisEvent, handler: EventHandler): () => void {
+	on<K extends GameEventName>(event: K, handler: Handler<K>): () => void {
 		let set = this.handlers.get(event);
 		if (!set) {
-			set = new Set<EventHandler>();
+			set = new Set();
 			this.handlers.set(event, set);
 		}
-		const target = set;
-		target.add(handler);
+		set.add(handler);
 		return () => {
-			target.delete(handler);
+			set.delete(handler);
 		};
 	}
 
-	emit(event: TetrisEvent, payload?: unknown): void {
+	emit<K extends GameEventName>(event: K, payload: GameEvents[K]): void {
 		const set = this.handlers.get(event);
 		if (!set) return;
 		for (const handler of set) {
-			handler(payload);
+			try {
+				(handler as Handler<K>)(payload);
+			} catch (error) {
+				console.error(`[Tetris/EventBus] Handler for "${event}" failed`, error);
+			}
 		}
 	}
 
@@ -30,5 +65,3 @@ export class EventBus {
 		this.handlers.clear();
 	}
 }
-
-export const tetrisBus = new EventBus();

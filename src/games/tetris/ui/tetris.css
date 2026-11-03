@@ -1,0 +1,184 @@
+:root {
+	--t-red: #a6232b;
+	--t-red-deep: #7a141a;
+	--t-red-dark: #4a0a0d;
+	--t-paper: #ede3cb;
+	--t-paper-dim: #d9cdb0;
+	--t-ink: #171210;
+	--t-gold: #e3a72f;
+	--t-gold-hi: #f7d98b;
+	--t-well: #1a0b09;
+	--t-font-display: 'Russo One', 'Arial Black', sans-serif;
+	--t-font-body: 'Oswald', 'Arial Narrow', sans-serif;
+	--t-shadow: 6px 6px 0 rgba(15, 8, 6, 0.55);
+}
+
+.t-panel {
+	position: relative;
+	background: var(--t-paper);
+	color: var(--t-ink);
+	border: 3px solid var(--t-ink);
+	box-shadow: var(--t-shadow);
+	padding: 20px 14px 14px;
+}
+
+.t-panel__title {
+	position: absolute;
+	top: -14px;
+	left: 10px;
+	margin: 0;
+	padding: 3px 12px;
+	font-family: var(--t-font-display);
+	font-size: 13px;
+	font-weight: 400;
+	letter-spacing: 0.14em;
+	line-height: 1.2;
+	color: var(--t-paper);
+	background: var(--t-red);
+	border: 2px solid var(--t-ink);
+	transform: skewX(-8deg);
+	white-space: nowrap;
+}
+
+.t-label {
+	font-family: var(--t-font-body);
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.t-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	padding: 0.75em 1.4em;
+	font-family: var(--t-font-display);
+	font-size: 15px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	text-decoration: none;
+	color: var(--t-ink);
+	background: var(--t-paper);
+	border: 3px solid var(--t-ink);
+	box-shadow: 5px 5px 0 var(--t-ink);
+	cursor: pointer;
+	transition:
+		transform 0.1s,
+		box-shadow 0.1s;
+	touch-action: manipulation;
+}
+
+.t-btn:hover {
+	transform: translate(-2px, -2px);
+	box-shadow: 7px 7px 0 var(--t-ink);
+}
+
+.t-btn:active {
+	transform: translate(3px, 3px);
+	box-shadow: 2px 2px 0 var(--t-ink);
+}
+
+.t-btn--accent {
+	color: var(--t-paper);
+	background: var(--t-red);
+}
+
+.t-btn--large {
+	font-size: clamp(16px, 2.2vw, 20px);
+	padding: 0.85em 1.8em;
+}
+
+.t-btn kbd {
+	font-family: var(--t-font-body);
+	font-size: 0.7em;
+	opacity: 0.7;
+}
+
+.t-icon-btn {
+	display: grid;
+	place-items: center;
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	color: var(--t-paper);
+	background: transparent;
+	border: 2px solid rgba(237, 227, 203, 0.55);
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		color 0.15s;
+	touch-action: manipulation;
+}
+
+.t-icon-btn:hover:not(:disabled) {
+	color: var(--t-ink);
+	background: var(--t-paper);
+}
+
+.t-icon-btn:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.t-icon-btn svg {
+	width: 18px;
+	height: 18px;
+}
+
+.t-stamp {
+	display: inline-block;
+	padding: 0.15em 0.55em;
+	font-family: var(--t-font-display);
+	font-size: 13px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--t-red);
+	border: 3px double var(--t-red);
+	transform: rotate(-7deg);
+}
+
+.t-stamp--gold {
+	color: var(--t-gold);
+	border-color: var(--t-gold);
+	transform: rotate(6deg);
+}
+
+.t-kbd-list {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 7px 14px;
+	margin: 0;
+	font-family: var(--t-font-body);
+	font-size: 14px;
+	font-weight: 500;
+	text-align: left;
+}
+
+.t-kbd-list dt {
+	justify-self: start;
+	align-self: center;
+	padding: 2px 8px;
+	font-family: var(--t-font-display);
+	font-size: 11px;
+	color: var(--t-paper);
+	background: var(--t-ink);
+	white-space: nowrap;
+}
+
+.t-kbd-list dd {
+	margin: 0;
+	align-self: center;
+}
+
+.tetris-board-canvas {
+	display: block;
+	image-rendering: pixelated;
+	touch-action: none;
+}
+
+:focus-visible {
+	outline: 3px dashed var(--t-gold);
+	outline-offset: 3px;
+}
