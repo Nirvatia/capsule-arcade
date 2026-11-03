@@ -1,387 +1,315 @@
-<!-- src/routes/+page.svelte -->
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { games, rankLabel, statusLabel, getGameScore } from '$shared/config/games';
-	import type { GameConfig } from '$shared/config/games';
+	import Topbar from '$shared/ui/Topbar.svelte';
+	import GameIcon from '$shared/ui/GameIcon.svelte';
+	import PavilionBackdrop from '$shared/ui/pavilion/PavilionBackdrop.svelte';
+	import CapsuleMachine from '$shared/ui/pavilion/CapsuleMachine.svelte';
+	import { menuSound } from '$shared/ui/pavilion/menuSound';
+	import { games, getGameRecord, isPlayable } from '$shared/config/games';
 
-	type Phase = 'beam' | 'boot' | 'screen';
-	type MsgType = '' | 'good' | 'bad';
+	const SOUND_KEY = 'neo_arcade_menu_sound';
 
-	interface BootLine {
-		text: string;
-		ok?: boolean;
-		bar?: boolean;
-		hd?: boolean;
+	let records = $state<Record<string, number>>({});
+	let sound = $state(true);
+	let toast = $state({ id: 0, text: '' });
+
+	const honor = $derived(
+		games
+			.filter(isPlayable)
+			.map((game) => ({ game, record: records[game.id] ?? 0 }))
+			.sort((a, b) => b.record - a.record)
+			.slice(0, 3)
+	);
+
+	const fmt = (n: number) => (n > 0 ? n.toLocaleString('ru-RU') : 'нет рекорда');
+
+	function showToast(text: string) {
+		toast = { id: toast.id + 1, text };
 	}
 
-	const LOGO_COLORS = ['#FF4B4B', '#FF9E2C', '#FFD93B', '#5BE07A', '#4CC9E0', '#5C8BFF', '#C77DFF'];
-	const LOGO_TEXT = 'NEO ARCADE'.split('');
-
-	const BOOT_LINES: BootLine[] = [
-		{ text: 'NEO ARCADE SYSTEM BIOS v1.02', hd: true },
-		{ text: 'CHECKING SYSTEM MEMORY ... ', ok: true },
-		{ text: 'LOADING SOUND SYNTH ..... ', ok: true },
-		{ text: 'INITIALIZING GRAPHICS ... ', ok: true },
-		{ text: '', bar: true }
-	];
-
-	let phase = $state<Phase>('beam');
-	let bootLines = $state<BootLine[]>([]);
-	let bootSkip = false;
-	let selectedIndex = $state(0);
-	let credit = $state(1);
-	let message = $state<{ text: string; type: MsgType }>({ text: '', type: '' });
-	let colorOffset = $state(0);
-	let gameScores = $state<Record<string, string>>({});
-
-	let messageTimer: number | undefined;
-	let colorTimer: number | undefined;
-
-	const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-	function refreshScores() {
-		const scores: Record<string, string> = {};
-		games.forEach((g) => {
-			scores[g.id] = getGameScore(g);
-		});
-		gameScores = scores;
-	}
-
-	function scoreColor(game: GameConfig, isSelected: boolean): string {
-		if (isSelected) return '!text-black font-semibold';
-		if (game.status === 'ready') return 'text-arcade-yel';
-		if (game.status === 'dev') return 'text-arcade-amb';
-		return 'text-arcade-dark';
-	}
-
-	function titleColor(game: GameConfig, isSelected: boolean): string {
-		if (isSelected) return '!text-black font-bold';
-		if (game.status === 'ready') return 'text-white';
-		if (game.status === 'dev') return 'text-[#808A98]';
-		return 'text-arcade-dark';
-	}
-
-	function statusColor(game: GameConfig, isSelected: boolean): string {
-		if (isSelected) return '!text-black font-bold';
-		if (game.status === 'ready') return 'text-arcade-grn';
-		if (game.status === 'dev') return 'text-arcade-amb';
-		return 'text-arcade-dark';
-	}
-
-	function showGameInfo() {
-		const g = games[selectedIndex];
-		const score = gameScores[g.id] ?? getGameScore(g);
-		const tail =
-			g.status === 'ready'
-				? `HIGH SCORE ${score}`
-				: g.status === 'dev'
-					? `IN DEVELOPMENT (${g.progress}%)`
-					: 'COMING SOON';
-		message = { text: `${g.title} · ${g.genre} · ${tail}`, type: '' };
-	}
-
-	function setMessage(text: string, type: MsgType) {
-		message = { text, type };
-		if (messageTimer) window.clearTimeout(messageTimer);
-		if (type) {
-			messageTimer = window.setTimeout(() => showGameInfo(), 2600);
+	function toggleSound() {
+		sound = !sound;
+		menuSound.enabled = sound;
+		try {
+			localStorage.setItem(SOUND_KEY, sound ? '1' : '0');
+		} catch (e) {
+			console.warn('[Menu] Failed to save sound setting', e);
 		}
-	}
-
-	function enterGame() {
-		const game = games[selectedIndex];
-		if (game.status === 'ready' && game.route) {
-			credit++;
-			setMessage('COIN ACCEPTED — STARTING...', 'good');
-			window.setTimeout(() => setMessage(`LOADING ${game.title} ...`, 'good'), 600);
-			window.setTimeout(() => goto(game.route!), 1400);
-		} else if (game.status === 'dev') {
-			setMessage(`${game.title} IS UNDER CONSTRUCTION (${game.progress}%)`, 'bad');
-		} else {
-			setMessage('GAME NOT AVAILABLE YET', 'bad');
-		}
-	}
-
-	function skipBoot() {
-		if (phase === 'screen') return;
-		bootSkip = true;
-		phase = 'screen';
-		showGameInfo();
-	}
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (phase !== 'screen') {
-			skipBoot();
-			return;
-		}
-
-		switch (e.key) {
-			case 'ArrowDown':
-				e.preventDefault();
-				selectedIndex = (selectedIndex + 1) % games.length;
-				showGameInfo();
-				break;
-			case 'ArrowUp':
-				e.preventDefault();
-				selectedIndex = (selectedIndex - 1 + games.length) % games.length;
-				showGameInfo();
-				break;
-			case 'Home':
-				e.preventDefault();
-				selectedIndex = 0;
-				showGameInfo();
-				break;
-			case 'End':
-				e.preventDefault();
-				selectedIndex = games.length - 1;
-				showGameInfo();
-				break;
-			case 'Enter':
-				e.preventDefault();
-				enterGame();
-				break;
-		}
-	}
-
-	async function runBoot() {
-		await sleep(1100);
-		if (bootSkip) return;
-		phase = 'boot';
-
-		for (const line of BOOT_LINES) {
-			if (bootSkip) break;
-			await sleep(180);
-			bootLines = [...bootLines, line];
-		}
-
-		await sleep(220);
-		if (!bootSkip) {
-			phase = 'screen';
-			showGameInfo();
-		}
+		menuSound.tick();
 	}
 
 	onMount(() => {
-		refreshScores();
-
-		const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-		if (reduce) {
-			phase = 'screen';
-			showGameInfo();
-		} else {
-			void runBoot();
-			colorTimer = window.setInterval(() => {
-				colorOffset = (colorOffset + 1) % LOGO_COLORS.length;
-			}, 900);
+		records = Object.fromEntries(games.map((game) => [game.id, getGameRecord(game)]));
+		try {
+			sound = localStorage.getItem(SOUND_KEY) !== '0';
+		} catch (e) {
+			console.warn('[Menu] Failed to read sound setting', e);
 		}
-
-		window.addEventListener('keydown', handleKeydown);
-
-		return () => {
-			window.removeEventListener('keydown', handleKeydown);
-			if (colorTimer) window.clearInterval(colorTimer);
-			if (messageTimer) window.clearTimeout(messageTimer);
-		};
+		menuSound.enabled = sound;
 	});
 </script>
 
 <svelte:head>
-	<title>NEO ARCADE — ATTRACT MODE</title>
+	<title>Павильон досуга · NEO ARCADE</title>
 </svelte:head>
 
-<!-- ==================== CRT BEAM ==================== -->
-{#if phase === 'beam'}
-	<button
-		type="button"
-		class="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black"
-		onclick={skipBoot}
-		aria-label="Skip intro (press any key)"
-	>
-		<div
-			class="h-0.5 w-full animate-beam-open bg-arcade-cyan"
-			style="box-shadow: 0 0 12px #4CC9E0, 0 0 24px #4CC9E0;"
-		></div>
-	</button>
-{/if}
+<div class="pavilion">
+	<Topbar place="Павильон досуга" hall="Зал 5" {sound} onSoundToggle={toggleSound} />
 
-<!-- ==================== BOOT SCREEN ==================== -->
-{#if phase === 'boot'}
-	<button
-		type="button"
-		class="fixed inset-0 z-40 flex cursor-pointer items-center justify-center bg-arcade-bg p-4 sm:p-6"
-		onclick={skipBoot}
-		aria-label="Skip boot sequence (press any key)"
-	>
-		<div
-			class="w-full max-w-[540px] text-left text-[clamp(9px,1.8vw,11px)] leading-[2.2] text-arcade-dim"
-		>
-			{#each bootLines as line}
-				<div class:font-bold={line.hd} class:mb-1.5={line.hd} class:text-arcade-white={line.hd}>
-					{#if line.bar}
-						<span class="tracking-[2px] text-arcade-cyan">■■■■■■■■■■■■■■■■</span>
-						<span class="text-arcade-grn"> 100%</span>
-					{:else}
-						{line.text}
-						{#if line.ok}<span class="text-arcade-grn">OK</span>{/if}
-					{/if}
-				</div>
-			{/each}
-		</div>
-	</button>
-{/if}
+	<div class="world">
+		<PavilionBackdrop />
 
-<!-- ==================== MAIN SCREEN ==================== -->
-{#if phase === 'screen'}
-	<main
-		class="relative z-10 mx-auto flex min-h-dvh w-full max-w-[800px] flex-col items-center justify-between px-3 py-4 sm:px-6 sm:py-8"
-	>
-		<div class="my-auto w-full animate-screen-fade text-center">
-			<!-- SYSTEM LINE -->
-			<p class="mb-3 text-[7px] tracking-[0.25em] text-arcade-dim uppercase sm:mb-5 sm:text-[8px]">
-				NEO ARCADE SYSTEM · CAB 01 · ©199X
-			</p>
+		<main class="scene">
+			<aside class="poster" aria-hidden="true">
+				<svg viewBox="0 0 150 150">
+					<circle cx="75" cy="75" r="70" fill="#ff3a1d" />
+					<g fill="none" stroke="#efe9d6" stroke-width="5">
+						<ellipse cx="75" cy="75" rx="58" ry="22" />
+						<ellipse cx="75" cy="75" rx="58" ry="22" transform="rotate(60 75 75)" />
+						<ellipse cx="75" cy="75" rx="58" ry="22" transform="rotate(120 75 75)" />
+					</g>
+					<circle cx="75" cy="75" r="11" fill="#efe9d6" />
+				</svg>
+				<b>Отдых — это тоже труд</b>
+				<span>Досуг коллектива</span>
+			</aside>
 
-			<!-- LOGO -->
-			<div
-				class="flex flex-wrap justify-center text-[clamp(20px,5vw,38px)] leading-[1.1] font-bold tracking-[0.08em] select-none"
-				aria-label="NEO ARCADE"
-			>
-				{#each LOGO_TEXT as char, i}
-					<span
-						class="inline-block"
-						style:color={LOGO_COLORS[(i + colorOffset) % LOGO_COLORS.length]}
-						style="text-shadow: 0 0 10px currentColor, 0 3px 0 rgba(0,0,0,.9);"
-					>
-						{char === ' ' ? '\u00A0' : char}
-					</span>
-				{/each}
-			</div>
+			<CapsuleMachine {games} {records} onToast={showToast} />
 
-			<p
-				class="mt-2 text-[clamp(8px,1.6vw,10px)] tracking-[0.3em] text-arcade-cyan uppercase sm:mt-3.5"
-				style="text-shadow: 0 0 8px rgba(76,201,224,.3);"
-			>
-				★ SELECT GAME ★
-			</p>
+			<aside class="honor" aria-label="Доска почёта">
+				<h2>Доска почёта</h2>
+				<ol>
+					{#each honor as { game, record } (game.id)}
+						<li style:--p1={game.light} style:--p2={game.deep}>
+							<span class="medal"><GameIcon name={game.icon} /></span>
+							<b>{game.title}</b>
+							<span>{fmt(record)}</span>
+						</li>
+					{/each}
+				</ol>
+			</aside>
+		</main>
+	</div>
 
-			<!-- TABLE CONTAINER -->
-			<div
-				class="mt-6 w-full overflow-x-auto border-y-2 border-arcade-line bg-arcade-bg/80 py-2 text-left sm:mt-10"
-			>
-				<table class="w-full min-w-[340px] table-fixed border-collapse">
-					<thead>
-						<tr
-							class="border-b border-dashed border-arcade-line text-[8px] tracking-[0.2em] text-arcade-dim sm:text-[9px]"
-						>
-							<th class="w-[15%] px-3 py-3 text-left font-normal">RANK</th>
-							<th class="w-[25%] px-3 py-3 text-left font-normal">SCORE</th>
-							<th class="w-[40%] px-3 py-3 text-left font-normal">TITLE</th>
-							<th class="w-[20%] px-3 py-3 text-right font-normal">STATUS</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each games as game, i (game.id)}
-							{@const isSelected = selectedIndex === i}
-							{@const score = gameScores[game.id] ?? getGameScore(game)}
-							<tr
-								role="button"
-								tabindex="0"
-								aria-selected={isSelected}
-								class="cursor-pointer text-[clamp(11px,2vw,13px)] transition-colors duration-75 select-none"
-								class:bg-arcade-yel={isSelected}
-								onmouseenter={() => {
-									selectedIndex = i;
-									showGameInfo();
-								}}
-								onclick={() => {
-									if (isSelected) enterGame();
-									else {
-										selectedIndex = i;
-										showGameInfo();
-									}
-								}}
-							>
-								<!-- RANK (чистый номер без стрелочки) -->
-								<td class="px-3 py-3 whitespace-nowrap sm:py-3.5">
-									<span
-										class="text-arcade-dim"
-										class:!text-black={isSelected}
-										class:font-bold={isSelected}
-									>
-										{rankLabel(i)}
-									</span>
-								</td>
+	{#key toast.id}
+		{#if toast.text}
+			<div class="toast" role="status">{toast.text}</div>
+		{/if}
+	{/key}
+</div>
 
-								<!-- SCORE -->
-								<td class="px-3 py-3 whitespace-nowrap sm:py-3.5">
-									<span class={scoreColor(game, isSelected)}>
-										{score}
-									</span>
-								</td>
+<style>
+	.pavilion {
+		min-height: 100dvh;
+		background: #061a1c;
+		color: var(--pv-teal);
+		font: 500 17px/1.35 var(--f-hud);
+		overflow-x: hidden;
+	}
 
-								<!-- TITLE (со стрелочкой ► перед именем) -->
-								<td class="truncate px-3 py-3 sm:py-3.5">
-									<span class="{titleColor(game, isSelected)} tracking-wide">
-										{game.title}
-									</span>
-								</td>
+	.pavilion :global(:focus-visible) {
+		outline-color: #fff;
+	}
 
-								<!-- STATUS -->
-								<td class="px-3 py-3 text-right whitespace-nowrap sm:py-3.5">
-									<span
-										class="text-[0.85em] {statusColor(game, isSelected)}"
-										class:animate-blink-slow={game.status === 'ready' && !isSelected}
-									>
-										{statusLabel(game)}
-									</span>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
+	.world {
+		position: relative;
+		isolation: isolate;
+		overflow: hidden;
+		min-height: calc(100dvh - 64px);
+	}
 
-			<!-- MESSAGE HINT -->
-			<p
-				aria-live="polite"
-				class="mt-4 min-h-[1.5em] px-2 text-[clamp(8px,1.5vw,10px)] tracking-[0.12em] text-arcade-dim uppercase sm:mt-5"
-				class:text-arcade-grn={message.type === 'good'}
-				class:text-arcade-amb={message.type === 'bad'}
-			>
-				{message.text}
-			</p>
+	.scene {
+		position: relative;
+		z-index: 1;
+		max-width: 1400px;
+		margin: 0 auto;
+		padding: 40px 20px 110px;
+		display: grid;
+		grid-template-columns: 1fr minmax(0, 560px) 1fr;
+		gap: 40px;
+		align-items: start;
+	}
 
-			<!-- INSERT COIN BUTTON -->
-			<button
-				type="button"
-				class="mt-3 inline-flex cursor-pointer flex-col items-center gap-2 sm:mt-4"
-				onclick={enterGame}
-				aria-label="Insert coin (start selected game)"
-			>
-				<p
-					class="animate-blink-coin text-[clamp(12px,2.8vw,18px)] font-bold tracking-[0.16em] text-arcade-yel"
-					style="text-shadow: 0 0 10px rgba(255,217,59,.3);"
-				>
-					INSERT COIN
-				</p>
-				<div
-					class="h-[6px] w-[36px] rounded-[1px] border-2 border-[#2A3240] bg-[#050608] sm:h-[7px] sm:w-[42px]"
-					style="box-shadow: inset 0 1px 3px #000;"
-					aria-hidden="true"
-				></div>
-			</button>
+	.poster,
+	.honor {
+		display: none;
+	}
 
-			<!-- FOOTER INFO -->
-			<div
-				class="mt-5 flex items-center justify-between border-t border-arcade-line pt-3 text-[8px] tracking-[0.14em] text-arcade-dim sm:mt-6 sm:text-[9px]"
-			>
-				<div>{games.length} GAMES INSTALLED</div>
-				<div>
-					CREDIT <b class="font-normal text-arcade-yel">{String(credit).padStart(2, '0')}</b>
-				</div>
-			</div>
-		</div>
-	</main>
-{/if}
+	.poster {
+		justify-self: end;
+		width: 200px;
+		margin-top: 190px;
+		padding: 12px;
+		transform: rotate(-2deg);
+		background: #efe9d6;
+		border: 6px solid var(--pv-red);
+		border-radius: 4px;
+		text-align: center;
+		box-shadow: 0 14px 26px rgba(0, 0, 0, 0.55);
+	}
+
+	.poster svg {
+		width: 100%;
+		display: block;
+		margin-bottom: 8px;
+	}
+
+	.poster b {
+		display: block;
+		font: 900 19px/1.1 var(--f-head);
+		text-transform: uppercase;
+		letter-spacing: -0.02em;
+	}
+
+	.poster span {
+		display: block;
+		margin: 10px -12px -12px;
+		padding: 7px;
+		background: var(--pv-red);
+		color: #fff;
+		font: 700 12px var(--f-hud);
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+	}
+
+	.honor {
+		position: relative;
+		justify-self: start;
+		width: 230px;
+		margin-top: 260px;
+		padding: 16px 14px 12px;
+		transform: rotate(1.5deg);
+		border-radius: 10px;
+		background: linear-gradient(180deg, #fff, #e3ece8);
+		box-shadow:
+			0 0 0 3px var(--pv-teal),
+			0 14px 26px rgba(0, 0, 0, 0.55);
+	}
+
+	.honor::before,
+	.honor::after {
+		content: '';
+		position: absolute;
+		top: 8px;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #9fb2ac;
+		box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.4);
+	}
+
+	.honor::before {
+		left: 8px;
+	}
+
+	.honor::after {
+		right: 8px;
+	}
+
+	.honor h2 {
+		margin: 0 0 10px;
+		text-align: center;
+		font: 900 15px var(--f-head);
+		text-transform: uppercase;
+		color: var(--pv-red);
+	}
+
+	.honor ol {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: 8px;
+	}
+
+	.honor li {
+		display: grid;
+		grid-template-columns: 34px 1fr;
+		column-gap: 10px;
+		align-items: center;
+	}
+
+	.medal {
+		grid-row: span 2;
+		width: 34px;
+		height: 34px;
+		border-radius: 50%;
+		display: grid;
+		place-items: center;
+		color: #fff;
+		background: radial-gradient(circle at 50% 30%, var(--p1), var(--p2));
+		box-shadow: 0 0 0 2px var(--pv-teal);
+	}
+
+	.medal :global(svg) {
+		width: 20px;
+		height: 20px;
+	}
+
+	.honor li b {
+		font: 700 13px var(--f-head);
+		text-transform: uppercase;
+	}
+
+	.honor li > span:last-child {
+		font: 700 13px var(--f-hud);
+		letter-spacing: 0.1em;
+		color: #5b8b8a;
+	}
+
+	.toast {
+		position: fixed;
+		left: 50%;
+		bottom: 22px;
+		z-index: 50;
+		max-width: calc(100% - 32px);
+		padding: 10px 20px;
+		border-radius: 999px;
+		background: var(--pv-glass);
+		color: #ff7a63;
+		border: 2px solid #1d3a3d;
+		font: 700 15px var(--f-hud);
+		letter-spacing: 0.05em;
+		text-align: center;
+		transform: translate(-50%, 160%);
+		animation: toast 2.8s ease forwards;
+	}
+
+	@keyframes toast {
+		8%,
+		90% {
+			transform: translate(-50%, 0);
+		}
+		100% {
+			transform: translate(-50%, 160%);
+			visibility: hidden;
+		}
+	}
+
+	@media (min-width: 1180px) {
+		.poster,
+		.honor {
+			display: block;
+		}
+	}
+
+	@media (max-width: 1099px) {
+		.scene {
+			grid-template-columns: minmax(0, 560px);
+			justify-content: center;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.scene {
+			padding: 22px 10px 100px;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.toast {
+			animation-duration: 2.8s;
+			animation-timing-function: steps(1, end);
+		}
+	}
+</style>

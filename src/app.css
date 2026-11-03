@@ -56,6 +56,18 @@
     }
 }
 
+:root {
+    --pv-enamel: #f1f5f2;
+    --pv-teal: #0e4a4f;
+    --pv-red: #ff3a1d;
+    --pv-glass: #070d0f;
+    --pv-cream: #e6ddc4;
+    --pv-redgloss: linear-gradient(180deg, #ff6a50, #ff3a1d 45%, #d92a10);
+    --f-head: 'Unbounded', 'Arial Rounded MT Bold', sans-serif;
+    --f-hud: 'Tektur', 'Arial Narrow', sans-serif;
+    --f-hand: 'Caveat', cursive;
+}
+
 @layer base {
     html {
         background: #000;

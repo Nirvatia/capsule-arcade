@@ -1,70 +1,86 @@
+import type { Pathname } from '$app/types';
 import { getSavedScore } from '../utils/scoreStore';
+
+export type GameIconName = 'snake' | 'maze' | 'blocks' | 'simon';
 
 export interface GameConfig {
 	id: string;
 	title: string;
+	description: string;
 	genre: string;
+	difficulty: number;
+	players: string;
+	icon: GameIconName;
+	light: string;
+	deep: string;
 	status: 'ready' | 'dev' | 'soon';
 	progress?: number;
-	route?: string;
-	defaultScore?: number | string;
+	route?: Pathname;
 }
 
 export const games: GameConfig[] = [
 	{
 		id: 'snake',
-		title: 'SNAKE',
-		genre: 'PUZZLE',
+		title: 'Змейка',
+		description: 'Расти и не врезайся в себя.',
+		genre: 'Аркада',
+		difficulty: 2,
+		players: '1',
+		icon: 'snake',
+		light: '#c9ef7a',
+		deep: '#4f8a10',
 		status: 'ready',
-		route: '/games/snake',
-		defaultScore: 0
+		route: '/games/snake'
 	},
 	{
 		id: 'pacman',
-		title: 'PAC-MAN',
-		genre: 'MAZE',
-		status: 'soon',
-		defaultScore: 0
+		title: 'Пакман',
+		description: 'Съешь всё в лабиринте и не попадись.',
+		genre: 'Лабиринт',
+		difficulty: 3,
+		players: '1',
+		icon: 'maze',
+		light: '#ffd27a',
+		deep: '#c97a00',
+		status: 'soon'
 	},
 	{
 		id: 'tetris',
-		title: 'TETRIS',
-		genre: 'PUZZLE',
+		title: 'Тетрис',
+		description: 'Собирай фигуры в сплошные линии.',
+		genre: 'Головоломка',
+		difficulty: 3,
+		players: '1',
+		icon: 'blocks',
+		light: '#a9b8ff',
+		deep: '#3343b0',
 		status: 'ready',
-		route: '/games/tetris',
-		defaultScore: 0
+		route: '/games/tetris'
 	},
 	{
 		id: 'simon',
-		title: 'SIMON 1C',
-		genre: 'MEMORY',
+		title: 'Саймон 1С',
+		description: 'Повтори последовательность и закрой квартал.',
+		genre: 'Память',
+		difficulty: 2,
+		players: '1',
+		icon: 'simon',
+		light: '#ff8a6a',
+		deep: '#c4180a',
 		status: 'ready',
-		route: '/games/simon',
-		defaultScore: 0
+		route: '/games/simon'
 	}
 ];
 
-export function rankLabel(index: number): string {
-	const ranks = ['1ST', '2ND', '3RD'];
-	return ranks[index] ?? `${index + 1}TH`;
+export function isPlayable(game: GameConfig): boolean {
+	return game.status === 'ready' && Boolean(game.route);
 }
 
-export function statusLabel(game: GameConfig): string {
-	if (game.status === 'ready') {
-		return 'PLAY';
+export function getGameRecord(game: GameConfig): number {
+	if (!isPlayable(game)) {
+		return 0;
 	}
 
-	if (game.status === 'dev') {
-		return `DEV ${game.progress ?? 0}%`;
-	}
-
-	return 'SOON';
-}
-
-export function getGameScore(game: GameConfig): string {
-	if (game.status === 'soon') {
-		return '------';
-	}
-
-	return getSavedScore(game.id, game.defaultScore ?? '000000');
+	const value = parseInt(getSavedScore(game.id, 0), 10);
+	return Number.isFinite(value) ? value : 0;
 }
