@@ -306,6 +306,32 @@
 		}
 	}
 
+	@media (min-width: 1080px) and (max-height: 1079px) {
+		.scene {
+			max-width: 1640px;
+			grid-template-columns: minmax(0, 1012px);
+			justify-content: center;
+			padding: 20px 20px 48px;
+		}
+
+		.poster,
+		.honor {
+			display: none;
+			margin-top: 120px;
+		}
+	}
+
+	@media (min-width: 1640px) and (max-height: 1079px) {
+		.scene {
+			grid-template-columns: 1fr minmax(0, 1012px) 1fr;
+		}
+
+		.poster,
+		.honor {
+			display: block;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.toast {
 			animation-duration: 2.8s;
