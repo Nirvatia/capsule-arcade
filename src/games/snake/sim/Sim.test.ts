@@ -243,7 +243,13 @@ describe('determinism and demo', () => {
 				if (i % 17 === 0) sim.press(((i / 17) % 4) as 0 | 1 | 2 | 3);
 				sim.update(50);
 			}
-			return JSON.stringify([sim.score, sim.length, sim.headCell, sim.alive, sim.scarabs.map((s) => s.cell)]);
+			return JSON.stringify([
+				sim.score,
+				sim.length,
+				sim.headCell,
+				sim.alive,
+				sim.scarabs.map((s) => s.cell)
+			]);
 		};
 		expect(run()).toBe(run());
 	});

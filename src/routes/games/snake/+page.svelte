@@ -1,23 +1,25 @@
 <!-- src/routes/games/snake/+page.svelte -->
 <script lang="ts">
 	import GameStage from '$shared/ui/GameStage.svelte';
-	import SnakeOverlay from '$games/snake/ui/overlay/SnakeOverlay.svelte';
-	import SnakeHud from '$games/snake/ui/hud/SnakeHud.svelte';
-	import { SnakeGame } from '$games/snake/core/GameMain';
+	import SnakeOverlay from '$games/snake/ui/SnakeOverlay.svelte';
+	import SnakeHud from '$games/snake/ui/SnakeHud.svelte';
+	import { SnakeGame } from '$games/snake/SnakeGame';
 
 	let game: SnakeGame | null = $state(null);
 </script>
 
 <svelte:head>
 	<title>SNAKE · NEO ARCADE</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+	<link
+		rel="stylesheet"
+		href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@500&family=Alegreya+Sans+SC:wght@500;700;800&family=Forum&display=swap"
+	/>
 </svelte:head>
 
 {#snippet hudTop()}
-	<SnakeHud part="top" />
-{/snippet}
-
-{#snippet hudBottom()}
-	<SnakeHud part="bottom" />
+	<SnakeHud />
 {/snippet}
 
 {#snippet overlay()}
@@ -42,6 +44,5 @@
 		mute: () => game?.touchMute()
 	}}
 	{hudTop}
-	{hudBottom}
 	{overlay}
 />
