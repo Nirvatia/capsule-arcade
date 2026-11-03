@@ -62,6 +62,40 @@
 	const shift = (i: number) => Math.round((noise(i + 40) - 0.5) * 8);
 	const prefersReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+	const FIT_MIN_SCALE = 0.7;
+	const FIT_MIN_WIDTH = 641;
+
+	function fitToViewport(node: HTMLElement) {
+		const apply = () => {
+			node.style.transform = '';
+			node.style.marginBottom = '';
+			if (window.innerWidth < FIT_MIN_WIDTH) {
+				return;
+			}
+			const top = node.getBoundingClientRect().top + window.scrollY;
+			const height = node.offsetHeight;
+			const gap = node.parentElement
+				? parseFloat(getComputedStyle(node.parentElement).paddingBottom)
+				: 0;
+			const scale = (window.innerHeight - top - gap) / height;
+			if (scale >= 1 || scale < FIT_MIN_SCALE) {
+				return;
+			}
+			node.style.transform = `scale(${scale})`;
+			node.style.marginBottom = `${(scale - 1) * height}px`;
+		};
+
+		apply();
+		const observer = new ResizeObserver(apply);
+		observer.observe(node);
+		window.addEventListener('resize', apply);
+
+		return () => {
+			observer.disconnect();
+			window.removeEventListener('resize', apply);
+		};
+	}
+
 	function tagFor(game: GameConfig): string {
 		if (game.status === 'dev') {
 			return `Сборка ${game.progress ?? 0}%`;
@@ -176,7 +210,7 @@
 	}
 </script>
 
-<div class="unit">
+<div class="unit" {@attach fitToViewport}>
 	<section class="machine" aria-label="Автомат с капсулами">
 		<i class="tube l"></i><i class="tube r"></i>
 
@@ -363,6 +397,7 @@
 		position: relative;
 		z-index: 2;
 		min-width: 0;
+		transform-origin: 50% 0;
 	}
 
 	.machine {
@@ -1413,6 +1448,53 @@
 			height: 38px;
 			padding: 0 18px;
 			font-size: 14px;
+		}
+	}
+
+	@media (min-width: 1080px) and (max-height: 1079px) {
+		.machine {
+			display: grid;
+			grid-template-columns: 440px 440px;
+			grid-template-areas: 'sign sign' 'dome panel' 'ring panel' 'tray panel';
+			grid-template-rows: auto auto auto 1fr;
+			justify-content: center;
+			column-gap: 28px;
+		}
+
+		.sign {
+			grid-area: sign;
+		}
+
+		.dome {
+			grid-area: dome;
+		}
+
+		.ring {
+			grid-area: ring;
+		}
+
+		.panel {
+			grid-area: panel;
+			align-self: stretch;
+			align-content: space-evenly;
+			grid-template-columns: 84px 1fr 100px;
+			margin-top: 0;
+		}
+
+		.steps li {
+			letter-spacing: 0.06em;
+		}
+
+		.tray {
+			grid-area: tray;
+		}
+
+		.tube {
+			bottom: 40px;
+		}
+
+		.feet {
+			padding: 0 120px;
 		}
 	}
 
