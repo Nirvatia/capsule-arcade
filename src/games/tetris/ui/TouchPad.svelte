@@ -15,6 +15,8 @@
 		icon: string;
 		wide?: boolean;
 		accent?: boolean;
+		gold?: boolean;
+		text?: string;
 	}
 
 	const LEFT: PadButton[] = [
@@ -35,7 +37,14 @@
 			icon: 'M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.7L21 8M21 3v5h-5',
 			accent: true
 		},
-		{ action: Action.HARD_DROP, label: 'Сбросить', icon: 'M5 4l7 6 7-6M5 12l7 6 7-6', wide: true }
+		{
+			action: Action.HARD_DROP,
+			label: 'Сбросить',
+			icon: 'M5 4l7 6 7-6M5 12l7 6 7-6',
+			wide: true,
+			gold: true,
+			text: 'СБРОС'
+		}
 	];
 
 	const buttons = $derived(side === 'left' ? LEFT : RIGHT);
@@ -71,6 +80,7 @@
 			class="pad__btn"
 			class:pad__btn--wide={btn.wide}
 			class:pad__btn--accent={btn.accent}
+			class:pad__btn--gold={btn.gold}
 			aria-label={btn.label}
 			onpointerdown={(e) => down(e, btn.action)}
 			onpointerup={up}
@@ -88,31 +98,37 @@
 					stroke-linejoin="round"
 				/>
 			</svg>
+			{#if btn.text}<span>{btn.text}</span>{/if}
 		</button>
 	{/each}
 </div>
 
 <style>
 	.pad {
-		--size: clamp(52px, 16vw, 68px);
+		--size: clamp(52px, 16vw, 66px);
 		display: grid;
 		grid-template-columns: repeat(2, var(--size));
-		gap: 10px;
+		gap: 12px;
 		touch-action: none;
 		user-select: none;
 		-webkit-user-select: none;
 	}
 
 	.pad__btn {
-		display: grid;
-		place-items: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
 		height: var(--size);
 		padding: 0;
+		font-family: var(--t-font-display);
+		font-size: 13px;
+		letter-spacing: 0.1em;
 		color: var(--t-ink);
-		background: var(--t-paper);
-		border: 3px solid var(--t-ink);
+		background: var(--t-cream);
+		border: 2px solid var(--t-cream);
 		border-radius: 0;
-		box-shadow: 4px 4px 0 var(--t-ink);
+		box-shadow: 3px 4px 0 #000;
 		cursor: pointer;
 		touch-action: none;
 		-webkit-tap-highlight-color: transparent;
@@ -123,23 +139,32 @@
 	}
 
 	.pad__btn svg {
-		width: 46%;
-		height: 46%;
+		width: calc(var(--size) * 0.36);
+		height: calc(var(--size) * 0.36);
 	}
 
 	.pad__btn--wide {
 		grid-column: 1 / -1;
-		height: calc(var(--size) * 0.78);
+		height: calc(var(--size) * 0.76);
+	}
+
+	.pad__btn--wide svg {
+		width: calc(var(--size) * 0.3);
+		height: calc(var(--size) * 0.3);
 	}
 
 	.pad__btn--accent {
-		color: var(--t-paper);
+		color: var(--t-cream);
 		background: var(--t-red);
+	}
+
+	.pad__btn--gold {
+		background: var(--t-gold);
 	}
 
 	.pad__btn:active {
 		transform: translate(3px, 3px);
-		box-shadow: 1px 1px 0 var(--t-ink);
+		box-shadow: 0 1px 0 #000;
 	}
 
 	@media (max-height: 640px) and (orientation: portrait) {

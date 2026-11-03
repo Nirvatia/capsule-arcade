@@ -1,5 +1,9 @@
 <script lang="ts">
+	import { LINES_PER_LEVEL } from '../config';
+	import { ModeId, MODES } from '../core/modes';
 	import { Phase } from '../core/types';
+	import { levelName } from '../theme/texts';
+	import { formatTime } from './format';
 	import { STAR_PATH } from './icons';
 	import { ui } from './store.svelte';
 
@@ -14,6 +18,33 @@
 	const countdownText = $derived(
 		ui.countdown ? (ui.countdown.step > 0 ? String(ui.countdown.step) : 'ПУСК!') : ''
 	);
+	const mode = $derived(MODES[ui.mode]);
+	const plan = $derived.by(() => {
+		if (ui.mode === ModeId.SPRINT) {
+			const goal = mode.goalLines ?? 1;
+			return {
+				label: 'АВРАЛ · 40 РЯДОВ',
+				filled: Math.floor((Math.min(ui.lines, goal) / goal) * 10),
+				value: `${ui.lines}/${goal}`
+			};
+		}
+		if (ui.mode === ModeId.ULTRA) {
+			const limit = mode.timeLimitMs ?? 1;
+			return {
+				label: 'УДАРНАЯ СМЕНА',
+				filled: Math.floor((Math.min(ui.elapsedMs, limit) / limit) * 10),
+				value: formatTime(limit - ui.elapsedMs, false)
+			};
+		}
+		return {
+			label: `ПЯТИЛЕТКА №${ui.level} «${levelName(ui.level).toUpperCase()}»`,
+			filled: ui.lines % LINES_PER_LEVEL,
+			value: `${ui.lines % LINES_PER_LEVEL}/${LINES_PER_LEVEL}`
+		};
+	});
+	const segments = $derived(Array.from({ length: 10 }, (_, i) => i < plan.filled));
+	const playing = $derived(ui.phase === Phase.PLAYING || ui.phase === Phase.CLEARING);
+
 	const showCountdown = $derived(
 		ui.countdown !== null && (ui.phase === Phase.COUNTDOWN || ui.countdown.step === 0)
 	);
@@ -26,16 +57,16 @@
 				<path d={STAR_PATH} />
 			</svg>
 		{/each}
-		<div class="field__head">
-			<span>УЧАСТОК 10 × 20</span>
-			<span class="field__head-level">ПЯТИЛЕТКА №{ui.level}</span>
-		</div>
+		<div class="field__plaque" aria-hidden="true"><i></i>УЧАСТОК 10 × 20<i></i></div>
 	{/if}
 
 	<div class="field__well">
 		<div class="field__host" bind:this={host}></div>
 
 		<div class="field__fx">
+			{#if ui.danger && playing}
+				<span class="t-stamp field__danger">ПЕРЕРАСХОД ПЛИТ!</span>
+			{/if}
 			{#if showCountdown && ui.countdown}
 				{#key ui.countdown.key}
 					<div class="field__countdown" class:field__countdown--go={ui.countdown.step === 0}>
@@ -63,69 +94,157 @@
 			{/if}
 		</div>
 	</div>
+	<div class="field__plan" aria-label="{plan.label}: {plan.value}">
+		{#if !compact}<span class="field__plan-label">{plan.label}</span>{/if}
+		<span class="field__segments">
+			{#each segments as on, i (i)}<i class:on></i>{/each}
+		</span>
+		{#if !compact}<span class="field__plan-value">{plan.value}</span>{/if}
+	</div>
 </div>
 
 <style>
 	.field {
 		position: relative;
-		padding: 10px 10px 12px;
+		padding: 12px 12px 10px;
 		background: var(--t-ink);
-		border: 4px solid var(--t-paper);
+		border: 3px solid var(--t-cream);
 		box-shadow:
 			0 0 0 4px var(--t-ink),
-			14px 14px 0 rgba(15, 8, 6, 0.45);
+			14px 14px 0 rgba(20, 4, 6, 0.5);
 	}
 
 	.field--compact {
-		padding: 3px;
+		padding: 4px 4px 5px;
 		border-width: 2px;
 		box-shadow:
 			0 0 0 2px var(--t-ink),
-			5px 5px 0 rgba(15, 8, 6, 0.45);
+			6px 6px 0 rgba(20, 4, 6, 0.5);
 	}
 
-	.field__head {
+	.field__plaque {
+		position: absolute;
+		left: 50%;
+		top: -20px;
+		z-index: 2;
 		display: flex;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 0 2px 8px;
+		align-items: center;
+		gap: 10px;
+		padding: 5px 22px;
 		font-family: var(--t-font-display);
-		font-size: 11px;
-		letter-spacing: 0.16em;
-		color: var(--t-paper);
+		font-size: 13px;
+		letter-spacing: 0.18em;
+		color: var(--t-cream);
 		white-space: nowrap;
+		background: var(--t-red);
+		border: 2px solid var(--t-cream);
+		box-shadow: 0 0 0 2px var(--t-ink);
+		clip-path: polygon(0 0, 100% 0, 96% 50%, 100% 100%, 0 100%, 4% 50%);
+		transform: translateX(-50%);
 	}
 
-	.field__head-level {
-		color: var(--t-gold);
+	.field__plaque i {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: var(--t-gold);
 	}
 
 	.field__corner {
 		position: absolute;
-		width: 22px;
-		height: 22px;
+		z-index: 2;
+		width: 28px;
+		height: 28px;
 		fill: var(--t-gold);
-		filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6));
+		stroke: var(--t-ink);
+		stroke-width: 7;
 	}
 
 	.field__corner--tl {
-		top: -13px;
-		left: -13px;
+		top: -15px;
+		left: -15px;
 	}
 
 	.field__corner--tr {
-		top: -13px;
-		right: -13px;
+		top: -15px;
+		right: -15px;
 	}
 
 	.field__corner--bl {
-		bottom: -13px;
-		left: -13px;
+		bottom: -15px;
+		left: -15px;
 	}
 
 	.field__corner--br {
-		bottom: -13px;
-		right: -13px;
+		bottom: -15px;
+		right: -15px;
+	}
+
+	.field__plan {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 9px;
+		font-family: var(--t-font-display);
+		font-size: 10px;
+		letter-spacing: 0.14em;
+		line-height: 1;
+		color: var(--t-cream);
+	}
+
+	.field--compact .field__plan {
+		margin-top: 5px;
+	}
+
+	.field__plan-label {
+		max-width: 60%;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.field__plan-value {
+		color: var(--t-gold);
+		white-space: nowrap;
+	}
+
+	.field__segments {
+		display: grid;
+		flex-grow: 1;
+		grid-template-columns: repeat(10, minmax(0, 1fr));
+		gap: 2px;
+		height: 8px;
+	}
+
+	.field--compact .field__segments {
+		height: 5px;
+	}
+
+	.field__segments i {
+		background: rgba(237, 227, 203, 0.15);
+		transition: background 0.25s;
+	}
+
+	.field__segments i.on {
+		background: var(--t-gold);
+	}
+
+	.field__danger {
+		position: absolute;
+		left: 50%;
+		top: 20%;
+		z-index: 3;
+		font-size: clamp(11px, 6cqw, 18px);
+		background: rgba(239, 229, 204, 0.94);
+		mix-blend-mode: normal;
+		transform: translate(-50%, -50%) rotate(-6deg);
+		animation: danger 1.2s ease-in-out infinite;
+	}
+
+	@keyframes danger {
+		50% {
+			transform: translate(-50%, -50%) rotate(-6deg) scale(1.06);
+		}
 	}
 
 	.field__well {

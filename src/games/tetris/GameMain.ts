@@ -95,6 +95,10 @@ export class GameMain implements GameModule {
 			this.sim.start();
 	}
 
+	menu(): void {
+		this.sim.toMenu();
+	}
+
 	togglePause(): void {
 		this.sim.togglePause();
 	}

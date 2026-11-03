@@ -35,7 +35,7 @@
 		height: 42px;
 		color: var(--t-paper);
 		background: var(--t-ink);
-		border-top: 4px solid var(--t-gold);
+		border-top: 5px double var(--t-gold);
 	}
 
 	.board__star {

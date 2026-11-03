@@ -1,4 +1,5 @@
 import { MAX_LEVEL } from '../config';
+import { PieceType } from '../core/types';
 import { ModeId } from '../core/modes';
 import { EndReason } from '../core/types';
 import type { GameSummary } from '../engine/EventBus';
@@ -216,3 +217,13 @@ export function fillTemplate(
 		key in values ? String(values[key]) : match
 	);
 }
+
+export const PIECE_NAMES: Readonly<Record<PieceType, string>> = {
+	[PieceType.I]: 'Балка ж/б',
+	[PieceType.O]: 'Плита перекр.',
+	[PieceType.T]: 'Тавр стальной',
+	[PieceType.S]: 'Зигзаг правый',
+	[PieceType.Z]: 'Зигзаг левый',
+	[PieceType.J]: 'Уголок левый',
+	[PieceType.L]: 'Уголок правый'
+};

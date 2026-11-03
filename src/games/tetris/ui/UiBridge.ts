@@ -1,5 +1,7 @@
-import { SpinKind, type ClearResult, type GameState } from '../core/types';
+import { Phase, SpinKind, type ClearResult, type GameState } from '../core/types';
 import type { EventBus } from '../engine/EventBus';
+import { HIDDEN_ROWS, VISIBLE_ROWS } from '../config';
+import { stackHeight } from '../core/board';
 import { MODES } from '../core/modes';
 import { isBetter, loadRecords, submitRecord } from '../records';
 import { LINE_TITLES } from '../theme/texts';
@@ -47,6 +49,7 @@ export class UiBridge {
 		this.unsubscribe = [
 			bus.on('reset', (e) => {
 				ui.mode = e.mode;
+				ui.shiftNo = 1000 + (e.seed % 9000);
 				ui.records = loadRecords(e.mode);
 				ui.result = null;
 				ui.callout = null;
@@ -74,7 +77,9 @@ export class UiBridge {
 		ui.score = state.score;
 		ui.lines = state.lines;
 		ui.level = state.level;
+		ui.danger = stackHeight(state.board) - HIDDEN_ROWS > VISIBLE_ROWS - 5;
 		ui.elapsedMs = Math.floor(state.elapsedMs / 100) * 100;
+		ui.pausedMs = state.phase === Phase.PAUSED ? Math.floor(state.phaseTime / 1000) * 1000 : 0;
 		ui.hold = state.hold;
 		ui.holdUsed = state.holdUsed;
 		ui.combo = Math.max(0, state.combo);

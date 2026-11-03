@@ -1,39 +1,63 @@
+<script lang="ts">
+	import { STAR_PATH } from './icons';
+</script>
+
 <div class="backdrop" aria-hidden="true">
-	<svg class="backdrop__star" viewBox="0 0 100 100">
-		<path d="M50 2 L61 38 L98 38 L68 60 L79 96 L50 74 L21 96 L32 60 L2 38 L39 38 Z" />
-	</svg>
+	<div class="backdrop__rays"></div>
+	<div class="backdrop__dots"></div>
+	<svg class="backdrop__star" viewBox="0 0 100 100"><path d={STAR_PATH} /></svg>
 </div>
 
 <style>
 	.backdrop {
-		position: fixed;
+		position: absolute;
 		inset: 0;
 		z-index: 0;
 		overflow: hidden;
 		pointer-events: none;
-		background:
-			radial-gradient(1100px 600px at 78% -10%, rgba(227, 167, 47, 0.2), transparent 60%),
-			radial-gradient(900px 700px at 10% 110%, rgba(0, 0, 0, 0.35), transparent 60%),
-			repeating-conic-gradient(
-				from 0deg at 50% 45%,
-				rgba(0, 0, 0, 0.08) 0 5deg,
-				transparent 5deg 11deg
-			),
-			var(--t-red);
+		background: radial-gradient(
+			ellipse 70% 75% at 50% 50%,
+			var(--t-red-hi) 0%,
+			#a2212a 45%,
+			var(--t-red-dark) 100%
+		);
+	}
+
+	.backdrop__rays {
+		position: absolute;
+		inset: 0;
+		background: repeating-conic-gradient(
+			from 3deg at 50% 52%,
+			rgba(255, 214, 150, 0.075) 0 5deg,
+			transparent 5deg 12deg
+		);
+	}
+
+	.backdrop__dots {
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(rgba(20, 4, 6, 0.22) 1.3px, transparent 1.8px) 0 0 / 7px 7px;
+		-webkit-mask-image: linear-gradient(
+			140deg,
+			#000 0%,
+			transparent 32%,
+			transparent 68%,
+			#000 100%
+		);
+		mask-image: linear-gradient(140deg, #000 0%, transparent 32%, transparent 68%, #000 100%);
 	}
 
 	.backdrop__star {
 		position: absolute;
-		right: -12vmin;
-		top: 10vh;
-		width: 60vmin;
-		opacity: 0.1;
-		transform: rotate(-12deg);
+		left: 50%;
+		top: 52%;
+		width: min(118vmin, 1000px);
+		transform: translate(-50%, -50%) rotate(-8deg);
 	}
 
 	.backdrop__star path {
-		fill: none;
-		stroke: var(--t-paper);
-		stroke-width: 2.4;
+		fill: var(--t-red-deep);
+		stroke: rgba(242, 196, 90, 0.18);
+		stroke-width: 0.4;
 	}
 </style>

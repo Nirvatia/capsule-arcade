@@ -15,18 +15,26 @@
 
 <button
 	type="button"
-	class="t-panel hold"
+	class="t-paper hold"
+	class:t-paper--sm={compact}
 	class:hold--compact={compact}
-	class:hold--used={ui.holdUsed}
 	aria-label="Склад: отложить фигуру"
 	onclick={() => game.tap(Action.HOLD)}
 >
-	<span class="t-panel__title">СКЛАД</span>
-	<span class="hold__well">
+	<span class="t-tab">СКЛАД</span>
+	<span class="t-well hold__well">
 		<PiecePreview type={ui.hold} {cell} dim={ui.holdUsed} />
 	</span>
 	{#if !compact}
-		<span class="hold__hint">[C] — отложить фигуру на чёрный день</span>
+		<span class="hold__foot">
+			<span class="t-hand hold__note">на чёрный день</span>
+			<kbd class="t-mono hold__key">C</kbd>
+		</span>
+		{#if ui.hold !== null}
+			{#key ui.hold}
+				<span class="t-stamp t-stamp--in hold__stamp">ОПРИХОДОВАНО</span>
+			{/key}
+		{/if}
 	{/if}
 </button>
 
@@ -46,41 +54,45 @@
 	.hold__well {
 		display: grid;
 		place-items: center;
-		padding: 12px 0;
-		background: var(--t-well);
-		border: 2px solid var(--t-ink);
+		height: 96px;
 	}
 
-	.hold__hint {
+	.hold__foot {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		margin-top: 8px;
-		font-family: var(--t-font-body);
+	}
+
+	.hold__note {
+		font-size: 21px;
+	}
+
+	.hold__key {
+		padding: 1px 6px;
 		font-size: 11px;
-		letter-spacing: 0.05em;
-		opacity: 0.6;
+		border: 1.5px solid rgba(23, 18, 16, 0.5);
+	}
+
+	.hold__stamp {
+		position: absolute;
+		right: -16px;
+		top: 30px;
+		font-size: 11px;
+		background: rgba(239, 229, 204, 0.6);
 	}
 
 	.hold--compact {
-		padding: 16px 4px 4px;
 		transform: none;
-		border-width: 2px;
-		box-shadow: 3px 3px 0 rgba(15, 8, 6, 0.55);
-	}
-
-	.hold--compact :global(.t-panel__title) {
-		top: -9px;
-		left: 50%;
-		padding: 1px 6px;
-		font-size: 9px;
-		letter-spacing: 0.08em;
-		transform: translateX(-50%) skewX(-8deg);
-		border-width: 1.5px;
 	}
 
 	.hold--compact .hold__well {
+		height: auto;
 		padding: 6px 0;
+		border: 0;
 	}
 
 	.hold:active {
-		filter: brightness(0.95);
+		filter: brightness(0.96);
 	}
 </style>

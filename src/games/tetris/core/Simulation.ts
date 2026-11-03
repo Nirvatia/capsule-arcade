@@ -131,6 +131,13 @@ export class Simulation {
 		this.enter(Phase.COUNTDOWN);
 	}
 
+	toMenu(): void {
+		const phase = this.state.phase;
+		if (phase !== Phase.PAUSED && phase !== Phase.GAMEOVER && phase !== Phase.TOPOUT) return;
+		resetState(this.state);
+		this.enter(Phase.IDLE);
+	}
+
 	configureInput(dasMs: number, arrMs: number): void {
 		if (!(dasMs >= 0) || !(arrMs >= 0)) {
 			throw new Error(`[Tetris/Simulation] Invalid input timing das=${dasMs} arr=${arrMs}`);

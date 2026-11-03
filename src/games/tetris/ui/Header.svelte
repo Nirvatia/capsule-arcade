@@ -18,48 +18,60 @@
 			ui.phase === Phase.COUNTDOWN ||
 			ui.phase === Phase.PAUSED
 	);
-	const score = $derived(String(ui.score).padStart(6, '0'));
+	const score = $derived(
+		String(ui.score)
+			.padStart(6, '0')
+			.replace(/(\d{3})$/, ' $1')
+	);
+	const date = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit' }).format(
+		new Date()
+	);
 </script>
 
 <header class="hdr" class:hdr--compact={compact}>
-	<a href={resolve('/')} class="hdr__back" aria-label="В аркаду">
-		<span aria-hidden="true">◄</span>
-		{#if !compact}<span>В АРКАДУ</span>{/if}
-	</a>
-
-	<div class="hdr__logo">
-		<svg class="hdr__star" viewBox="0 0 100 100" aria-hidden="true"><path d={STAR_PATH} /></svg>
-		<span
-			>ТЕТРИС{#if !compact}&nbsp;<em>«ПЯТИЛЕТКА»</em>{/if}</span
-		>
-	</div>
-
 	{#if compact}
-		<div class="hdr__score" aria-label="Очки">
-			<span class="hdr__score-label">ОЧКИ</span>
-			<span class="hdr__score-value">{score}</span>
-		</div>
+		<a href={resolve('/')} class="t-chip t-chip--icon hdr__square" aria-label="В аркаду">
+			<svg viewBox="0 0 24 24" aria-hidden="true"
+				><path
+					d="M15 5l-7 7 7 7"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="3"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/></svg
+			>
+		</a>
 	{/if}
 
-	<div class="hdr__actions">
+	<span class="hdr__medal" aria-hidden="true">
+		<svg viewBox="0 0 100 100"><path d={STAR_PATH} /></svg>
+	</span>
+	<span class="hdr__title">ТЕТРИС</span>
+
+	{#if !compact}
+		<span class="hdr__flag">«ПЯТИЛЕТКА»</span>
+		<span class="hdr__meta t-mono">смена № {ui.shiftNo} · {date}</span>
+	{/if}
+
+	<div class="hdr__spacer"></div>
+
+	{#if compact}
+		<div class="hdr__score" aria-label="Очки труда">
+			<span>ОЧКИ ТРУДА</span>
+			<b class="t-mono">{score}</b>
+		</div>
+	{:else}
 		<button
 			type="button"
-			class="t-icon-btn"
+			class="t-chip t-chip--icon hdr__square"
 			aria-label={ui.settings.sound ? 'Выключить звук' : 'Включить звук'}
 			title="Звук [M]"
 			onclick={() => game.toggleMute()}
 		>
 			<svg viewBox="0 0 24 24" aria-hidden="true">
 				<path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
-				{#if !ui.settings.sound}
-					<path
-						d="M16 9l6 6M22 9l-6 6"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-					/>
-				{:else}
+				{#if ui.settings.sound}
 					<path
 						d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"
 						fill="none"
@@ -67,26 +79,50 @@
 						stroke-width="2"
 						stroke-linecap="round"
 					/>
+				{:else}
+					<path
+						d="M16 9l6 6M22 9l-6 6"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/>
 				{/if}
 			</svg>
 		</button>
-		<button
-			type="button"
-			class="t-icon-btn"
-			aria-label={ui.phase === Phase.PAUSED ? 'Продолжить' : 'Пауза'}
-			title="Пауза [P]"
-			disabled={!canPause}
-			onclick={() => game.togglePause()}
-		>
+	{/if}
+
+	<button
+		type="button"
+		class="t-chip"
+		class:t-chip--icon={compact}
+		class:hdr__square={compact}
+		aria-label={ui.phase === Phase.PAUSED ? 'Продолжить' : 'Перерыв'}
+		disabled={!canPause}
+		onclick={() => game.togglePause()}
+	>
+		{#if compact}
 			<svg viewBox="0 0 24 24" aria-hidden="true">
 				{#if ui.phase === Phase.PAUSED}
 					<path d="M7 4l13 8-13 8z" fill="currentColor" />
 				{:else}
-					<path d="M6 4h4v16H6zM14 4h4v16h-4z" fill="currentColor" />
+					<path
+						d="M7 5v14M17 5v14"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="3.5"
+						stroke-linecap="round"
+					/>
 				{/if}
 			</svg>
-		</button>
-	</div>
+		{:else}
+			{ui.phase === Phase.PAUSED ? 'К СТАНКУ' : 'ПЕРЕРЫВ'} <kbd>P</kbd>
+		{/if}
+	</button>
+
+	{#if !compact}
+		<a href={resolve('/')} class="t-chip t-chip--red">◄ В АРКАДУ</a>
+	{/if}
 </header>
 
 <style>
@@ -95,116 +131,117 @@
 		z-index: 5;
 		display: flex;
 		align-items: center;
-		gap: 16px;
-		padding: 10px 20px;
-		color: var(--t-paper);
+		gap: 14px;
+		height: 64px;
+		box-sizing: border-box;
+		padding: 0 24px;
+		color: var(--t-cream);
 		background: var(--t-ink);
-		border-bottom: 4px solid var(--t-gold);
+		border-bottom: 5px double var(--t-gold);
 	}
 
-	.hdr__back {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		height: 38px;
-		padding: 0 14px;
+	.hdr__medal {
+		display: grid;
+		place-items: center;
+		width: 40px;
+		height: 40px;
+		flex: none;
+		border-radius: 50%;
+		background: radial-gradient(circle at 35% 30%, #d8443c, var(--t-red-deep) 75%);
+		box-shadow:
+			0 0 0 2px var(--t-gold),
+			0 0 0 4px var(--t-ink),
+			0 0 0 5px rgba(227, 167, 47, 0.5);
+	}
+
+	.hdr__medal svg {
+		width: 20px;
+		height: 20px;
+		fill: var(--t-cream);
+	}
+
+	.hdr__title {
 		font-family: var(--t-font-display);
-		font-size: 12px;
-		letter-spacing: 0.14em;
-		color: var(--t-paper);
-		text-decoration: none;
-		border: 2px solid rgba(237, 227, 203, 0.55);
-		transition:
-			background 0.15s,
-			color 0.15s;
-	}
-
-	.hdr__back:hover {
-		color: var(--t-ink);
-		background: var(--t-paper);
-	}
-
-	.hdr__logo {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		font-family: var(--t-font-display);
-		font-size: 18px;
+		font-size: 22px;
 		letter-spacing: 0.08em;
-		white-space: nowrap;
 	}
 
-	.hdr__logo em {
-		font-style: normal;
-		color: var(--t-gold);
+	.hdr__flag {
+		padding: 3px 14px 3px 10px;
+		font-family: var(--t-font-display);
+		font-size: 13px;
+		letter-spacing: 0.1em;
+		color: var(--t-ink);
+		background: var(--t-gold);
+		clip-path: polygon(0 0, 100% 0, 92% 50%, 100% 100%, 0 100%);
 	}
 
-	.hdr__star {
-		width: 26px;
-		height: 26px;
-		fill: var(--t-red);
-		stroke: var(--t-paper);
-		stroke-width: 4;
+	.hdr__meta {
+		margin-left: 10px;
+		font-size: 12px;
+		color: rgba(237, 227, 203, 0.55);
 	}
 
-	.hdr__actions {
-		display: flex;
-		gap: 8px;
-		margin-left: auto;
+	.hdr__spacer {
+		flex-grow: 1;
+	}
+
+	.hdr__square {
+		width: 38px;
 	}
 
 	.hdr--compact {
-		gap: 10px;
-		padding: 6px 10px;
-		padding-top: calc(6px + env(safe-area-inset-top));
-		border-bottom-width: 3px;
+		gap: 8px;
+		height: calc(56px + env(safe-area-inset-top));
+		padding: env(safe-area-inset-top) 10px 0;
 	}
 
-	.hdr--compact .hdr__back {
-		justify-content: center;
-		width: 38px;
-		padding: 0;
+	.hdr--compact .hdr__medal {
+		width: 26px;
+		height: 26px;
+		box-shadow: 0 0 0 2px var(--t-gold);
 	}
 
-	.hdr--compact .hdr__logo {
-		font-size: 15px;
-		gap: 6px;
+	.hdr--compact .hdr__medal svg {
+		width: 13px;
+		height: 13px;
 	}
 
-	.hdr--compact .hdr__star {
-		width: 20px;
-		height: 20px;
+	.hdr--compact .hdr__title {
+		font-size: 16px;
+		letter-spacing: 0.06em;
+	}
+
+	.hdr--compact .t-chip {
+		height: 36px;
+		box-shadow: 2px 2px 0 #000;
+	}
+
+	.hdr--compact .hdr__square {
+		width: 36px;
 	}
 
 	.hdr__score {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
-		margin-left: auto;
 		line-height: 1;
 	}
 
-	.hdr__score-label {
-		font-family: var(--t-font-body);
+	.hdr__score span {
 		font-size: 9px;
-		font-weight: 500;
-		letter-spacing: 0.24em;
-		color: rgba(237, 227, 203, 0.6);
+		letter-spacing: 0.22em;
+		color: rgba(237, 227, 203, 0.55);
 	}
 
-	.hdr__score-value {
-		font-family: var(--t-font-display);
-		font-size: 20px;
+	.hdr__score b {
+		font-size: 21px;
 		color: var(--t-gold-hi);
-		font-variant-numeric: tabular-nums;
-	}
-
-	.hdr--compact .hdr__actions {
-		margin-left: 0;
+		white-space: nowrap;
 	}
 
 	@media (max-width: 360px) {
-		.hdr--compact .hdr__logo span {
+		.hdr--compact .hdr__title {
 			display: none;
 		}
 	}
