@@ -424,6 +424,18 @@ export class Sim {
 	}
 
 	/** Живая подсказка для печати: что будет, если замкнуть кольцо сейчас. */
+	/** Сколько доступных сторон Альфы занято телом. */
+	private touchRatio(a: Alpha): number {
+		let total = 0;
+		let touching = 0;
+		for (const n of this.alphaPerimeter(a.cell)) {
+			if (this.walls[n]) continue;
+			total++;
+			if (this.occ[n]) touching++;
+		}
+		return total === 0 ? 0 : touching / total;
+	}
+
 	preview(): SealPreview | null {
 		const a = this.alpha;
 		if (!a) return null;
@@ -609,6 +621,14 @@ export class Sim {
 			a.timer = a.moveMs = SIM.ALPHA_MOVE_MS;
 			return;
 		}
+		a.frozen = this.started && this.touchRatio(a) >= SIM.ALPHA_FREEZE_RATIO;
+		if (a.frozen) {
+			a.prev = a.cell;
+			a.fleeing = false;
+			a.moveMs = SIM.ALPHA_FREEZE_CHECK_MS;
+			a.timer = SIM.ALPHA_FREEZE_CHECK_MS;
+			return;
+		}
 		const flee = this.started && this.alphaDist(a.cell) <= SIM.ALPHA_FLEE_DIST;
 		const options: number[] = [];
 		const c = a.cell % this.cols;
@@ -759,7 +779,8 @@ export class Sim {
 			timer: SIM.ALPHA_MOVE_MS,
 			moveMs: SIM.ALPHA_MOVE_MS,
 			fleeing: false,
-			escaping: false
+			escaping: false,
+			frozen: false
 		};
 		this.events.push({ type: 'alphaSpawn', cell, op });
 		return true;
@@ -786,7 +807,8 @@ export class Sim {
 			timer: 1e9,
 			moveMs: 1e9,
 			fleeing: false,
-			escaping: false
+			escaping: false,
+			frozen: false
 		};
 	}
 

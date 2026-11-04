@@ -43,6 +43,10 @@ export const SIM = {
 	ALPHA_SPAWN_DELAY_MS: 1500,
 	ALPHA_SPAWN_MIN_DIST: 6,
 	ALPHA_ESCAPE_MS: 560,
+	/** Доля занятых телом сторон, при которой Альфа цепенеет. */
+	ALPHA_FREEZE_RATIO: 0.5,
+	/** Как часто оцепеневшая Альфа проверяет, не ослабло ли кольцо. */
+	ALPHA_FREEZE_CHECK_MS: 100,
 
 	/** Область больше этого не считается кольцом (змея просто перегородила поле). */
 	MAX_ENCLOSE: 24,

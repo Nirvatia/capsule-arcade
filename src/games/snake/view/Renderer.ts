@@ -35,6 +35,7 @@ export class Renderer {
 		this.canvas = document.createElement('canvas');
 		this.canvas.style.display = 'block';
 		this.canvas.style.touchAction = 'none';
+		this.canvas.dataset.snakeFrame = '';
 		const ctx = this.canvas.getContext('2d', { alpha: false });
 		if (!ctx) throw new Error('Snake: 2D canvas is not available.');
 		this.ctx = ctx;
@@ -182,7 +183,12 @@ export class Renderer {
 				c.ellipse(x, y + cs * 0.2, cs * 0.9, cs * 0.35, 0, 0, Math.PI * 2);
 				c.fill();
 			}
-			drawVaran(c, x, y - lift, ang, t, (cs / 30) * 0.8, {});
+			if (a.frozen) {
+				// оцепенела: мелкая дрожь
+				x += Math.sin(t * 53) * cs * 0.025;
+				y += Math.cos(t * 47) * cs * 0.02;
+			}
+			drawVaran(c, x, y - lift, ang, a.frozen ? t * 0.15 : t, (cs / 30) * 0.8, {});
 			sealX = x;
 			sealY = y - lift;
 		}
@@ -239,8 +245,13 @@ export class Renderer {
 	}
 
 	/** Цепочка центров клеток тела + клетка, которую только что покинул хвост. */
+	/**
+	 * Цепочка: центры клеток тела, клетка, которую освободил хвост, и ещё одна
+	 * виртуальная точка за ней. Кончик хвоста рисуется на полклетки дальше
+	 * последней настоящей точки; без продолжения он упирался бы в неё и дёргался.
+	 */
 	private buildPath(sim: Sim): void {
-		const n = sim.length + 1;
+		const n = sim.length + 2;
 		if (this.path.length < n * 2) this.path = new Float32Array(n * 4);
 		for (let i = 0; i < sim.length; i++) {
 			const cell = sim.cellAt(i);
@@ -250,6 +261,17 @@ export class Renderer {
 		const pt = sim.prevTail >= 0 ? sim.prevTail : sim.tailCell;
 		this.path[sim.length * 2] = (pt % sim.cols) + 0.5;
 		this.path[sim.length * 2 + 1] = Math.floor(pt / sim.cols) + 0.5;
+		const P = this.path;
+		const L = sim.length;
+		let dx = P[L * 2] - P[(L - 1) * 2];
+		let dy = P[L * 2 + 1] - P[(L - 1) * 2 + 1];
+		if (dx === 0 && dy === 0 && L >= 2) {
+			// хвост стоял на месте (рост): продолжаем по направлению последнего сегмента
+			dx = P[(L - 1) * 2] - P[(L - 2) * 2];
+			dy = P[(L - 1) * 2 + 1] - P[(L - 2) * 2 + 1];
+		}
+		P[(L + 1) * 2] = P[L * 2] + dx;
+		P[(L + 1) * 2 + 1] = P[L * 2 + 1] + dy;
 		this.pathLen = n;
 		this.phaseShift = 1 - sim.phase;
 	}

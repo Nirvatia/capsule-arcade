@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SIM } from '../config';
+import { PILLARS, SIM } from '../config';
 import { Sim } from './Sim';
 import { autopilot } from './autopilot';
 import { evalOp, type Bit } from './types';
@@ -255,6 +255,92 @@ describe('alpha fairness', () => {
 		expect(slot(3, 4)).toBe(true); // между блоком (3..4) и колонной (6) одна клетка
 		expect(slot(3, 5)).toBe(false); // до всех камней не меньше двух клеток
 		expect(slot(3, 6)).toBe(true); // щель к нижней стене (ряд 8)
+	});
+});
+
+describe('every allowed Alpha spot can be encircled', () => {
+	/**
+	 * Для каждой позиции, где Альфе разрешено стоять, проверяем геометрию кольца:
+	 * свободные клетки петли 12 вокруг блока, которые нужны кольцу (8 боковых),
+	 * лежат в одной связной дуге, и в эту дугу можно заползти снаружи.
+	 */
+	function impossibleSpots(pillars: readonly (readonly [number, number])[]): string[] {
+		const sim = new Sim({ seed: 1, pillars, scarabs: 0, alphas: false });
+		sim.debugPlaceSnake([sim.cols + 1]);
+		const C = sim.cols;
+		const wall = (c: number, r: number): boolean =>
+			c < 0 || r < 0 || c >= C || r >= sim.rows || sim.walls[r * C + c] === 1;
+		const fits = (cell: number): boolean =>
+			(sim as unknown as { alphaFits(cell: number, self: null): boolean }).alphaFits(cell, null);
+		const bad: string[] = [];
+		for (let r = 1; r < sim.rows - 2; r++) {
+			for (let c = 1; c < C - 2; c++) {
+				if (!fits(r * C + c)) continue;
+				const loop: [number, number][] = [];
+				for (let x = c - 1; x <= c + 2; x++) loop.push([x, r - 1]);
+				for (let y = r; y <= r + 2; y++) loop.push([c + 2, y]);
+				for (let x = c + 1; x >= c - 1; x--) loop.push([x, r + 2]);
+				for (let y = r + 1; y >= r; y--) loop.push([c - 1, y]);
+				const free = loop.map(([x, y]) => !wall(x, y));
+				const isCorner = (i: number): boolean => i === 0 || i === 3 || i === 6 || i === 9;
+				const required = loop.map((_, i) => i).filter((i) => free[i] && !isCorner(i));
+				if (required.length === 0) continue;
+				// связная дуга по петле от первой нужной клетки
+				const comp = new Set<number>([required[0]]);
+				for (const step of [1, -1]) {
+					let i = required[0];
+					for (let k = 0; k < 12; k++) {
+						const j = (i + step + 12) % 12;
+						if (!free[j]) break;
+						comp.add(j);
+						i = j;
+					}
+				}
+				const whole = comp.size === 12;
+				let ok = required.every((i) => comp.has(i));
+				if (ok && !whole) {
+					const inBlock = (x: number, y: number): boolean =>
+						x >= c && x <= c + 1 && y >= r && y <= r + 1;
+					const onLoop = (x: number, y: number): boolean =>
+						loop.some(([lx, ly]) => lx === x && ly === y);
+					ok = [...comp].some((i) => {
+						const [x, y] = loop[i];
+						return [
+							[1, 0],
+							[-1, 0],
+							[0, 1],
+							[0, -1]
+						].some(([dx, dy]) => {
+							const nx = x + dx;
+							const ny = y + dy;
+							return !wall(nx, ny) && !inBlock(nx, ny) && !onLoop(nx, ny);
+						});
+					});
+				}
+				if (!ok) bad.push(`${c},${r}`);
+			}
+		}
+		return bad;
+	}
+
+	it('без колонн', () => {
+		expect(impossibleSpots([])).toEqual([]);
+	});
+
+	it('с колоннами акта III', () => {
+		expect(impossibleSpots(PILLARS)).toEqual([]);
+	});
+
+	it('оцепенение: Альфа стоит, пока тело касается её с половины сторон', () => {
+		const sim = arena();
+		// тело касается 4 из 8 сторон блока (5,4): верх и правая сторона
+		sim.debugPlaceSnake([at(7, 6), at(7, 5), at(7, 4), at(7, 3), at(6, 3), at(5, 3), at(4, 3)]);
+		sim.debugPlaceAlpha(at(5, 4), 'or');
+		sim.alpha!.timer = 0;
+		sim.started = true;
+		sim.update(SIM.FIXED_MS);
+		expect(sim.alpha!.frozen).toBe(true);
+		expect(sim.alpha!.cell).toBe(at(5, 4));
 	});
 });
 

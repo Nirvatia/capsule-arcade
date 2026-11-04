@@ -34,7 +34,7 @@
 </script>
 
 {#if hud.width > 0}
-	<div class="band" class:hidden={!hud.visible} style:width="{hud.width}px">
+	<div class="band" data-snake-frame class:idle={!hud.visible} style:width="{hud.width}px">
 		<canvas bind:this={canvas} aria-hidden="true"></canvas>
 		<div class="row">
 			<div class="col l">
@@ -130,7 +130,7 @@
 		user-select: none;
 		-webkit-user-select: none;
 	}
-	.band.hidden .row {
+	.band.idle .row {
 		visibility: hidden;
 	}
 	canvas {

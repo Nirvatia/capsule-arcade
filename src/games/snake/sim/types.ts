@@ -39,6 +39,8 @@ export interface Alpha {
 	fleeing: boolean;
 	/** Прыжок через кольцо после проваленного удара: проверок кольца нет. */
 	escaping: boolean;
+	/** Оцепенение: тело касается Альфы с половины сторон — она не двигается. */
+	frozen: boolean;
 }
 
 export interface Rune {

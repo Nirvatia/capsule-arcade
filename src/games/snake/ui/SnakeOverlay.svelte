@@ -82,24 +82,13 @@
 		-webkit-user-select: none;
 	}
 	.panel {
-		--cut: 2.4cqw;
 		padding: 0.4cqw;
 		background: #161a19;
-		clip-path: polygon(
-			var(--cut) 0,
-			calc(100% - var(--cut)) 0,
-			100% var(--cut),
-			100% calc(100% - var(--cut)),
-			calc(100% - var(--cut)) 100%,
-			var(--cut) 100%,
-			0 calc(100% - var(--cut)),
-			0 var(--cut)
-		);
+		box-shadow: 0 1.6cqw 4cqw rgba(0, 0, 0, 0.6);
 		max-width: 70%;
 	}
 	.in {
 		position: relative;
-		clip-path: inherit;
 		background: radial-gradient(120% 90% at 50% 0%, #56605d, #3a4240 55%, #2b3231);
 		box-shadow:
 			inset 0 0.25cqw 0 rgba(235, 245, 240, 0.14),
