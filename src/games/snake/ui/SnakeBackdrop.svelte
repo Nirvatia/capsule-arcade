@@ -5,9 +5,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { COLS, TORCHES } from '../config';
+	import { COLS } from '../config';
 	import { lang, tr } from '../i18n';
-	import { hs } from '../view/paint';
 	import { screenStore } from './stores';
 
 	let canvas = $state<HTMLCanvasElement | undefined>(undefined);
@@ -64,19 +63,12 @@
 		if (!b) return;
 		b.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-		// Камень стены: крупные мягкие пятна без рисунка кладки.
-		b.fillStyle = '#0b0d0d';
+		// Холодная почти чёрная стена в тон базальту, без пятен и тёплых оттенков.
+		const base = b.createLinearGradient(0, 0, 0, H);
+		base.addColorStop(0, '#121616');
+		base.addColorStop(1, '#0a0c0c');
+		b.fillStyle = base;
 		b.fillRect(0, 0, W, H);
-		for (let i = 0; i < 14; i++) {
-			const x = hs(i * 3.1) * W;
-			const y = hs(i * 5.3) * H;
-			const r = (0.15 + hs(i * 7.7) * 0.25) * Math.max(W, H);
-			const g = b.createRadialGradient(x, y, 0, x, y, r);
-			g.addColorStop(0, i % 3 === 0 ? 'rgba(120,140,135,0.05)' : 'rgba(0,0,0,0.18)');
-			g.addColorStop(1, 'rgba(0,0,0,0)');
-			b.fillStyle = g;
-			b.fillRect(x - r, y - r, r * 2, r * 2);
-		}
 
 		const f = measure();
 		if (f) {
@@ -86,28 +78,12 @@
 			const y0 = f.top - fw;
 			const w = f.right - f.left + fw * 2;
 			const h = f.bottom - f.top + fw * 2;
-			const cx = x0 + w / 2;
-			const cy = y0 + h / 2;
-
-			// Тёплый отсвет арены на стене.
-			const glow = b.createRadialGradient(
-				cx,
-				cy,
-				Math.min(w, h) * 0.3,
-				cx,
-				cy,
-				Math.max(w, h) * 0.95
-			);
-			glow.addColorStop(0, 'rgba(255,140,60,0.11)');
-			glow.addColorStop(1, 'rgba(255,140,60,0)');
-			b.fillStyle = glow;
-			b.fillRect(0, 0, W, H);
 
 			// Глубокая тень: ниша в стене.
 			b.save();
-			b.shadowColor = 'rgba(0,0,0,0.85)';
-			b.shadowBlur = 60 * s;
-			b.shadowOffsetY = 20 * s;
+			b.shadowColor = 'rgba(0,0,0,0.9)';
+			b.shadowBlur = 22 * s;
+			b.shadowOffsetY = 8 * s;
 			b.fillStyle = '#1d2221';
 			b.fillRect(x0, y0, w, h);
 			b.restore();
@@ -134,26 +110,11 @@
 			b.fillRect(f.left - 2, f.top - 2, f.right - f.left + 4, 2);
 			b.fillRect(f.left - 2, f.top, 2, f.bottom - f.top);
 
-			// Свет факелов падает на верх рамки.
-			const cell = 40 * s;
-			b.save();
-			b.globalCompositeOperation = 'lighter';
-			for (const [tc, tr] of TORCHES) {
-				if (tr !== 0) continue;
-				const tx = f.arenaLeft + (tc + 0.5) * cell;
-				const lg = b.createRadialGradient(tx, y0 + fw * 0.5, 0, tx, y0 + fw * 0.5, cell * 2.2);
-				lg.addColorStop(0, 'rgba(255,150,70,0.22)');
-				lg.addColorStop(1, 'rgba(255,150,70,0)');
-				b.fillStyle = lg;
-				b.fillRect(tx - cell * 2.2, y0 - cell, cell * 4.4, cell * 3.2);
-			}
-			b.restore();
-
 			const scale = Math.max(0.8, s);
 			const btnH = 34 * scale;
 			exitPos =
-				y0 - btnH - 8 >= 4
-					? { x: x0, y: y0 - btnH - 8, scale }
+				y0 - btnH - 12 >= 4
+					? { x: x0, y: y0 - btnH - 12, scale }
 					: { x: f.arenaLeft + 10 * s, y: f.bandBottom + 10 * s, scale: Math.max(0.75, s) };
 		} else {
 			exitPos = null;
@@ -168,9 +129,20 @@
 			Math.hypot(W, H) * 0.6
 		);
 		vig.addColorStop(0, 'rgba(0,0,0,0)');
-		vig.addColorStop(1, 'rgba(0,0,0,0.8)');
+		vig.addColorStop(1, 'rgba(0,0,0,0.55)');
 		b.fillStyle = vig;
 		b.fillRect(0, 0, W, H);
+
+		// Зерно ±2 уровня: убирает ступеньки градиента на тёмных тонах.
+		const img = b.getImageData(0, 0, canvas.width, canvas.height);
+		const d = img.data;
+		for (let i = 0; i < d.length; i += 4) {
+			const n = (Math.random() - 0.5) * 4;
+			d[i] += n;
+			d[i + 1] += n;
+			d[i + 2] += n;
+		}
+		b.putImageData(img, 0, 0);
 	}
 
 	// Смена экрана может сдвинуть раскладку GameStage — перемеряем рамку.
@@ -235,7 +207,7 @@
 		box-shadow:
 			inset 0 2px 0 rgba(235, 245, 240, 0.16),
 			inset 0 -3px 0 rgba(0, 0, 0, 0.35),
-			0 6px 18px rgba(0, 0, 0, 0.55);
+			0 3px 8px rgba(0, 0, 0, 0.5);
 		font-family: 'Alegreya Sans SC', 'Alegreya Sans', system-ui, sans-serif;
 		font-weight: 700;
 		letter-spacing: 0.12em;
@@ -252,7 +224,7 @@
 	.exit:focus-visible {
 		box-shadow:
 			inset 0 0 0 2px #3fd1bd,
-			0 6px 18px rgba(0, 0, 0, 0.55);
+			0 3px 8px rgba(0, 0, 0, 0.5);
 	}
 	.arrow {
 		width: 0.65em;
