@@ -95,6 +95,12 @@ export class Sound {
 				return this.hit(0.25, 300, 0.2);
 			case 'runeSpawn':
 				return this.tone(880, 1320, 0.25, 'sine', 0.12);
+			case 'bite':
+				this.tone(160, 70, 0.25, 'sawtooth', 0.22);
+				return this.hit(0.25, 1200, 0.4);
+			case 'pillar':
+				this.hit(0.9, 220, 0.7);
+				return this.tone(70, 45, 0.8, 'sine', 0.35);
 		}
 	}
 

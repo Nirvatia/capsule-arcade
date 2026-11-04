@@ -26,7 +26,8 @@ export const hudStore = writable<HudState>({
 });
 
 export type Screen = 'title' | 'pause' | 'over' | null;
-export type MenuItem = 'begin' | 'language' | 'sound' | 'resume' | 'restart' | 'mainmenu' | 'again';
+export type MenuItem =
+	'begin' | 'language' | 'sound' | 'resume' | 'restart' | 'mainmenu' | 'again' | 'leave';
 
 export interface ScreenState {
 	screen: Screen;

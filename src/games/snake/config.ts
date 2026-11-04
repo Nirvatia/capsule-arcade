@@ -5,7 +5,7 @@ export const ROWS = 13;
 /** Логический размер клетки в CSS-пикселях. GameStage масштабирует сцену целиком. */
 export const CELL_PX = 40;
 
-/** Колонны внутри арены. Периметр — стены всегда. */
+/** Колонны, которые поднимаются из пола в акте PILLAR_ACT. Периметр — стены всегда. */
 export const PILLARS: readonly (readonly [number, number])[] = [
 	[5, 4],
 	[16, 4],
@@ -49,6 +49,9 @@ export const SIM = {
 	/** После удачного удара змея «переваривает»: длина = кольцо + DIGEST_EXTRA. */
 	DIGEST_EXTRA: 2,
 	FAIL_TAIL_LOSS: 2,
+	/** Удар головой в Альфу: не смерть, а укус — минус хвост, Альфа отпрыгивает. */
+	BITE_TAIL_LOSS: 2,
+	PILLAR_ACT: 3,
 	KILLS_PER_ACT: 3,
 
 	RUNE_FROM_ACT: 2,

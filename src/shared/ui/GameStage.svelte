@@ -35,6 +35,8 @@
 	interface Props {
 		init: (container: HTMLDivElement) => (() => void) | void;
 		backHref?: string;
+		/** Игра рисует свою навигацию — общую кнопку «MENU» не показываем. */
+		showBack?: boolean;
 		touch?: TouchHandlers;
 		hudTop?: Snippet;
 		hudBottom?: Snippet;
@@ -44,6 +46,7 @@
 	let {
 		init,
 		backHref = '/',
+		showBack = true,
 		touch = {},
 		hudTop,
 		hudBottom,
@@ -163,12 +166,14 @@
 		style:transform={`scale(${scale})`}
 		style:transform-origin="center center"
 	>
+		{#if showBack}
 		<a
 			href={backHref}
 			class="mb-2 flex items-center gap-2 border-2 border-arcade-line bg-arcade-bg/80 px-3 py-1.5 text-[10px] tracking-[0.15em] text-arcade-dim uppercase transition-colors hover:border-arcade-yel hover:text-arcade-yel focus:outline-none"
 		>
 			◄ MENU
 		</a>
+		{/if}
 
 		<div class="relative flex flex-col items-start">
 			{#if hudTop}

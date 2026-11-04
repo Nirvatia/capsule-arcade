@@ -58,7 +58,7 @@ function drawHead(
 	t: number,
 	tongue: boolean
 ): void {
-	const s = (cs / 30) * (1 + 0.12 * strike);
+	const s = (cs / 30) * 0.85 * (1 + 0.12 * strike);
 	const col = (h: string): string => (grey > 0 ? mix(h, PAL.stone, grey) : h);
 	const frill = 0.45 + 0.55 * strike;
 	c.save();
@@ -180,7 +180,8 @@ export function drawAspid(
 ): void {
 	const len = o.len;
 	if (len < 1) return;
-	const R = cs * 0.25;
+	/** Радиус тела: 0,21 клетки (было 0,25). */
+	const R = cs * 0.2125;
 	const total = len - 0.55;
 	const from = o.from ?? 0;
 	const lod = cs < 26;
@@ -264,7 +265,7 @@ export function drawAspid(
 		let rise = 0.45;
 		if (o.wave != null) rise += 0.55 * Math.exp(-(((i - o.wave) / 1.1) ** 2));
 		if (o.strike) rise = Math.max(rise, 0.45 + 0.55 * o.strike);
-		const tp = (i > len * 0.68 ? 0.7 : 1) * (lod ? 0.8 : 1);
+		const tp = (i > len * 0.68 ? 0.7 : 1) * (lod ? 0.8 : 1) * 0.85;
 		c.save();
 		c.translate(p[0] * cs, p[1] * cs);
 		c.rotate(a);
@@ -297,7 +298,7 @@ export function drawAspid(
 		const taper = i > len * 0.68 ? 0.8 : 1;
 		const x = p[0] * cs;
 		const y = p[1] * cs;
-		const q = cs * 0.2 * taper;
+		const q = cs * 0.184 * taper;
 		c.save();
 		c.translate(x, y);
 		c.rotate(a);
@@ -310,12 +311,12 @@ export function drawAspid(
 			diamond(c, q * 0.48, q * 0.36);
 		} else {
 			c.strokeStyle = col(AS.rim, g);
-			c.lineWidth = cs * 0.11 * taper;
+			c.lineWidth = cs * 0.1 * taper;
 			c.beginPath();
 			c.ellipse(0, 0, q * 0.9, q * 0.75, 0, 0, TAU);
 			c.stroke();
 			c.strokeStyle = col(PAL.pat, g);
-			c.lineWidth = cs * 0.06 * taper;
+			c.lineWidth = cs * 0.055 * taper;
 			c.beginPath();
 			c.ellipse(0, 0, q * 0.9, q * 0.75, 0, 0, TAU);
 			c.stroke();

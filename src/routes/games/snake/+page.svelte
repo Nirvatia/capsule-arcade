@@ -3,6 +3,7 @@
 	import GameStage from '$shared/ui/GameStage.svelte';
 	import SnakeOverlay from '$games/snake/ui/SnakeOverlay.svelte';
 	import SnakeHud from '$games/snake/ui/SnakeHud.svelte';
+	import SnakeBackdrop from '$games/snake/ui/SnakeBackdrop.svelte';
 	import { SnakeGame } from '$games/snake/SnakeGame';
 
 	let game: SnakeGame | null = $state(null);
@@ -26,7 +27,10 @@
 	<SnakeOverlay />
 {/snippet}
 
+<SnakeBackdrop />
+
 <GameStage
+	showBack={false}
 	init={(el) => {
 		const g = new SnakeGame();
 		game = g;

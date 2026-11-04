@@ -1,5 +1,7 @@
 // Точка входа игры: цикл, состояния, ввод, связь симуляции с видом, звуком и UI.
 
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 import type { GameModule } from '$shared/core/types';
 import { getSavedScore, saveScore } from '$shared/utils/scoreStore';
 import { Sound } from './audio/Sound';
@@ -33,12 +35,13 @@ const KEY_DIR: Record<string, Dir> = {
 };
 
 const MENUS: Record<Exclude<Screen, null>, MenuItem[]> = {
-	title: ['begin', 'language', 'sound'],
-	pause: ['resume', 'restart', 'sound', 'mainmenu'],
+	title: ['begin', 'language', 'sound', 'leave'],
+	pause: ['resume', 'restart', 'sound', 'mainmenu', 'leave'],
 	over: ['again', 'mainmenu']
 };
 
-const STAGE_BG = 'radial-gradient(120% 90% at 50% 0%, #1a1f20, #07090a)';
+/** Фон страницы рисует SnakeBackdrop — сцену GameStage делаем прозрачной. */
+const STAGE_BG = 'transparent';
 
 export class SnakeGame implements GameModule {
 	private renderer!: Renderer;
@@ -203,6 +206,9 @@ export class SnakeGame implements GameModule {
 				return;
 			case 'sound':
 				this.toggleMute();
+				return;
+			case 'leave':
+				void goto(resolve('/'));
 				return;
 		}
 	}

@@ -62,6 +62,8 @@ export class Fx {
 	private actT0 = -10;
 	private actText: [string, string] = ['', ''];
 	private crackT0 = -10;
+	/** Колонны, поднимающиеся из пола: клетка → время начала. */
+	readonly pillarRise = new Map<number, number>();
 	private hitStopMs = 0;
 	ghost: Ghost | null = null;
 
@@ -79,6 +81,7 @@ export class Fx {
 		this.deathT0 = -1;
 		this.crumbled = 0;
 		this.ghost = null;
+		this.pillarRise.clear();
 		this.hitStopMs = 0;
 	}
 
@@ -209,6 +212,56 @@ export class Fx {
 				case 'runeSpawn': {
 					const [x, y] = this.center(sim, e.cell);
 					this.burst(x, y, 10, [PAL.pat, PAL.patHi], cs * 1.4, 0.6, 0, cs * 0.04, true);
+					break;
+				}
+				case 'bite': {
+					const ax = ((e.alphaCell % sim.cols) + 1) * cs;
+					const ay = (Math.floor(e.alphaCell / sim.cols) + 1) * cs;
+					const [hx, hy] = this.center(sim, e.cell);
+					this.pushT0 = t;
+					this.pushX = ax / cs;
+					this.pushY = ay / cs;
+					this.crackT0 = t;
+					this.burst(hx, hy, 12, [PAL.crim, PAL.crimHi], cs * 2.6, 0.45, 0, cs * 0.05, true);
+					if (e.lostCells.length > 0) {
+						this.addFloat(`−${e.lostCells.length}`, hx, hy - cs * 0.6, t, PAL.crimHi, cs * 0.6);
+					}
+					for (const lc of e.lostCells) {
+						const [x, y] = this.center(sim, lc);
+						this.burst(
+							x,
+							y,
+							10,
+							[PAL.stone, PAL.stoneLight, PAL.stoneDark],
+							cs * 1.6,
+							1.0,
+							cs * 6,
+							cs * 0.06,
+							false,
+							true
+						);
+					}
+					this.shake(5);
+					this.hitStopMs = 60;
+					break;
+				}
+				case 'pillar': {
+					const [x, y] = this.center(sim, e.cell);
+					this.pillarRise.set(e.cell, t);
+					this.burst(
+						x,
+						y,
+						18,
+						[PAL.stone, PAL.stoneLight, PAL.stoneDark],
+						cs * 2,
+						1.0,
+						cs * 4,
+						cs * 0.07,
+						false,
+						true
+					);
+					this.burst(x, y, 10, ['#cfd5d2'], cs * 1.2, 0.8, -cs * 0.4, cs * 0.05, false);
+					this.shake(5);
 					break;
 				}
 			}

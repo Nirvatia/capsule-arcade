@@ -19,7 +19,11 @@ export interface SimOptions {
 	seed: number;
 	cols?: number;
 	rows?: number;
+	/** Колонны с самого начала (по умолчанию нет). */
 	pillars?: readonly (readonly [number, number])[];
+	/** Колонны, которые поднимутся в акте pillarAct. */
+	latePillars?: readonly (readonly [number, number])[];
+	pillarAct?: number;
 	/** Автопилот для демо на титульном экране. Вызывается перед каждым шагом. */
 	pilot?: (sim: Sim) => Dir | null;
 	scarabs?: number;
@@ -41,6 +45,8 @@ export class Sim {
 	readonly walls: Uint8Array;
 	/** Сколько сегментов змеи стоит в клетке (0/1, кратко 2 при проходе хвоста). */
 	readonly occ: Uint8Array;
+	/** Растёт, когда меняются стены (поднялась колонна): рендер перепекает арену. */
+	wallsVersion = 0;
 
 	private readonly buf: Int16Array;
 	private readonly mask: number;
@@ -80,6 +86,9 @@ export class Sim {
 	private readonly pilot: ((sim: Sim) => Dir | null) | null;
 	private readonly targetScarabs: number;
 	private readonly alphasEnabled: boolean;
+	private readonly latePillars: number[];
+	private readonly pillarAct: number;
+	private pendingPillars: number[] = [];
 
 	// Переиспользуемые буферы, чтобы не плодить мусор на каждом шаге.
 	private readonly seen: Uint8Array;
@@ -115,7 +124,9 @@ export class Sim {
 			this.walls[r * this.cols] = 1;
 			this.walls[r * this.cols + this.cols - 1] = 1;
 		}
-		for (const [c, r] of opts.pillars ?? PILLARS) this.walls[r * this.cols + c] = 1;
+		for (const [c, r] of opts.pillars ?? []) this.walls[r * this.cols + c] = 1;
+		this.latePillars = (opts.latePillars ?? PILLARS).map(([c, r]) => r * this.cols + c);
+		this.pillarAct = opts.pillarAct ?? SIM.PILLAR_ACT;
 
 		const hc = Math.min(SIM.START_COL, this.cols - 2);
 		const hr = Math.min(SIM.START_ROW, this.rows - 2);
@@ -126,7 +137,7 @@ export class Sim {
 		this.prevTail = this.tailCell;
 		this.stats.maxLen = this.length;
 
-		if (this.pilot) this.started = true;
+		if (this.pilot) this.start();
 		for (let i = 0; i < this.targetScarabs; i++) this.spawnScarab();
 	}
 
@@ -168,9 +179,19 @@ export class Sim {
 
 	// ------------------------------------------------------------------ ввод и время
 
+	/**
+	 * Первый шаг делается сразу: до старта голова нарисована в своей клетке (фаза 1),
+	 * после мгновенного шага фаза 0 рисует её там же — без отката назад.
+	 */
+	private start(): void {
+		if (this.started) return;
+		this.started = true;
+		this.snakeTimer = this.interval;
+	}
+
 	press(d: Dir): void {
 		if (!this.alive) return;
-		this.started = true;
+		this.start();
 		const last = this.queue.length > 0 ? this.queue[this.queue.length - 1] : this.dir;
 		if (d === last || d === opposite(last)) return;
 		if (this.queue.length < SIM.INPUT_QUEUE) this.queue.push(d);
@@ -221,7 +242,8 @@ export class Sim {
 		const nr = Math.floor(h / this.cols) + DY[this.dir];
 		if (nc < 0 || nr < 0 || nc >= this.cols || nr >= this.rows) return this.die(h);
 		const n = nr * this.cols + nc;
-		if (this.walls[n] || this.inAlpha(n)) return this.die(n);
+		if (this.walls[n]) return this.die(n);
+		if (this.inAlpha(n)) this.bite(n);
 
 		const si = this.scarabAt(n);
 		const grow = si >= 0;
@@ -309,6 +331,7 @@ export class Sim {
 				this.kills = 0;
 				this.interval = stepInterval(this.act);
 				this.events.push({ type: 'act', act: this.act });
+				if (this.act === this.pillarAct) this.pendingPillars = [...this.latePillars];
 			}
 			return;
 		}
@@ -316,6 +339,22 @@ export class Sim {
 		this.streak = 0;
 		const lostCells = this.trimTo(Math.max(SIM.MIN_LEN, this.length - SIM.FAIL_TAIL_LOSS));
 		const from = a.cell;
+		const to = this.escapeAlpha(a);
+		this.events.push({
+			type: 'strike',
+			ok: false,
+			op: a.op,
+			alphaCell: from,
+			ring,
+			points: 0,
+			bonusCells: [],
+			lostCells,
+			escapeTo: to
+		});
+	}
+
+	/** Альфа перепрыгивает в свободное место; если места нет — исчезает до следующего появления. */
+	private escapeAlpha(a: Alpha): number {
 		const to = this.findAlphaSpot();
 		if (to >= 0) {
 			a.prev = a.cell;
@@ -328,17 +367,18 @@ export class Sim {
 			this.alpha = null;
 			this.alphaDelay = SIM.ALPHA_SPAWN_DELAY_MS;
 		}
-		this.events.push({
-			type: 'strike',
-			ok: false,
-			op: a.op,
-			alphaCell: from,
-			ring,
-			points: 0,
-			bonusCells: [],
-			lostCells,
-			escapeTo: to
-		});
+		return to;
+	}
+
+	/** Голова врезалась в Альфу: та огрызается и отпрыгивает, змея теряет хвост. */
+	private bite(cell: number): void {
+		const a = this.alpha;
+		if (!a) return;
+		this.streak = 0;
+		const lostCells = this.trimTo(Math.max(SIM.MIN_LEN, this.length - SIM.BITE_TAIL_LOSS));
+		const from = a.cell;
+		const to = this.escapeAlpha(a);
+		this.events.push({ type: 'bite', cell, alphaCell: from, lostCells, escapeTo: to });
 	}
 
 	/** Свободные клетки (не стена, не тело), связные с start. null — если область больше limit. */
@@ -507,9 +547,49 @@ export class Sim {
 			this.freeCell(cell) &&
 			this.freeCell(cell + 1) &&
 			this.freeCell(cell + this.cols) &&
-			this.freeCell(cell + this.cols + 1);
+			this.freeCell(cell + this.cols + 1) &&
+			!this.hasSlot(c, r);
 		this.alpha = saved;
 		return ok;
+	}
+
+	private wallAt(c: number, r: number): boolean {
+		return (
+			c < 0 || r < 0 || c >= this.cols || r >= this.rows || this.walls[r * this.cols + c] === 1
+		);
+	}
+
+	/**
+	 * Щель шириной в одну клетку между блоком 2×2 и стеной/колонной: туда змея
+	 * может заползти, но не развернуться, — кольцо становится невозможным.
+	 * Альфа стоит либо вплотную к камню, либо не ближе двух клеток.
+	 */
+	private hasSlot(c: number, r: number): boolean {
+		for (let k = 0; k < 2; k++) {
+			if (!this.wallAt(c - 1, r + k) && this.wallAt(c - 2, r + k)) return true;
+			if (!this.wallAt(c + 2, r + k) && this.wallAt(c + 3, r + k)) return true;
+			if (!this.wallAt(c + k, r - 1) && this.wallAt(c + k, r - 2)) return true;
+			if (!this.wallAt(c + k, r + 2) && this.wallAt(c + k, r + 3)) return true;
+		}
+		return false;
+	}
+
+	/** Клетка, в которую голова войдёт следующим шагом. */
+	private headNext(): number {
+		const d = this.queue.length > 0 ? this.queue[0] : this.dir;
+		const h = this.headCell;
+		const c = (h % this.cols) + DX[d];
+		const r = Math.floor(h / this.cols) + DY[d];
+		if (c < 0 || r < 0 || c >= this.cols || r >= this.rows) return -1;
+		return r * this.cols + c;
+	}
+
+	private blockHas(top: number, cell: number): boolean {
+		const c = cell % this.cols;
+		const r = Math.floor(cell / this.cols);
+		const ac = top % this.cols;
+		const ar = Math.floor(top / this.cols);
+		return c >= ac && c <= ac + 1 && r >= ar && r <= ar + 1;
 	}
 
 	private alphaDist(cell: number): number {
@@ -532,13 +612,15 @@ export class Sim {
 		const flee = this.started && this.alphaDist(a.cell) <= SIM.ALPHA_FLEE_DIST;
 		const options: number[] = [];
 		const c = a.cell % this.cols;
+		const next = this.started ? this.headNext() : -1;
 		for (let d = 0; d < 4; d++) {
 			const nc = c + DX[d];
 			const n = a.cell + DX[d] + DY[d] * this.cols;
 			if (nc < 0 || nc + 1 >= this.cols || n < 0 || n >= this.size) continue;
+			if (next >= 0 && this.blockHas(n, next)) continue;
 			if (this.alphaFits(n, a)) options.push(n);
 		}
-		let next = -1;
+		let to = -1;
 		if (options.length > 0) {
 			if (flee) {
 				let best = -1;
@@ -546,15 +628,15 @@ export class Sim {
 					const score = this.alphaDist(n) + this.rng.next() * 0.5;
 					if (score > best) {
 						best = score;
-						next = n;
+						to = n;
 					}
 				}
 			} else if (this.rng.next() >= 0.3) {
-				next = options[this.rng.int(options.length)];
+				to = options[this.rng.int(options.length)];
 			}
 		}
 		a.prev = a.cell;
-		if (next >= 0) a.cell = next;
+		if (to >= 0) a.cell = to;
 		a.fleeing = flee;
 		a.moveMs = flee ? SIM.ALPHA_FLEE_MS : SIM.ALPHA_MOVE_MS;
 		a.timer = a.moveMs;
@@ -564,6 +646,7 @@ export class Sim {
 
 	private tickSpawns(dt: number): void {
 		if (this.scarabs.length < this.targetScarabs) this.spawnScarab();
+		if (this.pendingPillars.length > 0) this.raisePillars();
 
 		if (this.alphasEnabled && !this.alpha) {
 			this.alphaDelay -= dt;
@@ -588,6 +671,27 @@ export class Sim {
 				}
 			}
 		}
+	}
+
+	/** Колонна встаёт только в свободной клетке, не у головы и не вплотную к Альфе. */
+	private raisePillars(): void {
+		this.pendingPillars = this.pendingPillars.filter((cell) => {
+			if (!this.freeCell(cell) || this.distToHead(cell) < 3) return true;
+			const a = this.alpha;
+			if (a) {
+				const ac = a.cell % this.cols;
+				const ar = Math.floor(a.cell / this.cols);
+				const c = cell % this.cols;
+				const r = Math.floor(cell / this.cols);
+				const dx = c < ac ? ac - c : c > ac + 1 ? c - ac - 1 : 0;
+				const dy = r < ar ? ar - r : r > ar + 1 ? r - ar - 1 : 0;
+				if (dx + dy < 3) return true;
+			}
+			this.walls[cell] = 1;
+			this.wallsVersion++;
+			this.events.push({ type: 'pillar', cell });
+			return false;
+		});
 	}
 
 	private randomFreeCell(minDist: number): number {
@@ -710,6 +814,7 @@ export class Sim {
 	/** Один шаг змеи без учёта времени. Только для тестов. */
 	debugStep(): void {
 		this.started = true;
+		this.snakeTimer = 0;
 		this.stepSnake();
 	}
 }

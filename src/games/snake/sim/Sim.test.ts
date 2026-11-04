@@ -38,14 +38,17 @@ describe('evalOp', () => {
 });
 
 describe('movement', () => {
-	it('стоит до первого нажатия, потом идёт с интервалом', () => {
+	it('стоит до первого нажатия, первый шаг — сразу, дальше по интервалу', () => {
 		const sim = new Sim({ seed: 3, scarabs: 0, alphas: false });
 		const head = sim.headCell;
 		sim.update(1000);
 		expect(sim.headCell).toBe(head);
+		expect(sim.phase).toBe(1);
 		sim.press(1);
-		sim.update(sim.interval + SIM.FIXED_MS);
+		sim.update(SIM.FIXED_MS);
 		expect(sim.headCell).toBe(head + 1);
+		sim.update(sim.interval);
+		expect(sim.headCell).toBe(head + 2);
 	});
 
 	it('разворот на 180° игнорируется', () => {
@@ -218,6 +221,59 @@ describe('ring', () => {
 		expect(last!.act).toBe(2);
 		expect(last!.interval).toBeLessThan(interval);
 		expect(last!.events.some((e) => e.type === 'act')).toBe(true);
+	});
+});
+
+describe('alpha fairness', () => {
+	it('удар головой в Альфу — не смерть: хвост короче, Альфа отпрыгивает', () => {
+		const sim = arena();
+		sim.debugPlaceSnake([at(4, 5), at(3, 5), at(2, 5), at(1, 5), at(1, 6), at(1, 7)]);
+		sim.debugPlaceAlpha(at(5, 5), 'or');
+		sim.debugSetDir(1);
+		const len = sim.length;
+		sim.debugStep();
+		expect(sim.alive).toBe(true);
+		expect(sim.events.some((e) => e.type === 'bite')).toBe(true);
+		expect(sim.length).toBe(len - SIM.BITE_TAIL_LOSS);
+		expect(sim.headCell).toBe(at(5, 5));
+		expect(sim.alpha === null || sim.alpha.escaping).toBe(true);
+	});
+
+	it('Альфа не встаёт со щелью в одну клетку до камня', () => {
+		const sim = new Sim({
+			seed: 1,
+			cols: COLS,
+			rows: ROWS,
+			pillars: [[6, 4]],
+			scarabs: 0,
+			alphas: false
+		});
+		const slot = (c: number, r: number): boolean =>
+			(sim as unknown as { hasSlot(c: number, r: number): boolean }).hasSlot(c, r);
+		expect(slot(2, 4)).toBe(true); // щель к левой стене: колонка 1
+		expect(slot(1, 4)).toBe(false); // вплотную к стене
+		expect(slot(3, 4)).toBe(true); // между блоком (3..4) и колонной (6) одна клетка
+		expect(slot(3, 5)).toBe(false); // до всех камней не меньше двух клеток
+		expect(slot(3, 6)).toBe(true); // щель к нижней стене (ряд 8)
+	});
+});
+
+describe('pillars', () => {
+	it('в начале колонн нет, в акте III они поднимаются', () => {
+		const sim = new Sim({ seed: 2, scarabs: 0, alphas: false });
+		const p = 4 * sim.cols + 5;
+		expect(sim.walls[p]).toBe(0);
+		sim.act = SIM.PILLAR_ACT - 1;
+		sim.kills = SIM.KILLS_PER_ACT - 1;
+		const internal = sim as unknown as { pendingPillars: number[] };
+		// имитируем переход акта так же, как делает удачный удар
+		sim.act = SIM.PILLAR_ACT;
+		internal.pendingPillars = [p];
+		const v = sim.wallsVersion;
+		sim.update(SIM.FIXED_MS * 2);
+		expect(sim.walls[p]).toBe(1);
+		expect(sim.wallsVersion).toBeGreaterThan(v);
+		expect(sim.events.some((e) => e.type === 'pillar')).toBe(true);
 	});
 });
 

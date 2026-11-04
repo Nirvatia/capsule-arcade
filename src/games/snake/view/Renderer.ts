@@ -62,7 +62,7 @@ export class Renderer {
 	}
 
 	private bakeArena(sim: Sim): void {
-		const key = `${sim.cols}x${sim.rows}@${this.dpr}`;
+		const key = `${sim.cols}x${sim.rows}@${this.dpr}#${sim.wallsVersion}`;
 		if (key === this.bgKey && this.bg) return;
 		const bg = document.createElement('canvas');
 		bg.width = this.canvas.width;
@@ -96,6 +96,21 @@ export class Renderer {
 		c.fillRect(0, 0, this.canvas.width, this.canvas.height);
 		c.setTransform(this.dpr, 0, 0, this.dpr, sx * this.dpr, sy * this.dpr);
 		if (this.bg) c.drawImage(this.bg, 0, 0, this.W, this.H);
+		// Колонна «вырастает» из пола: сверху лежит плита пола, которая проваливается.
+		for (const [cell, t0] of fx.pillarRise) {
+			const p = (t - t0) / 0.6;
+			if (p >= 1) {
+				fx.pillarRise.delete(cell);
+				continue;
+			}
+			const x = (cell % sim.cols) * cs;
+			const y = Math.floor(cell / sim.cols) * cs;
+			const h = cs * (1 - smooth(clamp01(p)));
+			c.fillStyle = '#272d2c';
+			c.fillRect(x, y, cs, h);
+			c.fillStyle = 'rgba(0,0,0,0.45)';
+			c.fillRect(x, y + h - 2, cs, 2);
+		}
 		c.lineCap = 'round';
 		c.lineJoin = 'round';
 

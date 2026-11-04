@@ -76,4 +76,6 @@ export type SimEvent =
 	| { type: 'death'; cell: number }
 	| { type: 'act'; act: number }
 	| { type: 'alphaSpawn'; cell: number; op: Op }
-	| { type: 'runeSpawn'; cell: number };
+	| { type: 'runeSpawn'; cell: number }
+	| { type: 'bite'; cell: number; alphaCell: number; lostCells: number[]; escapeTo: number }
+	| { type: 'pillar'; cell: number };
