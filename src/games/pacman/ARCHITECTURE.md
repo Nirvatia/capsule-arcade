@@ -127,6 +127,16 @@ every frame, so a held key survives pauses, deaths and fades. A reversal turns P
 round on the spot (`PlayerModel.reverse`); a turn pressed up to 0.15 tile past a junction
 still takes it (`LATE_TURN`). Tests: `logic/actors/playerControl.test.ts`.
 
+## Balance tool
+
+`logic/balance/balanceBot.ts` plays one season level on the real services (no screen): the
+nearest dot by path, out of the ghosts' reach, an energizer when a ghost is near, scared ghosts
+while the power lasts; a middling player on purpose, seeded (the game's own dice too).
+`BALANCE=1 BALANCE_SEEDS=12 BALANCE_OUT=<file> npx vitest run src/games/pacman/logic/balance`
+runs every season maze in every season as both heroes and writes a table (clear rate, time,
+deaths, first death, score, echo and hypnosis statistics); without `BALANCE` the report is
+skipped.
+
 ## Debug tools (dev build only)
 
 - Dev panels: `` ` `` or the DEV button; `F8` steps one frame. Panel groups: FLOW, LEVEL,
@@ -156,6 +166,7 @@ still takes it (`LATE_TURN`). Tests: `logic/actors/playerControl.test.ts`.
   egg order, banished ghosts frozen, nothing outside level 7.
 - `logic/level/arcade.test.ts` — tries, rounds, intermission, restart, ghost characters.
 - `config/mazes/mazes.test.ts` — the validator and every maze file.
+- `logic/balance/balanceBot.test.ts` — the balance bot plays a level and a seed plays one game.
 - `logic/actors/ghostRoutes.test.ts` — routes by path length, no turning back, tunnels, the
   feeding plan.
 - `logic/rules/hypnosis.test.ts` — feeder / hunter choice, the mode holds, a hunter eats (200
