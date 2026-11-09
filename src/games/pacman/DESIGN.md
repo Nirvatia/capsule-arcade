@@ -182,9 +182,9 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - Organic and alive, not metal: soft bodies, breathing; the heroes stay round (their size
   pulses on a spring, they are never stretched into an ellipse).
 - Effects stay inside the tile (no coronas spilling onto walls).
-- Pac-Man: wedge mouth (wide, about 92° open), no eyes, ink lips, streaming trail; fire.
-- Ms. Pac-Man: his pair, starlight: one cute glossy eye with lashes, a bow, red lipstick, a
-  softer mouth; pastel trail.
+- Pac-Man (the owner's "Shonen" mock-up): a cel-shaded gold ball in hard tone bands with a white highlight and the season's rim light on the nape, a thin ink line (heavier in the shadow), no eyes, a wide wedge mouth (about 92° open) with a dark cavity and a tongue. Powered: cream, gold and orange-red bands, ink-outlined ki flames behind, a star on the highlight.
+- Ms. Pac-Man (the owner's "Maho-shoujo" mock-up): his pair, pink and cel-shaded: a big glossy eye with a gradient iris, an ink wing on the lid, a lash and a brow, blush strokes, red lipstick on the ends of the lips, a little fang, and a scarlet polka-dot bow on a spring with a flower on its knot that carries the season (blossom, sun, maple leaf, snowflake). Powered: the bow glows, rose-gold ki flames, a lifted brow, a star in the eye.
+- The heroes' trail is the season's own particles shed along the path (petals, sparks, leaves, snowflakes; Ms. Pac-Man's twinkles; fire when powered): never lines, ribbons or puffs (they read as sticks, strings and gas), and it bends with a turn.
 - Eyes show where an actor is heading.
 - Food is calm (§6); energizers read differently from dots.
 - Boss: harsh and dangerous, changes visibly by phase, fits in one tile.
@@ -198,16 +198,16 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 
 ### Art status
 
-| Element                                                         | State                                                                    |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Seasons (world, food, weather, night), season turn, death decay | final; death to be replaced by one transition (part I, 6)                |
-| Hell world, Blinky lord of hell, imps, weapons                  | final; phase-3 lighting and corrupted tiles to rework (part II, 1.1–1.2) |
-| Arcade                                                          | final (keeps its own pixel HUD)                                          |
-| HUD and screens                                                 | final; to be replaced (part III)                                         |
-| Fruit, heart, exit                                              | final (inside the tile, calm glow)                                       |
-| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                           |
-| Pac-Man                                                         | to redo in code from the owner's mock-up (part I, 2)                     |
-| Ms. Pac-Man                                                     | to redo in code from the owner's mock-up (part I, 2)                     |
-| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                            |
-| Echo clone                                                      | to redo (part I, 5.3)                                                    |
-| Teleporters, ring effects                                       | to improve (part I, 5.4)                                                 |
+| Element                                                         | State                                                                                             |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Seasons (world, food, weather, night), season turn, death decay | final; death to be replaced by one transition (part I, 6)                                         |
+| Hell world, Blinky lord of hell, imps, weapons                  | final; phase-3 lighting and corrupted tiles to rework (part II, 1.1–1.2)                          |
+| Arcade                                                          | final (keeps its own pixel HUD)                                                                   |
+| HUD and screens                                                 | final; to be replaced (part III)                                                                  |
+| Fruit, heart, exit                                              | final (inside the tile, calm glow)                                                                |
+| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                                    |
+| Pac-Man                                                         | final: the owner's "Shonen" mock-up in code (the hell still uses the old look until part II, 1.4) |
+| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code                                                  |
+| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                                                     |
+| Echo clone                                                      | to redo (part I, 5.3)                                                                             |
+| Teleporters, ring effects                                       | to improve (part I, 5.4)                                                                          |

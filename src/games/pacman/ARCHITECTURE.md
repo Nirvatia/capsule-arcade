@@ -49,7 +49,7 @@ render/
   fx/              LevelFx (gameplay effects on the season levels)
   transitions/decay/       level decay on death: field (Dijkstra), timeline, WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
-  actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero; HeroView drives them; PlayerView
+  actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); HeroView drives them; PlayerView
           for the hell) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
   common/          textures, GlPass (every WebGL2 pass), colour, maths, seeded random,
                    worldDecor (the decor layout and stream shared by every world)
@@ -154,6 +154,7 @@ still takes it (`LATE_TURN`). Tests: `logic/actors/playerControl.test.ts`.
   egg order, banished ghosts frozen, nothing outside level 7.
 - `logic/level/arcade.test.ts` — tries, rounds, intermission, restart, ghost characters.
 - `config/mazes/mazes.test.ts` — the validator and every maze file.
+- `render/actors/hero/heroTrail.test.ts` — the heroes' season table and trail.
 - `logic/level/mazeCycle.test.ts` — the maze order, the season levels without the boss
   levels.
 - `logic/level/levelRouting.test.ts` — seasons in order, the hell every 5th level per
@@ -174,6 +175,5 @@ approved prototype already is the game code. Existing: `hell`, `arcade`,
 `hud`, `collectibles` (with each item's reach from its tile centre and a tile grid),
 `mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
 `level-clear`, `easter-egg` (the lair code's reward played by the real
-services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man alone,
-large, with a tile-sized inset; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
+services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
 `MsPacmanHero`); `winter-decay.html` is an older standalone page.

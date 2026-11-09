@@ -1,17 +1,18 @@
-// The heroes (stage 10.3/10.4): Pac-Man and Ms. Pac-Man share one machinery, in a stylised,
-// hand-painted VFX style; each gives its own design (palettes, jaws, rhythm, the light in the
-// mouth, trail, death) and hooks for what is only theirs (his flames and molten veins; her
-// bow, blush, lipstick and stars). The shared machinery:
-// - a painted body baked per light direction and look (a crisp shadow shape, hue-shifted
-//   shading, bounce and rim light, brush texture, a hard highlight), under a key light fixed
-//   in the world; ink thicker on the shadow side; the mouth cut in a small scratch canvas;
-// - a core of light deep in the mouth that spills out when it opens;
+// The heroes: Pac-Man and Ms. Pac-Man share one machinery, in the owner's anime look (cel
+// shading, ink); each gives its own design (palettes, jaws, rhythm, the mouth's inside, death)
+// and hooks for what is only theirs (his ki flames; her eye, bow, lipstick and twinkles). The
+// shared machinery:
+// - a cel body baked per light direction, look and season (hard tone bands, a pale zone and a
+//   hard highlight, a bounce light, the season's rim light on the nape) under a key light
+//   fixed in the world; a thin ink line, heavier on the shadow side; the mouth cut in a small
+//   scratch canvas, a painted cavity with a tongue behind it;
 // - acting: curved lips with a grin, a fast open and a biting close, breathing and the odd
 //   snap at rest; the body stays round, its size on a spring (a punch on every bite, a
 //   crouch before the burst and an overshoot after it);
 // - the energizer as a beat: wind-up, burst (a white flash of the silhouette, a ring and
 //   impact rays), the new look, cooling down slowly as the power ends;
-// - a trail of streaming strands with particles drifting off it; a death of its own.
+// - the trail: a stream of the season's own particles shed along his path (fire when
+//   powered), each one lying where it was dropped, so a turn bends it; a death of its own.
 // Frame space: the hero faces +x, the top is -y, units are body radii.
 import { SEASON_LOOKS } from './heroSeasons';
 import type { HeroSeason, RGB } from './heroSeasons';
@@ -316,6 +317,11 @@ export abstract class Hero {
 
 	setRadius(r: number): void {
 		this.r = r;
+	}
+
+	/** The particles alive now (the trail, bursts): for the dev tools and the tests. */
+	get particles(): readonly Particle[] {
+		return this.embers;
 	}
 
 	reset(): void {

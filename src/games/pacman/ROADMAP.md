@@ -25,7 +25,7 @@ a suggestion.
 
 The plan has three parts, done in this order: **I** the main game (four seasons),
 **II** the boss levels, **III** the interface. The depth and post-processing pass comes
-last of all (see Later). Part I is next: step 1 is done, step 2 (the heroes) follows.
+last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done, step 3 (mechanics and balance) follows.
 
 ## Part I. The main game: four seasons (mechanics and graphics)
 
@@ -43,35 +43,11 @@ last of all (see Later). Part I is next: step 1 is done, step 2 (the heroes) fol
       and the tests; the hell stays on `doom.ts`. `grid_doom` (not finished: a row short) and
       `grid_tron` wait for part II.
 
-2. **The heroes in code** (Opus for the look, Sonnet for the wiring). The owner's
-   mock-ups, "Pac-Man · Shonen" and "Ms. Pac-Man · Maho-shoujo" (the Design canvas
-   `3D55jqVpyq2Y5iTD5BWh3w`, anime direction, final), become `render/actors/hero/*`. First a
-   prototype (`hero`), the owner approves it, then it goes into the game through
-   `HeroView`. What the mock-ups fix:
-   - **Pac-Man (Shonen).** Cel-shading: three body tones plus a highlight zone, warm
-     bounce light in the lower shadow, a rim light in the season's colour on the back.
-     Thick ink outline, thicker in the shadow (offset fill plus stroke). A face without an
-     eye: a mouth with depth and a tongue, character without a gaze. The mouth is
-     animated in code (three bite frames).
-   - **Ms. Pac-Man (Maho-shoujo).** Pink, same cel-shading. A big scarlet bow: two polka-
-     dot loops, folds, a gloss, a knot with a shadow, two tails that sway in code, a
-     season badge on the knot. A face with a large eye (gradient iris, ink "wing" of the
-     lid, lashes, brow), blush, lipstick, a little fang.
-   - **Energizer state (code).** The palette cracks open, ki-flame tongues of up to 1.2 R
-     stream behind (the length trembles with time), a spark at the highlight. Ms. Pac-Man:
-     the bow glows, the flames are rose-gold, the brow shifts, the highlight becomes a
-     star.
-   - **Trail.** Speed lines in the season's colour, dust puffs, seasonal particles (petals,
-     sparks, leaves, snow crystals). Ms. Pac-Man: two ribbons (the season's and a pink one)
-     with an outline, and manga star-twinkles.
-   - Everything stays inside the tile (`DESIGN.md`, art direction): the flames and ribbons
-     are drawn to the tile edge, no halo on the walls. The heroes stay round and breathe on
-     their spring.
-   - Then cut `Hero.ts` (~940 lines) and what survives of `PlayerView.ts` (~730) once the
-     new heroes replace them. The hell keeps `PlayerView` until part II, step 1 (berserk,
-     BFG).
-   - `DESIGN.md` §12 (Pac-Man "fire", Ms. Pac-Man "starlight") is rewritten to the
-     mock-ups when this step lands.
+2. ~~**The heroes in code**~~ Done (see Done, "Part I, 2"). The owner's mock-ups,
+   "Pac-Man · Shonen" and "Ms. Pac-Man · Maho-shoujo" (the Design canvas
+   `3D55jqVpyq2Y5iTD5BWh3w`, anime direction), are `render/actors/hero/*`, in the game
+   through `HeroView` and checked in the `hero` prototype. The hell keeps `PlayerView` for
+   Pac-Man until part II, step 1.4 (berserk, BFG).
 
 3. **Mechanics and balance** (Sonnet; Opus for the hypnosis design).
    1. **Echo clone mechanic** (`logic/bonuses/EchoCloneService.ts`): a rare bonus that
@@ -328,3 +304,33 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
     `levelRouting.test.ts`). Checked in a browser: the `mazes` prototype (4 mazes × 4
     seasons, with marks for tunnels, spawn, fruit, lair) and the real game on levels 1–11 (the
     maze, the season and the dot count follow the plan, no console errors).
+- Part I, 2: the heroes in code (eighth chat), from the owner's mock-ups, checked in the `hero`
+  prototype (a big hero on a dark panel, and strips of the real season worlds, magnified and
+  1:1) and in the live game on all four seasons and the hell.
+  - Pac-Man "Shonen": cel body (three tone bands, a pale zone and a hard highlight, a warm
+    bounce light, the season's rim light on the nape), a thin ink line heavier in the shadow,
+    no eye, a wide mouth with a dark rounded cavity and a tongue, three bite frames; the
+    energizer splits the palette (cream, gold, orange-red), opens ink-outlined ki flames (at
+    most 1.2 body radii) and puts a star on the highlight.
+  - Ms. Pac-Man "Maho-shoujo": pink cel body; a big gradient-iris eye with an ink wing on the
+    lid, a lash and a brow, blush strokes, red lipstick on the ends of the lips, a little
+    fang; a scarlet polka-dot bow on a spring with a flower on the knot that carries the
+    season (blossom, sun, maple leaf, snowflake); powered: the bow glows, rose-gold ki flames,
+    a lifted brow, a star in the eye.
+  - The season reaches the hero (`HeroState.season`, `HeroView.setSeason`,
+    `heroSeasons.ts`); the hell has its own look for Ms. Pac-Man.
+  - The trail went through four rejected designs (speed lines and ribbons drawn in the hero's
+    frame turned like a rigid stick; then thin streaks, round puffs that read as gas, arcs and
+    chevrons) and ended as a stream of the season's own particles (petals that flip as they
+    flutter, tumbling leaves, sparkling snowflakes, sparks, Ms. Pac-Man's twinkles; fire sparks
+    and fire drops when powered), each shed behind him with a kick back and left lying where it
+    fell, so a turn bends the trail along the path he took. No dust: it read as gas.
+  - Shared effects in `heroFx.ts`; `Hero.random` is mulberry32 (the old Park-Miller gave
+    correlated consecutive draws). Found on the way: after a flash the mouth cut used a
+    leftover faint `fillStyle` and cut the mouth only partly.
+  - Cut: the CG style (`cgShading.ts`), the old soft painted disc, the brush texture, the
+    ribbon trail (`RibbonTrail.ts`), the mouth and aura glows. `Hero.ts` is ~870 lines of
+    shared machinery.
+  - Tests: `hero/heroTrail.test.ts` (the season table, the trail is shed only while running,
+    bends with a turn, is not dropped across a teleport, the season's kinds, fire when powered,
+    dies down); 126 in all.
