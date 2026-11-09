@@ -34,8 +34,6 @@ export interface HeroState {
 	readonly ending: boolean;
 	/** He was caught: the death plays once, from when this turns true. */
 	readonly dying?: boolean;
-	/** Just respawned: ghosts pass through him. */
-	readonly invulnerable?: boolean;
 	/** The world he is in: its colour touches his rim light, trail and particles. */
 	readonly season?: HeroSeason;
 }
@@ -298,7 +296,6 @@ export abstract class Hero {
 	private transform = -1;
 	/** Seconds into the death, or -1. */
 	protected dying = -1;
-	private invulnerable = false;
 	private chomp = 0;
 	private bite = -1;
 	private snap = -1;
@@ -385,7 +382,6 @@ export abstract class Hero {
 	update(dt: number, s: HeroState): void {
 		if (!Number.isFinite(dt) || dt < 0) dt = 0;
 		this.time += dt;
-		this.invulnerable = Boolean(s.invulnerable);
 		if (s.season) this.season = s.season;
 		if (s.dying) {
 			this.ballOn = false;
@@ -670,7 +666,7 @@ export abstract class Hero {
 		const open = this.openness();
 		let m = 0.04 + Math.min(1.15, open) * D.mouthSpan;
 		let grin = this.moving ? D.grinRun : D.grinRest;
-		let S = 1 + 0.07 * p;
+		let S = 1;
 		let spin = 0;
 		// the mouth's cavity goes first when he is caught, before the body opens round it
 		let insideK = 1;
@@ -754,15 +750,6 @@ export abstract class Hero {
 		this.drawWorn?.(ctx, R, p, lx, ly);
 		ctx.restore();
 
-		// just respawned: a soft pulsing halo instead of blinking
-		if (this.invulnerable && d < 0) {
-			const k = 0.5 + 0.5 * Math.cos(this.time * 9);
-			ctx.strokeStyle = `rgba(255,248,220,${0.25 + 0.35 * k})`;
-			ctx.lineWidth = Math.max(1, R * 0.1);
-			ctx.beginPath();
-			ctx.arc(this.x, this.y, R * (1.3 + 0.08 * k), 0, Math.PI * 2);
-			ctx.stroke();
-		}
 		this.drawFront?.(ctx);
 		this.drawBursts(ctx);
 	}

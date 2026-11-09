@@ -25,7 +25,10 @@ a suggestion.
 
 The plan has three parts, done in this order: **I** the main game (four seasons),
 **II** the boss levels, **III** the interface. The depth and post-processing pass comes
-last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done, step 3 (mechanics and balance) follows.
+last of all (see Later). Part I is in progress: steps 1 (mazes), 2 (heroes) and 3
+(mechanics and balance) are done; step 4 (sound and tools) has only the mute button, the
+rest is postponed; step 5 (season art) is under way: 5.1 and 5.2 are in the game (5.2 waits
+for the owner's review), then 5.3 (echo clones: the owner keeps today's look), 5.4 and 5.5.
 
 ## Part I. The main game: four seasons (mechanics and graphics)
 
@@ -84,10 +87,13 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
       (`GHOST_SHAPES`); `GhostView.style` is set by `MeadowLevelRenderer` (`GHOST_STYLES`).
       Next: the owner's review of all four in play, then fixes (sizes, faces, contrast of the
       scared blue on winter's grey path).
-   3. **Echo clone look** (`render/actors/EchoCloneView.ts`).
-   4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`); the teleport effect;
-      the teleporters' own art (`MeadowBake` portal + `MeadowWorld`), bulky today though
-      the spiral works.
+   3. ~~**Echo clone look**~~ (`render/actors/EchoCloneView.ts`): mock-ups of three new looks
+      (a trail of echoes, a bubble, a hologram) were made; the owner keeps today's look.
+   4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`).
+   5. **Teleport art, redone** (the owner's request): the whole teleport look again: the
+      rolling ball of the hero and the pad effect (part I, 3.3), and the teleporters' own art
+      (`MeadowBake` portal + `MeadowWorld`), bulky today though the spiral works. A chat
+      mock-up first.
 
 6. **One death transition for every world** (Opus; design page first, then a prototype the
    owner approves). Today's decay works on the level's picture, but it only knows "from":
@@ -186,7 +192,6 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
 - Headless Chromium without a GPU runs the hell night at ~20 FPS; JS cost is ~2 ms per
   frame, the rest is software rasterisation. Check on real hardware.
 - `Hero.ts` and `PlayerView.ts` are still large (see part I, step 2 and part II, step 1.4).
-- `grid_01` … `grid_doom` all carry the name `classic06` inside `parseMaze` (part I, 1.3).
 
 ## Done
 
@@ -392,3 +397,10 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   the autumn glow and night light are warm (the lit face), winter's pale blue. Checked in
   the `mazes` prototype on all four seasons; no new tests (art). Not done: the pumpkin's
   flicker and the butterfly-style animation of the mock-up (the world only sways a texture).
+- Part I, small fixes after the owner's review (ninth chat): the ghosts of each season are
+  larger (spring +15 %, summer +20 %, autumn +10 %, winter +5 %: `GHOST_SHAPES[*].scale`);
+  the spring energizer (blossom) is 20 % smaller and the summer one (starfish) 25 % smaller;
+  the hero no longer shows the halo for the respawn shield (`Hero`, `HeroView`; the hell's
+  `PlayerView` still blinks) and no longer grows while powered (the steady +7 % is gone; the
+  wind-up and the burst's pop stay); the stale notes in this file (Order, the maze names
+  `classic06`, which every maze already had of its own) are corrected.

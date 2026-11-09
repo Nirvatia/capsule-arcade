@@ -171,9 +171,9 @@ export const springTheme: MeadowTheme = {
 		pellet: { texture: springPellet, size: 10 },
 		energizer: {
 			texture: sakura,
-			size: 26,
+			size: 20.8,
 			glow: 0xff5fa0,
-			glowSize: (64 * 0.95) / 3,
+			glowSize: (64 * 0.95 * 0.8) / 3,
 			motion: 'sway'
 		},
 		portal: { glow: 0xffe060, ring: () => ringTexture('rgba(255,226,110,.95)') },

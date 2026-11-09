@@ -170,9 +170,9 @@ export const summerTheme: MeadowTheme = {
 		pellet: { texture: summerPellet, size: 10 },
 		energizer: {
 			texture: starfish,
-			size: 26,
+			size: 19.5,
 			glow: 0xffb030,
-			glowSize: (64 * 0.95) / 3,
+			glowSize: (64 * 0.95 * 0.75) / 3,
 			motion: 'sway'
 		},
 		portal: { glow: 0x5ff5d8, ring: () => ringTexture('rgba(120,255,225,.95)') },
