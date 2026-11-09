@@ -1,4 +1,4 @@
-import { GhostView } from '../../actors/GhostView';
+import { GhostView, type GhostStyle } from '../../actors/GhostView';
 import type { GridLayout } from '../../maze/GridView';
 import type { SharedLayers } from '../../SharedLayers';
 import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../../RenderFrame';
@@ -17,6 +17,8 @@ const NIGHT_AT = 0.75;
 /** A ghost leaving the lair or coming home this close (tiles) to the gate opens it. */
 const GATE_REACH = 1.6;
 /** Gate speed, share of the full slide per second, opening and closing. */
+/** The ghost shape of each season; the others keep the plain disc. */
+const GHOST_STYLES: Readonly<Record<string, GhostStyle>> = { summer: 'drop', autumn: 'hedgehog' };
 const GATE_OPEN_RATE = 7;
 const GATE_CLOSE_RATE = 3;
 
@@ -111,7 +113,7 @@ export class MeadowLevelRenderer implements LevelRenderer, WorldPreview {
 						: 0;
 				const overdrive = Boolean(isMs && hypnosis && hypnosis.overdriveActive);
 				const vanish = level.egg?.vanishProgress ?? 0;
-				this.ghostView.style = frame.season.name === 'summer' ? 'drop' : 'disc';
+				this.ghostView.style = GHOST_STYLES[frame.season.name] ?? 'disc';
 				this.ghostView.time = frame.time;
 				this.ghostView.draw(
 					ctx,

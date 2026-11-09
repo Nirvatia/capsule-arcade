@@ -75,15 +75,14 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
    2. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
       summer, autumn, winter, with normal, scared, flashing and eyes-only; focus on
       cuteness; the eyes show the heading; in the style of the heroes' mock-ups.
-      In progress, summer first: a chat mock-up of three shapes without tentacles (a drop, a
-      cloud, a jelly cube); the owner picked the **drop** to see in the game. Done: the drop
-      in `render/actors/dropGhost.ts`, switched on by `GhostView.style` for the summer
-      renderer (all states; the other seasons keep the plain disc). Next: the owner looks at
-      it in play, then the other seasons (same approach, or another one).
-      After the first look in play (too big, cute but not dangerous, no feet to show a
-      walk): 22 % smaller; menacing in the chase wave (slanted brows, small fangs; calm and
-      cute while scattering, via `GhostService.currentMode`); two bean feet that step with
-      the tiles each ghost walks, with a bob, a sway and a lean toward the heading.
+      Done in play: summer is a water drop, autumn a hedgehog (owner's picks from chat
+      mock-ups; no tentacles, no wavy skirt). One painter, `render/actors/cuteGhost.ts`
+      (ink outline, belly shade, highlight, two bean feet that step with the tiles walked,
+      a face and eyes that follow the heading, a look for every state, menacing brows and
+      fangs in the chase wave and cute while scattering), and a body shape per season
+      (`GHOST_SHAPES`); `GhostView.style` is set by `MeadowLevelRenderer` (`GHOST_STYLES`).
+      Spring and winter still draw the plain disc. Next: spring and winter (a mock-up first),
+      then the owner's review of all four in play.
    3. **Echo clone look** (`render/actors/EchoCloneView.ts`).
    4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`); the teleport effect;
       the teleporters' own art (`MeadowBake` portal + `MeadowWorld`), bulky today though

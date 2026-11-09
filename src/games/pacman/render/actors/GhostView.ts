@@ -2,20 +2,20 @@ import type { GhostService } from '../../logic/actors/GhostService';
 import type { GhostKind, GhostModel } from '../../logic/actors/GhostModel';
 import type { GridLayout } from '../maze/GridView';
 import type { HypnosisMode } from '../../logic/rules/HypnosisService';
-import { drawDropGhost, dropStateFor } from './dropGhost';
+import { cuteStateFor, drawCuteGhost, type CuteShape } from './cuteGhost';
 
-/** `disc` is the plain round ghost; `drop` is the summer water drop (`dropGhost.ts`). */
 /** Radians of the stride per tile walked: a full step cycle every ~1.1 tiles. */
 const STRIDE_PER_TILE = 5.7;
 
-export type GhostStyle = 'disc' | 'drop';
+/** `disc` is the plain round ghost; the others are the season shapes of `cuteGhost.ts`. */
+export type GhostStyle = 'disc' | CuteShape;
 
 export class GhostView {
 	/** The look to draw; the level renderer sets it from the season. */
 	style: GhostStyle = 'disc';
-	/** Render time in seconds, for the drop's idle motion. */
+	/** Render time in seconds, for the idle motion. */
 	time = 0;
-	/** Distance walked by each ghost (tiles), so a drop's feet step with the ground covered. */
+	/** Distance walked by each ghost (tiles), so a ghost's feet step with the ground covered. */
 	private readonly walked = new Map<GhostKind, { x: number; y: number; distance: number }>();
 	/** The ghosts are hunting, not scattering (set from the service each draw). */
 	private chasing = false;
@@ -118,8 +118,9 @@ export class GhostView {
 		} else if (ghost.facing === 'RIGHT') {
 			lookX = 1;
 		}
-		if (this.style === 'drop') {
-			this.drawDrop(
+		if (this.style !== 'disc') {
+			this.drawCute(
+				this.style,
 				ctx,
 				ghost,
 				x,
@@ -248,7 +249,8 @@ export class GhostView {
 		return seen.distance * STRIDE_PER_TILE;
 	}
 
-	private drawDrop(
+	private drawCute(
+		shape: CuteShape,
 		ctx: CanvasRenderingContext2D,
 		ghost: GhostModel,
 		x: number,
@@ -260,14 +262,15 @@ export class GhostView {
 		msOverdrive: boolean,
 		hypnosis: HypnosisMode | null
 	): void {
-		const state = dropStateFor({ state: ghost.state, hypnosis, overdrive: msOverdrive });
+		const state = cuteStateFor({ state: ghost.state, hypnosis, overdrive: msOverdrive });
 		const frightened = state === 'scared' || state === 'overdrive';
 		const flashing = frightened && powerTimer > 0 && powerTimer < 2;
 		ctx.save();
 		if (ghost.state === 'lair' || ghost.state === 'exiting') {
 			ctx.globalAlpha = 0.72;
 		}
-		drawDropGhost(ctx, x, y, (tileSize / 25) * 0.78, {
+		drawCuteGhost(ctx, x, y, (tileSize / 25) * 0.78, {
+			shape,
 			kind: ghost.kind,
 			state,
 			flashing,
