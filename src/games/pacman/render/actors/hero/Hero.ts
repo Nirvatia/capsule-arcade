@@ -13,10 +13,13 @@
 //   impact rays), the new look, cooling down slowly as the power ends;
 // - a trail of streaming strands with particles drifting off it; a death of its own.
 // Frame space: the hero faces +x, the top is -y, units are body radii.
-import type { RGB, RibbonLayer } from './RibbonTrail';
-import { RibbonTrail } from './RibbonTrail';
 import { SEASON_LOOKS } from './heroSeasons';
-import type { HeroSeason } from './heroSeasons';
+import type { HeroSeason, RGB } from './heroSeasons';
+
+interface Pt {
+	readonly x: number;
+	readonly y: number;
+}
 
 export interface HeroState {
 	/** Centre, css px. */
@@ -89,41 +92,6 @@ export class Spring {
 	}
 }
 
-/** Brush texture: a few hundred short soft strokes, light and dark, made once. */
-let brush: HTMLCanvasElement | null = null;
-function brushTexture(): HTMLCanvasElement {
-	if (brush) return brush;
-	const c = document.createElement('canvas');
-	c.width = c.height = 256;
-	const x = c.getContext('2d') as CanvasRenderingContext2D;
-	let seed = 7;
-	const rnd = () => {
-		seed = (seed * 16807) % 2147483647;
-		return seed / 2147483647;
-	};
-	x.lineCap = 'round';
-	for (let i = 0; i < 260; i++) {
-		const px = rnd() * 256;
-		const py = rnd() * 256;
-		const a = -0.6 + (rnd() - 0.5) * 0.5;
-		const len = 18 + rnd() * 36;
-		x.strokeStyle =
-			rnd() < 0.5 ? `rgba(255,255,255,${0.25 + rnd() * 0.3})` : `rgba(0,0,0,${0.2 + rnd() * 0.25})`;
-		x.lineWidth = 3 + rnd() * 7;
-		x.beginPath();
-		x.moveTo(px, py);
-		x.quadraticCurveTo(
-			px + Math.cos(a) * len * 0.5 + 4,
-			py + Math.sin(a) * len * 0.5 - 4,
-			px + Math.cos(a) * len,
-			py + Math.sin(a) * len
-		);
-		x.stroke();
-	}
-	brush = c;
-	return c;
-}
-
 const glowCache = new Map<string, HTMLCanvasElement>();
 export function glow(c: RGB): HTMLCanvasElement {
 	const key = c.join(',');
@@ -150,11 +118,11 @@ const POWER_STEPS = 6;
 const discCache = new Map<string, HTMLCanvasElement>();
 
 /**
- * The body's painting (base, crisp shadow shape, deep shadow, bounce, brush texture, rim
- * light, highlight) for a body radius in device px, the light's angle in his frame and the
- * look, cached by quantised light and look: drawn once, reused every frame.
+ * The body's painting for a body radius in device px, the light's angle in his frame, the
+ * look and the season, cached by quantised light, look and season: drawn once, reused
+ * every frame.
  */
-function paintedDisc(
+function bodyDisc(
 	design: HeroDesign,
 	deviceR: number,
 	lightAngle: number,
@@ -171,84 +139,7 @@ function paintedDisc(
 	const a = (step / LIGHT_STEPS) * Math.PI * 2;
 	const lx = Math.cos(a);
 	const ly = Math.sin(a);
-	if (design.shade) {
-		c = shadedDisc(design.shade, R, lx, ly, look / POWER_STEPS);
-		discCache.set(key, c);
-		return c;
-	}
-	if (design.cel) {
-		c = celDisc(design, R, lx, ly, a, look / POWER_STEPS, season);
-		discCache.set(key, c);
-		return c;
-	}
-	const pal = mixPal(design.calm, design.awoken, look / POWER_STEPS);
-	const p = look / POWER_STEPS;
-	c = document.createElement('canvas');
-	c.width = c.height = Math.ceil(R * DISC_SPAN * 2);
-	const ctx = c.getContext('2d') as CanvasRenderingContext2D;
-	ctx.translate(c.width / 2, c.height / 2);
-	ctx.beginPath();
-	ctx.arc(0, 0, R, 0, Math.PI * 2);
-	ctx.clip();
-	const base = ctx.createLinearGradient(lx * R, ly * R, -lx * R, -ly * R);
-	base.addColorStop(0, css(pal.light));
-	base.addColorStop(0.45, css(pal.mid));
-	base.addColorStop(1, css(mix(pal.mid, pal.shadow, 0.6)));
-	ctx.fillStyle = base;
-	ctx.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
-	// the shadow shape: a crisp crescent away from the light
-	ctx.beginPath();
-	ctx.rect(-R * 1.3, -R * 1.3, R * 2.6, R * 2.6);
-	ctx.arc(lx * R * 0.3, ly * R * 0.3, R * 1.0, 0, Math.PI * 2);
-	ctx.fillStyle = css(pal.shadow, 0.88);
-	ctx.fill('evenodd');
-	const deep = ctx.createRadialGradient(
-		-lx * R * 0.95,
-		-ly * R * 0.95,
-		0,
-		-lx * R * 0.95,
-		-ly * R * 0.95,
-		R * 0.95
-	);
-	deep.addColorStop(0, css(pal.deep, 0.6));
-	deep.addColorStop(1, css(pal.deep, 0));
-	ctx.fillStyle = deep;
-	ctx.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
-	// bounce light in the shadow, so the ball stays round
-	ctx.beginPath();
-	ctx.arc(0, 0, R * 1.05, 0, Math.PI * 2);
-	ctx.arc(-lx * R * 0.13, -ly * R * 0.13, R * 0.97, 0, Math.PI * 2);
-	ctx.fillStyle = css(pal.bounce, 0.45);
-	ctx.fill('evenodd');
-	ctx.globalAlpha = 0.16;
-	ctx.globalCompositeOperation = 'soft-light';
-	ctx.drawImage(brushTexture(), -R, -R, R * 2, R * 2);
-	ctx.globalCompositeOperation = 'source-over';
-	ctx.globalAlpha = 1;
-	// rim light from behind (the frame's -x): the energy pushing him on
-	ctx.globalCompositeOperation = 'lighter';
-	ctx.beginPath();
-	ctx.arc(0, 0, R * 1.05, 0, Math.PI * 2);
-	ctx.arc(R * 0.09, 0, R * 1.0, 0, Math.PI * 2);
-	ctx.fillStyle = css(pal.rim, 0.5 + 0.3 * p);
-	ctx.fill('evenodd');
-	ctx.globalCompositeOperation = 'source-over';
-	// the hard painted highlight
-	const hx = lx * R * 0.52;
-	const hy = ly * R * 0.52;
-	ctx.fillStyle = css(pal.highlight, 0.95);
-	ctx.beginPath();
-	ctx.ellipse(hx, hy, R * 0.25, R * 0.12, a + Math.PI / 2, 0, Math.PI * 2);
-	ctx.fill();
-	ctx.beginPath();
-	ctx.arc(
-		hx + lx * R * 0.2 - ly * R * 0.18,
-		hy + ly * R * 0.2 + lx * R * 0.18,
-		R * 0.05,
-		0,
-		Math.PI * 2
-	);
-	ctx.fill();
+	c = celDisc(design, R, lx, ly, a, look / POWER_STEPS, season);
 	discCache.set(key, c);
 	return c;
 }
@@ -319,47 +210,6 @@ function celDisc(
 	return c;
 }
 
-/**
- * The CG body: every pixel of the sphere shaded by the hero's material, antialiased at the
- * edge; the light comes from the frame's light direction, raised towards the viewer.
- */
-function shadedDisc(
-	shade: NonNullable<HeroDesign['shade']>,
-	R: number,
-	lx: number,
-	ly: number,
-	look: number
-): HTMLCanvasElement {
-	const c = document.createElement('canvas');
-	c.width = c.height = Math.ceil(R * DISC_SPAN * 2);
-	const ctx = c.getContext('2d') as CanvasRenderingContext2D;
-	const img = ctx.createImageData(c.width, c.height);
-	const d = img.data;
-	const mid = c.width / 2;
-	const n = Math.hypot(lx * 0.75, ly * 0.75, 0.66);
-	const light = { x: (lx * 0.75) / n, y: (ly * 0.75) / n, z: 0.66 / n };
-	for (let py = 0; py < c.height; py++) {
-		for (let px = 0; px < c.width; px++) {
-			const dx = px + 0.5 - mid;
-			const dy = py + 0.5 - mid;
-			const r = Math.hypot(dx, dy);
-			const cover = Math.min(1, Math.max(0, R - r + 0.5));
-			if (cover <= 0) continue;
-			const x = dx / R;
-			const y = dy / R;
-			const z = Math.sqrt(Math.max(0, 1 - x * x - y * y));
-			const col = shade(x, y, z, light, look);
-			const o = (py * c.width + px) * 4;
-			d[o] = Math.min(255, col[0]);
-			d[o + 1] = Math.min(255, col[1]);
-			d[o + 2] = Math.min(255, col[2]);
-			d[o + 3] = cover * 255;
-		}
-	}
-	ctx.putImageData(img, 0, 0);
-	return c;
-}
-
 /** The painted inside of the mouth. */
 export interface MouthInside {
 	readonly mid: RGB;
@@ -381,40 +231,15 @@ export interface HeroDesign {
 	readonly grinRun: number;
 	/** Chomps per second. */
 	readonly chompRate: number;
-	/** The light deep in the mouth (a painted look without `inside`). */
-	core?(): HTMLCanvasElement;
 	/** The inside of the mouth, painted: a dark cavity and a tongue. */
-	readonly inside?: MouthInside;
+	readonly inside: MouthInside;
 	/** Where the mouth's hinge sits on the body's axis, body radii (default -0.1). */
 	readonly hinge?: number;
-	/** The cel body: tone bands, a pale zone, the season's rim light (see `celDisc`). */
-	readonly cel?: boolean;
-	/** The glow spilling out at the lips (none: null), the aura of the powered look, flares. */
-	readonly spill: RGB | null;
-	readonly aura: RGB | null;
+	/** The colour of the burst's ring and the last flare of a death. */
 	readonly flare: RGB;
-	readonly trailCalm: readonly RibbonLayer[];
-	readonly trailAwoken: readonly RibbonLayer[];
 	/** 'open': the mouth opens all the way round; 'spin': she spins away. */
 	readonly death: 'open' | 'spin';
-	/**
-	 * A CG material instead of the painted disc: the colour of the unit sphere at (x, y)
-	 * with height z, lit by `light` (a unit vector in the frame, y down, z towards the
-	 * viewer), for the look 0..1.
-	 */
-	readonly shade?: (x: number, y: number, z: number, light: Vec3, look: number) => RGB;
-	/** false: no ink silhouette (the CG style reads by light and a soft edge). */
-	readonly ink?: boolean;
 }
-
-export interface Vec3 {
-	readonly x: number;
-	readonly y: number;
-	readonly z: number;
-}
-
-/** The ways a hero can be drawn: the painted 2D look or the CG render. */
-export type HeroStyle = 'painted' | 'cg';
 
 export type ParticleKind =
 	'ember' | 'star' | 'heart' | 'dust' | 'petal' | 'spark' | 'leaf' | 'flake' | 'none';
@@ -446,21 +271,8 @@ const DEATH_END = 1.75;
 const CHARGE = 0.18;
 
 export abstract class Hero {
-	/** The hero's designs, one per style; the painted one is drawn unless told otherwise. */
-	protected abstract readonly designs: Readonly<Record<HeroStyle, HeroDesign>>;
-	private styleValue: HeroStyle = 'painted';
-
-	protected get design(): HeroDesign {
-		return this.designs[this.styleValue];
-	}
-
-	get style(): HeroStyle {
-		return this.styleValue;
-	}
-
-	setStyle(style: HeroStyle): void {
-		this.styleValue = style;
-	}
+	/** What this hero brings: looks, jaws, rhythm, the mouth's inside, death. */
+	protected abstract readonly design: HeroDesign;
 	protected r = 20;
 	protected x = 0;
 	protected y = 0;
@@ -493,7 +305,6 @@ export abstract class Hero {
 	protected readonly size = new Spring(1);
 	private flash = 0;
 	private mouthFlash = 0;
-	private readonly trail = new RibbonTrail();
 	private embers: Particle[] = [];
 	private bursts: Burst[] = [];
 	private travelled = 0;
@@ -504,7 +315,6 @@ export abstract class Hero {
 	}
 
 	reset(): void {
-		this.trail.reset();
 		this.embers = [];
 		this.bursts = [];
 		this.power = 0;
@@ -552,7 +362,6 @@ export abstract class Hero {
 					);
 				}
 			}
-			this.trail.shrink(this.r * 10 * dt);
 			this.run = Math.max(0, this.run - dt * 6);
 			this.size.step(1, dt);
 			this.flash = Math.max(0, this.flash - dt / 0.3);
@@ -640,9 +449,7 @@ export abstract class Hero {
 
 		// the trail and embers, by distance travelled
 		const r = this.r;
-		this.trail.push(s.x, s.y, r * 0.34, r * (4.2 + 1.4 * this.power), r * 3);
 		this.afterUpdate?.(dt);
-		if (!this.moving) this.trail.shrink(r * 7 * dt);
 		if (step < r * 3) {
 			this.travelled += step;
 			const every = r * (this.power > 0.5 ? 0.45 : 1.1);
@@ -735,7 +542,6 @@ export abstract class Hero {
 		const pal = mixPal(D.calm, D.awoken, p);
 		const pulse = this.ending && p > 0.5 ? 0.62 + 0.38 * (0.5 + 0.5 * Math.cos(this.time * 5)) : 1;
 
-		this.drawTrail(ctx, p);
 		const d = this.dying;
 		if (d >= DEATH_POP) {
 			this.drawEmbers(ctx);
@@ -744,7 +550,7 @@ export abstract class Hero {
 			if (k < 1) {
 				const gs = r * (1.2 + 2.2 * easeOut(k));
 				ctx.globalCompositeOperation = 'lighter';
-				ctx.globalAlpha = (1 - k) * (D.cel ? 0.5 : 1);
+				ctx.globalAlpha = (1 - k) * 0.5;
 				ctx.drawImage(glow(D.flare), this.x - gs, this.y - gs, gs * 2, gs * 2);
 				ctx.globalAlpha = 1;
 				ctx.globalCompositeOperation = 'source-over';
@@ -790,42 +596,23 @@ export abstract class Hero {
 		ctx.scale(this.size.value * S, this.size.value * S * this.flip);
 		const R = r;
 
-		// behind: the speed lines, what the powered look carries behind it, then its aura
+		// behind: the speed lines, and what the powered look carries behind it
 		this.drawStreaks?.(ctx, R, this.run, p);
 		if (p > 0.01) this.drawBehind?.(ctx, R, p * pulse);
-		const charge = this.transform >= 0 && this.transform < CHARGE ? this.transform / CHARGE : 0;
-		const aura = Math.max(p * 0.55 * pulse, charge * 0.8);
-		if (D.aura && aura > 0.01) {
-			ctx.globalCompositeOperation = 'lighter';
-			ctx.globalAlpha = aura;
-			ctx.drawImage(glow(D.aura), -R * 2.1, -R * 2.1, R * 4.2, R * 4.2);
-			ctx.globalAlpha = 1;
-			ctx.globalCompositeOperation = 'source-over';
-		}
-
-		// inside the mouth, behind the body, seen through the open mouth: a painted cavity with
-		// a tongue, or the core of light of the painted look
-		const coreA = Math.min(1, clamp01(open * 1.4) * (0.85 + 0.15 * p) + charge * 0.6);
-		if (D.inside) {
-			this.drawInside(ctx, R, D.inside, mu, md, R * 0.09 * clamp01(m * 2.5), open, insideK);
-		} else if (D.core && coreA > 0.01) {
-			ctx.globalAlpha = coreA;
-			ctx.drawImage(D.core(), R * 0.1 - R * 0.92, -R * 0.92, R * 1.84, R * 1.84);
-			ctx.globalAlpha = 1;
-		}
+		// inside the mouth, behind the body, seen through the open mouth: a painted cavity
+		// with a tongue
+		this.drawInside(ctx, R, D.inside, mu, md, R * 0.09 * clamp01(m * 2.5), open, insideK);
 
 		// the body: ink (one path), then the painted disc with the mouth cut out
 		const A = { x: (D.hinge ?? -0.1) * R, y: 0 };
 		const U = { x: Math.cos(mu) * R, y: -Math.sin(mu) * R };
 		const Dn = { x: Math.cos(md) * R, y: Math.sin(md) * R };
 		const bend = R * 0.09 * clamp01(m * 2.5);
-		if (D.ink !== false) {
+		{
 			ctx.save();
-			// the cel look's ink is a thinner line, heavier on the shadow side
-			const inkOffset = D.cel ? 0.026 : 0.045;
-			const inkScale = D.cel ? 1.046 : 1.075;
-			ctx.translate(-lx * R * inkOffset, -ly * R * inkOffset);
-			ctx.scale(inkScale, inkScale);
+			// a thin ink line, heavier on the shadow side
+			ctx.translate(-lx * R * 0.026, -ly * R * 0.026);
+			ctx.scale(1.046, 1.046);
 			ctx.beginPath();
 			ctx.moveTo(U.x, U.y);
 			ctx.arc(0, 0, R, -mu, md, true);
@@ -848,22 +635,10 @@ export abstract class Hero {
 			ctx.quadraticCurveTo((Dn.x + A.x) / 2, (Dn.y + A.y) / 2 - bend, A.x, A.y);
 			ctx.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x * 0.97, U.y * 0.97);
 		};
-		this.drawLips(ctx, lips, R, pal);
+		this.drawLips(ctx, lips, R, pal, { A, U, Dn });
 		this.drawWorn?.(ctx, R, p, lx, ly);
 		ctx.restore();
 
-		// the light spilling out of the open mouth: a soft glow at the lips, not a beam
-		const spill = clamp01(open) * (0.45 + 0.4 * p) + this.mouthFlash * 0.6;
-		if (D.spill && spill > 0.01) {
-			const fx = this.x + Math.cos(this.angle) * R * 0.75;
-			const fy = this.y + Math.sin(this.angle) * R * 0.75;
-			const gs = R * (1.1 + 0.5 * clamp01(open) + 0.3 * p);
-			ctx.globalCompositeOperation = 'lighter';
-			ctx.globalAlpha = Math.min(1, spill);
-			ctx.drawImage(glow(D.spill), fx - gs, fy - gs, gs * 2, gs * 2);
-			ctx.globalAlpha = 1;
-			ctx.globalCompositeOperation = 'source-over';
-		}
 		// just respawned: a soft pulsing halo instead of blinking
 		if (this.invulnerable && d < 0) {
 			const k = 0.5 + 0.5 * Math.cos(this.time * 9);
@@ -905,16 +680,20 @@ export abstract class Hero {
 	protected afterUpdate?(dt: number): void;
 	protected resetLooks?(): void;
 
-	/** The lips along the mouth's cut: ink, or a soft crease in the CG style. */
+	/**
+	 * The lips along the mouth's cut: a thin ink line. `ends` are the hinge and the two lip
+	 * ends, for a hero that wears something on them (her lipstick).
+	 */
 	protected drawLips(
 		ctx: CanvasRenderingContext2D,
 		lips: () => void,
 		R: number,
-		pal: Palette
+		pal: Palette,
+		ends: { A: Pt; U: Pt; Dn: Pt }
 	): void {
-		const cg = this.design.ink === false;
-		ctx.strokeStyle = css(pal.ink, cg ? 0.4 : 1);
-		ctx.lineWidth = R * (cg ? 0.045 : this.design.cel ? 0.05 : 0.075);
+		void ends;
+		ctx.strokeStyle = css(pal.ink);
+		ctx.lineWidth = R * 0.05;
 		lips();
 		ctx.stroke();
 	}
@@ -937,7 +716,7 @@ export abstract class Hero {
 		bend: number
 	): { canvas: HTMLCanvasElement; half: number } {
 		const dpr = Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
-		const disc = paintedDisc(this.design, R * dpr, Math.atan2(ly, lx), p, this.season);
+		const disc = bodyDisc(this.design, R * dpr, Math.atan2(ly, lx), p, this.season);
 		const size = disc.width;
 		if (!this.scratch || this.scratch.width !== size) {
 			this.scratch = document.createElement('canvas');
@@ -1028,11 +807,6 @@ export abstract class Hero {
 		ctx.ellipse(R * 0.03, -R * 0.025 * grow, R * 0.15 * grow, R * 0.035 * grow, 0, 0, Math.PI * 2);
 		ctx.fill();
 		ctx.restore();
-	}
-
-	private drawTrail(ctx: CanvasRenderingContext2D, p: number): void {
-		if (p < 0.99) this.trail.draw(ctx, this.r, this.design.trailCalm, 1 - p, this.time);
-		if (p > 0.01) this.trail.draw(ctx, this.r, this.design.trailAwoken, p, this.time);
 	}
 
 	private drawEmbers(ctx: CanvasRenderingContext2D): void {

@@ -1,7 +1,8 @@
 // What the season (or the hell) gives the heroes: the rim light on the nape, the colour of the
 // speed lines and of the little things the hero throws up. Colours are sampled from the owner's
 // hero mock-ups ("Pac-Man · Shonen", "Ms. Pac-Man · Maho-shoujo", the four season rows).
-import type { RGB } from './RibbonTrail';
+/** A colour as red, green, blue, 0..255. */
+export type RGB = readonly [number, number, number];
 
 export type HeroSeason = 'spring' | 'summer' | 'autumn' | 'winter' | 'hell';
 

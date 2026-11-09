@@ -86,7 +86,7 @@ function layout(): void {
 	view.style.height = `${vh}px`;
 	buildWorld();
 	const S = world.layout.tileSize;
-	big.setRadius(Math.min(vw * 0.5, vh) * 0.3);
+	big.setRadius(Math.min(vw * 0.5, vh) * 0.22);
 	mid.setRadius(S * RADIUS * ZOOM);
 	small.setRadius(S * RADIUS);
 	for (const h of [big, mid, small]) h.reset();
@@ -152,8 +152,8 @@ function frame(realDt: number): void {
 	const smallStrip = { x: sx, y: zoomStrip.y + zoomStrip.h + 16, w: sw, h: S * 3 };
 
 	// the big hero runs across the panel and wraps round, so his trail and particles show
-	const bigSpan = panel.w * 0.5;
-	const bigX = panel.x + panel.w * 0.3 + (moving ? ((phase * panel.w * 0.28) % bigSpan) : bigSpan * 0.5);
+	const bigSpan = panel.w * 0.12;
+	const bigX = panel.x + panel.w * 0.6 + (moving ? (phase * panel.w * 0.1) % bigSpan : 0);
 	big.update(dt, {
 		x: bigX,
 		y: panel.y + panel.h * 0.52,

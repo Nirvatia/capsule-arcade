@@ -8,8 +8,15 @@
 // bites, spring, energizer beat) is the shared Hero.
 import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from './Hero';
 import { Hero, css, mix } from './Hero';
-import { stellarGold } from './cgShading';
 import { SEASON_LOOKS } from './heroSeasons';
+import {
+	INK,
+	drawKiFlames,
+	drawSeasonParticle,
+	drawStarGlint,
+	particleLift,
+	particleSize
+} from './heroFx';
 
 const CALM: Palette = {
 	light: [236, 213, 58],
@@ -39,9 +46,6 @@ const INSIDE: MouthInside = {
 	tongueLight: [255, 160, 176]
 };
 
-const DUST: readonly [number, number, number] = [255, 246, 226];
-const DUST_EDGE: readonly [number, number, number] = [196, 158, 126];
-
 /** Speed lines: height off the axis and length in body radii, base width in body radii. */
 interface Streak {
 	readonly y: number;
@@ -66,7 +70,6 @@ const DESIGN: HeroDesign = {
 	id: 'pacman',
 	calm: CALM,
 	awoken: AWOKEN,
-	cel: true,
 	hinge: 0.08,
 	inside: INSIDE,
 	// wide jaws (the owner's review): fully open the mouth spans about 92 degrees
@@ -74,26 +77,12 @@ const DESIGN: HeroDesign = {
 	grinRest: 0.2,
 	grinRun: 0.08,
 	chompRate: 4.2,
-	spill: null,
-	aura: null,
 	flare: [255, 232, 170],
-	trailCalm: [],
-	trailAwoken: [],
 	death: 'open'
 };
 
-/** The CG style: the same hero rendered as stellar gold, without ink (goes with the CG style). */
-const CG_DESIGN: HeroDesign = {
-	...DESIGN,
-	id: 'pacman-cg',
-	cel: false,
-	inside: undefined,
-	shade: stellarGold,
-	ink: false
-};
-
 export class PacmanHero extends Hero {
-	protected readonly designs = { painted: DESIGN, cg: CG_DESIGN };
+	protected readonly design = DESIGN;
 
 	/** Tapered speed lines behind him, in the season's colour (cream when powered). */
 	protected drawStreaks(ctx: CanvasRenderingContext2D, R: number, run: number, p: number): void {
@@ -118,56 +107,7 @@ export class PacmanHero extends Hero {
 
 	/** Ink-outlined ki flames around the back of the body: orange, a yellow core, at most 1.2 R. */
 	protected drawBehind(ctx: CanvasRenderingContext2D, R: number, k: number): void {
-		const t = this.time;
-		const N = 9;
-		ctx.lineJoin = 'round';
-		ctx.lineCap = 'round';
-		for (const pass of [0, 1]) {
-			for (let i = 0; i < N; i++) {
-				const f = i / (N - 1);
-				const a = Math.PI + (f - 0.5) * 2.5;
-				const flick = 0.5 + 0.5 * Math.sin(t * 11 + i * 2.3);
-				const edge = 1 - Math.abs(f - 0.5) * 1.3;
-				const len = R * (0.28 + 0.92 * flick) * k * edge * (pass === 0 ? 1 : 0.58);
-				if (len < 1) continue;
-				const bx = Math.cos(a) * R * 0.93;
-				const by = Math.sin(a) * R * 0.93;
-				// outwards, blown back (away from the heading), swaying a little
-				let dx = Math.cos(a) - 0.7;
-				let dy = Math.sin(a) * 0.8 + 0.12 * Math.sin(t * 7 + i);
-				const n = Math.hypot(dx, dy) || 1;
-				dx /= n;
-				dy /= n;
-				const px = -dy;
-				const py = dx;
-				const w = R * (pass === 0 ? 0.17 : 0.09);
-				ctx.beginPath();
-				ctx.moveTo(bx + px * w, by + py * w);
-				ctx.quadraticCurveTo(
-					bx + dx * len * 0.55 + px * w * 0.9,
-					by + dy * len * 0.55 + py * w * 0.9,
-					bx + dx * len,
-					by + dy * len
-				);
-				ctx.quadraticCurveTo(
-					bx + dx * len * 0.5 - px * w * 0.5,
-					by + dy * len * 0.5 - py * w * 0.5,
-					bx - px * w,
-					by - py * w
-				);
-				ctx.closePath();
-				if (pass === 0) {
-					ctx.fillStyle = css([255, 132, 28], Math.min(1, k * 1.4));
-					ctx.fill();
-					ctx.strokeStyle = css(CALM.ink, Math.min(1, k * 1.4));
-					ctx.lineWidth = Math.max(1, R * 0.035);
-					ctx.stroke();
-				} else {
-					ctx.fillStyle = css([255, 228, 98], Math.min(1, k * 1.4));
-					ctx.fill();
-				}
-			}
-		}
+		drawKiFlames(ctx, R, k, this.time, { outer: [255, 132, 28], inner: [255, 228, 98], ink: INK });
 	}
 
 	/** A small four-point star on the highlight while he is powered. */
@@ -178,20 +118,7 @@ export class PacmanHero extends Hero {
 		lx: number,
 		ly: number
 	): void {
-		if (p < 0.3) return;
-		const cx = lx * R * 0.4 - ly * R * 0.12;
-		const cy = ly * R * 0.4 + lx * R * 0.12;
-		const big = R * 0.1 * p;
-		const small = big * 0.28;
-		ctx.fillStyle = css([255, 255, 255], p);
-		ctx.beginPath();
-		for (let i = 0; i < 8; i++) {
-			const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
-			const r = i % 2 === 0 ? big : small;
-			ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
-		}
-		ctx.closePath();
-		ctx.fill();
+		drawStarGlint(ctx, R, p, lx, ly);
 	}
 
 	/** Dust puffs and the season's own little things off the back; the season's on bursts. */
@@ -202,116 +129,14 @@ export class PacmanHero extends Hero {
 	}
 
 	protected sizeFor(kind: ParticleKind): number {
-		switch (kind) {
-			case 'dust':
-				return 2;
-			case 'petal':
-			case 'leaf':
-			case 'flake':
-				return 1.9;
-			default:
-				return 1.2;
-		}
+		return particleSize(kind);
 	}
 
-	/** Petals and dust hang about, leaves and flakes sink, sparks and embers rise. */
 	protected liftFor(kind: ParticleKind): number {
-		switch (kind) {
-			case 'dust':
-				return 0.1;
-			case 'petal':
-				return 0.25;
-			case 'leaf':
-				return -0.3;
-			case 'flake':
-				return -0.18;
-			default:
-				return 0.6;
-		}
+		return particleLift(kind);
 	}
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
-		const look = SEASON_LOOKS[this.season];
-		const rot = e.spin * (e.max - e.life) + e.spin * 2;
-		ctx.save();
-		ctx.translate(e.x, e.y);
-		ctx.rotate(rot);
-		ctx.globalAlpha = a;
-		ctx.lineJoin = 'round';
-		ctx.lineCap = 'round';
-		switch (e.kind) {
-			case 'dust':
-				ctx.fillStyle = css(DUST);
-				ctx.strokeStyle = css(DUST_EDGE, 0.8);
-				ctx.lineWidth = Math.max(0.8, s * 0.16);
-				ctx.beginPath();
-				ctx.arc(0, 0, s, 0, Math.PI * 2);
-				ctx.fill();
-				ctx.stroke();
-				break;
-			case 'petal':
-				ctx.fillStyle = css(look.particleFill);
-				ctx.strokeStyle = css(look.particleEdge);
-				ctx.lineWidth = Math.max(0.8, s * 0.18);
-				ctx.beginPath();
-				ctx.ellipse(0, 0, s, s * 0.62, 0, 0, Math.PI * 2);
-				ctx.fill();
-				ctx.stroke();
-				break;
-			case 'leaf':
-				ctx.fillStyle = css(look.particleFill);
-				ctx.strokeStyle = css(look.particleEdge);
-				ctx.lineWidth = Math.max(0.8, s * 0.2);
-				ctx.beginPath();
-				for (let i = 0; i < 10; i++) {
-					const an = (i / 10) * Math.PI * 2 - Math.PI / 2;
-					const r = i % 2 === 0 ? s : s * 0.42;
-					ctx.lineTo(Math.cos(an) * r, Math.sin(an) * r);
-				}
-				ctx.closePath();
-				ctx.fill();
-				ctx.stroke();
-				break;
-			case 'flake':
-				ctx.strokeStyle = css(look.particleEdge);
-				ctx.lineWidth = Math.max(0.8, s * 0.2);
-				ctx.beginPath();
-				for (let i = 0; i < 3; i++) {
-					const an = (i / 3) * Math.PI;
-					ctx.moveTo(Math.cos(an) * s, Math.sin(an) * s);
-					ctx.lineTo(-Math.cos(an) * s, -Math.sin(an) * s);
-				}
-				ctx.stroke();
-				ctx.fillStyle = css(look.particleFill);
-				ctx.beginPath();
-				ctx.arc(0, 0, s * 0.3, 0, Math.PI * 2);
-				ctx.fill();
-				break;
-			case 'spark':
-				ctx.fillStyle = css(look.particleFill);
-				ctx.strokeStyle = css(look.particleEdge, 0.9);
-				ctx.lineWidth = Math.max(0.8, s * 0.2);
-				ctx.beginPath();
-				ctx.arc(0, 0, s * 0.8, 0, Math.PI * 2);
-				ctx.fill();
-				ctx.stroke();
-				ctx.fillStyle = 'rgba(255,252,230,0.9)';
-				ctx.beginPath();
-				ctx.arc(-s * 0.2, -s * 0.2, s * 0.25, 0, Math.PI * 2);
-				ctx.fill();
-				break;
-			default: {
-				// an ember (the hell)
-				ctx.fillStyle = css(look.particleFill);
-				ctx.strokeStyle = css(look.particleEdge);
-				ctx.lineWidth = Math.max(0.8, s * 0.2);
-				ctx.beginPath();
-				ctx.arc(0, 0, s * 0.8, 0, Math.PI * 2);
-				ctx.fill();
-				ctx.stroke();
-			}
-		}
-		ctx.restore();
-		ctx.globalAlpha = 1;
+		drawSeasonParticle(ctx, e, a, s, this.season);
 	}
 }
