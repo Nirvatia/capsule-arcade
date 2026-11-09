@@ -75,6 +75,11 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
    2. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
       summer, autumn, winter, with normal, scared, flashing and eyes-only; focus on
       cuteness; the eyes show the heading; in the style of the heroes' mock-ups.
+      In progress, summer first: a chat mock-up of three shapes without tentacles (a drop, a
+      cloud, a jelly cube); the owner picked the **drop** to see in the game. Done: the drop
+      in `render/actors/dropGhost.ts`, switched on by `GhostView.style` for the summer
+      renderer (all states; the other seasons keep the plain disc). Next: the owner looks at
+      it in play, then the other seasons (same approach, or another one).
    3. **Echo clone look** (`render/actors/EchoCloneView.ts`).
    4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`); the teleport effect;
       the teleporters' own art (`MeadowBake` portal + `MeadowWorld`), bulky today though

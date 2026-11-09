@@ -2,8 +2,17 @@ import type { GhostService } from '../../logic/actors/GhostService';
 import type { GhostModel } from '../../logic/actors/GhostModel';
 import type { GridLayout } from '../maze/GridView';
 import type { HypnosisMode } from '../../logic/rules/HypnosisService';
+import { drawDropGhost, dropStateFor } from './dropGhost';
+
+/** `disc` is the plain round ghost; `drop` is the summer water drop (`dropGhost.ts`). */
+export type GhostStyle = 'disc' | 'drop';
 
 export class GhostView {
+	/** The look to draw; the level renderer sets it from the season. */
+	style: GhostStyle = 'disc';
+	/** Render time in seconds, for the drop's idle motion. */
+	time = 0;
+
 	draw(
 		ctx: CanvasRenderingContext2D,
 		ghosts: GhostService,
@@ -101,6 +110,21 @@ export class GhostView {
 		} else if (ghost.facing === 'RIGHT') {
 			lookX = 1;
 		}
+		if (this.style === 'drop') {
+			this.drawDrop(
+				ctx,
+				ghost,
+				x,
+				y,
+				layout.tileSize,
+				lookX,
+				lookY,
+				powerTimer,
+				msOverdrive,
+				hypnosis
+			);
+			return;
+		}
 		if (ghost.state === 'eyes') {
 			this.drawEyes(ctx, x, y, radius, lookX, lookY);
 			return;
@@ -196,6 +220,37 @@ export class GhostView {
 			Math.PI * 2
 		);
 		ctx.fill();
+		ctx.restore();
+	}
+
+	private drawDrop(
+		ctx: CanvasRenderingContext2D,
+		ghost: GhostModel,
+		x: number,
+		y: number,
+		tileSize: number,
+		lookX: number,
+		lookY: number,
+		powerTimer: number,
+		msOverdrive: boolean,
+		hypnosis: HypnosisMode | null
+	): void {
+		const state = dropStateFor({ state: ghost.state, hypnosis, overdrive: msOverdrive });
+		const frightened = state === 'scared' || state === 'overdrive';
+		const flashing = frightened && powerTimer > 0 && powerTimer < 2;
+		ctx.save();
+		if (ghost.state === 'lair' || ghost.state === 'exiting') {
+			ctx.globalAlpha = 0.72;
+		}
+		drawDropGhost(ctx, x, y, (tileSize / 25) * 0.95, {
+			kind: ghost.kind,
+			state,
+			flashing,
+			white: flashing && Math.floor(powerTimer * 4) % 2 === 0,
+			lookX,
+			lookY,
+			time: this.time
+		});
 		ctx.restore();
 	}
 
