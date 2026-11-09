@@ -8,7 +8,7 @@
          game's own meadow world in every season, with the maze cycle's order for a seed.
          Marks: tunnel pads (cyan), Pac-Man pad (green), fruit pad (magenta), lair (orange).
          Built from the sources: `node prototypes/pacman/build.mjs mazes`; open as a file.
-         The page can be opened with #maze=grid_02&season=autumn&marks=1&night=1 -->
+         The page can be opened with #maze=grid_02&season=autumn&marks=1&night=1&border=0 -->
     <style>
       html,body{height:100%;margin:0;overflow:hidden;background:#1a1a14}
       #view{position:fixed;inset:0;display:block}
@@ -32,6 +32,7 @@
       <button class="bt" data-season="winter">Зима</button>
       <button class="bt" data-season="spring">Весна</button>
       <button class="bt" id="night" aria-pressed="false">☾ Ночь</button>
+      <button class="bt" id="border" aria-pressed="false">Без рамки</button>
       <button class="bt" id="marks" aria-pressed="false">Метки</button>
     </div>
     <script>
