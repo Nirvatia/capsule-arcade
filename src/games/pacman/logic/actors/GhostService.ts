@@ -56,6 +56,10 @@ export class GhostService {
 	private powerActiveValue = false;
 	private msOverdriveValue = false;
 	private speedModifierValue = 1;
+	/** The level's waves (seconds) and how much faster the ghosts leave the lair (the ramp). */
+	private scatterTime = SCATTER_TIME;
+	private chaseTime = CHASE_TIME;
+	private exitScale = 1;
 	private visibleValue = true;
 	/** Sent away by the lair code: frozen where they were, out of play until the reset. */
 	private banishedValue = false;
@@ -132,6 +136,37 @@ export class GhostService {
 		this.speedModifierValue = value;
 	}
 
+	/** The level's scatter and chase waves (seconds) and the scale of the lair-exit delays. */
+	setTuning(scatter: number, chase: number, exitScale: number): void {
+		if (!(scatter > 0) || !(chase > 0) || !(exitScale > 0)) {
+			console.error('GhostService.setTuning', 'invalid tuning', { scatter, chase, exitScale });
+			return;
+		}
+		this.scatterTime = scatter;
+		this.chaseTime = chase;
+		this.exitScale = exitScale;
+		this.resetWaves();
+	}
+
+	get speedModifier(): number {
+		return this.speedModifierValue;
+	}
+
+	/** The ghosts' own speed, tiles a second, before any modifier. */
+	get baseSpeed(): number {
+		return GHOST_SPEED;
+	}
+
+	/** The seconds a ghost waits before it leaves the lair (with the ramp). */
+	exitDelay(kind: GhostKind): number {
+		return EXIT_DELAYS[kind] * this.exitScale;
+	}
+
+	/** The scatter and chase waves now in force, seconds. */
+	get waves(): { readonly scatter: number; readonly chase: number } {
+		return { scatter: this.scatterTime, chase: this.chaseTime };
+	}
+
 	setPowerActive(value: boolean): void {
 		this.powerActiveValue = value;
 	}
@@ -205,7 +240,7 @@ export class GhostService {
 				console.error('GhostService.reset', 'missing spawn', { kind: ghost.kind });
 				continue;
 			}
-			ghost.reset(spawn, EXIT_DELAYS[ghost.kind]);
+			ghost.reset(spawn, EXIT_DELAYS[ghost.kind] * this.exitScale);
 		}
 		this.resetWaves();
 		this.powerActiveValue = false;
@@ -216,7 +251,7 @@ export class GhostService {
 	private resetWaves(): void {
 		this.mode = 'scatter';
 		this.waveIndex = 0;
-		this.modeTimer = this.arcade ? (this.arcade.waves[0] ?? Infinity) : SCATTER_TIME;
+		this.modeTimer = this.arcade ? (this.arcade.waves[0] ?? Infinity) : this.scatterTime;
 	}
 
 	update(dt: number): void {
@@ -246,10 +281,10 @@ export class GhostService {
 			this.modeTimer = this.arcade.waves[this.waveIndex] ?? Infinity;
 		} else if (this.mode === 'scatter') {
 			this.mode = 'chase';
-			this.modeTimer = CHASE_TIME;
+			this.modeTimer = this.chaseTime;
 		} else {
 			this.mode = 'scatter';
-			this.modeTimer = SCATTER_TIME;
+			this.modeTimer = this.scatterTime;
 		}
 		for (const ghost of this.ghosts) {
 			if (ghost.state === 'active' || ghost.state === 'frightened' || ghost.state === 'exiting') {

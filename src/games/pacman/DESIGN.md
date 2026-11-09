@@ -66,6 +66,13 @@ to its corner) and chase (20 s). In chase Blinky heads straight for Pac-Man, Pin
 point ahead of him, Inky for a point mirrored through Blinky, Clyde chases from afar and
 backs off up close (`logic/actors/GhostService.ts`). Their eyes look where they are going.
 
+**Difficulty ramp** (`config/difficultyConfig.ts`): season levels get harder up to season
+level 13, boss levels not counted. Per level: ghosts +0.9 % speed (never above the hero's own
+speed, at most +10 %), energizer -0.35 s (not below 2.5 s), scatter -0.25 s (down to 4 s),
+chase +0.7 s (up to 28 s), lair exits 4 % earlier (down to half), hypnosis overdrive -0.17 s
+(down to 3 s). Level 1 is the base game. The secret level uses its own rounds. Tuned with the
+balance bot: about twice the deaths at season level 10 as at level 1, still cleared.
+
 ## 5. Bonuses
 
 - **Fruit**: two per level, after 70 and 170 dots, on a fixed pad, for the season's fruit

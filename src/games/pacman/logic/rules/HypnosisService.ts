@@ -34,6 +34,7 @@ export class HypnosisService implements HypnosisGuide {
 	private readonly lairCode: LairCodeService | null;
 	private readonly events: EventBus<PacmanEventMap> | null;
 	private world: GhostService | null = null;
+	private overdriveSecondsValue: number = HYPNOSIS.overdriveSeconds;
 	private overdriveActiveValue = false;
 	private overdriveTimerValue = 0;
 	private hypnotizedKindValue: GhostKind | null = null;
@@ -86,6 +87,19 @@ export class HypnosisService implements HypnosisGuide {
 		return this.plannedDotsValue;
 	}
 
+	/** How long an energizer's overdrive lasts on this level (the difficulty ramp shortens it). */
+	setOverdriveSeconds(value: number): void {
+		if (!(value > 0)) {
+			console.error('HypnosisService.setOverdriveSeconds', 'invalid duration', value);
+			return;
+		}
+		this.overdriveSecondsValue = value;
+	}
+
+	get overdriveSeconds(): number {
+		return this.overdriveSecondsValue;
+	}
+
 	reset(): void {
 		this.overdriveActiveValue = false;
 		this.overdriveTimerValue = 0;
@@ -104,7 +118,7 @@ export class HypnosisService implements HypnosisGuide {
 			return;
 		}
 		this.overdriveActiveValue = true;
-		this.overdriveTimerValue = HYPNOSIS.overdriveSeconds;
+		this.overdriveTimerValue = this.overdriveSecondsValue;
 		ghosts.setMsOverdrive(true);
 	}
 

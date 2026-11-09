@@ -54,10 +54,8 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
    2. ~~**Hypnosis for Ms. Pac-Man, two modes**~~ Done (see Done, "Part I, 3.2").
    3. ~~Regular levels have no teleport effect~~ Done (see Done, "Part I, 3.3"). Its final look
       is step 5.4.
-   4. **Balance check**, after the mazes: compare speeds, timers and scores with the
-      arcade originals and with play on levels 1–15 on all four mazes (dot counts run from
-      227 to 268, `grid_04` has no tunnel); change configs only where something is off. If
-      all is fine, this step closes with no change.
+   4. ~~**Balance check**~~ Done (see Done, "Part I, 3.4"): a balance bot, and a difficulty
+      ramp by season level.
 
 4. **Sound and tools** (Sonnet).
    1. **Mute** button and key (`M`), and a **volume** slider; both saved in
@@ -358,3 +356,18 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   Fire sparks got bigger and a thinner outline (they read as dark dots). Checked frame by
   frame in the live game for both heroes (the game's own F8 step). Tests: ball and tunnel
   cases in `heroTrail.test.ts` and `playerTunnel.test.ts`; 172 in all.
+- Part I, 3.4: the balance check and a difficulty ramp. `logic/balance/balanceBot.ts` plays a
+  level headlessly on the real services (seeded, `Math.random` swapped during a run) and
+  `BALANCE=1` / `BALANCE=levels` print a table of mazes / levels. Findings on the flat game:
+  all four mazes and seasons were alike (about 2.2 deaths a level, 100 % cleared; `grid_04`
+  a little slower, left as is by the owner's choice), but nothing got harder with the level.
+  New `config/difficultyConfig.ts` (`levelTuning(seasonLevel)`, boss levels not counted) ramps
+  over season levels 1-13: ghost speed up to +10 %, energizer -0.35 s a level (floor 2.5 s),
+  scatter 7 -> 4 s, chase 20 -> 28 s, lair exits up to twice as early, hypnosis overdrive
+  5 -> 3 s. Deviation from the plan (+30 % ghost speed): the ghosts are capped at the hero's
+  own speed (`LevelSession` clamps by `PlayerService.baseSpeed`); at +30 % they outran the hero
+  and the bot's deaths went from 2.6 to 12 by season level 8 and over 30 later. Measured (bot,
+  16 runs, deaths a level, Pac-Man / Ms. Pac-Man): level 1 2.4 / 2.7, season level 10 (game
+  level 12) 6.1 / 5.5, about 2.3x; clear rate 100 % (94 % at game level 17 for Ms. Pac-Man).
+  Ghosts get no tunnel slowdown (the owner's choice). The secret level keeps its own rounds.
+  Tests: `config/difficulty.test.ts`; 182 in all.

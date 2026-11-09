@@ -135,7 +135,8 @@ while the power lasts; a middling player on purpose, seeded (the game's own dice
 `BALANCE=1 BALANCE_SEEDS=12 BALANCE_OUT=<file> npx vitest run src/games/pacman/logic/balance`
 runs every season maze in every season as both heroes and writes a table (clear rate, time,
 deaths, first death, score, echo and hypnosis statistics); without `BALANCE` the report is
-skipped.
+skipped. `BALANCE=levels` (with `BALANCE_LEVELS=1,4,...`) plays chosen game levels one by one
+to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLevelSession`).
 
 ## Debug tools (dev build only)
 
@@ -166,6 +167,9 @@ skipped.
   egg order, banished ghosts frozen, nothing outside level 7.
 - `logic/level/arcade.test.ts` — tries, rounds, intermission, restart, ghost characters.
 - `config/mazes/mazes.test.ts` — the validator and every maze file.
+- `config/difficulty.test.ts` — the ramp is monotonic and capped, level 1 is the base, a late
+  level has faster ghosts / shorter waves, no ghost outruns the hero, the secret level is
+  untouched.
 - `logic/balance/balanceBot.test.ts` — the balance bot plays a level and a seed plays one game.
 - `logic/actors/ghostRoutes.test.ts` — routes by path length, no turning back, tunnels, the
   feeding plan.

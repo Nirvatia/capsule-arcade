@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { SEASON_MAZES } from '../../config/mazes';
+import { seasonForLevel, seasonLevelOf } from '../level/SeasonCatalog';
 import type { SeasonData, SeasonName } from '../level/SeasonCatalog';
 import type { BotResult } from './balanceBot';
 import { playLevel } from './balanceBot';
@@ -10,9 +11,11 @@ import type { GameProfile } from '../rules/HypnosisService';
  * The balance report (not part of the normal run): `BALANCE=1 npx vitest run
  * src/games/pacman/logic/balance` plays every season maze in every season, as both heroes, by
  * the bot, and prints a table; `BALANCE_OUT=<file>` writes it to a file too. `BALANCE_SEEDS`
- * sets the runs per case (default 12).
+ * sets the runs per case (default 12), `BALANCE_LEVELS=1,4,8,...` the game levels of the by-level report.
  */
 const ON = Boolean(process.env.BALANCE);
+/** BALANCE=levels plays the season levels one by one (the difficulty ramp) instead. */
+const LEVELS = process.env.BALANCE === 'levels';
 const SEEDS = Number(process.env.BALANCE_SEEDS ?? 12);
 const SEASONS: readonly SeasonName[] = ['summer', 'autumn', 'winter', 'spring'];
 const PROFILES: readonly GameProfile[] = ['pacman', 'ms-pacman'];
@@ -48,7 +51,7 @@ function line(row: Row): string {
 	].join('  ');
 }
 
-describe.skipIf(!ON)('balance report', () => {
+describe.skipIf(!ON || LEVELS)('balance report', () => {
 	it('plays every maze in every season as both heroes', () => {
 		const rows: Row[] = [];
 		let level = 1;
@@ -94,4 +97,44 @@ describe.skipIf(!ON)('balance report', () => {
 		if (process.env.BALANCE_OUT) writeFileSync(process.env.BALANCE_OUT, text);
 		expect(rows.length).toBe(PROFILES.length * 16);
 	}, 1_800_000);
+});
+
+/** The levels of the ramp: season levels 1..12 as the game numbers them (bosses on 5 and 10). */
+const RAMP_GAME_LEVELS = (process.env.BALANCE_LEVELS ?? '1,2,3,4,6,7,8,9,11,12,13,14,16,17')
+	.split(',')
+	.map(Number);
+
+describe.skipIf(!LEVELS)('balance report by level', () => {
+	it('plays the season levels one after the other, the maze and season following the game', () => {
+		const out: string[] = [`runs per level: ${SEEDS}`, ''];
+		let rows = 0;
+		for (const profile of PROFILES) {
+			out.push(`== ${profile} ==`);
+			for (const level of RAMP_GAME_LEVELS) {
+				const results: BotResult[] = [];
+				for (let seed = 1; seed <= SEEDS; seed += 1) {
+					// every run its own maze order, so no maze skews a level
+					results.push(
+						playLevel({
+							season: seasonForLevel(level, seed * 977),
+							level,
+							profile,
+							seed: seed * 7919 + level
+						})
+					);
+				}
+				out.push(
+					line({
+						label: `level ${String(level).padStart(2)} (season ${seasonLevelOf(level)})`,
+						results
+					})
+				);
+				rows += 1;
+			}
+			out.push('');
+		}
+		const text = out.join('\n');
+		if (process.env.BALANCE_OUT) writeFileSync(process.env.BALANCE_OUT, text);
+		expect(rows).toBe(PROFILES.length * RAMP_GAME_LEVELS.length);
+	}, 3_600_000);
 });

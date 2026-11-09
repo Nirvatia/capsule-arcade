@@ -17,10 +17,11 @@ import { BossRewardService } from '../bonuses/BossRewardService';
 import type { GameProfile } from '../rules/HypnosisService';
 import type { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
-import { seasonModifiers } from './SeasonCatalog';
+import { seasonLevelOf, seasonModifiers } from './SeasonCatalog';
 import type { SeasonData } from './SeasonCatalog';
 import { busSink } from '../debug/debugLog';
 import { ARCADE, arcadeRound } from '../../config/arcadeConfig';
+import { levelTuning, powerSeconds } from '../../config/difficultyConfig';
 
 /** Boss and weapons of the hell level. */
 export interface DoomSession {
@@ -116,8 +117,19 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		player.setSpeedModifier(tuning.playerSpeed);
 		fruit.setKind(tuning.fruit);
 	} else {
-		combat.setPowerDuration(mods.powerDuration);
-		ghosts.setSpeedModifier(mods.ghostSpeedModifier);
+		// the season levels get harder with the level (boss levels do not count)
+		const tuning = levelTuning(seasonLevelOf(level));
+		combat.setPowerDuration(powerSeconds(mods.powerDuration, tuning));
+		// the ghosts never outrun the hero (the season's own modifiers included)
+		const ceiling = (player.baseSpeed * mods.playerSpeedModifier) / ghosts.baseSpeed;
+		ghosts.setSpeedModifier(
+			Math.min(
+				mods.ghostSpeedModifier * tuning.ghostSpeed,
+				Math.max(mods.ghostSpeedModifier, ceiling)
+			)
+		);
+		ghosts.setTuning(tuning.scatter, tuning.chase, tuning.exitScale);
+		hypnosis.setOverdriveSeconds(tuning.overdrive);
 		player.setSpeedModifier(mods.playerSpeedModifier);
 	}
 	return {
