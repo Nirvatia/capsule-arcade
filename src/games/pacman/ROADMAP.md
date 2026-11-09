@@ -28,7 +28,7 @@ The plan has three parts, done in this order: **I** the main game (four seasons)
 last of all (see Later). Part I is in progress: steps 1 (mazes), 2 (heroes) and 3
 (mechanics and balance) are done; step 4 (sound and tools) has only the mute button, the
 rest is postponed; step 5 (season art) is under way: 5.1 and 5.2 are in the game (5.2 waits
-for the owner's review), then 5.3 (echo clones) and 5.5 (teleport art) closed with today's looks kept, and 5.4.
+for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 and 5.5 (teleport art: mock-ups in progress).
 
 ## Part I. The main game: four seasons (mechanics and graphics)
 
@@ -90,9 +90,11 @@ for the owner's review), then 5.3 (echo clones) and 5.5 (teleport art) closed wi
    3. ~~**Echo clone look**~~ (`render/actors/EchoCloneView.ts`): mock-ups of three new looks
       (a trail of echoes, a bubble, a hologram) were made; the owner keeps today's look.
    4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`).
-   5. ~~**Teleport art, redone**~~ Closed: mock-ups of three looks (a funnel, a wreath of the
-      season's things, a burrow) were made, and the owner finds today's teleport (the
-      rolling ball and the pad) better made, so it stays.
+   5. **Teleport art, redone** (the owner's request): the whole teleport look again. A first
+      round of three chat mock-ups (a funnel, a wreath of the season's things, a burrow) fell
+      short of today's teleport (the rolling ball, the soft additive pad with two thin
+      counter-rotating swirls, the gather-and-flash effect); a second round (a star funnel, a
+      gate of rings, ripples) keeps that light style. Today's look stays until the owner picks.
 
 6. **One death transition for every world** (Opus; design page first, then a prototype the
    owner approves). Today's decay works on the level's picture, but it only knows "from":
