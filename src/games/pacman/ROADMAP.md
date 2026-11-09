@@ -25,20 +25,20 @@ a suggestion.
 
 The plan has three parts, done in this order: **I** the main game (four seasons),
 **II** the boss levels, **III** the interface. The depth and post-processing pass comes
-last of all (see Later). Part I is next: step 1 is done but for its border question, step 2 (the heroes) follows.
+last of all (see Later). Part I is next: step 1 is done, step 2 (the heroes) follows.
 
 ## Part I. The main game: four seasons (mechanics and graphics)
 
 1. **Mazes** (Opus). Four season mazes, `config/mazes/grid_01.ts` … `grid_04.ts`, made by
    the owner (25×27 tiles, one token per tile, checked by `parseMaze` at import), replace
-   the single `classic01` in the season rotation. Done except the border question (see
-   Done, "Part I, 1").
+   the single `classic01` in the season rotation. Done (see Done, "Part I, 1").
    1. ~~**Maze cycle.**~~ Done.
    2. ~~**Boss levels are not part of the cycle.**~~ Done.
    3. ~~**Validator.**~~ Done.
    4. ~~**Each maze checked in a prototype page.**~~ Done (`mazes`).
-   5. Whether the empty border is still needed (the canvas may no longer cut lines). Open:
-      the owner decides on the `mazes` prototype.
+   5. ~~Whether the empty border is still needed.~~ Decided: it stays. The canvas no longer
+      cuts the walls (the bake reaches past the maze), but the border keeps every maze at
+      25×27, so the scale, the decor and the lair centre stay the same from maze to maze.
    6. ~~**`classic01` stays** as the fallback.~~ Done: `GRID_CLASSIC` serves the secret level
       and the tests; the hell stays on `doom.ts`. `grid_doom` (not finished: a row short) and
       `grid_tron` wait for part II.
