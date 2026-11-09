@@ -28,7 +28,7 @@ size of one tile.
 
 - A new game starts on level 1 with 3 lives and runs until the lives are gone.
 - Level `n` is a season: 1 summer, 2 autumn, 3 winter, 4 spring, then again
-  (`logic/level/SeasonCatalog.ts`). Every 5th level is the hell, for both heroes. Later boss worlds take levels 10, 15, … (plan stage 6).
+  (`logic/level/SeasonCatalog.ts`). Every 5th level is the hell, for both heroes. Boss levels do not count in the season cycle: season levels run 1–4, 6–9, 11–14, … Later a random boss world joins on every 5th level (roadmap, part II). _Planned (part I, 1)_: the four mazes `grid_01`–`grid_04` play in a random order per cycle of four season levels.
 - Level 7 hides the way into the secret level (§8, the arcade); after it the run continues
   on the level after the one it was entered from.
 - Score and lives carry over between levels. Extra life at 10 000 points, then every
@@ -46,7 +46,7 @@ size of one tile.
 - **Overdrive (Ms. Pac-Man)**: instead of scaring, an energizer starts a 5 s overdrive.
   Touching a ghost hypnotises it for 4 s (+200); it then eats dots for her. Touching another
   moves the hypnosis over (+200) and frees the first, scared. A ghost that wakes up on its
-  own is enraged for 2 s (faster, deadly). _Planned (stage 4.2)_: on hypnosis the ghost
+  own is enraged for 2 s (faster, deadly). _Planned (part I, 3.2)_: on hypnosis the ghost
   picks one mode for its whole time: **feeder** (follows the route, by path length, that
   eats the most dots it can reach in time) or, when there is too little food in reach,
   **hunter** (chases and eats the other ghosts).
@@ -77,7 +77,7 @@ backs off up close (`logic/actors/GhostService.ts`). Their eyes look where they 
   dots turn into points, +500, and the arcade starts. Clearing the dots first just ends
   the level.
 - **Echo clone**: at 60 % of the dots a token appears for 8 s; taking it releases one clone
-  of Pac-Man for 4 s that runs to the densest dots and eats them. _Planned (stage 4.1)_:
+  of Pac-Man for 4 s that runs to the densest dots and eats them. _Planned (part I, 3.1)_:
   a rare bonus at a random place that sets off a riot of 7–9 clones for 2–3 s, eating
   everything they find and dying on ghosts.
 
@@ -200,14 +200,14 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 
 | Element                                                         | State                                                        |
 | --------------------------------------------------------------- | ------------------------------------------------------------ |
-| Seasons (world, food, weather, night), season turn, death decay | final; decay background to rework (10.9)                     |
-| Hell world, Blinky lord of hell, imps, weapons                  | final; phase-3 lighting and corrupted tiles to rework (10.8) |
-| Arcade                                                          | final                                                        |
-| HUD and screens                                                 | final                                                        |
+| Seasons (world, food, weather, night), season turn, death decay | final; decay background to rework (part I, 5.5)                     |
+| Hell world, Blinky lord of hell, imps, weapons                  | final; phase-3 lighting and corrupted tiles to rework (part II, 1.1–1.2) |
+| Arcade                                                          | final (keeps its own pixel HUD)                              |
+| HUD and screens                                                 | final; to be replaced (part III)                              |
 | Fruit, heart, exit                                              | final (inside the tile, calm glow)                           |
 | Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)               |
-| Pac-Man                                                         | the hero, in the game (the hell still uses the old look)     |
-| Ms. Pac-Man                                                     | the heroine, in the game                                     |
-| Season ghosts                                                   | missing: one generic look today (10.5)                       |
-| Echo clone                                                      | to redo (10.6)                                               |
-| Teleporters, ring effects                                       | to improve (10.7)                                            |
+| Pac-Man                                                         | to redo in code from the owner's mock-up (part I, 2)         |
+| Ms. Pac-Man                                                     | to redo in code from the owner's mock-up (part I, 2)         |
+| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                       |
+| Echo clone                                                      | to redo (part I, 5.3)                                               |
+| Teleporters, ring effects                                       | to improve (part I, 5.4)                                            |

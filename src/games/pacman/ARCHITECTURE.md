@@ -62,7 +62,7 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (GameHud, Arc
   `frame.director`) and never mutates it; the doom FX queue is the one consumer-side
   drain. Logic tells render about moments through events: `audio:cue`, `fx:event`.
 - A new level kind = a new `LevelRenderer`; the pipeline only picks one per frame.
-- A world (the hell today, the boss worlds of stage 6 next) is a folder pair:
+- A world (the hell today, the boss worlds of part II next) is a folder pair:
   `logic/<world>/` (services, balance, tests) and `render/<world>/` (`*Bake` with the
   layer shape above, `*World`, the level renderer), plus its route in
   `LevelLoader.worldOf` and a `LevelSession` slot. Logic stays free of render.
