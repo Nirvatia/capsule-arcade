@@ -329,7 +329,7 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
     correlated consecutive draws). Found on the way: after a flash the mouth cut used a
     leftover faint `fillStyle` and cut the mouth only partly.
   - Cut: the CG style (`cgShading.ts`), the old soft painted disc, the brush texture, the
-    ribbon trail (`RibbonTrail.ts`), the mouth and aura glows. `Hero.ts` is ~870 lines of
+    ribbon trail (`RibbonTrail.ts`), the mouth and aura glows. `Hero.ts` is ~960 lines of
     shared machinery.
   - Tests: `hero/heroTrail.test.ts` (the season table, the trail is shed only while running,
     bends with a turn, is not dropped across a teleport, the season's kinds, fire when powered,
