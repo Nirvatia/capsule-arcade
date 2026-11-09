@@ -1,6 +1,6 @@
 // The season ghosts: one cel-style painter (ink outline, a belly shade, a highlight, bean feet
 // that step with the ground covered, a face that slides toward the heading) and a body shape
-// per season: a water drop in summer, a hedgehog in autumn. No tentacles and no wavy skirt.
+// per season: a water drop in summer, a hedgehog in autumn, a bunny in winter. No tentacles and no wavy skirt.
 // Pure drawing: the caller picks the state (`cuteStateFor`), the shape and the colour.
 import type { GhostKind, GhostState } from '../../logic/actors/GhostModel';
 import type { HypnosisMode } from '../../logic/rules/HypnosisService';
@@ -8,7 +8,7 @@ import type { HypnosisMode } from '../../logic/rules/HypnosisService';
 type Ctx = CanvasRenderingContext2D;
 type Palette = { b: string; s: string };
 
-export type CuteShape = 'drop' | 'hedgehog';
+export type CuteShape = 'drop' | 'hedgehog' | 'bunny';
 export type CuteState = 'normal' | 'scared' | 'overdrive' | 'eyes' | 'rage' | 'feeder' | 'hunter';
 
 export interface CuteOptions {
@@ -184,7 +184,48 @@ const HEDGEHOG: GhostShape = {
 	nose: true
 };
 
-export const GHOST_SHAPES: Record<CuteShape, GhostShape> = { drop: DROP, hedgehog: HEDGEHOG };
+/** The winter bunny: a round body and two long ears with a pink inside. */
+const BUNNY: GhostShape = {
+	paths: [
+		(c) => {
+			c.beginPath();
+			c.ellipse(0, 2, 10.2, 9.2, 0, 0, TAU);
+		},
+		(c) => {
+			c.beginPath();
+			c.ellipse(-4.8, -9.6, 2.9, 6, -0.16, 0, TAU);
+		},
+		(c) => {
+			c.beginPath();
+			c.ellipse(4.8, -9.6, 2.9, 6, 0.16, 0, TAU);
+		}
+	],
+	over: (c) => {
+		for (const side of [-1, 1]) {
+			c.beginPath();
+			c.ellipse(side * 4.8, -9.2, 1.4, 4.2, side * 0.16, 0, TAU);
+			c.fillStyle = 'rgba(255,190,215,.92)';
+			c.fill();
+		}
+	},
+	lid: (pal) => pal.b,
+	dy: 2.6,
+	scale: 0.82,
+	highlight: [-5, -0.4],
+	ring: 15.4,
+	ey: 3,
+	ex: 3.9,
+	rx: 3,
+	ry: 3.4,
+	my: 5,
+	nose: true
+};
+
+export const GHOST_SHAPES: Record<CuteShape, GhostShape> = {
+	drop: DROP,
+	hedgehog: HEDGEHOG,
+	bunny: BUNNY
+};
 
 /** Which look a ghost in this game state takes (the lair's translucency is the caller's). */
 export function cuteStateFor(input: {

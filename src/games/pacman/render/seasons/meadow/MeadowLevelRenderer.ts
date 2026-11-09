@@ -18,7 +18,11 @@ const NIGHT_AT = 0.75;
 const GATE_REACH = 1.6;
 /** Gate speed, share of the full slide per second, opening and closing. */
 /** The ghost shape of each season; the others keep the plain disc. */
-const GHOST_STYLES: Readonly<Record<string, GhostStyle>> = { summer: 'drop', autumn: 'hedgehog' };
+const GHOST_STYLES: Readonly<Record<string, GhostStyle>> = {
+	summer: 'drop',
+	autumn: 'hedgehog',
+	winter: 'bunny'
+};
 const GATE_OPEN_RATE = 7;
 const GATE_CLOSE_RATE = 3;
 
