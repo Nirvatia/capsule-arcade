@@ -73,6 +73,9 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
    1. **Energizers vs fruit**: in spring and autumn the energizers look edible and are
       mixed up with fruit. Energizers must read as non-food objects (an orb, a crystal, a
       charm) in every season; fruit stays food.
+      Mock-up done: the `food` prototype shows three sets (pellet + energizer) per season
+      beside the current one (`prototypes/pacman/food/variants.ts`). Next: the owner picks a
+      set per season, then it moves into the season themes (`live.pellet`, `live.energizer`).
    2. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
       summer, autumn, winter, with normal, scared, flashing and eyes-only; focus on
       cuteness; the eyes show the heading; in the style of the heroes' mock-ups.
