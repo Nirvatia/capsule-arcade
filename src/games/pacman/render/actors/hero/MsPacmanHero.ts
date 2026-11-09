@@ -6,14 +6,15 @@
 // (the season's and a pink one), petals, dust and manga twinkles. Powered, the bow glows, rose-
 // gold ki flames open behind her, the brow lifts and the highlight turns to a star. The
 // machinery (acting, bites, spring, energizer beat) is the shared Hero.
-import type { HeroDesign, Lane, MouthInside, Palette, Particle, ParticleKind } from './Hero';
+import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from './Hero';
 import { Hero, Spring, css, glow, mix } from './Hero';
 import { SEASON_LOOKS } from './heroSeasons';
 import type { HeroSeason, RGB } from './heroSeasons';
 import {
 	drawKiFlames,
 	drawSeasonParticle,
-	drawStreak,
+	drawPuff,
+	drawWhoosh,
 	drawStarGlint,
 	particleLift,
 	particleSize,
@@ -268,24 +269,6 @@ function paintedBow(deviceR: number, season: HeroSeason): HTMLCanvasElement {
 	return c;
 }
 
-/** Speed streaks: lanes off the axis (length, head width, spacing in body radii). */
-const LANES: readonly Lane[] = [
-	{ y: -0.46, len: 1.9, w: 0.111, gap: 1.44 },
-	{ y: -0.22, len: 2.5, w: 0.104, gap: 1.6 },
-	{ y: 0.0, len: 1.8, w: 0.091, gap: 1.28 },
-	{ y: 0.22, len: 2.4, w: 0.104, gap: 1.6 },
-	{ y: 0.46, len: 1.7, w: 0.091, gap: 1.36 }
-];
-const LANES_HOT: readonly Lane[] = [
-	...LANES.map((l) => ({ ...l, len: l.len * 1.25 })),
-	{ y: -0.66, len: 1.8, w: 0.078, gap: 1.44 },
-	{ y: 0.66, len: 1.9, w: 0.078, gap: 1.44 }
-];
-/** The streaks alternate: the season's colour, then pink (gold and rose when powered). */
-const PINK: RGB = [255, 174, 210];
-const PINK_HOT: RGB = [255, 150, 190];
-const GOLD: RGB = [255, 206, 64];
-
 const DESIGN: HeroDesign = {
 	id: 'ms-pacman',
 	calm: CALM,
@@ -298,8 +281,6 @@ const DESIGN: HeroDesign = {
 	grinRun: 0.04,
 	chompRate: 4.8,
 	flare: [255, 214, 236],
-	lanes: LANES,
-	lanesHot: LANES_HOT,
 	death: 'spin'
 };
 
@@ -581,10 +562,16 @@ export class MsPacmanHero extends Hero {
 	}
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
-		if (e.kind === 'streak') {
-			const look = SEASON_LOOKS[this.season];
-			const seasonal = (e.lane ?? 0) % 2 === 0;
-			drawStreak(ctx, e, a, seasonal ? (e.hot ? GOLD : look.line) : e.hot ? PINK_HOT : PINK);
+		const look = SEASON_LOOKS[this.season];
+		if (e.kind === 'puff') {
+			// pink puffs and the season's, alternating; powered: gold cooling to rose
+			if (e.hot) drawPuff(ctx, e, [255, 230, 150], [255, 130, 180]);
+			else if ((e.lane ?? 0) === 0) drawPuff(ctx, e, [255, 232, 242], [255, 150, 196]);
+			else drawPuff(ctx, e, [255, 246, 226], look.line);
+			return;
+		}
+		if (e.kind === 'whoosh') {
+			drawWhoosh(ctx, e, e.hot ? [255, 214, 100] : [255, 232, 244]);
 			return;
 		}
 		if (drawSeasonParticle(ctx, e, a, s, this.season)) return;

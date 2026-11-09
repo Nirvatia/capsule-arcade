@@ -210,16 +210,8 @@ function celDisc(
 	return c;
 }
 
-/**
- * One lane of speed streaks behind a hero, in body radii: how far off his axis, how long a
- * streak is, how wide at its head, and how far he runs between two streaks of the lane.
- */
-export interface Lane {
-	readonly y: number;
-	readonly len: number;
-	readonly w: number;
-	readonly gap: number;
-}
+/** What the trail is made of (a switch for the prototype to compare; both on in the game). */
+export const TRAIL = { puffs: true, whooshes: true };
 
 /** The painted inside of the mouth. */
 export interface MouthInside {
@@ -248,15 +240,22 @@ export interface HeroDesign {
 	readonly hinge?: number;
 	/** The colour of the burst's ring and the last flare of a death. */
 	readonly flare: RGB;
-	/** Speed streaks behind him (calm, and powered): particles left in the world as he runs. */
-	readonly lanes: readonly Lane[];
-	readonly lanesHot: readonly Lane[];
 	/** 'open': the mouth opens all the way round; 'spin': she spins away. */
 	readonly death: 'open' | 'spin';
 }
 
 export type ParticleKind =
-	'ember' | 'star' | 'heart' | 'dust' | 'petal' | 'spark' | 'leaf' | 'flake' | 'streak' | 'none';
+	| 'ember'
+	| 'star'
+	| 'heart'
+	| 'dust'
+	| 'petal'
+	| 'spark'
+	| 'leaf'
+	| 'flake'
+	| 'puff'
+	| 'whoosh'
+	| 'none';
 
 export interface Particle {
 	kind: ParticleKind;
@@ -269,7 +268,7 @@ export interface Particle {
 	size: number;
 	hot: boolean;
 	spin: number;
-	/** A speed streak: its length, its direction (it stays where it was born) and its lane. */
+	/** A trail piece: its direction (it stays where it was born), its size and its variant. */
 	len?: number;
 	ang?: number;
 	lane?: number;
@@ -298,8 +297,9 @@ export abstract class Hero {
 	protected flip = 1;
 	private lastH = 1;
 	protected moving = false;
-	/** Distance run since each streak lane last dropped a streak. */
-	private laneDist: number[] = [];
+	/** Distance run since the last puff and the last whoosh were dropped. */
+	private puffDist = 0;
+	private whooshDist = 0;
 	protected time = 0;
 	protected season: HeroSeason = 'summer';
 	/** The awoken look, 0..1. */
@@ -334,7 +334,8 @@ export abstract class Hero {
 
 	reset(): void {
 		this.embers = [];
-		this.laneDist = [];
+		this.puffDist = 0;
+		this.whooshDist = 0;
 		this.bursts = [];
 		this.power = 0;
 		this.powerOn = false;
@@ -342,9 +343,13 @@ export abstract class Hero {
 		this.resetLooks?.();
 	}
 
+	/** mulberry32: a small seeded generator whose consecutive draws are not correlated. */
 	protected random(): number {
-		this.seed = (this.seed * 16807) % 2147483647;
-		return this.seed / 2147483647;
+		this.seed = (this.seed + 0x6d2b79f5) >>> 0;
+		let t = this.seed;
+		t = Math.imul(t ^ (t >>> 15), t | 1);
+		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 	}
 
 	/** A dot: just a small glow at the lips (the run's chomp already bites). */
@@ -484,22 +489,28 @@ export abstract class Hero {
 				);
 			}
 		}
-		// speed streaks: dropped in the world along the way he runs, each one lying along the
-		// direction he was going when it was dropped, so a turn bends the whole trail
+		// the trail: bold puffs and crescent whooshes dropped in the world along the way he runs,
+		// each lying along the direction he was going at that moment, so a turn bends it
 		if (step < r * 3 && step > r * 0.01) {
 			const hot = this.power > 0.5;
-			const lanes = hot ? this.design.lanesHot : this.design.lanes;
-			while (this.laneDist.length < lanes.length) {
-				this.laneDist.push(this.random() * lanes[this.laneDist.length].gap * r);
-			}
-			lanes.forEach((lane, i) => {
-				this.laneDist[i] += step;
-				const gap = lane.gap * r;
-				while (this.laneDist[i] >= gap) {
-					this.laneDist[i] -= gap;
-					this.spawnStreak(dx / step, dy / step, lane, i, hot);
+			const ux = dx / step;
+			const uy = dy / step;
+			if (TRAIL.puffs) {
+				this.puffDist += step;
+				const gap = r * (hot ? 0.26 : 0.36);
+				while (this.puffDist >= gap) {
+					this.puffDist -= gap;
+					this.spawnPuff(ux, uy, hot);
 				}
-			});
+			}
+			if (TRAIL.whooshes) {
+				this.whooshDist += step;
+				const gap = r * (hot ? 1.3 : 1.7);
+				while (this.whooshDist >= gap) {
+					this.whooshDist -= gap;
+					this.spawnWhoosh(ux, uy, hot);
+				}
+			}
 		}
 		this.tick(dt);
 	}
@@ -520,24 +531,43 @@ export abstract class Hero {
 		this.bursts = this.bursts.filter((b) => b.t < 0.5);
 	}
 
-	private spawnStreak(dx: number, dy: number, lane: Lane, index: number, hot: boolean): void {
+	/** A bold round puff behind him, scattered a little across his back, shrinking as it ages. */
+	private spawnPuff(ux: number, uy: number, hot: boolean): void {
 		const r = this.r;
-		const back = 0.75 * r;
-		const life = (0.3 + this.random() * 0.12) * (hot ? 1.25 : 1);
+		const spread = (this.random() - 0.5) * (hot ? 1.3 : 1.0) * r;
+		const life = (0.2 + this.random() * 0.08) * (hot ? 1.3 : 1);
 		this.embers.push({
-			kind: 'streak',
-			x: this.x - dx * back - dy * lane.y * r,
-			y: this.y - dy * back + dx * lane.y * r,
+			kind: 'puff',
+			x: this.x - ux * r * 0.85 - uy * spread,
+			y: this.y - uy * r * 0.85 + ux * spread,
+			vx: -ux * r * 1.0 - uy * spread * 1.2,
+			vy: -uy * r * 1.0 + ux * spread * 1.2,
+			life,
+			max: life,
+			size: r * (hot ? 0.5 : 0.4) * (0.75 + this.random() * 0.5),
+			hot,
+			spin: 0,
+			lane: this.random() < 0.5 ? 0 : 1
+		});
+	}
+
+	/** A crescent shock-arc peeling off his back, left behind as he runs on. */
+	private spawnWhoosh(ux: number, uy: number, hot: boolean): void {
+		const r = this.r;
+		const life = hot ? 0.24 : 0.2;
+		this.embers.push({
+			kind: 'whoosh',
+			x: this.x - ux * r * 0.05,
+			y: this.y - uy * r * 0.05,
 			vx: 0,
 			vy: 0,
 			life,
 			max: life,
-			size: lane.w * r,
+			size: r,
 			hot,
 			spin: 0,
-			len: lane.len * r * (0.85 + this.random() * 0.3),
-			ang: Math.atan2(dy, dx),
-			lane: index
+			len: r * (1.0 + this.random() * 0.25) * (hot ? 1.2 : 1),
+			ang: Math.atan2(uy, ux)
 		});
 	}
 

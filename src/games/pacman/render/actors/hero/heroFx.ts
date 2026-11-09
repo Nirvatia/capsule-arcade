@@ -2,7 +2,7 @@
 // ink-outlined "ki" flames behind a powered hero and the little star on his highlight. All drawn
 // in code, in the same outlined style; the colours come from the season (`heroSeasons.ts`).
 import type { Particle, ParticleKind } from './Hero';
-import { css } from './Hero';
+import { css, mix } from './Hero';
 import { SEASON_LOOKS } from './heroSeasons';
 import type { HeroSeason, RGB } from './heroSeasons';
 
@@ -40,7 +40,8 @@ export function particleLift(kind: ParticleKind): number {
 			return -0.18;
 		case 'star':
 			return 0.15;
-		case 'streak':
+		case 'puff':
+		case 'whoosh':
 			return 0;
 		default:
 			return 0.6;
@@ -48,31 +49,63 @@ export function particleLift(kind: ParticleKind): number {
 }
 
 /**
- * A speed streak: a thin spike, wide at its head (towards the hero), solid for most of its life
- * and thinning and shrinking at the end. `a` is the shared particle alpha (not used: a streak
- * wants to stay bright while it is short-lived).
+ * A bold round puff of the trail: a flat colour that warms from `young` to `old` as it ages,
+ * an ink outline and a small highlight, shrinking to nothing.
  */
-export function drawStreak(
-	ctx: CanvasRenderingContext2D,
-	e: Particle,
-	_a: number,
-	colour: RGB
-): void {
+export function drawPuff(ctx: CanvasRenderingContext2D, e: Particle, young: RGB, old: RGB): void {
 	const u = e.life / e.max;
-	const fadeIn = Math.min(1, (1 - u) * 12);
-	const fadeOut = Math.min(1, u * 2.4);
-	const len = (e.len ?? 0) * (0.45 + 0.55 * fadeOut);
-	const w = e.size * (0.35 + 0.65 * fadeOut);
+	const rad = e.size * (0.2 + 0.8 * Math.pow(u, 0.7));
+	if (rad < 0.4) return;
+	ctx.save();
+	ctx.globalAlpha = Math.min(1, u * 4);
+	ctx.fillStyle = css(mix(young, old, Math.min(1, (1 - u) * 1.5)));
+	ctx.strokeStyle = css(INK, 0.9);
+	ctx.lineWidth = Math.max(0.8, e.size * 0.16);
+	ctx.beginPath();
+	ctx.arc(e.x, e.y, rad, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.stroke();
+	ctx.fillStyle = 'rgba(255,255,255,0.75)';
+	ctx.beginPath();
+	ctx.ellipse(e.x - rad * 0.3, e.y - rad * 0.32, rad * 0.3, rad * 0.18, -0.6, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.restore();
+}
+
+/**
+ * A shock-arc of the trail: a crescent bulging backwards (tips towards the hero), thickest in
+ * the middle, growing a little and fading, with a thin ink outline.
+ */
+export function drawWhoosh(ctx: CanvasRenderingContext2D, e: Particle, colour: RGB): void {
+	const u = e.life / e.max;
+	const grow = 0.8 + 0.4 * (1 - u);
+	const R = (e.len ?? e.size) * grow;
+	const th = 0.95;
+	const thick = R * 0.5 * (0.4 + 0.6 * u);
+	const n = 14;
 	ctx.save();
 	ctx.translate(e.x, e.y);
 	ctx.rotate(e.ang ?? 0);
-	ctx.fillStyle = css(colour, 0.95 * fadeIn * fadeOut);
+	ctx.globalAlpha = Math.min(1, u * 2.2);
 	ctx.beginPath();
-	ctx.moveTo(len * 0.5, -w / 2);
-	ctx.lineTo(-len * 0.5, 0);
-	ctx.lineTo(len * 0.5, w / 2);
+	for (let i = 0; i <= n; i++) {
+		const t = -1 + (2 * i) / n;
+		const a = Math.PI + t * th;
+		ctx.lineTo(Math.cos(a) * R, Math.sin(a) * R);
+	}
+	for (let i = n; i >= 0; i--) {
+		const t = -1 + (2 * i) / n;
+		const a = Math.PI + t * th;
+		const r = R - thick * (1 - t * t);
+		ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+	}
 	ctx.closePath();
+	ctx.fillStyle = css(colour);
 	ctx.fill();
+	ctx.strokeStyle = css(INK, 0.85);
+	ctx.lineWidth = Math.max(0.8, R * 0.05);
+	ctx.lineJoin = 'round';
+	ctx.stroke();
 	ctx.restore();
 }
 

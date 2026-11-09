@@ -6,14 +6,15 @@
 // orange-red), cracks open ink-outlined "ki" flames behind him (never longer than 1.2 body
 // radii, their length trembling) and puts a star on the highlight. The machinery (acting,
 // bites, spring, energizer beat) is the shared Hero.
-import type { HeroDesign, Lane, MouthInside, Palette, Particle, ParticleKind } from './Hero';
+import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from './Hero';
 import { Hero } from './Hero';
 import { SEASON_LOOKS } from './heroSeasons';
 import {
 	INK,
 	drawKiFlames,
 	drawSeasonParticle,
-	drawStreak,
+	drawPuff,
+	drawWhoosh,
 	drawStarGlint,
 	particleLift,
 	particleSize
@@ -47,21 +48,6 @@ const INSIDE: MouthInside = {
 	tongueLight: [255, 160, 176]
 };
 
-/** Speed streaks: lanes off the axis (length, head width, spacing in body radii). */
-const LANES: readonly Lane[] = [
-	{ y: -0.52, len: 1.9, w: 0.098, gap: 1.44 },
-	{ y: -0.2, len: 2.6, w: 0.085, gap: 1.76 },
-	{ y: 0.04, len: 1.7, w: 0.072, gap: 1.28 },
-	{ y: 0.22, len: 2.3, w: 0.091, gap: 1.6 },
-	{ y: 0.46, len: 1.5, w: 0.072, gap: 1.36 }
-];
-/** Powered: longer streaks and two more lanes, higher and lower. */
-const LANES_HOT: readonly Lane[] = [
-	...LANES.map((l) => ({ ...l, len: l.len * 1.25 })),
-	{ y: -0.7, len: 1.8, w: 0.065, gap: 1.44 },
-	{ y: 0.64, len: 1.9, w: 0.065, gap: 1.44 }
-];
-
 const DESIGN: HeroDesign = {
 	id: 'pacman',
 	calm: CALM,
@@ -74,8 +60,6 @@ const DESIGN: HeroDesign = {
 	grinRun: 0.08,
 	chompRate: 4.2,
 	flare: [255, 232, 170],
-	lanes: LANES,
-	lanesHot: LANES_HOT,
 	death: 'open'
 };
 
@@ -114,9 +98,15 @@ export class PacmanHero extends Hero {
 	}
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
-		if (e.kind === 'streak') {
-			const look = SEASON_LOOKS[this.season];
-			drawStreak(ctx, e, a, e.hot ? look.lineHot : look.line);
+		const look = SEASON_LOOKS[this.season];
+		if (e.kind === 'puff') {
+			// cream warming to the season's colour; powered: yellow-white cooling to orange
+			if (e.hot) drawPuff(ctx, e, [255, 244, 190], [255, 140, 40]);
+			else drawPuff(ctx, e, [255, 246, 226], look.line);
+			return;
+		}
+		if (e.kind === 'whoosh') {
+			drawWhoosh(ctx, e, e.hot ? [255, 214, 90] : look.lineHot);
 			return;
 		}
 		drawSeasonParticle(ctx, e, a, s, this.season);
