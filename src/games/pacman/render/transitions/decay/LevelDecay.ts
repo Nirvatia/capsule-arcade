@@ -1,14 +1,15 @@
 import type { GridMatrix } from '../../../config/gridConfig';
-import { canvasContext, glowTexture, makeCanvas } from '../../common/textures';
+import { rgba } from '../../common/color';
+import { canvasContext, makeCanvas } from '../../common/textures';
 import type { GridLayout } from '../../maze/GridView';
 import { DecayPass } from './DecayPass';
 import type { DecayPalette } from './DecayPass';
 import { computeDecayField, packDecayFields, sampleDecayField } from './decayField';
 import type { DecayField } from './decayField';
-import { decayFronts, DECAY_BAND } from './decayTimeline';
+import { decayFronts, farCorner } from './decayTimeline';
 import type { DebugFront } from '../../debug/DebugOverlayView';
 
-/** World units per tile inside the shader (shard cells are half a tile). */
+/** World units per tile inside the shader. */
 const TILE_WORLD = 24;
 /** The pass runs at most at this pixel ratio; it is upscaled on composite. */
 const MAX_PASS_RATIO = 1.5;
@@ -47,25 +48,16 @@ export interface DecayRequest {
 	readonly palette: DecayPalette;
 }
 
-interface Dust {
-	x: number;
-	y: number;
-	vx: number;
-	vy: number;
-	life: number;
-	max: number;
-	s: number;
-}
-
 /**
- * The level falling apart around the death point, then reassembling from the respawn
- * point. Usage per frame while dying: draw the world into `begin()`'s context, then
- * `compose()` onto the screen. Without WebGL2 a dark veil stands in for the shader.
+ * The death transition: the level drains of colour round the death point, falls into a
+ * black hole there, and unfolds again from the respawn point. Usage per frame while
+ * dying: draw the world into `begin()`'s context, then `compose()` onto the screen.
+ * Without WebGL2 a dark veil stands in for the shader.
  */
 export class LevelDecay {
 	private debugFrontValue: DebugFront | null = null;
 
-	/** The front being drawn now (dev overlay): the shatter, or the rebuild once it runs. */
+	/** The front being drawn now (dev overlay): the drain, or the colour front once it runs. */
 	get debugFront(): DebugFront | null {
 		return this.debugFrontValue;
 	}
@@ -79,8 +71,6 @@ export class LevelDecay {
 	private viewKey = '';
 	private frontEnd = 1;
 	private rebuildEnd = 1;
-	private readonly dust: Dust[] = [];
-	private lastElapsed = 0;
 
 	/** Camera shake for the first moments of the death, css px. */
 	shake(elapsed: number): { x: number; y: number } {
@@ -105,8 +95,8 @@ export class LevelDecay {
 	}
 
 	/**
-	 * Draws the decayed level onto `ctx` (css px transform), then ice dust and the death
-	 * flash. `layout` is where the board was drawn, `shake` the offset it was drawn with.
+	 * Draws the transition onto `ctx` (css px transform), then the death flash. `layout` is
+	 * where the board was drawn, `shake` the offset it was drawn with.
 	 */
 	compose(
 		ctx: CanvasRenderingContext2D,
@@ -130,11 +120,9 @@ export class LevelDecay {
 		}
 		const fronts = decayFronts(request.elapsed, this.frontEnd, this.rebuildEnd);
 		this.debugFrontValue =
-			fronts.rebuild > -50 && this.respawn
-				? { field: this.respawn, front: fronts.rebuild }
-				: this.death
-					? { field: this.death, front: fronts.front }
-					: null;
+			fronts.phase === 2 && this.respawn
+				? { field: this.respawn, front: fronts.color }
+				: { field: death, front: fronts.drain };
 		if (this.pass === undefined) {
 			this.pass = DecayPass.create();
 			if (this.pass) {
@@ -146,19 +134,35 @@ export class LevelDecay {
 		ctx.globalCompositeOperation = 'source-over';
 		if (this.pass) {
 			const ratio = Math.min(pixelRatio, MAX_PASS_RATIO);
+			const ts = layout.tileSize;
+			const ox = layout.offsetX + shake.x;
+			const oy = layout.offsetY + shake.y;
 			this.pass.render(scene, Math.round(width * ratio), Math.round(height * ratio), {
 				width,
 				height,
-				originX: layout.offsetX + shake.x,
-				originY: layout.offsetY + shake.y,
-				worldScale: layout.tileSize / TILE_WORLD,
+				originX: ox,
+				originY: oy,
+				worldScale: ts / TILE_WORLD,
 				tileWorld: TILE_WORLD,
-				front: fronts.front,
-				rebuild: fronts.rebuild,
+				front: fronts.drain,
+				rebuild: fronts.color,
 				shock: fronts.shock,
 				time,
 				epicX: request.deathX,
 				epicY: request.deathY,
+				spawnX: request.spawnX + 0.5,
+				spawnY: request.spawnY + 0.5,
+				collapse: fronts.collapse,
+				bloom: fronts.bloom,
+				reachDeath: farCorner(ox + request.deathX * ts, oy + request.deathY * ts, width, height),
+				reachSpawn: farCorner(
+					ox + (request.spawnX + 0.5) * ts,
+					oy + (request.spawnY + 0.5) * ts,
+					width,
+					height
+				),
+				phase: fronts.phase,
+				flash: fronts.flash,
 				palette: request.palette
 			});
 			ctx.drawImage(this.pass.canvas, 0, 0, width, height);
@@ -168,11 +172,9 @@ export class LevelDecay {
 			ctx.fillStyle = '#050a17';
 			ctx.fillRect(0, 0, width, height);
 		}
-		this.drawDust(ctx, width, height, layout, shake, request, fronts.front, fronts.rebuild);
 		if (request.elapsed < FLASH_TIME) {
 			ctx.globalCompositeOperation = 'lighter';
-			ctx.globalAlpha = 0.35 * (1 - request.elapsed / FLASH_TIME);
-			ctx.fillStyle = '#bfe6ff';
+			ctx.fillStyle = rgba(request.palette.ice, 0.35 * (1 - request.elapsed / FLASH_TIME));
 			ctx.fillRect(0, 0, width, height);
 		}
 		ctx.restore();
@@ -189,7 +191,6 @@ export class LevelDecay {
 		this.respawn = computeDecayField(request.grid, request.spawnX, request.spawnY);
 		this.fieldKey = key;
 		this.viewKey = '';
-		this.dust.length = 0;
 		if (this.pass) {
 			this.uploadFields();
 		}
@@ -232,88 +233,5 @@ export class LevelDecay {
 		this.frontEnd = a + 2;
 		this.rebuildEnd = b + 2;
 		this.viewKey = key;
-	}
-
-	/** Ice dust thrown up where the front is tearing the level apart. */
-	private drawDust(
-		ctx: CanvasRenderingContext2D,
-		width: number,
-		height: number,
-		layout: GridLayout,
-		shake: { x: number; y: number },
-		request: DecayRequest,
-		front: number,
-		rebuild: number
-	): void {
-		const death = this.death;
-		if (!death) {
-			return;
-		}
-		if (request.elapsed < this.lastElapsed) {
-			// a new death: the old dust belongs to the previous one
-			this.dust.length = 0;
-		}
-		// zero while paused, so the dust freezes with the rest of the frame
-		const dt = Math.min(0.1, Math.max(0, request.elapsed - this.lastElapsed));
-		this.lastElapsed = request.elapsed;
-		const ts = layout.tileSize;
-		if (front > -50 && rebuild < -50 && dt > 0) {
-			const w = width / ts;
-			const h = height / ts;
-			const x0 = -layout.offsetX / ts;
-			const y0 = -layout.offsetY / ts;
-			const tries = Math.round(900 * dt);
-			for (let i = 0; i < tries && this.dust.length < 700; i++) {
-				const tx = x0 + Math.random() * w;
-				const ty = y0 + Math.random() * h;
-				const a = Math.min(1, Math.max(0, (front - sampleDecayField(death, tx, ty)) / DECAY_BAND));
-				if (a < 0.25 || a > 0.6) {
-					continue;
-				}
-				let ax = tx - request.deathX;
-				let ay = ty - request.deathY;
-				const l = Math.hypot(ax, ay) || 1;
-				ax /= l;
-				ay /= l;
-				const sp = 0.6 + Math.random() * 1.6;
-				this.dust.push({
-					x: tx,
-					y: ty,
-					vx: ax * sp + (Math.random() - 0.5) * 1.2,
-					vy: ay * sp + (Math.random() - 0.5) * 1.2 - 0.6,
-					life: 0,
-					max: 0.8 + Math.random() * 0.9,
-					s: (2 + Math.random() * 4) / TILE_WORLD
-				});
-			}
-		}
-		if (rebuild > -50) {
-			this.dust.length = 0;
-			return;
-		}
-		const glow = glowTexture(request.palette.ice);
-		ctx.globalCompositeOperation = 'lighter';
-		for (let i = this.dust.length - 1; i >= 0; i--) {
-			const p = this.dust[i];
-			p.life += dt;
-			if (p.life >= p.max) {
-				this.dust.splice(i, 1);
-				continue;
-			}
-			p.x += p.vx * dt;
-			p.y += p.vy * dt;
-			p.vx *= 0.985;
-			p.vy *= 0.985;
-			const u = p.life / p.max;
-			const size = p.s * ts * (1 - u * 0.5);
-			ctx.globalAlpha = (1 - u) * 0.9;
-			ctx.drawImage(
-				glow,
-				layout.offsetX + shake.x + p.x * ts - size / 2,
-				layout.offsetY + shake.y + p.y * ts - size / 2,
-				size,
-				size
-			);
-		}
 	}
 }

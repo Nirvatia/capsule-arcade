@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { GridMatrix, TileType } from '../../../config/gridConfig';
 import { GRID_CLASSIC } from '../../../config/mazes';
 import { computeDecayField, DECAY_MARGIN, packDecayFields, sampleDecayField } from './decayField';
-import { decayFronts, FRONT_OFF, REBUILD_BAND } from './decayTimeline';
+import { COLOR_BAND, DRAIN_BAND, decayFronts, farCorner, FRONT_OFF } from './decayTimeline';
 import { FLOW } from '../../../config/flowConfig';
 
 /** Rows of two-letter tokens separated by spaces. */
@@ -68,25 +68,73 @@ describe('decay field', () => {
 
 describe('decay timeline', () => {
 	const { shatter, void: hold, rebuild } = FLOW.death;
+	const start = shatter + hold;
 
-	it('starts with the shock ring and no rebuild', () => {
+	it('starts with the world intact and nothing drained', () => {
 		const f = decayFronts(0, 40, 30);
-		expect(f.shock).toBe(0);
-		expect(f.rebuild).toBe(FRONT_OFF);
-		expect(f.front).toBeLessThan(0);
+		expect(f.phase).toBe(0);
+		expect(f.collapse).toBe(0);
+		expect(f.bloom).toBe(1);
+		expect(f.color).toBe(FRONT_OFF);
+		expect(f.drain).toBeLessThan(0);
 	});
 
-	it('sweeps past the farthest point by the end of the shatter phase', () => {
-		expect(decayFronts(shatter - 0.001, 40, 30).front).toBeGreaterThan(40);
-		expect(decayFronts(shatter + hold / 2, 40, 30).cover).toBe(1);
+	it('drains the whole view while the world only starts to fall in', () => {
+		const f = decayFronts(1.2, 40, 30);
+		expect(f.drain).toBeGreaterThan(40 + DRAIN_BAND);
+		expect(f.collapse).toBeGreaterThan(0);
+		expect(f.collapse).toBeLessThan(0.1);
+		expect(decayFronts(0.99, 40, 30).collapse).toBe(0);
 	});
 
-	it('rebuilds from the respawn point and ends fully restored', () => {
-		const mid = decayFronts(shatter + hold + rebuild / 2, 40, 30);
-		expect(mid.rebuild).toBeGreaterThan(0);
-		expect(mid.rebuild).toBeLessThan(30 + REBUILD_BAND + 6);
-		const end = decayFronts(shatter + hold + rebuild, 40, 30);
-		expect(end.rebuild).toBeGreaterThan(1000);
+	it('falls into the hole during the shatter phase and never goes back', () => {
+		let last = 0;
+		for (let t = 1; t <= shatter; t += 0.05) {
+			const k = decayFronts(t, 40, 30).collapse;
+			expect(k).toBeGreaterThanOrEqual(last);
+			last = k;
+		}
+		expect(decayFronts(shatter - 0.001, 40, 30).collapse).toBeCloseTo(1, 2);
+	});
+
+	it('flashes and sends the shock right after the world is gone, then shows the void', () => {
+		const peak = decayFronts(shatter + 0.08, 40, 30);
+		expect(peak.flash).toBeCloseTo(1, 5);
+		expect(peak.shock).toBeGreaterThanOrEqual(0);
+		expect(decayFronts(shatter + hold / 2, 40, 30).phase).toBe(1);
+		expect(decayFronts(shatter + hold / 2, 40, 30).cover).toBeGreaterThan(0.99);
+		expect(decayFronts(0.5, 40, 30).shock).toBe(-1);
+	});
+
+	it('unfolds the next picture from the respawn point and ends fully restored', () => {
+		const first = decayFronts(start + 0.01, 40, 30);
+		expect(first.phase).toBe(2);
+		expect(first.bloom).toBeGreaterThan(0.95);
+		expect(first.color).toBe(FRONT_OFF);
+		const mid = decayFronts(start + rebuild / 2, 40, 30);
+		expect(mid.bloom).toBeLessThan(first.bloom);
+		expect(mid.color).toBeGreaterThan(0);
+		expect(mid.color).toBeLessThan(30 + COLOR_BAND + 6);
+		const end = decayFronts(start + rebuild, 40, 30);
+		expect(end.bloom).toBe(0);
+		expect(end.color).toBeGreaterThan(1000);
 		expect(end.cover).toBe(0);
+	});
+
+	it('takes four seconds in all', () => {
+		expect(shatter + hold + rebuild).toBeCloseTo(4, 5);
+	});
+
+	it("holds the hero's own death inside the shatter phase", () => {
+		// the hero's dying move, burst and last flare take 1.75 s (`Hero.DEATH_END`)
+		expect(shatter).toBeGreaterThanOrEqual(1.75);
+	});
+});
+
+describe('farCorner', () => {
+	it('is the distance to the farthest corner, a little over', () => {
+		expect(farCorner(0, 0, 300, 400)).toBeCloseTo(500 * 1.03, 5);
+		expect(farCorner(150, 200, 300, 400)).toBeCloseTo(250 * 1.03, 5);
+		expect(farCorner(300, 400, 300, 400)).toBeCloseTo(500 * 1.03, 5);
 	});
 });

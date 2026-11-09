@@ -8,13 +8,15 @@ export const FLOW = {
 	/** READY after a death or a level change. */
 	readyShort: 2,
 	/**
-	 * Death: the level shatters from the death point, hangs over the abyss, then
-	 * reassembles from the respawn point. Pac-Man's own death plays inside `shatter`.
+	 * Death, a black hole: the colour drains from the death point and the level falls into
+	 * it (`shatter`; Pac-Man's own death, 1.75 s, plays inside it), the singularity flashes
+	 * over the dark (`void`), and the level unfolds again from the respawn point, its colour
+	 * returning along the corridors (`rebuild`). 4 s in all.
 	 */
 	death: {
-		shatter: 2.6,
-		void: 0.5,
-		rebuild: 1.9
+		shatter: 1.9,
+		void: 0.45,
+		rebuild: 1.65
 	},
 	/**
 	 * Level clear: the season turns. Beads of light run down the corridors (`lights`, and
