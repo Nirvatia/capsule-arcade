@@ -135,8 +135,30 @@ last of all (see Later). Part I is next, starting with step 1.
    4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`); the teleport effect;
       the teleporters' own art (`MeadowBake` portal + `MeadowWorld`), bulky today though
       the spiral works.
-   5. **Death decay**: the background under the shards looks odd (a nebula plus square
-      dots reads random); rework the abyss (`render/transitions/decay/decayShader.ts`).
+
+6. **One death transition for every world** (Opus; design page first, then a prototype the
+   owner approves). Today's decay works on the level's picture, but it only knows "from":
+   the abyss (a nebula plus square dots) reads random, and losing the hell's fight is a
+   plain fade, so there is no seam from a boss level back to a season. The level clear
+   (`SeasonTurn`) stays as it is.
+   1. **The contract.** One transition pass takes the old frame and the next frame (both
+      offscreen textures), an origin, a progress and a style: `(from, to, origin, progress,
+      style)`. Any pair works the same way: a death on a season level (`to` is the same
+      level, from the respawn), losing the hell's fight (`to` is the next level), boss →
+      season, season → boss. A world only supplies a `style` (palette, particle colour); it
+      never writes its own death. The pass reuses the death field (`decayField`) and fronts
+      (`decayTimeline`).
+   2. **The look (owner's pick, idea 1: drain and rebirth).** The colour drains out of the
+      world in a wave from the death point (a grey, withering look that needs no leaves or
+      snow, so it fits the hell and the neon grid); the world collapses into a point on the
+      hero; a ring then spreads from the respawn point and uncovers the next frame. Open
+      points for the design page: the climax in the middle (what the collapse looks like),
+      the hero's own death burst in the heroes' ki-flame style (drawn with the heroes, step 2),
+      timings in `FLOW.death`, and the style fields.
+   3. The hell's lost fight (the abyss) uses the same pass instead of the fade, and the
+      boss levels of part II take it by adding their `style`.
+   4. Tests: the fronts and the field for any `from` / `to` pair; the no-WebGL fallback
+      still covers the screen; the `decay.test.ts` cases carry over.
 
 ## Part II. Boss levels
 
@@ -164,7 +186,7 @@ last of all (see Later). Part I is next, starting with step 1.
 3. **Each new boss world** (Opus for the design, Sonnet for the steps): still Pac-Man in
    a maze, with a different boss, a different mechanic and a different way to play, never
    a reskin of the hell's fight. Like the hell: `*Bake` + `*World` + a level renderer with
-   `preview()`, a decay palette, a season-turn style (`RenderPipeline.turnStyle`). Each
+   `preview()`, a death `style` for the universal transition (part I, step 6) and a season-turn style (`RenderPipeline.turnStyle`). Each
    starts with a one-page design (boss, mechanic, rules, how it differs from the others)
    that the owner approves before code; mechanics on placeholder art first, then the art,
    all in code. Its interface is part III.
@@ -289,7 +311,7 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   outlined item style (a fat diagonal crescent, brown stem and tip), 2000 points, Ms.
   Pac-Man's level-7 fruit; shown in the `collectibles` prototype.
 - Plan v4 (eighth chat): the plan split into part I (the main game: mazes, heroes,
-  mechanics, sound, season art), part II (boss levels: the hell first, then a random boss
+  mechanics, sound, season art, one death transition), part II (boss levels: the hell first, then a random boss
   per 5th level, then new worlds) and part III (the interface). The owner's `grid_01` …
   `grid_04` (plus `grid_doom`, `grid_tron`) are in `config/mazes/`; boss levels do not count
   in the maze cycle. All graphics are code-drawn: the PNG sprite pipeline (old stage 7) and

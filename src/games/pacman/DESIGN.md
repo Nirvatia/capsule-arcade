@@ -200,7 +200,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 
 | Element                                                         | State                                                        |
 | --------------------------------------------------------------- | ------------------------------------------------------------ |
-| Seasons (world, food, weather, night), season turn, death decay | final; decay background to rework (part I, 5.5)                     |
+| Seasons (world, food, weather, night), season turn, death decay | final; death to be replaced by one transition (part I, 6)                     |
 | Hell world, Blinky lord of hell, imps, weapons                  | final; phase-3 lighting and corrupted tiles to rework (part II, 1.1–1.2) |
 | Arcade                                                          | final (keeps its own pixel HUD)                              |
 | HUD and screens                                                 | final; to be replaced (part III)                              |
