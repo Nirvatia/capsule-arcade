@@ -391,7 +391,7 @@ export interface HeroDesign {
 	readonly cel?: boolean;
 	/** The glow spilling out at the lips (none: null), the aura of the powered look, flares. */
 	readonly spill: RGB | null;
-	readonly aura: RGB;
+	readonly aura: RGB | null;
 	readonly flare: RGB;
 	readonly trailCalm: readonly RibbonLayer[];
 	readonly trailAwoken: readonly RibbonLayer[];
@@ -416,7 +416,8 @@ export interface Vec3 {
 /** The ways a hero can be drawn: the painted 2D look or the CG render. */
 export type HeroStyle = 'painted' | 'cg';
 
-export type ParticleKind = 'ember' | 'star' | 'heart' | 'none';
+export type ParticleKind =
+	'ember' | 'star' | 'heart' | 'dust' | 'petal' | 'spark' | 'leaf' | 'flake' | 'none';
 
 export interface Particle {
 	kind: ParticleKind;
@@ -467,6 +468,8 @@ export abstract class Hero {
 	protected flip = 1;
 	private lastH = 1;
 	protected moving = false;
+	/** 0..1: how fast he runs, eased (the speed lines and what streams behind him). */
+	protected run = 0;
 	protected time = 0;
 	protected season: HeroSeason = 'summer';
 	/** The awoken look, 0..1. */
@@ -550,6 +553,7 @@ export abstract class Hero {
 				}
 			}
 			this.trail.shrink(this.r * 10 * dt);
+			this.run = Math.max(0, this.run - dt * 6);
 			this.size.step(1, dt);
 			this.flash = Math.max(0, this.flash - dt / 0.3);
 			this.tick(dt);
@@ -567,6 +571,7 @@ export abstract class Hero {
 		if (turn > 0.6) this.onTurn?.();
 		this.angle = s.angle;
 		this.moving = s.moving;
+		this.run += ((s.moving ? 1 : 0) - this.run) * Math.min(1, dt * 10);
 		this.ending = s.ending;
 		if (Math.abs(Math.cos(s.angle)) > 0.5) this.lastH = Math.cos(s.angle) > 0 ? 1 : -1;
 		const vertical = Math.abs(Math.sin(s.angle)) > 0.5;
@@ -665,7 +670,7 @@ export abstract class Hero {
 			e.y += e.vy * dt;
 			const drag = Math.pow(0.9, dt * 60);
 			e.vx *= drag;
-			e.vy = e.vy * drag - r * 0.8 * dt;
+			e.vy = e.vy * drag - r * (this.liftFor?.(e.kind) ?? 0.8) * dt;
 		}
 		this.embers = this.embers.filter((e) => e.life > 0);
 		for (const b of this.bursts) b.t += dt;
@@ -693,7 +698,7 @@ export abstract class Hero {
 			vy: Math.sin(angle) * speed * r,
 			life,
 			max: life,
-			size: r * (0.06 + this.random() * 0.06),
+			size: r * (0.06 + this.random() * 0.06) * (this.sizeFor?.(kind) ?? 1),
 			hot
 		});
 	}
@@ -739,7 +744,7 @@ export abstract class Hero {
 			if (k < 1) {
 				const gs = r * (1.2 + 2.2 * easeOut(k));
 				ctx.globalCompositeOperation = 'lighter';
-				ctx.globalAlpha = 1 - k;
+				ctx.globalAlpha = (1 - k) * (D.cel ? 0.5 : 1);
 				ctx.drawImage(glow(D.flare), this.x - gs, this.y - gs, gs * 2, gs * 2);
 				ctx.globalAlpha = 1;
 				ctx.globalCompositeOperation = 'source-over';
@@ -753,10 +758,13 @@ export abstract class Hero {
 		let grin = this.moving ? D.grinRun : D.grinRest;
 		let S = 1 + 0.07 * p;
 		let spin = 0;
+		// the mouth's cavity goes first when he is caught, before the body opens round it
+		let insideK = 1;
 		if (d >= 0) {
 			const k = clamp01((d - DEATH_OPEN) / (DEATH_POP - DEATH_OPEN));
 			const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
 			grin = 0;
+			insideK = clamp01(1 - k * 2.5);
 			if (D.death === 'open') {
 				// the mouth opens all the way round as he shrinks
 				m = 0.3 + (Math.PI - 0.3) * e;
@@ -782,11 +790,12 @@ export abstract class Hero {
 		ctx.scale(this.size.value * S, this.size.value * S * this.flip);
 		const R = r;
 
-		// behind: what the powered look carries behind it, then its aura
+		// behind: the speed lines, what the powered look carries behind it, then its aura
+		this.drawStreaks?.(ctx, R, this.run, p);
 		if (p > 0.01) this.drawBehind?.(ctx, R, p * pulse);
 		const charge = this.transform >= 0 && this.transform < CHARGE ? this.transform / CHARGE : 0;
 		const aura = Math.max(p * 0.55 * pulse, charge * 0.8);
-		if (aura > 0.01) {
+		if (D.aura && aura > 0.01) {
 			ctx.globalCompositeOperation = 'lighter';
 			ctx.globalAlpha = aura;
 			ctx.drawImage(glow(D.aura), -R * 2.1, -R * 2.1, R * 4.2, R * 4.2);
@@ -798,7 +807,7 @@ export abstract class Hero {
 		// a tongue, or the core of light of the painted look
 		const coreA = Math.min(1, clamp01(open * 1.4) * (0.85 + 0.15 * p) + charge * 0.6);
 		if (D.inside) {
-			this.drawInside(ctx, R, D.inside, mu, md, R * 0.09 * clamp01(m * 2.5), open);
+			this.drawInside(ctx, R, D.inside, mu, md, R * 0.09 * clamp01(m * 2.5), open, insideK);
 		} else if (D.core && coreA > 0.01) {
 			ctx.globalAlpha = coreA;
 			ctx.drawImage(D.core(), R * 0.1 - R * 0.92, -R * 0.92, R * 1.84, R * 1.84);
@@ -869,6 +878,11 @@ export abstract class Hero {
 	}
 
 	// ── hooks: what each hero adds ──
+	/** Frame space, behind the body, always: the speed lines (`run` 0..1, `p` the powered look). */
+	protected drawStreaks?(ctx: CanvasRenderingContext2D, R: number, run: number, p: number): void;
+	/** How big and how fast-rising a particle kind is (1 and 0.8 if not given). */
+	protected sizeFor?(kind: ParticleKind): number;
+	protected liftFor?(kind: ParticleKind): number;
 	/** Frame space, behind the body, while powered (k = look × the end-of-power pulse). */
 	protected drawBehind?(ctx: CanvasRenderingContext2D, R: number, k: number): void;
 	/** Inside the body (the scratch canvas, source-atop): veins, blush, marks. */
@@ -974,13 +988,15 @@ export abstract class Hero {
 		mu: number,
 		md: number,
 		bend: number,
-		open: number
+		open: number,
+		alpha: number
 	): void {
-		if (mu + md < 0.12) return;
+		if (mu + md < 0.12 || alpha <= 0.01) return;
 		const A = { x: (this.design.hinge ?? -0.1) * R, y: 0 };
 		const U = { x: Math.cos(mu) * R, y: -Math.sin(mu) * R };
 		const Dn = { x: Math.cos(md) * R, y: Math.sin(md) * R };
 		ctx.save();
+		ctx.globalAlpha = alpha;
 		// the cavity is a rounded pocket behind the hinge; the rest of the wedge is open
 		ctx.beginPath();
 		ctx.arc(A.x + R * 0.36, 0, R * 0.5, 0, Math.PI * 2);

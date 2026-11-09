@@ -151,8 +151,11 @@ function frame(realDt: number): void {
 	const zoomStrip = { x: sx, y: 16, w: sw, h: Math.min(S * 3 * ZOOM, (vh - 112) * 0.62) };
 	const smallStrip = { x: sx, y: zoomStrip.y + zoomStrip.h + 16, w: sw, h: S * 3 };
 
+	// the big hero runs across the panel and wraps round, so his trail and particles show
+	const bigSpan = panel.w * 0.5;
+	const bigX = panel.x + panel.w * 0.3 + (moving ? ((phase * panel.w * 0.28) % bigSpan) : bigSpan * 0.5);
 	big.update(dt, {
-		x: panel.x + panel.w * 0.55,
+		x: bigX,
 		y: panel.y + panel.h * 0.52,
 		angle: 0,
 		moving,
