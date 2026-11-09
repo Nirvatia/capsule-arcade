@@ -193,6 +193,21 @@ export class FruitService {
 		return null;
 	}
 
+	/** A clone of the echo riot passes at (x, y): it eats the fruit there, if any. */
+	eatAt(x: number, y: number): boolean {
+		if (!this.activeKindValue) {
+			return false;
+		}
+		const fruitPosition = this.position;
+		const dx = x - fruitPosition.x;
+		const dy = y - fruitPosition.y;
+		if (dx * dx + dy * dy > ACTOR_CONTACT_DISTANCE_SQ) {
+			return false;
+		}
+		this.collect();
+		return true;
+	}
+
 	private collect(): void {
 		const kind = this.activeKindValue;
 		if (!kind) {

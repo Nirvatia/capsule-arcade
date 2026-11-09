@@ -14,7 +14,8 @@ engine/      EventBus, GameLoop, TimeControl
 config/      gridConfig (tile tokens, level constants), mazes/ (one file per maze, one
              string per row, checked by parseMaze; `grid_01`–`grid_04` the season mazes,
              `classic01` the secret level's, `doom` the hell's; validateMaze), scores, actor contact distance,
-             flowConfig (every flow duration), arcadeConfig (the secret level's rounds)
+             flowConfig (every flow duration), arcadeConfig (the secret level's rounds),
+             echoConfig (the echo bonus)
 logic/
   level/     LevelLoader (the run: level number, profile, secret / hell routing, arcade
              round and tries, carry-over), LevelSession (all services of one level, built
@@ -154,6 +155,8 @@ still takes it (`LATE_TURN`). Tests: `logic/actors/playerControl.test.ts`.
   egg order, banished ghosts frozen, nothing outside level 7.
 - `logic/level/arcade.test.ts` — tries, rounds, intermission, restart, ghost characters.
 - `config/mazes/mazes.test.ts` — the validator and every maze file.
+- `logic/bonuses/echoClone.test.ts` — the echo: the chance and the window, the token, 7-9 clones for
+  2-3 s, dots and fruit eaten, energizers left, active ghosts kill a clone, the end.
 - `render/actors/hero/heroTrail.test.ts` — the heroes' season table and trail.
 - `logic/level/mazeCycle.test.ts` — the maze order, the season levels without the boss
   levels.

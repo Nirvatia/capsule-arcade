@@ -39,8 +39,8 @@ export class SharedLayers {
 		}
 
 		const echo = level.echo;
-		if (echo && (echo.phase === 'token' || echo.phase === 'clone')) {
-			this.echoCloneView.draw(ctx, echo, layout);
+		if (echo && (echo.phase === 'token' || echo.phase === 'riot')) {
+			this.echoCloneView.draw(ctx, echo, layout, frame.time, frame.level.profile);
 		}
 
 		const reward = level.bossReward;

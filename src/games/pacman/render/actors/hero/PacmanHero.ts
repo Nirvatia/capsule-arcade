@@ -49,7 +49,7 @@ const INSIDE: MouthInside = {
 	tongueLight: [255, 160, 176]
 };
 
-const DESIGN: HeroDesign = {
+export const PACMAN_DESIGN: HeroDesign = {
 	id: 'pacman',
 	calm: CALM,
 	awoken: AWOKEN,
@@ -65,7 +65,7 @@ const DESIGN: HeroDesign = {
 };
 
 export class PacmanHero extends Hero {
-	protected readonly design = DESIGN;
+	protected readonly design: HeroDesign = PACMAN_DESIGN;
 
 	/** Ink-outlined ki flames around the back of the body: orange, a yellow core, at most 1.2 R. */
 	protected drawBehind(ctx: CanvasRenderingContext2D, R: number, k: number): void {

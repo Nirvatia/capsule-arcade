@@ -82,6 +82,8 @@ export type PacmanFx =
 	| { kind: 'fruit'; x: number; y: number; points: number }
 	| { kind: 'egg'; x: number; y: number; points: number }
 	| { kind: 'extra-life'; x: number; y: number }
+	/** A clone of the echo riot was caught by a ghost. */
+	| { kind: 'echo-pop'; x: number; y: number }
 	/** A ghost brushed past Pac-Man and he got away: from the ghost (gx, gy) to him. */
 	| { kind: 'near-miss'; x: number; y: number; gx: number; gy: number; ghost: GhostKind };
 

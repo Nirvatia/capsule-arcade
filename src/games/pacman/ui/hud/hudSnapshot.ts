@@ -79,8 +79,8 @@ export function buildHudSnapshot(
 	let timer: HudTimer | null = null;
 	const echo = level.echo;
 	const hypnosis = level.hypnosis;
-	if (echo && echo.phase === 'clone') {
-		timer = { kind: 'echo', remaining: echo.timer, duration: Math.max(echo.timer, 8) };
+	if (echo && echo.phase === 'riot') {
+		timer = { kind: 'echo', remaining: echo.timer, duration: Math.max(echo.timer, echo.duration) };
 	} else if (hypnosis?.overdriveActive) {
 		timer = { kind: 'overdrive', remaining: hypnosis.overdriveTimer, duration: 5 };
 	} else if (combat?.isPowerActive) {

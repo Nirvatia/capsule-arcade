@@ -244,6 +244,11 @@ export class DebugController {
 		this.loader.echo?.debugSpawn();
 	}
 
+	/** Sets off the echo riot at the hero's tile. */
+	echoRiot(): void {
+		this.loader.debugEchoRiot();
+	}
+
 	/** Respawns every hell pickup at once. */
 	spawnPickups(): void {
 		this.loader.doom?.debugSpawn();

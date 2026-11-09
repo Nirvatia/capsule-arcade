@@ -49,7 +49,7 @@ export class PlayingState implements GameState {
 		// the arcade is plain Pac-Man: no Easter egg, no echo
 		if (!ctx.level.secretMode) {
 			egg.update(dt, player);
-			echo.update(dt, player);
+			echo.update(dt, player, { ghosts, fruit });
 		}
 		if (egg.consumeSecretRequested()) {
 			ctx.director.changeLevel(() => ctx.level.enterSecretLevel());

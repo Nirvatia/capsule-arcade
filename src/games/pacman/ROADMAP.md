@@ -50,10 +50,7 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
    Pac-Man until part II, step 1.4 (berserk, BFG).
 
 3. **Mechanics and balance** (Sonnet; Opus for the hypnosis design).
-   1. **Echo clone mechanic** (`logic/bonuses/EchoCloneService.ts`): a rare bonus that
-      spawns at a random place and sets off a riot of 7–9 Pac-Man clones for 2–3 s that
-      eat everything they find (dots, fruit) and die on contact with ghosts. Today's
-      `EchoCloneView` look stays until step 5.
+   1. ~~**Echo clone mechanic**~~ Done (see Done, "Part I, 3.1").
    2. **Hypnosis for Ms. Pac-Man, two modes** (owner's design;
       `logic/rules/HypnosisService.ts`, `logic/actors/ghostTargets.ts`). Today the
       hypnotised ghost heads for the dot nearest _in a straight line_
@@ -334,3 +331,15 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   - Tests: `hero/heroTrail.test.ts` (the season table, the trail is shed only while running,
     bends with a turn, is not dropped across a teleport, the season's kinds, fire when powered,
     dies down); 126 in all.
+- Part I, 3.1: the echo clones (eighth chat). `EchoCloneService` rewritten for a riot:
+  about a third of the season levels (`config/echoConfig.ts`) get one token at a random place,
+  once a random 30-70 % of the dots are eaten (8 s to take it); taking it sets off 7-9 clones
+  that leave the token's tile one after another, each in its own way, for 2-3 s. They run like
+  rioters (at a junction a random way but not back, leaning to the dots still ahead; through
+  the tunnels), eat dots for the usual points and the fruit they meet (`FruitService.eatAt`),
+  leave the energizers, and die on an active or enraged ghost (frightened ghosts and eyes are
+  harmless; an `echo-pop` fx). Both heroes. The view draws the token and every clone as a real
+  blue mini hero (`EchoCloneView`: Pac-Man's or Ms. Pac-Man's own body, mouth and trail in an
+  ice-blue palette; her bow, lipstick and blush blue too). HUD timer from the riot's length; dev
+  panel: Echo (token) and Riot (now). Tests: `echoClone.test.ts` (14); 140 in all. Checked in the
+  live game for both heroes (token, riot, the end).

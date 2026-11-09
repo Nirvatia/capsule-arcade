@@ -308,6 +308,14 @@ export class LevelLoader {
 		this.arcadeRoundValue = 1;
 	}
 
+	/** Dev: sets off the echo riot at the hero's tile now. */
+	debugEchoRiot(): void {
+		const session = this.sessionValue;
+		if (session) {
+			session.echo.debugRiot(session.player.tile);
+		}
+	}
+
 	debugSpawnBonus(): void {
 		const session = this.sessionValue;
 		if (!session) {

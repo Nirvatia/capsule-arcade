@@ -76,10 +76,13 @@ backs off up close (`logic/actors/GhostService.ts`). Their eyes look where they 
   lair's centre, between the ghosts' spawns. Pac-Man walks in and takes it: the remaining
   dots turn into points, +500, and the arcade starts. Clearing the dots first just ends
   the level.
-- **Echo clone**: at 60 % of the dots a token appears for 8 s; taking it releases one clone
-  of Pac-Man for 4 s that runs to the densest dots and eats them. _Planned (part I, 3.1)_:
-  a rare bonus at a random place that sets off a riot of 7–9 clones for 2–3 s, eating
-  everything they find and dying on ghosts.
+- **Echo clone** (both heroes, season levels only): a rare bonus. About a third of the levels
+  (`config/echoConfig.ts`) get one token, at a random place and once a random 30-70 % of the
+  dots are eaten; it waits 8 s. Taking it sets off a riot: 7-9 blue mini copies of the hero
+  run out of the token's tile in different ways for 2-3 s, eating the dots (the usual 10
+  points) and the fruit they meet, never the energizers. A clone dies on an active (or
+  enraged) ghost; frightened ghosts and eyes are harmless to it. If the clones eat the last
+  dot the level ends as usual.
 
 ## 6. Seasons
 

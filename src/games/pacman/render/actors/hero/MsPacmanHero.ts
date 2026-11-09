@@ -51,7 +51,24 @@ const INSIDE: MouthInside = {
 };
 
 const INK: RGB = [46, 6, 26];
-const LIPSTICK: RGB = [232, 28, 72];
+
+/** The colours of what she wears: the bow, the lipstick, the blush (an echo clone's are blue). */
+export interface MsTint {
+	readonly id: string;
+	readonly bow: RGB;
+	readonly bowShade: RGB;
+	readonly bowTail: RGB;
+	readonly lipstick: RGB;
+	readonly blush: RGB;
+}
+export const PINK_TINT: MsTint = {
+	id: 'pink',
+	bow: [236, 28, 70],
+	bowShade: [164, 8, 48],
+	bowTail: [214, 20, 60],
+	lipstick: [232, 28, 72],
+	blush: [232, 64, 112]
+};
 
 /** Her bow: on top of the head, a little behind, on the head's outline. */
 const BOW_ANGLE = -0.63 * Math.PI;
@@ -143,9 +160,9 @@ function paintBadge(ctx: CanvasRenderingContext2D, R: number, season: HeroSeason
  * the season's flower on the knot. Its own frame: the knot at the centre, up (-y) pointing
  * away from her head.
  */
-function paintedBow(deviceR: number, season: HeroSeason): HTMLCanvasElement {
+function paintedBow(deviceR: number, season: HeroSeason, tint: MsTint): HTMLCanvasElement {
 	const R = Math.max(4, Math.round(deviceR));
-	const key = `${R}:${season}`;
+	const key = `${R}:${season}:${tint.id}`;
 	let c = bowCache.get(key);
 	if (c) return c;
 	if (bowCache.size > 60) bowCache.clear();
@@ -157,9 +174,9 @@ function paintedBow(deviceR: number, season: HeroSeason): HTMLCanvasElement {
 	ctx.translate(c.width / 2, c.height / 2);
 	ctx.lineJoin = 'round';
 	ctx.lineCap = 'round';
-	const base: RGB = [236, 28, 70];
-	const shade: RGB = [164, 8, 48];
-	const tailC: RGB = [214, 20, 60];
+	const base = tint.bow;
+	const shade = tint.bowShade;
+	const tailC = tint.bowTail;
 	const loop = (side: number) => {
 		// a rounded teardrop from the knot, out to the side and a little up
 		const ux = Math.cos(-0.22 * side) * side;
@@ -270,7 +287,7 @@ function paintedBow(deviceR: number, season: HeroSeason): HTMLCanvasElement {
 	return c;
 }
 
-const DESIGN: HeroDesign = {
+export const MS_DESIGN: HeroDesign = {
 	id: 'ms-pacman',
 	calm: CALM,
 	awoken: AWOKEN,
@@ -286,7 +303,9 @@ const DESIGN: HeroDesign = {
 };
 
 export class MsPacmanHero extends Hero {
-	protected readonly design = DESIGN;
+	protected readonly design: HeroDesign = MS_DESIGN;
+	/** What she wears (pink; an echo clone's copy is blue). */
+	protected readonly tint: MsTint = PINK_TINT;
 	/** The bow's sway, radians, on a soft spring. */
 	private readonly bow = new Spring(0);
 	/** Seconds into a blink, or -1; the next blink is due at `nextBlink`. */
@@ -335,7 +354,7 @@ export class MsPacmanHero extends Hero {
 
 	/** Blush: three short slanted strokes on the cheek. */
 	private drawBlush(ctx: CanvasRenderingContext2D, R: number, ex: number, ey: number): void {
-		ctx.strokeStyle = css([232, 64, 112], 0.9);
+		ctx.strokeStyle = css(this.tint.blush, 0.9);
 		ctx.lineWidth = Math.max(0.8, R * 0.026);
 		ctx.lineCap = 'round';
 		ctx.beginPath();
@@ -483,7 +502,7 @@ export class MsPacmanHero extends Hero {
 		lips();
 		ctx.stroke();
 		const hot = this.power;
-		ctx.strokeStyle = css(mix(LIPSTICK, [244, 52, 120], hot));
+		ctx.strokeStyle = css(mix(this.tint.lipstick, [244, 52, 120], hot));
 		ctx.lineWidth = R * 0.1;
 		ctx.lineCap = 'butt';
 		const bar = (to: { x: number; y: number }) => {
@@ -538,7 +557,7 @@ export class MsPacmanHero extends Hero {
 		ctx.rotate(turn);
 		ctx.scale(scale, scale);
 		const half = R * BOW_SPAN;
-		ctx.drawImage(paintedBow(R * dpr, this.season), -half, -half, half * 2, half * 2);
+		ctx.drawImage(paintedBow(R * dpr, this.season, this.tint), -half, -half, half * 2, half * 2);
 		ctx.restore();
 		// the eye last: on her face, in front of the bow
 		this.drawEye(ctx, R, p);

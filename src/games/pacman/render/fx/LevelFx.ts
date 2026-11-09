@@ -20,6 +20,7 @@ const GHOST_TINT: Record<GhostKind, number> = {
 };
 const GOLD = 0xffd84a;
 const WHITE = 0xffffff;
+const ECHO_BLUE = 0x7fd0ff;
 
 interface Ring {
 	x: number;
@@ -124,6 +125,12 @@ export class LevelFx {
 				this.ring(fx.x, fx.y, GOLD, 1.8, 0.5);
 				this.popup(fx.x, fx.y, '1UP', GOLD);
 				this.pulse(GOLD, 0.4);
+				break;
+			case 'echo-pop':
+				// a clone caught by a ghost: a small blue ring and a puff of blue sparks
+				this.flashes.push({ x: fx.x, y: fx.y, age: 0, life: 0.12 });
+				this.ring(fx.x, fx.y, ECHO_BLUE, 1.0, 0.3);
+				this.burst(fx.x, fx.y, ECHO_BLUE, 7, 3.5, null);
 				break;
 			case 'near-miss':
 				this.streaks.push({
