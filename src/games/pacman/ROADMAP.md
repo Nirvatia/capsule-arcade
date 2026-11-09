@@ -58,8 +58,10 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
       ramp by season level.
 
 4. **Sound and tools** (Sonnet).
-   1. **Mute** button and key (`M`), and a **volume** slider; both saved in
-      `localStorage`, applied on the synth's master gain (`audio/ArcadeSynth`).
+   1. **Mute** button and key, and a **volume** slider; both saved in `localStorage`.
+      Done: the mute button (bottom-right, `ui/MuteButton.svelte`; `audio/audioSettings`
+      keeps the choice, `PacmanAudioPlayer` mutes the samples and `ArcadeSynth` its master
+      gain). Left: the volume slider, and a key (`M` is taken: it switches the hero).
    2. _(Postponed by the owner.)_ **Dev panel rework** (`ui/debug/*`): readable at 1440p (text and controls scale with
       the screen), buttons grouped in collapsible sections by topic instead of one block,
       the most used actions first; a control for the maze cycle (force a maze, show the

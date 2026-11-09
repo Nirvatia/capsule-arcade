@@ -1,6 +1,7 @@
 import type { EventBus } from '../engine/EventBus';
 import type { PacmanAudioCue, PacmanEventMap, PacmanStateName } from '../core/Events';
 import { ArcadeSynth } from './ArcadeSynth';
+import { muted } from './audioSettings';
 
 /** Is the arcade (secret level) running, and how far its dots are eaten (0..1). */
 export type ArcadeProbe = () => { readonly active: boolean; readonly urgency: number };
@@ -33,6 +34,8 @@ export class PacmanAudioPlayer {
 	private deathToggle = false;
 	private readonly unsubscribeState: () => void;
 	private readonly unsubscribeCue: () => void;
+	private readonly unsubscribeMuted: () => void;
+	private muted = false;
 	/** The arcade has its own chiptune sound; the sample sounds stay out of it. */
 	private readonly synth = new ArcadeSynth();
 	private readonly arcade: ArcadeProbe;
@@ -57,9 +60,13 @@ export class PacmanAudioPlayer {
 			this.handleCue(payload.cue);
 		});
 		this.preload();
+		this.unsubscribeMuted = muted.subscribe((value) => {
+			this.applyMuted(value);
+		});
 	}
 
 	destroy(): void {
+		this.unsubscribeMuted();
 		this.unsubscribeState();
 		this.unsubscribeCue();
 		this.stopBackground();
@@ -68,6 +75,15 @@ export class PacmanAudioPlayer {
 			audio.pause();
 		}
 		this.sounds.clear();
+	}
+
+	/** Mutes the sample sounds (loops keep running, silent) and the synth. */
+	private applyMuted(value: boolean): void {
+		this.muted = value;
+		this.synth.setMuted(value);
+		for (const audio of this.sounds.values()) {
+			audio.muted = value;
+		}
 	}
 
 	private preload(): void {

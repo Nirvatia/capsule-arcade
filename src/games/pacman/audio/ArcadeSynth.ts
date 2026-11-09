@@ -89,6 +89,7 @@ const TIPTOE_BASS: Phrase = [
 export class ArcadeSynth {
 	private ac: AudioContext | null = null;
 	private master: GainNode | null = null;
+	private muted = false;
 	private loopName: ArcadeLoop = null;
 	private loopTimer: ReturnType<typeof setTimeout> | null = null;
 	private loopNodes: AudioNode[] = [];
@@ -173,9 +174,21 @@ export class ArcadeSynth {
 			this.master.gain.setValueAtTime(0, t);
 			this.master.disconnect();
 			this.master = this.ac.createGain();
-			this.master.gain.value = 0.5;
+			this.master.gain.value = this.level();
 			this.master.connect(this.ac.destination);
 		}
+	}
+
+	/** Silences (or restores) every voice; survives `stopAll`, which rebuilds the master gain. */
+	setMuted(muted: boolean): void {
+		this.muted = muted;
+		if (this.ac && this.master) {
+			this.master.gain.setValueAtTime(this.level(), this.ac.currentTime);
+		}
+	}
+
+	private level(): number {
+		return this.muted ? 0 : 0.5;
 	}
 
 	destroy(): void {
@@ -191,7 +204,7 @@ export class ArcadeSynth {
 		if (!this.ac) {
 			this.ac = new AudioContext();
 			this.master = this.ac.createGain();
-			this.master.gain.value = 0.5;
+			this.master.gain.value = this.level();
 			this.master.connect(this.ac.destination);
 		}
 		if (this.ac.state === 'suspended') {

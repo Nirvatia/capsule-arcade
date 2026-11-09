@@ -5,7 +5,10 @@
 	import GameHud from './hud/GameHud.svelte';
 	import ArcadeHud from './hud/ArcadeHud.svelte';
 	import GameScreens from './screens/GameScreens.svelte';
+	import MuteButton from './MuteButton.svelte';
 </script>
+
+<MuteButton />
 
 {#if $hudFrame}
 	{#if $hudFrame.state !== 'menu'}

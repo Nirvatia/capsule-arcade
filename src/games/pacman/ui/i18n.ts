@@ -48,7 +48,9 @@ const EN = {
 	boss_hell: 'LORD OF HELL',
 	oneUp: '1UP',
 	highScore: 'HIGH SCORE',
-	round: 'ROUND'
+	round: 'ROUND',
+	mute: 'Mute',
+	unmute: 'Unmute'
 } as const;
 
 export type I18nKey = keyof typeof EN;
@@ -97,7 +99,9 @@ const RU: Record<I18nKey, string> = {
 	boss_hell: 'ПОВЕЛИТЕЛЬ АДА',
 	oneUp: '1UP',
 	highScore: 'HIGH SCORE',
-	round: 'РАУНД'
+	round: 'РАУНД',
+	mute: 'Выключить звук',
+	unmute: 'Включить звук'
 };
 
 function initial(): Lang {
