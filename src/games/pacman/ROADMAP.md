@@ -80,6 +80,10 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
       in `render/actors/dropGhost.ts`, switched on by `GhostView.style` for the summer
       renderer (all states; the other seasons keep the plain disc). Next: the owner looks at
       it in play, then the other seasons (same approach, or another one).
+      After the first look in play (too big, cute but not dangerous, no feet to show a
+      walk): 22 % smaller; menacing in the chase wave (slanted brows, small fangs; calm and
+      cute while scattering, via `GhostService.currentMode`); two bean feet that step with
+      the tiles each ghost walks, with a bob, a sway and a lean toward the heading.
    3. **Echo clone look** (`render/actors/EchoCloneView.ts`).
    4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`); the teleport effect;
       the teleporters' own art (`MeadowBake` portal + `MeadowWorld`), bulky today though

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dropStateFor } from './dropGhost';
+import { dropStateFor, footLift } from './dropGhost';
 
 describe('dropStateFor', () => {
 	const base = { hypnosis: null, overdrive: false } as const;
@@ -21,5 +21,20 @@ describe('dropStateFor', () => {
 		expect(dropStateFor({ ...base, hypnosis: 'hunter', state: 'hypnotized' })).toBe('hunter');
 		expect(dropStateFor({ ...base, hypnosis: 'feeder', state: 'hypnotized' })).toBe('feeder');
 		expect(dropStateFor({ ...base, hypnosis: null, state: 'hypnotized' })).toBe('feeder');
+	});
+});
+
+describe('footLift', () => {
+	it('lifts one foot at a time and never both', () => {
+		for (let step = 0; step < 20; step += 0.1) {
+			const { left, right } = footLift(step);
+			expect(left).toBeGreaterThanOrEqual(0);
+			expect(right).toBeGreaterThanOrEqual(0);
+			expect(left * right).toBe(0);
+		}
+	});
+
+	it('keeps both feet down when the ghost has not moved', () => {
+		expect(footLift(0)).toEqual({ left: 0, right: 0 });
 	});
 });

@@ -19,6 +19,10 @@ export interface DropOptions {
 	readonly lookX: number;
 	readonly lookY: number;
 	readonly time: number;
+	/** Distance travelled as a stride phase (radians): the feet step with it. */
+	readonly step: number;
+	/** The ghosts are hunting (not scattering): a normal ghost looks menacing. */
+	readonly chasing?: boolean;
 }
 
 const TAU = Math.PI * 2;
@@ -37,6 +41,7 @@ const HYPNO = { b: '#83ff74', s: '#42d33d' };
 const RAGE = { b: '#ff4a4a', s: '#a81622' };
 const PHASE: Record<GhostKind, number> = { BLINKY: 0, PINKY: 0.8, INKY: 1.6, CLYDE: 2.4 };
 
+const FOOT_LIFT = 2.6;
 const EY = 2.4;
 const EX = 4;
 
@@ -58,6 +63,12 @@ export function dropStateFor(input: {
 		default:
 			return 'normal';
 	}
+}
+
+/** How far each foot is lifted (world units, never both at once) at a stride phase. */
+export function footLift(step: number): { left: number; right: number } {
+	const wave = Math.sin(step);
+	return { left: Math.max(0, wave) * FOOT_LIFT, right: Math.max(0, -wave) * FOOT_LIFT };
 }
 
 function bodyPath(c: Ctx): void {
@@ -181,6 +192,8 @@ function paintFace(
 	c: Ctx,
 	state: DropState,
 	flashing: boolean,
+	chasing: boolean,
+	bodyColor: string,
 	lookX: number,
 	lookY: number
 ): void {
@@ -225,6 +238,47 @@ function paintFace(
 		c.strokeStyle = INK;
 		c.lineWidth = 0.8;
 		c.stroke();
+	} else if (chasing) {
+		paintEyes(c, lookX, lookY, { pr: 1.7 });
+		for (const side of [-1, 1]) {
+			c.beginPath();
+			c.moveTo(side * (EX + 3.9), EY - 5.4);
+			c.lineTo(side * (EX - 3.7), EY - 0.6);
+			c.lineTo(side * (EX - 3.7), EY - 6.6);
+			c.lineTo(side * (EX + 3.9), EY - 6.6);
+			c.closePath();
+			c.fillStyle = bodyColor;
+			c.fill();
+			line(c, side * (EX + 3.9), EY - 5.4, side * (EX - 3.7), EY - 0.6, INK, 1.4);
+		}
+		c.fillStyle = 'rgba(255,80,120,.5)';
+		for (const side of [-1, 1]) {
+			c.beginPath();
+			c.ellipse(side * (EX + 3), EY + 4.4, 1.8, 1, 0, 0, TAU);
+			c.fill();
+		}
+		c.beginPath();
+		c.moveTo(-3.2, EY + 4.8);
+		c.quadraticCurveTo(0, EY + 8.6, 3.2, EY + 4.8);
+		c.closePath();
+		c.fillStyle = '#7a2a3a';
+		c.fill();
+		c.strokeStyle = INK;
+		c.lineWidth = 0.9;
+		c.lineJoin = 'round';
+		c.stroke();
+		for (const side of [-1, 1]) {
+			c.beginPath();
+			c.moveTo(side * 2.9, EY + 4.9);
+			c.lineTo(side * 1.3, EY + 4.9);
+			c.lineTo(side * 2.1, EY + 6.5);
+			c.closePath();
+			c.fillStyle = '#ffffff';
+			c.fill();
+			c.strokeStyle = INK;
+			c.lineWidth = 0.45;
+			c.stroke();
+		}
 	} else {
 		paintEyes(c, lookX, lookY, {});
 		c.fillStyle = 'rgba(255,80,120,.55)';
@@ -269,9 +323,12 @@ export function drawDropGhost(c: Ctx, x: number, y: number, unit: number, o: Dro
 	if (scared && !o.flashing) {
 		c.translate(Math.sin(o.time * 38 + phase) * 0.45, 0);
 	}
-	const squash = Math.sin(o.time * 5 + phase);
+	const lift = footLift(o.step);
+	// the whole drop sits a little high (the feet hang below), bobs on each step, sways with
+	// the stride and leans toward the heading
+	c.translate(0, -1.2 - Math.abs(Math.sin(o.step)) * 0.7);
 	c.translate(0, 10);
-	c.scale(1 - 0.05 * squash, 1 + 0.07 * squash);
+	c.rotate(Math.sin(o.step) * 0.08 + o.lookX * 0.1);
 	c.translate(0, -10);
 	let pal = BODY[o.kind];
 	if (scared) {
@@ -288,7 +345,32 @@ export function drawDropGhost(c: Ctx, x: number, y: number, unit: number, o: Dro
 		c.lineWidth = 1.3;
 		c.stroke();
 	}
+	// two bean feet, behind the belly; they step with the distance travelled
+	for (const [side, up] of [
+		[-1, lift.left],
+		[1, lift.right]
+	] as const) {
+		c.beginPath();
+		c.ellipse(side * 4.2, 11 - up, 3.3, 2.5, 0, 0, TAU);
+		c.fillStyle = pal.s;
+		c.fill();
+		c.strokeStyle = INK;
+		c.lineWidth = 1.5;
+		c.stroke();
+	}
+	const squash = Math.sin(o.time * 5 + phase);
+	c.translate(0, 10);
+	c.scale(1 - 0.04 * squash, 1 + 0.05 * squash);
+	c.translate(0, -10);
 	paintBody(c, pal);
-	paintFace(c, o.state, Boolean(o.flashing), o.lookX, o.lookY);
+	paintFace(
+		c,
+		o.state,
+		Boolean(o.flashing),
+		Boolean(o.chasing) && o.state === 'normal',
+		pal.b,
+		o.lookX,
+		o.lookY
+	);
 	c.restore();
 }

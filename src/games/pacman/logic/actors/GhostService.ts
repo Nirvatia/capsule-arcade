@@ -32,7 +32,7 @@ const CHASE_TIME = 20;
 const EPSILON = 1e-6;
 const EMPTY_GHOST_LIST: readonly GhostModel[] = [];
 
-type GhostMode = 'scatter' | 'chase';
+export type GhostMode = 'scatter' | 'chase';
 
 /** What the hypnosis service tells the ghosts (see `HypnosisService`). */
 export interface HypnosisGuide {
@@ -117,6 +117,11 @@ export class GhostService {
 
 	get banished(): boolean {
 		return this.banishedValue;
+	}
+
+	/** The wave in force: the ghosts head for their corners or hunt Pac-Man. */
+	get currentMode(): GhostMode {
+		return this.mode;
 	}
 
 	/** The lair code is solved: every ghost stops and leaves play for the rest of the level. */

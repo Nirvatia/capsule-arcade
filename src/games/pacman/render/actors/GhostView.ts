@@ -1,10 +1,13 @@
 import type { GhostService } from '../../logic/actors/GhostService';
-import type { GhostModel } from '../../logic/actors/GhostModel';
+import type { GhostKind, GhostModel } from '../../logic/actors/GhostModel';
 import type { GridLayout } from '../maze/GridView';
 import type { HypnosisMode } from '../../logic/rules/HypnosisService';
 import { drawDropGhost, dropStateFor } from './dropGhost';
 
 /** `disc` is the plain round ghost; `drop` is the summer water drop (`dropGhost.ts`). */
+/** Radians of the stride per tile walked: a full step cycle every ~1.1 tiles. */
+const STRIDE_PER_TILE = 5.7;
+
 export type GhostStyle = 'disc' | 'drop';
 
 export class GhostView {
@@ -12,6 +15,10 @@ export class GhostView {
 	style: GhostStyle = 'disc';
 	/** Render time in seconds, for the drop's idle motion. */
 	time = 0;
+	/** Distance walked by each ghost (tiles), so a drop's feet step with the ground covered. */
+	private readonly walked = new Map<GhostKind, { x: number; y: number; distance: number }>();
+	/** The ghosts are hunting, not scattering (set from the service each draw). */
+	private chasing = false;
 
 	draw(
 		ctx: CanvasRenderingContext2D,
@@ -26,6 +33,7 @@ export class GhostView {
 			console.error('GhostView.draw', 'invalid layout tile size', layout.tileSize);
 			return;
 		}
+		this.chasing = ghosts.currentMode === 'chase';
 		for (const ghost of ghosts.list) {
 			this.drawGhost(ctx, ghost, layout, powerTimer, msOverdrive, hypnosis);
 		}
@@ -223,6 +231,23 @@ export class GhostView {
 		ctx.restore();
 	}
 
+	/** The stride phase of a ghost: grows with the tiles it walks (a jump, as a tunnel, adds none). */
+	private strideOf(ghost: GhostModel): number {
+		const { x, y } = ghost.position;
+		const seen = this.walked.get(ghost.kind);
+		if (!seen) {
+			this.walked.set(ghost.kind, { x, y, distance: 0 });
+			return 0;
+		}
+		const moved = Math.hypot(x - seen.x, y - seen.y);
+		if (moved < 1.5) {
+			seen.distance += moved;
+		}
+		seen.x = x;
+		seen.y = y;
+		return seen.distance * STRIDE_PER_TILE;
+	}
+
 	private drawDrop(
 		ctx: CanvasRenderingContext2D,
 		ghost: GhostModel,
@@ -242,14 +267,16 @@ export class GhostView {
 		if (ghost.state === 'lair' || ghost.state === 'exiting') {
 			ctx.globalAlpha = 0.72;
 		}
-		drawDropGhost(ctx, x, y, (tileSize / 25) * 0.95, {
+		drawDropGhost(ctx, x, y, (tileSize / 25) * 0.78, {
 			kind: ghost.kind,
 			state,
 			flashing,
 			white: flashing && Math.floor(powerTimer * 4) % 2 === 0,
 			lookX,
 			lookY,
-			time: this.time
+			time: this.time,
+			step: this.strideOf(ghost),
+			chasing: this.chasing
 		});
 		ctx.restore();
 	}
