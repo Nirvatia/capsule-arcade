@@ -26,6 +26,7 @@ vite.config.ts.timestamp-*
 prototypes/pacman/arcade.html
 prototypes/pacman/collectibles.html
 prototypes/pacman/easter-egg.html
+prototypes/pacman/food.html
 prototypes/pacman/hell.html
 prototypes/pacman/hero.html
 prototypes/pacman/hud.html
