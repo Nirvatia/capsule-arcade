@@ -25,33 +25,23 @@ a suggestion.
 
 The plan has three parts, done in this order: **I** the main game (four seasons),
 **II** the boss levels, **III** the interface. The depth and post-processing pass comes
-last of all (see Later). Part I is next, starting with step 1.
+last of all (see Later). Part I is next: step 1 is done but for its border question, step 2 (the heroes) follows.
 
 ## Part I. The main game: four seasons (mechanics and graphics)
 
 1. **Mazes** (Opus). Four season mazes, `config/mazes/grid_01.ts` … `grid_04.ts`, made by
-   the owner (25×27 tiles, one token per tile, checked by `parseMaze` at import). They
-   replace the single `classic01` in the season rotation.
-   1. **Maze cycle.** Season levels come in cycles of four, one maze each. A cycle plays
-      all four mazes in a random order (cycle one `1,2,3,4`, the next maybe `2,1,3,4`),
-      seeded so tests and replays are repeatable, and the first maze of a cycle differs
-      from the last of the previous one. A new `logic/level/MazeCycle`, used by
-      `SeasonCatalog` (the seasons keep their order summer, autumn, winter, spring).
-   2. **Boss levels are not part of the cycle.** Season levels are numbered without the
-      boss levels, so they come in runs 1–4, 6–9, 11–14 with a boss level between runs
-      (`level − floor(level / HELL_LEVEL_INTERVAL)` is the season level). Level 6 is
-      summer again. Update `levelRouting.test.ts`; check that the Easter egg (a fixed
-      level 7 today) and the dev tools still mean what they meant.
-   3. **Validator** (a function used by a test): every dot reachable, tunnels paired (a
-      maze may have none: `grid_04`), the lair, the spawn pads and the fruit pad present.
-      The `parseMaze` names are all `classic06` today; give each file its own.
-   4. **Each maze checked in a prototype page** in all four seasons (tunnel codes `0A` /
-      `0B`, the 27-row height against `MazeScale`, the bake, `SpawnLocator`, the lair code
-      and the fruit pad) before it joins the rotation.
-   5. Whether the empty border is still needed (the canvas may no longer cut lines).
-   6. **`classic01` stays** as the fallback maze of the hell (`doom.ts`) and the secret
-      level (`secretSeason`) until the owner makes their own mazes. `grid_doom` (not
-      finished: a row short) and `grid_tron` wait for part II.
+   the owner (25×27 tiles, one token per tile, checked by `parseMaze` at import), replace
+   the single `classic01` in the season rotation. Done except the border question (see
+   Done, "Part I, 1").
+   1. ~~**Maze cycle.**~~ Done.
+   2. ~~**Boss levels are not part of the cycle.**~~ Done.
+   3. ~~**Validator.**~~ Done.
+   4. ~~**Each maze checked in a prototype page.**~~ Done (`mazes`).
+   5. Whether the empty border is still needed (the canvas may no longer cut lines). Open:
+      the owner decides on the `mazes` prototype.
+   6. ~~**`classic01` stays** as the fallback.~~ Done: `GRID_CLASSIC` serves the secret level
+      and the tests; the hell stays on `doom.ts`. `grid_doom` (not finished: a row short) and
+      `grid_tron` wait for part II.
 
 2. **The heroes in code** (Opus for the look, Sonnet for the wiring). The owner's
    mock-ups, "Pac-Man · Shonen" and "Ms. Pac-Man · Maho-shoujo" (the Design canvas
@@ -143,7 +133,7 @@ last of all (see Later). Part I is next, starting with step 1.
    (`SeasonTurn`) stays as it is.
    1. **The contract.** One transition pass takes the old frame and the next frame (both
       offscreen textures), an origin, a progress and a style: `(from, to, origin, progress,
-      style)`. Any pair works the same way: a death on a season level (`to` is the same
+style)`. Any pair works the same way: a death on a season level (`to` is the same
       level, from the respawn), losing the hell's fight (`to` is the next level), boss →
       season, season → boss. A world only supplies a `style` (palette, particle colour); it
       never writes its own death. The pass reuses the death field (`decayField`) and fronts
@@ -316,3 +306,25 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   `grid_04` (plus `grid_doom`, `grid_tron`) are in `config/mazes/`; boss levels do not count
   in the maze cycle. All graphics are code-drawn: the PNG sprite pipeline (old stage 7) and
   the ASCII maze converter (old 5.1) are dropped.
+- Part I, 1: the mazes (eighth chat). `grid_01` … `grid_04` are the season mazes
+  (`SEASON_MAZES`), the old `classic01` is `GRID_CLASSIC` (the secret level, the tests);
+  every maze has its own name inside `parseMaze`.
+  - `config/mazes/validateMaze` (empty border, one Pac-Man / fruit / ghost pad each, a lair
+    with an exit, tunnels in pairs or none, every dot, energizer and the fruit pad reachable
+    through the tunnels with the lair shut) and `mazes.test.ts`: all four pass, so do
+    `classic01`, `grid_tron` and the unfinished `grid_doom`.
+  - `logic/level/MazeCycle`: the first cycle plays 1, 2, 3, 4 (the menu shows level 1, so
+    the game starts on the maze it shows); every later cycle is a shuffle seeded by the run
+    (`LevelLoader.mazeSeed`, new in `startNewGame`, `setMazeSeed` for tests), and never opens
+    on the maze the cycle before closed on. A pure function of `(seed, cycle)`, so a dev jump
+    to any level lands on the maze a normal run would reach.
+  - Boss levels do not count: `seasonLevelOf(level) = level − floor(level / 5)`, so the
+    seasons run 1–4, 6–9, 11–14 (level 6 is summer again). `SeasonData.maze` names the maze;
+    the dev panel's season buttons use `firstLevelOfSeason`.
+  - `worldDecor` takes the maze's tunnel row (`tunnelRowOf`; none for `grid_04`) instead of
+    the fixed row 12, and the decor cache key includes it. The hell's decor is unchanged
+    (its tunnel row is still 12).
+  - Tests: 113 in all (`mazeCycle.test.ts`, `mazes.test.ts`, three new cases in
+    `levelRouting.test.ts`). Checked in a browser: the `mazes` prototype (4 mazes × 4
+    seasons, with marks for tunnels, spawn, fruit, lair) and the real game on levels 1–11 (the
+    maze, the season and the dot count follow the plan, no console errors).

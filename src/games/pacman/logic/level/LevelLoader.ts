@@ -56,6 +56,9 @@ export class LevelLoader {
 	private arcadeRoundValue = 1;
 	private arcadeTriesValue: number = ARCADE.tries;
 	private mazeScaleValue = MAZE_SCALE_DEFAULT;
+	/** Seeds the order the season mazes come in (`MazeCycle`); new for every game. */
+	private mazeSeedValue = 0;
+	private mazeSeedLocked = false;
 	private godModeValue = false;
 	private sessionValue: LevelSession | null = null;
 
@@ -104,6 +107,10 @@ export class LevelLoader {
 
 	get hellMode(): boolean {
 		return this.hellModeValue;
+	}
+
+	get mazeSeed(): number {
+		return this.mazeSeedValue;
 	}
 
 	get mazeScale(): number {
@@ -217,7 +224,16 @@ export class LevelLoader {
 		return this.sessionValue ?? this.buildLevel();
 	}
 
+	/** Fixes the maze order (tests, dev); `startNewGame` picks a fresh one unless told not to. */
+	setMazeSeed(seed: number): void {
+		this.mazeSeedValue = Math.floor(seed) >>> 0;
+		this.mazeSeedLocked = true;
+	}
+
 	startNewGame(): void {
+		if (!this.mazeSeedLocked) {
+			this.mazeSeedValue = Math.floor(Math.random() * 0x100000000);
+		}
 		this.levelNumber = this.pendingStartLevelValue;
 		this.pendingStartLevelValue = 1;
 		this.secretModeValue = false;
@@ -377,7 +393,11 @@ export class LevelLoader {
 	 */
 	private worldOf(level: number, secret: boolean): { hell: boolean; season: SeasonData } {
 		const hell = !secret && level % HELL_LEVEL_INTERVAL === 0;
-		const season = secret ? secretSeason() : hell ? hellSeason() : seasonForLevel(level);
+		const season = secret
+			? secretSeason()
+			: hell
+				? hellSeason()
+				: seasonForLevel(level, this.mazeSeedValue);
 		return { hell, season };
 	}
 

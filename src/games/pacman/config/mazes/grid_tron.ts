@@ -1,6 +1,6 @@
 import { parseMaze } from './parseMaze';
 
-export const GRID_TRON = parseMaze('classic06', [
+export const GRID_TRON = parseMaze('grid_tron', [
 	'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES',
 	'ES WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
 	'ES WL EU DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT EU WL ES',

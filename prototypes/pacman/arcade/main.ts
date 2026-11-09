@@ -1,7 +1,7 @@
 // Prototype for plan v2 stage 6 (the secret level as our own arcade round), built from
 // the game's sources: the pixel art, the CRT pass, the intermission and the synth sounds.
 // Pac-Man and the ghosts wander the maze on their own; the buttons show every state.
-import { GRID_01 } from '../../../src/games/pacman/config/mazes';
+import { GRID_CLASSIC } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { FruitKind } from '../../../src/games/pacman/logic/bonuses/fruitCatalog';
 import { ArcadeView } from '../../../src/games/pacman/render/arcade/ArcadeView';
@@ -20,7 +20,7 @@ const view = $<HTMLCanvasElement>('view');
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const D = Math.min(window.devicePixelRatio || 1, 2);
 
-const arcade = new ArcadeView(GRID_01);
+const arcade = new ArcadeView(GRID_CLASSIC);
 const screen = new ArcadeScreen();
 const synth = new ArcadeSynth();
 const raw = document.createElement('canvas');
@@ -29,13 +29,13 @@ raw.height = arcade.canvas.height;
 const rawCtx = raw.getContext('2d') as CanvasRenderingContext2D;
 
 const walkable = (x: number, y: number): boolean => {
-	const t = GRID_01[y]?.[x];
+	const t = GRID_CLASSIC[y]?.[x];
 	return t !== undefined && t !== 'WL' && t !== 'ES' && t !== 'LE' && t !== 'LT' && t[0] !== '0';
 };
 const food = new Map<string, 'dot' | 'energizer'>();
 function refill(): void {
 	food.clear();
-	GRID_01.forEach((row, y) =>
+	GRID_CLASSIC.forEach((row, y) =>
 		row.forEach((t, x) => {
 			if (t === 'DT') food.set(`${x},${y}`, 'dot');
 			if (t === 'EU') food.set(`${x},${y}`, 'energizer');

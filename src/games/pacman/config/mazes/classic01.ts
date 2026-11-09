@@ -1,7 +1,7 @@
 import { parseMaze } from './parseMaze';
 
-/** The main maze (the owner's hand-made version of the original): an empty border, filled islands. */
-export const GRID_01 = parseMaze('classic01', [
+/** The owner's first hand-made maze. Stays as the fallback of the hell and the secret level until they get their own. */
+export const GRID_CLASSIC = parseMaze('classic01', [
 	'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES',
 	'ES WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
 	'ES WL EU DT DT DT DT DT DT DT DT DT WL DT DT DT DT DT DT DT DT DT EU WL ES',

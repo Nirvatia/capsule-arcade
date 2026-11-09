@@ -1,6 +1,6 @@
 // Stage 4 prototype: the level-complete animation on the real seasons. Everything drawn
 // here comes from the game's sources; only the controls and the Pac-Man marker are local.
-import { GRID_01 } from '../../../src/games/pacman/config/mazes';
+import { GRID_CLASSIC } from '../../../src/games/pacman/config/mazes';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
@@ -44,8 +44,8 @@ function settle(world: MeadowWorld): void {
 }
 
 function buildWorlds(): void {
-	oldWorld = new MeadowWorld(GRID_01, theme(from));
-	newWorld = new MeadowWorld(GRID_01, theme(nextOf(from)));
+	oldWorld = new MeadowWorld(GRID_CLASSIC, theme(from));
+	newWorld = new MeadowWorld(GRID_CLASSIC, theme(nextOf(from)));
 	oldWorld.resize(vw, vh, D);
 	newWorld.resize(vw, vh, D);
 	// the cleared level ends in its weather and at night; the next one starts fresh
@@ -157,7 +157,7 @@ view.addEventListener('click', (e) => {
 	const L = oldWorld.layout;
 	const c = Math.floor((e.clientX - L.offsetX) / L.tileSize);
 	const r = Math.floor((e.clientY - L.offsetY) / L.tileSize);
-	const t = GRID_01[r]?.[c];
+	const t = GRID_CLASSIC[r]?.[c];
 	if (!t || t === 'WL' || t === 'ES' || ['LT', 'LE', 'BY', 'PY', 'IY', 'CE'].includes(t)) {
 		return;
 	}
@@ -192,7 +192,7 @@ function frame(now: number): void {
 		drawWorld(turn.next(view.width, view.height), newWorld, noneEaten);
 		ctx.setTransform(D, 0, 0, D, 0, 0);
 		turn.compose(ctx, vw, vh, D, oldWorld.layout, time, {
-			grid: GRID_01,
+			grid: GRID_CLASSIC,
 			x: finish.c + 0.5,
 			y: finish.r + 0.5,
 			elapsed: tl,

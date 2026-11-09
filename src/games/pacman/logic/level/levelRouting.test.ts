@@ -24,6 +24,76 @@ describe('level routing', () => {
 		expect(seasons).toEqual(['summer', 'autumn', 'winter', 'spring']);
 	});
 
+	it('the seasons go on after the hell: level 6 is summer again, on a new run of mazes', () => {
+		const loader = newRun();
+		loader.setMazeSeed(2024);
+		loader.startNewGame();
+		const seen: { level: number; season: string; maze: string; hell: boolean }[] = [];
+		for (let level = 1; level <= 14; level += 1) {
+			const session = loader.ensure();
+			seen.push({
+				level: loader.level,
+				season: session.season.name,
+				maze: session.season.maze,
+				hell: loader.hellMode
+			});
+			loader.advanceLevel();
+		}
+		expect(seen.filter((s) => s.hell).map((s) => s.level)).toEqual([5, 10]);
+		const regular = seen.filter((s) => !s.hell);
+		expect(regular.slice(0, 4).map((s) => s.season)).toEqual([
+			'summer',
+			'autumn',
+			'winter',
+			'spring'
+		]);
+		expect(regular.slice(4, 8).map((s) => s.season)).toEqual([
+			'summer',
+			'autumn',
+			'winter',
+			'spring'
+		]);
+		expect(regular.slice(0, 4).map((s) => s.maze)).toEqual([
+			'grid_01',
+			'grid_02',
+			'grid_03',
+			'grid_04'
+		]);
+		for (const run of [regular.slice(0, 4), regular.slice(4, 8)]) {
+			expect(run.map((s) => s.maze).sort()).toEqual(['grid_01', 'grid_02', 'grid_03', 'grid_04']);
+		}
+		for (const s of seen.filter((x) => x.hell)) {
+			expect(s.maze).toBe('doom');
+		}
+	});
+
+	it('peekNextLevel shows the maze the next level will get', () => {
+		const loader = newRun();
+		loader.setMazeSeed(77);
+		loader.startNewGame();
+		for (let i = 0; i < 12; i += 1) {
+			const next = loader.peekNextLevel();
+			loader.advanceLevel();
+			expect(loader.ensure().season.maze).toBe(next.season.maze);
+		}
+	});
+
+	it('a new game picks a new maze order, but level 1 stays grid_01', () => {
+		const loader = newRun();
+		const orders = new Set<string>();
+		for (let game = 0; game < 12; game += 1) {
+			loader.startNewGame();
+			expect(loader.ensure().season.maze).toBe('grid_01');
+			let order = '';
+			for (let i = 0; i < 9; i += 1) {
+				loader.advanceLevel();
+				order += loader.ensure().season.maze;
+			}
+			orders.add(order);
+		}
+		expect(orders.size).toBeGreaterThan(1);
+	});
+
 	it.each(['pacman', 'ms-pacman'] as const)('every fifth level is the hell (%s)', (profile) => {
 		const loader = newRun(profile);
 		for (let level = 1; level < 5; level += 1) {

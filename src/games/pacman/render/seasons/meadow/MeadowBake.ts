@@ -6,7 +6,7 @@ import type { GridMatrix } from '../../../config/gridConfig';
 import { isTeleportToken } from '../../../config/gridConfig';
 import { canvasContext, makeCanvas } from '../../common/textures';
 import type { BakeKit, MeadowBakeTheme } from './MeadowTheme';
-import { WORLD_TILE, streamY, tileRandom, worldDecor } from '../../common/worldDecor';
+import { WORLD_TILE, streamY, tileRandom, tunnelRowOf, worldDecor } from '../../common/worldDecor';
 import { paintDecor } from './meadowBakeDecor';
 import { paintWalls } from './meadowBakeWalls';
 
@@ -52,7 +52,7 @@ function makeMeadowFrame(
 	const R = S.length;
 	const C = S[0].length;
 	const BG = P.bg;
-	const DEC = worldDecor(R, C, P.landmark.ex);
+	const DEC = worldDecor(R, C, P.landmark.ex, tunnelRowOf(S));
 	const isW = (r: number, c: number) => !!S[r] && S[r][c] === 'WL';
 	const cv = makeCanvas(Math.ceil(w * RS), Math.ceil(h * RS));
 	const b = canvasContext(cv);

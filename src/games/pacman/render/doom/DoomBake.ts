@@ -3,7 +3,7 @@
 // maze's top-left corner is the origin; decorations live in the meadow around it.
 import type { GridMatrix } from '../../config/gridConfig';
 import type { Rng } from '../common/worldDecor';
-import { WORLD_TILE, streamY, tileRandom, worldDecor } from '../common/worldDecor';
+import { WORLD_TILE, streamY, tileRandom, tunnelRowOf, worldDecor } from '../common/worldDecor';
 import { paintDecor } from './doomBakeDecor';
 import { paintWalls } from './doomBakeWalls';
 
@@ -42,7 +42,7 @@ export function bakeDoomWorld(
 function makeDoomFrame(S: GridMatrix, x0: number, y0: number, w: number, h: number, RS: number) {
 	const R = S.length;
 	const C = S[0].length;
-	const DEC = worldDecor(R, C, PENTAGRAM_EX);
+	const DEC = worldDecor(R, C, PENTAGRAM_EX, tunnelRowOf(S));
 	const isW = (r: number, c: number): boolean => !!S[r] && S[r][c] === 'WL';
 	const cv = document.createElement('canvas');
 	cv.width = Math.max(1, Math.ceil(w * RS));

@@ -2,6 +2,9 @@
 // WORLD_TILE world units, the maze's top-left corner is the origin; cabins, pond, trees and
 // the stream (water or lava) live around it, in the same seeded places in every world.
 
+import { isTeleportToken } from '../../config/gridConfig';
+import type { GridMatrix } from '../../config/gridConfig';
+
 /** World units per maze tile. */
 export const WORLD_TILE = 24;
 
@@ -39,6 +42,16 @@ export function streamY(rows: number, x: number): number {
 	return (rows + 4.7) * T + Math.sin(x / (9 * T)) * 2.5 * T + Math.sin(x / (3.7 * T) + 1) * 0.6 * T;
 }
 
+/** The row the maze's tunnel runs along (its first teleport pad), or null for a maze without one. */
+export function tunnelRowOf(grid: GridMatrix): number | null {
+	for (let r = 0; r < grid.length; r += 1) {
+		if (grid[r]?.some((token) => isTeleportToken(token))) {
+			return r;
+		}
+	}
+	return null;
+}
+
 const decorCache = new Map<string, WorldDecor[]>();
 
 /**
@@ -49,16 +62,18 @@ const decorCache = new Map<string, WorldDecor[]>();
 export function worldDecor(
 	rows: number,
 	cols: number,
-	landmarkEx: readonly [number, number]
+	landmarkEx: readonly [number, number],
+	tunnelRow: number | null
 ): WorldDecor[] {
-	const cacheKey = `${rows}x${cols}:${landmarkEx[0]},${landmarkEx[1]}`;
+	const cacheKey = `${rows}x${cols}:${landmarkEx[0]},${landmarkEx[1]}:${tunnelRow ?? '-'}`;
 	const cached = decorCache.get(cacheKey);
 	if (cached) {
 		return cached;
 	}
 	const R = rows;
 	const C = cols;
-	const TY = 12.5 * T;
+	// the strip outside the maze that the tunnel's row continues along stays free of scatter
+	const TY = tunnelRow === null ? null : (tunnelRow + 0.5) * T;
 	let s = 91;
 	const fixed: WorldDecor[] = [
 		{ k: 'cabin', x: -8.5, y: 7, w: 7, h: 5, ex: 4.2 },
@@ -87,7 +102,7 @@ export function worldDecor(
 	const free = (x: number, y: number, m: number) =>
 		!(x > -m && x < C * T + m && y > -m && y < R * T + m) &&
 		Math.abs(y - streamY(R, x)) > 3.6 * T &&
-		!(Math.abs(y - TY) < 2.4 * T && (x < 0 || x > C * T));
+		!(TY !== null && Math.abs(y - TY) < 2.4 * T && (x < 0 || x > C * T));
 	const add = (
 		k: WorldDecorKind,
 		n: number,

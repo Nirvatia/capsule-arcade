@@ -2,7 +2,7 @@
 // and views on a real season. "Код логова решён" solves the code: the ghosts vanish, the
 // lair gate slides open, the Easter egg appears in the lair's centre and Pac-Man walks in
 // to take it; "Заново" starts over. A 3× close-up of the lair, the egg large on a strip.
-import { GRID_01 } from '../../../src/games/pacman/config/mazes';
+import { GRID_CLASSIC } from '../../../src/games/pacman/config/mazes';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
@@ -61,7 +61,7 @@ interface Scene {
 let scene: Scene;
 
 function buildScene(): Scene {
-	const grid = new GridService(new GridModel(GRID_01));
+	const grid = new GridService(new GridModel(GRID_CLASSIC));
 	const events = new EventBus<PacmanEventMap>();
 	const score = new ScoreModel();
 	const progress = new LevelProgress(grid, score, events);
@@ -106,7 +106,7 @@ function stepTowards(goal: { x: number; y: number }): PlayerDirection | null {
 }
 
 function buildWorld(): void {
-	world = new MeadowWorld(GRID_01, meadowThemeFor(season) as MeadowTheme);
+	world = new MeadowWorld(GRID_CLASSIC, meadowThemeFor(season) as MeadowTheme);
 	world.resize(vw, vh, D);
 	world.setMood(night ? 1 : 0, night ? 1 : 0);
 	for (let i = 0; i < 80; i++) world.update(0.1);

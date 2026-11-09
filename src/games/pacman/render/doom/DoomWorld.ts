@@ -5,7 +5,7 @@ import { isTeleportToken } from '../../config/gridConfig';
 import type { GridLayout } from '../maze/GridView';
 import { DoomLightmap } from './DoomLightmap';
 import { bakeDoomWorld, DOOM_BG, DOOM_TILE, PENTAGRAM_EX } from './DoomBake';
-import { streamY, worldDecor } from '../common/worldDecor';
+import { streamY, tunnelRowOf, worldDecor } from '../common/worldDecor';
 import {
 	fogTexture,
 	glowTexture,
@@ -170,7 +170,7 @@ export class DoomWorld {
 				}
 			});
 		}
-		for (const o of worldDecor(this.R, this.C, PENTAGRAM_EX)) {
+		for (const o of worldDecor(this.R, this.C, PENTAGRAM_EX, tunnelRowOf(this.S))) {
 			if (o.k === 'lamp') {
 				this.lights.push({ x: o.x, y: o.y, r: 4 * T, tint: 0xffd890, a: 0.85, flicker: true });
 			} else if (o.k === 'cabin') {

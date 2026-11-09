@@ -4,7 +4,7 @@ import type { PacmanAudioCue, PacmanEventMap } from '../../core/Events';
 import { Director } from '../../core/Director';
 import { FLOW } from '../../config/flowConfig';
 import { ARCADE, arcadeRound } from '../../config/arcadeConfig';
-import { GRID_01 } from '../../config/mazes';
+import { GRID_CLASSIC } from '../../config/mazes';
 import { GridModel } from '../maze/GridModel';
 import { GridService } from '../maze/GridService';
 import { LevelLoader } from './LevelLoader';
@@ -154,7 +154,7 @@ describe('arcade (secret level)', () => {
 });
 
 describe('arcade ghosts', () => {
-	const grid = new GridService(new GridModel(GRID_01));
+	const grid = new GridService(new GridModel(GRID_CLASSIC));
 	const all = () => true;
 
 	it('the ambusher heads for the junction ahead, the herder for the one behind', () => {

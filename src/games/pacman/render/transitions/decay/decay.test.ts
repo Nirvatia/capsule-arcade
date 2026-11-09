@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GridMatrix, TileType } from '../../../config/gridConfig';
-import { GRID_01 } from '../../../config/mazes';
+import { GRID_CLASSIC } from '../../../config/mazes';
 import { computeDecayField, DECAY_MARGIN, packDecayFields, sampleDecayField } from './decayField';
 import { decayFronts, FRONT_OFF, REBUILD_BAND } from './decayTimeline';
 import { FLOW } from '../../../config/flowConfig';
@@ -26,10 +26,10 @@ const at = (field: ReturnType<typeof computeDecayField>, x: number, y: number) =
 
 describe('decay field', () => {
 	it('is zero at the origin and finite everywhere', () => {
-		const field = computeDecayField(GRID_01, 12, 19);
+		const field = computeDecayField(GRID_CLASSIC, 12, 19);
 		expect(at(field, 12, 19)).toBe(0);
 		expect(field.dist.every((v) => Number.isFinite(v))).toBe(true);
-		expect(field.cols).toBe(GRID_01[0].length + 2 * DECAY_MARGIN);
+		expect(field.cols).toBe(GRID_CLASSIC[0].length + 2 * DECAY_MARGIN);
 	});
 
 	it('runs along corridors instead of through walls', () => {
@@ -49,7 +49,7 @@ describe('decay field', () => {
 	});
 
 	it('samples like the shader: tile centres, bilinear, growing past the ring', () => {
-		const field = computeDecayField(GRID_01, 12, 19);
+		const field = computeDecayField(GRID_CLASSIC, 12, 19);
 		expect(sampleDecayField(field, 12.5, 19.5)).toBeCloseTo(0, 5);
 		const far = sampleDecayField(field, -200, -200);
 		expect(far).toBeGreaterThan(field.max);

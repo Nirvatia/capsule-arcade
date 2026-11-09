@@ -12,7 +12,8 @@
 	import { FRUIT_ORDER } from '../../logic/bonuses/fruitCatalog';
 	import { attackWeightsForPhase, DOOM_ATTACK_KINDS } from '../../logic/doom/DoomAttackCore';
 	import type { DoomPickupKind } from '../../logic/doom/DoomPickupModel';
-	import { seasonForLevel } from '../../logic/level/SeasonCatalog';
+	import { firstLevelOfSeason } from '../../logic/level/SeasonCatalog';
+	import type { SeasonName } from '../../logic/level/SeasonCatalog';
 
 	const WEAPONS: DoomPickupKind[] = ['bfg', 'barrel', 'berserk', 'medkit'];
 	const SCALES = [0.1, 0.25, 0.5, 1, 2];
@@ -84,12 +85,9 @@
 		};
 	}
 
-	/** The first regular level of a season (the hell takes every fifth number). */
-	function levelOf(season: string): number {
-		for (let n = 1; n < 40; n++) {
-			if (n % 5 !== 0 && seasonForLevel(n).name === season) return n;
-		}
-		return 1;
+	/** The first level a season is played on (boss levels are not season levels). */
+	function levelOf(season: SeasonName): number {
+		return firstLevelOfSeason(season);
 	}
 
 	const bossAttacks = $derived(

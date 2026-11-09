@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GRID_01 } from '../../config/mazes';
+import { GRID_CLASSIC } from '../../config/mazes';
 import { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
 import { GridModel } from '../maze/GridModel';
@@ -14,7 +14,7 @@ import { EasterEggService, EGG_DOOR_TIME, EGG_VANISH_TIME } from './EasterEggSer
 const STEP = 1 / 60;
 
 function lairLevel(level = 7) {
-	const grid = new GridService(new GridModel(GRID_01));
+	const grid = new GridService(new GridModel(GRID_CLASSIC));
 	const events = new EventBus<PacmanEventMap>();
 	const score = new ScoreModel();
 	const progress = new LevelProgress(grid, score, events);

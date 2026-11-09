@@ -2,7 +2,7 @@
 	// Prototype shell: a real world behind, the game's HUD and screens on top, and buttons
 	// for every case. The snapshot is made up here; the components are the game's own.
 	import { onMount } from 'svelte';
-	import { GRID_01, GRID_DOOM } from '../../../src/games/pacman/config/mazes';
+	import { GRID_CLASSIC, GRID_DOOM } from '../../../src/games/pacman/config/mazes';
 	import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 	import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 	import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
@@ -118,7 +118,7 @@
 					doom = new DoomWorld(GRID_DOOM, []);
 					doom.resize(innerWidth, innerHeight, D);
 				} else if (world !== 'secret') {
-					meadow = new MeadowWorld(GRID_01, meadowThemeFor(world) as MeadowTheme);
+					meadow = new MeadowWorld(GRID_CLASSIC, meadowThemeFor(world) as MeadowTheme);
 					meadow.resize(innerWidth, innerHeight, D);
 					for (let i = 0; i < 60; i++) meadow.update(0.1);
 				}
@@ -150,8 +150,8 @@
 	function drawArcadeMaze(ctx: CanvasRenderingContext2D): void {
 		ctx.fillStyle = '#000';
 		ctx.fillRect(0, 0, innerWidth, innerHeight);
-		const rows = GRID_01.length;
-		const cols = GRID_01[0].length;
+		const rows = GRID_CLASSIC.length;
+		const cols = GRID_CLASSIC[0].length;
 		const S = Math.floor(Math.min((innerWidth - 40) / cols, (innerHeight - 120) / rows));
 		const ox = (innerWidth - cols * S) / 2;
 		const oy = (innerHeight - rows * S) / 2;
@@ -160,7 +160,7 @@
 		ctx.fillStyle = '#ffb8ae';
 		for (let y = 0; y < rows; y++) {
 			for (let x = 0; x < cols; x++) {
-				const tile = GRID_01[y][x];
+				const tile = GRID_CLASSIC[y][x];
 				if (tile === 'WL') {
 					ctx.strokeRect(ox + x * S + 3, oy + y * S + 3, S - 6, S - 6);
 				} else if (tile === 'DT') {

@@ -6,7 +6,7 @@ import type { GridMatrix } from '../../../config/gridConfig';
 import { isTeleportToken } from '../../../config/gridConfig';
 import type { GridLayout } from '../../maze/GridView';
 import { bakeMeadow, MEADOW_TILE } from './MeadowBake';
-import { streamY, worldDecor } from '../../common/worldDecor';
+import { streamY, tunnelRowOf, worldDecor } from '../../common/worldDecor';
 import type { MeadowTheme, WeatherParticle } from './MeadowTheme';
 import { glowTexture, rayTexture, swirlTexture } from './meadowSprites';
 
@@ -158,7 +158,7 @@ export class MeadowWorld {
 				ph: Math.random() * 6
 			});
 		}
-		for (const o of worldDecor(this.R, this.C, theme.bake.landmark.ex)) {
+		for (const o of worldDecor(this.R, this.C, theme.bake.landmark.ex, tunnelRowOf(this.S))) {
 			if (o.k === 'lamp') {
 				this.lights.push({ x: o.x, y: o.y, r: 4 * T, tint: 0xffd890, a: 0.85, flicker: true });
 			} else if (o.k === 'cabin') {

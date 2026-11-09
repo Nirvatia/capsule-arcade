@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GRID_01 } from '../../config/mazes';
+import { GRID_CLASSIC } from '../../config/mazes';
 import { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
 import { GridModel } from '../maze/GridModel';
@@ -12,7 +12,7 @@ import type { PlayerDirection } from './PlayerModel';
 const STEP = 1 / 60;
 
 function makePlayer() {
-	const grid = new GridService(new GridModel(GRID_01));
+	const grid = new GridService(new GridModel(GRID_CLASSIC));
 	const events = new EventBus<PacmanEventMap>();
 	const progress = new LevelProgress(grid, new ScoreModel(), events);
 	return { grid, player: new PlayerService(grid, progress, events) };

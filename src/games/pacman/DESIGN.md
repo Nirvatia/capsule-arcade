@@ -28,7 +28,7 @@ size of one tile.
 
 - A new game starts on level 1 with 3 lives and runs until the lives are gone.
 - Level `n` is a season: 1 summer, 2 autumn, 3 winter, 4 spring, then again
-  (`logic/level/SeasonCatalog.ts`). Every 5th level is the hell, for both heroes. Boss levels do not count in the season cycle: season levels run 1–4, 6–9, 11–14, … Later a random boss world joins on every 5th level (roadmap, part II). _Planned (part I, 1)_: the four mazes `grid_01`–`grid_04` play in a random order per cycle of four season levels.
+  (`logic/level/SeasonCatalog.ts`). Every 5th level is the hell, for both heroes. Boss levels do not count in the season cycle: season levels run 1–4, 6–9, 11–14, … Later a random boss world joins on every 5th level (roadmap, part II). The four season mazes `grid_01`–`grid_04` come one per season level: the first cycle in order, every later cycle in a random order (never the same maze twice in a row), so each run of four plays all four. The hell and the secret level keep the old maze for now.
 - Level 7 hides the way into the secret level (§8, the arcade); after it the run continues
   on the level after the one it was entered from.
 - Score and lives carry over between levels. Extra life at 10 000 points, then every
@@ -198,16 +198,16 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 
 ### Art status
 
-| Element                                                         | State                                                        |
-| --------------------------------------------------------------- | ------------------------------------------------------------ |
-| Seasons (world, food, weather, night), season turn, death decay | final; death to be replaced by one transition (part I, 6)                     |
+| Element                                                         | State                                                                    |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Seasons (world, food, weather, night), season turn, death decay | final; death to be replaced by one transition (part I, 6)                |
 | Hell world, Blinky lord of hell, imps, weapons                  | final; phase-3 lighting and corrupted tiles to rework (part II, 1.1–1.2) |
-| Arcade                                                          | final (keeps its own pixel HUD)                              |
-| HUD and screens                                                 | final; to be replaced (part III)                              |
-| Fruit, heart, exit                                              | final (inside the tile, calm glow)                           |
-| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)               |
-| Pac-Man                                                         | to redo in code from the owner's mock-up (part I, 2)         |
-| Ms. Pac-Man                                                     | to redo in code from the owner's mock-up (part I, 2)         |
-| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                       |
-| Echo clone                                                      | to redo (part I, 5.3)                                               |
-| Teleporters, ring effects                                       | to improve (part I, 5.4)                                            |
+| Arcade                                                          | final (keeps its own pixel HUD)                                          |
+| HUD and screens                                                 | final; to be replaced (part III)                                         |
+| Fruit, heart, exit                                              | final (inside the tile, calm glow)                                       |
+| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                           |
+| Pac-Man                                                         | to redo in code from the owner's mock-up (part I, 2)                     |
+| Ms. Pac-Man                                                     | to redo in code from the owner's mock-up (part I, 2)                     |
+| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                            |
+| Echo clone                                                      | to redo (part I, 5.3)                                                    |
+| Teleporters, ring effects                                       | to improve (part I, 5.4)                                                 |

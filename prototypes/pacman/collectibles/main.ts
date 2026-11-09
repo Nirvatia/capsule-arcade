@@ -2,7 +2,7 @@
 // own views on a real season: in a corridor at game scale, a 4× close-up of that corridor,
 // and large on a dark strip the way the mock-ups show them. Under each item: how far it
 // reaches from its tile centre, glow and animation included (stage 10.1: at most 0.5 tile).
-import { GRID_01 } from '../../../src/games/pacman/config/mazes';
+import { GRID_CLASSIC } from '../../../src/games/pacman/config/mazes';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
@@ -39,7 +39,7 @@ const ITEMS: Array<{ name: string; draw: Item }> = [
 	{ name: 'Bonus life', draw: drawBonusLife },
 	{ name: 'Exit', draw: drawExit }
 ];
-/** Corridor tiles of GRID_01: rows 5 and 2, columns 12..23, one item every other tile. */
+/** Corridor tiles of GRID_CLASSIC: rows 5 and 2, columns 12..23, one item every other tile. */
 const SPOTS: ReadonlyArray<[number, number]> = Array.from({ length: 12 }, (_, i) => [
 	i < 6 ? 12 + i * 2 : 13 + (i - 6) * 2,
 	i < 6 ? 5 : 2
@@ -55,7 +55,7 @@ let vw = 0;
 let vh = 0;
 
 function buildWorld(): void {
-	world = new MeadowWorld(GRID_01, meadowThemeFor(season) as MeadowTheme);
+	world = new MeadowWorld(GRID_CLASSIC, meadowThemeFor(season) as MeadowTheme);
 	world.resize(vw, vh, D);
 	world.setMood(heat ? 1 : 0, night ? 1 : 0);
 	for (let i = 0; i < 80; i++) world.update(0.1);

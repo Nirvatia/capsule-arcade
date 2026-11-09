@@ -12,12 +12,14 @@ core/        GameMain (wiring, input → director, auto-pause, HUD frame), Event
   debug/     DebugController (every dev command, dev builds only)
 engine/      EventBus, GameLoop, TimeControl
 config/      gridConfig (tile tokens, level constants), mazes/ (one file per maze, one
-             string per row, checked by parseMaze), scores, actor contact distance,
+             string per row, checked by parseMaze; `grid_01`–`grid_04` the season mazes,
+             `classic01` the secret level's, `doom` the hell's; validateMaze), scores, actor contact distance,
              flowConfig (every flow duration), arcadeConfig (the secret level's rounds)
 logic/
   level/     LevelLoader (the run: level number, profile, secret / hell routing, arcade
              round and tries, carry-over), LevelSession (all services of one level, built
-             together, never partial), SeasonCatalog (grids, per-season modifiers),
+             together, never partial), SeasonCatalog (season and maze of a season level, per-season
+             modifiers), MazeCycle (the order the four mazes come in),
              LevelProgress, ScoreModel
   maze/      GridModel, GridService, SpawnLocator, LairExit
   actors/    Player*, Ghost*, ghostTargets (scatter, chase, flight, the hypnotised
@@ -151,8 +153,11 @@ still takes it (`LATE_TURN`). Tests: `logic/actors/playerControl.test.ts`.
 - `logic/bonuses/easterEgg.test.ts` — the egg in the lair's centre, the vanish → gate →
   egg order, banished ghosts frozen, nothing outside level 7.
 - `logic/level/arcade.test.ts` — tries, rounds, intermission, restart, ghost characters.
+- `config/mazes/mazes.test.ts` — the validator and every maze file.
+- `logic/level/mazeCycle.test.ts` — the maze order, the season levels without the boss
+  levels.
 - `logic/level/levelRouting.test.ts` — seasons in order, the hell every 5th level per
-  profile, score / lives / next-life threshold carried across a level change.
+  profile, the maze of each level, score / lives / next-life threshold carried across a level change.
 - `logic/rules/fx.test.ts` — fx events, hit-stop, near misses.
 - `logic/rules/ghostContact.test.ts` — eat, death, overdrive and who never touches, for
   both profiles.
@@ -165,6 +170,7 @@ New art and effects start as a page built from the game's own sources:
 `node prototypes/pacman/build.mjs <name>` into `prototypes/pacman/<name>.html` (open as a
 file). The approved prototype already is the game code. Existing: `hell`, `arcade`,
 `hud`, `collectibles` (with each item's reach from its tile centre and a tile grid),
+`mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
 `level-clear`, `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man alone,
 large, with a tile-sized inset; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
