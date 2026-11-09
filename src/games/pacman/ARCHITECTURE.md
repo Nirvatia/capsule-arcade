@@ -167,8 +167,10 @@ still takes it (`LATE_TURN`). Tests: `logic/actors/playerControl.test.ts`.
 
 New art and effects start as a page built from the game's own sources:
 `prototypes/pacman/<name>/main.ts` + `index.html`, built by
-`node prototypes/pacman/build.mjs <name>` into `prototypes/pacman/<name>.html` (open as a
-file). The approved prototype already is the game code. Existing: `hell`, `arcade`,
+`node prototypes/pacman/build.mjs <name>` into `prototypes/pacman/<name>.html`. The built
+pages are not stored in git (`.gitignore`); the owner looks at prototypes in the chat, as
+screenshots or an artifact Claude builds from the page, never by opening the files. The
+approved prototype already is the game code. Existing: `hell`, `arcade`,
 `hud`, `collectibles` (with each item's reach from its tile centre and a tile grid),
 `mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
 `level-clear`, `easter-egg` (the lair code's reward played by the real

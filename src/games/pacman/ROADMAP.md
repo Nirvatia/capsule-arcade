@@ -10,8 +10,8 @@ step 2" (or "part II, step 1.3"). Claude reads the parts of `DESIGN.md` and
 `ARCHITECTURE.md` the step needs, analyses the code, proposes a plan, waits for approval,
 works, updates the three documents (this plan; the design and the architecture where they
 changed) and pushes to `feat/pacman`. New art and new effects start as a prototype the
-owner approves first (see `ARCHITECTURE.md`, Prototypes), unless the owner says to go
-straight into the game.
+owner approves first, in the chat, as screenshots (the built pages are not committed; see
+`ARCHITECTURE.md`, Prototypes), unless the owner says to go straight into the game.
 
 **All graphics are drawn in code** (Canvas2D / WebGL2). No PNG sprites, no sprite sheets,
 no image pipeline. An owner's mock-up is a picture of the target look that Claude
