@@ -9,6 +9,7 @@ import type { PacmanAudioCue } from '../../core/Events';
 import type { GridLayout } from '../maze/GridView';
 import type { PlayerDrawOptions } from './PlayerView';
 import type { Hero } from './hero/Hero';
+import type { HeroSeason } from './hero/heroSeasons';
 
 /** Body radius in tiles (Pac-Man 10 % smaller than the first cut, the owner's review). */
 const RADIUS = 0.39;
@@ -32,6 +33,12 @@ export class HeroView {
 	private last: { x: number; y: number } | null = null;
 	/** Smoothed speed, tiles per second. */
 	private speed = 0;
+	private season: HeroSeason = 'summer';
+
+	/** The world the hero is in (its colour touches the rim light, the trail, the particles). */
+	setSeason(season: HeroSeason): void {
+		this.season = season;
+	}
 
 	trigger(cue: PacmanAudioCue): void {
 		if (cue === 'dot') {
@@ -89,7 +96,8 @@ export class HeroView {
 			power: options.look === 'energized' || options.look === 'berserk',
 			ending: Boolean(options.ending),
 			dying: options.dying,
-			invulnerable: player.isInvulnerable && options.shield !== false
+			invulnerable: player.isInvulnerable && options.shield !== false,
+			season: this.season
 		});
 		this.hero.draw(ctx);
 	}

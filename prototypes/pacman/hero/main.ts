@@ -1,39 +1,81 @@
-// Prototype: the hero stage (stage 10.3/10.4). One hero alone, large on a dark stage, running a
-// figure of eight (or resting in the middle), with a tile-sized inset of the same moment on
-// the summer sand. Buttons: Pac-Man / Ms. Pac-Man, run / rest, a bite, the energizer (6 s, the
-// last 1.6 s calm down), death, quarter speed. ?capture: window.__advance(seconds) steps 1/60 s
-// frames; ?ms starts with Ms. Pac-Man; ?painted starts in the painted style (CG otherwise).
-import type { Hero, HeroStyle } from '../../../src/games/pacman/render/actors/hero/Hero';
+// Prototype: the hero stage (part I, step 2). One hero large on a dark panel (the mock-up's top
+// half), and the same hero running along a corridor of the real season world, magnified and at
+// game scale (the mock-up's season rows). Buttons: Pac-Man / Ms. Pac-Man, the four seasons,
+// run / rest, a bite, the energizer (6 s, the last 1.6 s calm down), death, quarter speed.
+// Query: ?season=winter&ms&power&rest&capture (capture: window.__advance(seconds) steps 1/60 s).
+import type { Hero } from '../../../src/games/pacman/render/actors/hero/Hero';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
+import type { HeroSeason } from '../../../src/games/pacman/render/actors/hero/heroSeasons';
+import { GRID_01 } from '../../../src/games/pacman/config/mazes';
+import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
+import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
+import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
+
+type Season = 'summer' | 'autumn' | 'winter' | 'spring';
 
 const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
 const view = $<HTMLCanvasElement>('view');
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const D = Math.min(window.devicePixelRatio || 1, 2);
+const q = new URLSearchParams(location.search);
 
 const POWER_TIME = 6;
 const POWER_ENDING = 1.6;
-/** The inset's tile, css px (the game's tile on a large screen). */
-const TILE = 30;
+/** The hero's body radius in tiles, as in the game (`HeroView`). */
+const RADIUS = 0.39;
+const ZOOM = 2.4;
+/** Tiles per second along the corridor. */
+const SPEED = 6;
 
-let ms = new URLSearchParams(location.search).has('ms');
-let style: HeroStyle = new URLSearchParams(location.search).has('painted') ? 'painted' : 'cg';
-const make = (): Hero => {
-	const h = ms ? new MsPacmanHero() : new PacmanHero();
-	h.setStyle(style);
-	return h;
-};
-let hero = make();
+let ms = q.has('ms');
+let season: Season = (['summer', 'autumn', 'winter', 'spring'] as const).includes(
+	q.get('season') as Season
+)
+	? (q.get('season') as Season)
+	: 'spring';
+const make = (): Hero => (ms ? new MsPacmanHero() : new PacmanHero());
+let big = make();
+let mid = make();
 let small = make();
+let world: MeadowWorld;
 let deathTimer = -1;
 let vw = 0;
 let vh = 0;
-let running = true;
+let running = !q.has('rest');
 let slow = false;
-let powerTimer = 0;
+let powerTimer = q.has('power') ? POWER_TIME : 0;
 let phase = 0;
-let biteClock = 0;
+let gulpClock = 0;
+
+/** The longest straight run of dot tiles in a row of the maze: where the strips run. */
+function corridor(): { row: number; from: number; to: number } {
+	let best = { row: 1, from: 1, to: 2 };
+	GRID_01.forEach((line, row) => {
+		let start = -1;
+		line.forEach((token, col) => {
+			const open = token === 'DT' || token === 'EU';
+			if (open && start < 0) start = col;
+			if ((!open || col === line.length - 1) && start >= 0) {
+				const end = open ? col : col - 1;
+				if (end - start > best.to - best.from) best = { row, from: start, to: end };
+				start = -1;
+			}
+		});
+	});
+	return best;
+}
+const run = corridor();
+
+function buildWorld(): void {
+	world = new MeadowWorld(GRID_01, meadowThemeFor(season) as MeadowTheme);
+	world.resize(vw, vh, D);
+	world.setMood(0, 0);
+	for (let i = 0; i < 40; i++) world.update(0.1);
+	for (const b of document.querySelectorAll<HTMLButtonElement>('[data-season]')) {
+		b.setAttribute('aria-pressed', String(b.dataset.season === season));
+	}
+}
 
 function layout(): void {
 	vw = window.innerWidth;
@@ -42,25 +84,28 @@ function layout(): void {
 	view.height = Math.round(vh * D);
 	view.style.width = `${vw}px`;
 	view.style.height = `${vh}px`;
-	hero.setRadius(Math.min(vw, vh) * 0.13);
-	small.setRadius(TILE * 0.44);
-	hero.reset();
-	small.reset();
+	buildWorld();
+	const S = world.layout.tileSize;
+	big.setRadius(Math.min(vw * 0.5, vh) * 0.3);
+	mid.setRadius(S * RADIUS * ZOOM);
+	small.setRadius(S * RADIUS);
+	for (const h of [big, mid, small]) h.reset();
 }
 
 function pickHero(): void {
-	hero = make();
+	big = make();
+	mid = make();
 	small = make();
 	layout();
 	$('who').textContent = ms ? 'Ms. Pac-Man' : 'Pac-Man';
-$('style').textContent = style === 'cg' ? 'Стиль: CG' : 'Стиль: рисованный';
 }
-$('style').addEventListener('click', () => {
-	style = style === 'cg' ? 'painted' : 'cg';
-	hero.setStyle(style);
-	small.setStyle(style);
-	$('style').textContent = style === 'cg' ? 'Стиль: CG' : 'Стиль: рисованный';
-});
+
+for (const b of document.querySelectorAll<HTMLButtonElement>('[data-season]')) {
+	b.addEventListener('click', () => {
+		season = b.dataset.season as Season;
+		buildWorld();
+	});
+}
 $('who').addEventListener('click', () => {
 	ms = !ms;
 	pickHero();
@@ -74,8 +119,7 @@ $('run').addEventListener('click', () => {
 	$('run').textContent = running ? 'Бег' : 'Покой';
 });
 $('bite').addEventListener('click', () => {
-	hero.eat();
-	small.eat();
+	for (const h of [big, mid, small]) h.eat();
 });
 $('power').addEventListener('click', () => {
 	powerTimer = POWER_TIME;
@@ -95,88 +139,122 @@ function frame(realDt: number): void {
 		if (deathTimer > 2.4) deathTimer = -1;
 	}
 	const dying = deathTimer >= 0;
-	if (running && deathTimer < 0) phase += dt * 0.9;
+	const moving = running && !dying;
+	if (moving) phase += dt;
+	const heroSeason: HeroSeason = season;
+	const S = world.layout.tileSize;
 
-	// a figure of eight across the stage
-	const cx = vw / 2;
-	const cy = vh * 0.46;
-	const ax = Math.min(vw * 0.3, vh * 0.55);
-	const ay = vh * 0.2;
-	const x = cx + Math.sin(phase) * ax;
-	const y = cy + Math.sin(phase * 2) * ay * 0.5;
-	const angle = running ? Math.atan2(Math.cos(phase * 2) * ay, Math.cos(phase) * ax) : 0;
-	hero.update(dt, {
-		x: running ? x : cx,
-		y: running ? y : cy,
-		angle,
-		moving: running && !dying,
+	// the dark panel (left) and the two strips (right)
+	const panel = { x: 16, y: 16, w: vw * 0.5 - 24, h: vh - 112 };
+	const sx = vw * 0.5 + 8;
+	const sw = vw - sx - 16;
+	const zoomStrip = { x: sx, y: 16, w: sw, h: Math.min(S * 3 * ZOOM, (vh - 112) * 0.62) };
+	const smallStrip = { x: sx, y: zoomStrip.y + zoomStrip.h + 16, w: sw, h: S * 3 };
+
+	big.update(dt, {
+		x: panel.x + panel.w * 0.55,
+		y: panel.y + panel.h * 0.52,
+		angle: 0,
+		moving,
 		power,
 		ending,
-		dying
+		dying,
+		season: heroSeason
 	});
 
-	// the inset runs in place along its corridor
-	const ix = vw - 18 - TILE * 4;
-	const iy = vh - 96 - TILE * 1.5;
-	if (running) {
-		biteClock += dt * 5.2;
-		if (biteClock > 1) {
-			// a dot per tile, as in the game: a glow at the lips, not a full bite
-			biteClock -= 1;
+	// the corridor: world px of the run, the hero loops along its middle stretch
+	const L = world.layout;
+	const x0 = L.offsetX + (run.from + 1.5) * S;
+	const x1 = L.offsetX + (run.to - 0.5) * S;
+	const yw = L.offsetY + (run.row + 0.5) * S;
+	const t = moving ? (phase * SPEED * S) % (x1 - x0) : (x1 - x0) * 0.5;
+	const xw = x0 + t;
+	if (moving) {
+		gulpClock += dt * SPEED;
+		if (gulpClock > 1) {
+			gulpClock -= 1;
+			mid.gulp();
 			small.gulp();
 		}
 	}
-	const sx = ix + (running ? ((phase * 2.2) % 1) * TILE * 2 - TILE : 0);
-	small.update(dt, { x: sx, y: iy, angle: 0, moving: running && !dying, power, ending, dying });
 
-	// the stage: dark, a pool of warm light on the floor
 	ctx.setTransform(D, 0, 0, D, 0, 0);
 	ctx.globalAlpha = 1;
 	ctx.globalCompositeOperation = 'source-over';
-	const bg = ctx.createRadialGradient(cx, vh * 0.5, 0, cx, vh * 0.5, Math.max(vw, vh) * 0.7);
-	bg.addColorStop(0, '#1a1420');
-	bg.addColorStop(1, '#050408');
-	ctx.fillStyle = bg;
+	ctx.fillStyle = '#0c0a10';
 	ctx.fillRect(0, 0, vw, vh);
-	hero.draw(ctx);
 
-	// the inset: a corridor of the summer maze at game scale
-	const w = TILE * 8;
-	const h = TILE * 3;
-	const bx = ix - w / 2;
-	const by = iy - h / 2;
+	// the big hero on the panel
 	ctx.save();
 	ctx.beginPath();
-	ctx.roundRect(bx, by, w, h, 10);
+	ctx.roundRect(panel.x, panel.y, panel.w, panel.h, 16);
 	ctx.clip();
-	ctx.fillStyle = '#8d6b40';
-	ctx.fillRect(bx, by, w, h);
-	ctx.fillStyle = '#5fae3e';
-	ctx.fillRect(bx, by, w, TILE);
-	ctx.fillRect(bx, by + TILE * 2, w, TILE);
-	ctx.fillStyle = '#ffd56a';
-	for (let i = 0; i < 8; i++) {
-		ctx.beginPath();
-		ctx.arc(bx + TILE * (i + 0.5), iy, TILE * 0.1, 0, Math.PI * 2);
-		ctx.fill();
-	}
-	small.draw(ctx);
+	const bg = ctx.createRadialGradient(
+		panel.x + panel.w * 0.55,
+		panel.y + panel.h * 0.5,
+		0,
+		panel.x + panel.w * 0.55,
+		panel.y + panel.h * 0.5,
+		panel.w * 0.8
+	);
+	bg.addColorStop(0, '#221b2c');
+	bg.addColorStop(1, '#14101b');
+	ctx.fillStyle = bg;
+	ctx.fillRect(panel.x, panel.y, panel.w, panel.h);
+	big.draw(ctx);
 	ctx.restore();
-	ctx.strokeStyle = 'rgba(255,255,255,.8)';
-	ctx.lineWidth = 2;
-	ctx.beginPath();
-	ctx.roundRect(bx, by, w, h, 10);
-	ctx.stroke();
-	ctx.fillStyle = 'rgba(220,220,235,.7)';
-	ctx.font = '11px "Courier New", monospace';
-	ctx.textAlign = 'center';
-	ctx.fillText('В РАЗМЕРЕ ТАЙЛА', ix, by - 8);
+
+	// a strip of the real world: `zoom` magnifies the world, the hero is drawn at that size
+	const strip = (
+		rect: { x: number; y: number; w: number; h: number },
+		zoom: number,
+		hero: Hero,
+		label: string
+	) => {
+		ctx.save();
+		ctx.beginPath();
+		ctx.roundRect(rect.x, rect.y, rect.w, rect.h, 12);
+		ctx.clip();
+		ctx.translate(rect.x + rect.w / 2, rect.y + rect.h / 2);
+		ctx.scale(zoom, zoom);
+		ctx.translate(-(x0 + x1) / 2, -yw);
+		world.drawWorld(ctx);
+		world.drawFood(ctx, () => false);
+		ctx.restore();
+		ctx.save();
+		ctx.beginPath();
+		ctx.roundRect(rect.x, rect.y, rect.w, rect.h, 12);
+		ctx.clip();
+		hero.update(dt, {
+			x: rect.x + rect.w / 2 + (xw - (x0 + x1) / 2) * zoom,
+			y: rect.y + rect.h / 2,
+			angle: 0,
+			moving,
+			power,
+			ending,
+			dying,
+			season: heroSeason
+		});
+		hero.draw(ctx);
+		ctx.restore();
+		ctx.fillStyle = 'rgba(255,255,255,.75)';
+		ctx.font = '11px "Courier New", monospace';
+		ctx.textAlign = 'left';
+		ctx.fillText(label, rect.x + 8, rect.y - 4);
+		ctx.strokeStyle = 'rgba(255,255,255,.35)';
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.roundRect(rect.x, rect.y, rect.w, rect.h, 12);
+		ctx.stroke();
+	};
+	strip(zoomStrip, ZOOM, mid, `${season}, ×${ZOOM}`);
+	strip(smallStrip, 1, small, `${season}, 1:1 (tile ${Math.round(S)} px)`);
 }
 
 window.addEventListener('resize', layout);
 layout();
 $('who').textContent = ms ? 'Ms. Pac-Man' : 'Pac-Man';
-if (new URLSearchParams(location.search).has('capture')) {
+if (q.has('capture')) {
 	(window as unknown as { __advance: (s: number) => void }).__advance = (seconds: number) => {
 		for (let i = 0; i < Math.round(seconds * 60); i++) frame(1 / 60);
 	};

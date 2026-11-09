@@ -15,6 +15,8 @@
 // Frame space: the hero faces +x, the top is -y, units are body radii.
 import type { RGB, RibbonLayer } from './RibbonTrail';
 import { RibbonTrail } from './RibbonTrail';
+import { SEASON_LOOKS } from './heroSeasons';
+import type { HeroSeason } from './heroSeasons';
 
 export interface HeroState {
 	/** Centre, css px. */
@@ -30,6 +32,8 @@ export interface HeroState {
 	readonly dying?: boolean;
 	/** Just respawned: ghosts pass through him. */
 	readonly invulnerable?: boolean;
+	/** The world he is in: its colour touches his rim light, trail and particles. */
+	readonly season?: HeroSeason;
 }
 
 export interface Palette {
@@ -154,12 +158,13 @@ function paintedDisc(
 	design: HeroDesign,
 	deviceR: number,
 	lightAngle: number,
-	power: number
+	power: number,
+	season: HeroSeason
 ): HTMLCanvasElement {
 	const R = Math.max(4, Math.round(deviceR));
 	const step = Math.round((((lightAngle / (Math.PI * 2)) % 1) + 1) * LIGHT_STEPS) % LIGHT_STEPS;
 	const look = Math.round(clamp01(power) * POWER_STEPS);
-	const key = `${design.id}:${R}:${step}:${look}`;
+	const key = `${design.id}:${R}:${step}:${look}:${season}`;
 	let c = discCache.get(key);
 	if (c) return c;
 	if (discCache.size > 600) discCache.clear();
@@ -168,6 +173,11 @@ function paintedDisc(
 	const ly = Math.sin(a);
 	if (design.shade) {
 		c = shadedDisc(design.shade, R, lx, ly, look / POWER_STEPS);
+		discCache.set(key, c);
+		return c;
+	}
+	if (design.cel) {
+		c = celDisc(design, R, lx, ly, a, look / POWER_STEPS, season);
 		discCache.set(key, c);
 		return c;
 	}
@@ -244,6 +254,72 @@ function paintedDisc(
 }
 
 /**
+ * The cel body (the owner's anime mock-ups): hard tone bands that are crescents away from the
+ * light (the lit tone, the mid tone, the shadow, a warm bounce light along the far edge), a pale
+ * zone and a hard white highlight where the light hits, and a rim light on the nape in the
+ * season's colour. Painted once per light, look and season, like the other discs.
+ */
+function celDisc(
+	design: HeroDesign,
+	R: number,
+	lx: number,
+	ly: number,
+	lightAngle: number,
+	p: number,
+	season: HeroSeason
+): HTMLCanvasElement {
+	const pal = mixPal(design.calm, design.awoken, p);
+	const c = document.createElement('canvas');
+	c.width = c.height = Math.ceil(R * DISC_SPAN * 2);
+	const ctx = c.getContext('2d') as CanvasRenderingContext2D;
+	ctx.translate(c.width / 2, c.height / 2);
+	ctx.beginPath();
+	ctx.arc(0, 0, R, 0, Math.PI * 2);
+	ctx.clip();
+	// bands: the lit tone is the biggest; each darker tone is what a disc shifted towards the
+	// light leaves uncovered on the far side
+	const band = (colour: RGB, d: number) => {
+		ctx.fillStyle = css(colour);
+		ctx.beginPath();
+		ctx.arc(lx * R * d, ly * R * d, R * 1.02, 0, Math.PI * 2);
+		ctx.fill();
+	};
+	ctx.fillStyle = css(pal.bounce);
+	ctx.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
+	band(pal.shadow, 0.12);
+	band(pal.mid, 0.42);
+	band(pal.light, 0.92);
+	// the pale zone and the hard highlight
+	const hx = lx * R * 0.56;
+	const hy = ly * R * 0.56;
+	const tangent = lightAngle + Math.PI / 2;
+	ctx.fillStyle = css(mix(pal.light, pal.highlight, 0.55), 0.8);
+	ctx.beginPath();
+	ctx.ellipse(hx, hy, R * 0.46, R * 0.3, tangent, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.fillStyle = css(pal.highlight);
+	ctx.beginPath();
+	ctx.ellipse(hx + lx * R * 0.06, hy + ly * R * 0.06, R * 0.2, R * 0.09, tangent, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.beginPath();
+	ctx.arc(
+		hx + lx * R * 0.08 - ly * R * 0.26,
+		hy + ly * R * 0.08 + lx * R * 0.26,
+		R * 0.045,
+		0,
+		Math.PI * 2
+	);
+	ctx.fill();
+	// the season's rim light along the nape (the frame's -x)
+	ctx.fillStyle = css(SEASON_LOOKS[season].rim, 0.95);
+	ctx.beginPath();
+	ctx.arc(0, 0, R * 1.05, 0, Math.PI * 2);
+	ctx.arc(R * 0.075, 0, R * 1.0, 0, Math.PI * 2);
+	ctx.fill('evenodd');
+	return c;
+}
+
+/**
  * The CG body: every pixel of the sphere shaded by the hero's material, antialiased at the
  * edge; the light comes from the frame's light direction, raised towards the viewer.
  */
@@ -284,6 +360,14 @@ function shadedDisc(
 	return c;
 }
 
+/** The painted inside of the mouth. */
+export interface MouthInside {
+	readonly mid: RGB;
+	readonly deep: RGB;
+	readonly tongue: RGB;
+	readonly tongueLight: RGB;
+}
+
 /** What each hero brings: looks, jaws, rhythm, the light in the mouth, trail and death. */
 export interface HeroDesign {
 	/** Key of the baked discs. */
@@ -297,10 +381,16 @@ export interface HeroDesign {
 	readonly grinRun: number;
 	/** Chomps per second. */
 	readonly chompRate: number;
-	/** The light deep in the mouth. */
-	core(): HTMLCanvasElement;
-	/** The glow spilling out at the lips, the aura of the powered look, flares. */
-	readonly spill: RGB;
+	/** The light deep in the mouth (a painted look without `inside`). */
+	core?(): HTMLCanvasElement;
+	/** The inside of the mouth, painted: a dark cavity and a tongue. */
+	readonly inside?: MouthInside;
+	/** Where the mouth's hinge sits on the body's axis, body radii (default -0.1). */
+	readonly hinge?: number;
+	/** The cel body: tone bands, a pale zone, the season's rim light (see `celDisc`). */
+	readonly cel?: boolean;
+	/** The glow spilling out at the lips (none: null), the aura of the powered look, flares. */
+	readonly spill: RGB | null;
 	readonly aura: RGB;
 	readonly flare: RGB;
 	readonly trailCalm: readonly RibbonLayer[];
@@ -326,7 +416,7 @@ export interface Vec3 {
 /** The ways a hero can be drawn: the painted 2D look or the CG render. */
 export type HeroStyle = 'painted' | 'cg';
 
-export type ParticleKind = 'ember' | 'star' | 'heart';
+export type ParticleKind = 'ember' | 'star' | 'heart' | 'none';
 
 export interface Particle {
 	kind: ParticleKind;
@@ -378,6 +468,7 @@ export abstract class Hero {
 	private lastH = 1;
 	protected moving = false;
 	protected time = 0;
+	protected season: HeroSeason = 'summer';
 	/** The awoken look, 0..1. */
 	protected power = 0;
 	private powerOn = false;
@@ -439,6 +530,7 @@ export abstract class Hero {
 		if (!Number.isFinite(dt) || dt < 0) dt = 0;
 		this.time += dt;
 		this.invulnerable = Boolean(s.invulnerable);
+		if (s.season) this.season = s.season;
 		if (s.dying) {
 			if (this.dying < 0) {
 				this.dying = 0;
@@ -587,6 +679,7 @@ export abstract class Hero {
 		speed: number,
 		fromBack = false
 	): void {
+		if (kind === 'none') return;
 		const r = this.r;
 		const ox = fromBack ? -Math.cos(this.angle) * r * 0.8 : Math.cos(angle) * r * 0.7;
 		const oy = fromBack ? -Math.sin(this.angle) * r * 0.8 : Math.sin(angle) * r * 0.7;
@@ -701,23 +794,29 @@ export abstract class Hero {
 			ctx.globalCompositeOperation = 'source-over';
 		}
 
-		// the core of light inside the mouth: behind the body, seen through the open mouth
+		// inside the mouth, behind the body, seen through the open mouth: a painted cavity with
+		// a tongue, or the core of light of the painted look
 		const coreA = Math.min(1, clamp01(open * 1.4) * (0.85 + 0.15 * p) + charge * 0.6);
-		if (coreA > 0.01) {
+		if (D.inside) {
+			this.drawInside(ctx, R, D.inside, mu, md, R * 0.09 * clamp01(m * 2.5), open);
+		} else if (D.core && coreA > 0.01) {
 			ctx.globalAlpha = coreA;
 			ctx.drawImage(D.core(), R * 0.1 - R * 0.92, -R * 0.92, R * 1.84, R * 1.84);
 			ctx.globalAlpha = 1;
 		}
 
 		// the body: ink (one path), then the painted disc with the mouth cut out
-		const A = { x: -0.1 * R, y: 0 };
+		const A = { x: (D.hinge ?? -0.1) * R, y: 0 };
 		const U = { x: Math.cos(mu) * R, y: -Math.sin(mu) * R };
 		const Dn = { x: Math.cos(md) * R, y: Math.sin(md) * R };
 		const bend = R * 0.09 * clamp01(m * 2.5);
 		if (D.ink !== false) {
 			ctx.save();
-			ctx.translate(-lx * R * 0.045, -ly * R * 0.045);
-			ctx.scale(1.075, 1.075);
+			// the cel look's ink is a thinner line, heavier on the shadow side
+			const inkOffset = D.cel ? 0.026 : 0.045;
+			const inkScale = D.cel ? 1.046 : 1.075;
+			ctx.translate(-lx * R * inkOffset, -ly * R * inkOffset);
+			ctx.scale(inkScale, inkScale);
 			ctx.beginPath();
 			ctx.moveTo(U.x, U.y);
 			ctx.arc(0, 0, R, -mu, md, true);
@@ -746,7 +845,7 @@ export abstract class Hero {
 
 		// the light spilling out of the open mouth: a soft glow at the lips, not a beam
 		const spill = clamp01(open) * (0.45 + 0.4 * p) + this.mouthFlash * 0.6;
-		if (spill > 0.01) {
+		if (D.spill && spill > 0.01) {
 			const fx = this.x + Math.cos(this.angle) * R * 0.75;
 			const fy = this.y + Math.sin(this.angle) * R * 0.75;
 			const gs = R * (1.1 + 0.5 * clamp01(open) + 0.3 * p);
@@ -801,7 +900,7 @@ export abstract class Hero {
 	): void {
 		const cg = this.design.ink === false;
 		ctx.strokeStyle = css(pal.ink, cg ? 0.4 : 1);
-		ctx.lineWidth = R * (cg ? 0.045 : 0.075);
+		ctx.lineWidth = R * (cg ? 0.045 : this.design.cel ? 0.05 : 0.075);
 		lips();
 		ctx.stroke();
 	}
@@ -824,7 +923,7 @@ export abstract class Hero {
 		bend: number
 	): { canvas: HTMLCanvasElement; half: number } {
 		const dpr = Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
-		const disc = paintedDisc(this.design, R * dpr, Math.atan2(ly, lx), p);
+		const disc = paintedDisc(this.design, R * dpr, Math.atan2(ly, lx), p, this.season);
 		const size = disc.width;
 		if (!this.scratch || this.scratch.width !== size) {
 			this.scratch = document.createElement('canvas');
@@ -839,10 +938,12 @@ export abstract class Hero {
 		sc.drawImage(disc, 0, 0);
 		sc.setTransform(k, 0, 0, k, size / 2, size / 2);
 		// the mouth: everything past the lips goes
-		const A = { x: -0.1 * R, y: 0 };
+		const A = { x: (this.design.hinge ?? -0.1) * R, y: 0 };
 		const U = { x: Math.cos(mu) * R, y: -Math.sin(mu) * R };
 		const Dn = { x: Math.cos(md) * R, y: Math.sin(md) * R };
 		sc.globalCompositeOperation = 'destination-out';
+		// opaque: a flash leaves a faint fillStyle behind, which would cut the mouth only partly
+		sc.fillStyle = '#000';
 		sc.beginPath();
 		sc.moveTo(A.x, A.y);
 		sc.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x, U.y);
@@ -860,6 +961,57 @@ export abstract class Hero {
 		}
 		sc.globalCompositeOperation = 'source-over';
 		return { canvas: this.scratch, half: R * DISC_SPAN };
+	}
+
+	/**
+	 * The mouth's cavity (frame space, under the body): the wedge between the lips, a dark
+	 * red that deepens towards the hinge, and a tongue lying on the lower jaw.
+	 */
+	private drawInside(
+		ctx: CanvasRenderingContext2D,
+		R: number,
+		look: MouthInside,
+		mu: number,
+		md: number,
+		bend: number,
+		open: number
+	): void {
+		if (mu + md < 0.12) return;
+		const A = { x: (this.design.hinge ?? -0.1) * R, y: 0 };
+		const U = { x: Math.cos(mu) * R, y: -Math.sin(mu) * R };
+		const Dn = { x: Math.cos(md) * R, y: Math.sin(md) * R };
+		ctx.save();
+		// the cavity is a rounded pocket behind the hinge; the rest of the wedge is open
+		ctx.beginPath();
+		ctx.arc(A.x + R * 0.36, 0, R * 0.5, 0, Math.PI * 2);
+		ctx.clip();
+		ctx.beginPath();
+		ctx.moveTo(A.x, A.y);
+		ctx.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x, U.y);
+		ctx.arc(0, 0, R, -mu, md, false);
+		ctx.quadraticCurveTo((Dn.x + A.x) / 2, (Dn.y + A.y) / 2 - bend, A.x, A.y);
+		ctx.closePath();
+		ctx.clip();
+		// the cavity: dark, deepening towards the hinge
+		const g = ctx.createRadialGradient(A.x + R * 0.5, 0, 0, A.x + R * 0.5, 0, R * 0.7);
+		g.addColorStop(0, css(look.mid));
+		g.addColorStop(1, css(look.deep));
+		ctx.fillStyle = g;
+		ctx.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
+		// the tongue on the lower jaw
+		const t = md * 0.6;
+		const grow = clamp01(open * 1.5);
+		ctx.translate(A.x + Math.cos(t) * R * 0.42, Math.sin(t) * R * 0.5);
+		ctx.rotate(t);
+		ctx.fillStyle = css(look.tongue);
+		ctx.beginPath();
+		ctx.ellipse(0, 0, R * 0.27 * grow, R * 0.1 * grow, 0, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.fillStyle = css(look.tongueLight, 0.8);
+		ctx.beginPath();
+		ctx.ellipse(R * 0.03, -R * 0.025 * grow, R * 0.15 * grow, R * 0.035 * grow, 0, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.restore();
 	}
 
 	private drawTrail(ctx: CanvasRenderingContext2D, p: number): void {

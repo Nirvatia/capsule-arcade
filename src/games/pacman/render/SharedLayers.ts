@@ -5,6 +5,7 @@ import { PacmanHero } from './actors/hero/PacmanHero';
 import { MsPacmanHero } from './actors/hero/MsPacmanHero';
 import type { PacmanAudioCue } from '../core/Events';
 import type { PlayerDrawOptions } from './actors/PlayerView';
+import { heroSeasonOf } from './actors/hero/heroSeasons';
 import { EchoCloneView } from './actors/EchoCloneView';
 import { FruitView } from './items/fruit/FruitView';
 import { EasterEggView } from './items/EasterEggView';
@@ -66,6 +67,9 @@ export class SharedLayers {
 		if (!player) {
 			return;
 		}
+		const season = heroSeasonOf(frame.season.name, frame.level.hellMode);
+		this.heroView.setSeason(season);
+		this.msHeroView.setSeason(season);
 		if (frame.level.profile === 'ms-pacman') {
 			// Ms. Pac-Man the heroine, the hell included
 			this.msHeroView.draw(frame.ctx, player, layout, frame.time, this.playerOptions(frame));
