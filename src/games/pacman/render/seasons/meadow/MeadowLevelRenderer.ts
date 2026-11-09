@@ -19,6 +19,7 @@ const GATE_REACH = 1.6;
 /** Gate speed, share of the full slide per second, opening and closing. */
 /** The ghost shape of each season; the others keep the plain disc. */
 const GHOST_STYLES: Readonly<Record<string, GhostStyle>> = {
+	spring: 'tulip',
 	summer: 'drop',
 	autumn: 'hedgehog',
 	winter: 'bunny'

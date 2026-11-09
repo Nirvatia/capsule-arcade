@@ -75,14 +75,15 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
    2. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
       summer, autumn, winter, with normal, scared, flashing and eyes-only; focus on
       cuteness; the eyes show the heading; in the style of the heroes' mock-ups.
-      Done in play: summer is a water drop, autumn a hedgehog, winter a bunny (owner's picks from chat
+      Done in play, all four seasons: spring a tulip bud, summer a water drop, autumn a
+      hedgehog, winter a bunny (owner's picks from chat
       mock-ups; no tentacles, no wavy skirt). One painter, `render/actors/cuteGhost.ts`
       (ink outline, belly shade, highlight, two bean feet that step with the tiles walked,
       a face and eyes that follow the heading, a look for every state, menacing brows and
       fangs in the chase wave and cute while scattering), and a body shape per season
       (`GHOST_SHAPES`); `GhostView.style` is set by `MeadowLevelRenderer` (`GHOST_STYLES`).
-      Spring still draws the plain disc. Next: spring (a mock-up first), then the owner's
-      review of all four in play.
+      Next: the owner's review of all four in play, then fixes (sizes, faces, contrast of the
+      scared blue on winter's grey path).
    3. **Echo clone look** (`render/actors/EchoCloneView.ts`).
    4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`); the teleport effect;
       the teleporters' own art (`MeadowBake` portal + `MeadowWorld`), bulky today though

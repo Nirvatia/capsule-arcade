@@ -1,6 +1,6 @@
 // The season ghosts: one cel-style painter (ink outline, a belly shade, a highlight, bean feet
 // that step with the ground covered, a face that slides toward the heading) and a body shape
-// per season: a water drop in summer, a hedgehog in autumn, a bunny in winter. No tentacles and no wavy skirt.
+// per season: a water drop in summer, a hedgehog in autumn, a bunny in winter, a tulip bud in spring. No tentacles and no wavy skirt.
 // Pure drawing: the caller picks the state (`cuteStateFor`), the shape and the colour.
 import type { GhostKind, GhostState } from '../../logic/actors/GhostModel';
 import type { HypnosisMode } from '../../logic/rules/HypnosisService';
@@ -8,7 +8,7 @@ import type { HypnosisMode } from '../../logic/rules/HypnosisService';
 type Ctx = CanvasRenderingContext2D;
 type Palette = { b: string; s: string };
 
-export type CuteShape = 'drop' | 'hedgehog' | 'bunny';
+export type CuteShape = 'drop' | 'hedgehog' | 'bunny' | 'tulip';
 export type CuteState = 'normal' | 'scared' | 'overdrive' | 'eyes' | 'rage' | 'feeder' | 'hunter';
 
 export interface CuteOptions {
@@ -56,6 +56,8 @@ export interface GhostShape {
 	readonly over?: (c: Ctx, pal: Palette) => void;
 	/** The colour a lowered brow is filled with, to match what is behind it. */
 	readonly lid: (pal: Palette) => string;
+	/** The colour of the feet, where it is not the belly's shade. */
+	readonly foot?: (pal: Palette) => string;
 	readonly dy: number;
 	readonly scale: number;
 	readonly highlight: readonly [number, number];
@@ -221,10 +223,62 @@ const BUNNY: GhostShape = {
 	nose: true
 };
 
+function polygon(c: Ctx, points: ReadonlyArray<readonly [number, number]>): void {
+	c.beginPath();
+	points.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
+	c.closePath();
+}
+
+/** The spring tulip bud: a round cup under three pointed petals, with green stalk-feet. */
+const TULIP: GhostShape = {
+	paths: [
+		(c) => {
+			c.beginPath();
+			c.ellipse(0, 3.2, 9.8, 7.8, 0, 0, TAU);
+		},
+		(c) =>
+			polygon(c, [
+				[-9.2, 0],
+				[-8.6, -10.6],
+				[-2.6, -3.4]
+			]),
+		(c) =>
+			polygon(c, [
+				[-4.2, -3],
+				[0, -13],
+				[4.2, -3]
+			]),
+		(c) =>
+			polygon(c, [
+				[9.2, 0],
+				[8.6, -10.6],
+				[2.6, -3.4]
+			])
+	],
+	over: (c) => {
+		line(c, -6.6, -7.4, -5.6, -2, 'rgba(60,10,30,.35)', 0.8);
+		line(c, 0, -9.6, 0, -4.4, 'rgba(60,10,30,.35)', 0.8);
+		line(c, 6.6, -7.4, 5.6, -2, 'rgba(60,10,30,.35)', 0.8);
+	},
+	lid: (pal) => pal.b,
+	foot: () => '#4fae3a',
+	dy: 2,
+	scale: 0.82,
+	highlight: [-5, 0],
+	ring: 15.4,
+	ey: 2.4,
+	ex: 4.1,
+	rx: 3.1,
+	ry: 3.5,
+	my: 5,
+	nose: false
+};
+
 export const GHOST_SHAPES: Record<CuteShape, GhostShape> = {
 	drop: DROP,
 	hedgehog: HEDGEHOG,
-	bunny: BUNNY
+	bunny: BUNNY,
+	tulip: TULIP
 };
 
 /** Which look a ghost in this game state takes (the lair's translucency is the caller's). */
@@ -525,7 +579,7 @@ export function drawCuteGhost(c: Ctx, x: number, y: number, unit: number, o: Cut
 	] as const) {
 		c.beginPath();
 		c.ellipse(side * 4.2, 11 - up, 3.3, 2.5, 0, 0, TAU);
-		c.fillStyle = pal.s;
+		c.fillStyle = shape.foot ? shape.foot(pal) : pal.s;
 		c.fill();
 		c.strokeStyle = INK;
 		c.lineWidth = 1.5;
