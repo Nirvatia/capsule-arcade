@@ -6,13 +6,14 @@
 // (the season's and a pink one), petals, dust and manga twinkles. Powered, the bow glows, rose-
 // gold ki flames open behind her, the brow lifts and the highlight turns to a star. The
 // machinery (acting, bites, spring, energizer beat) is the shared Hero.
-import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from './Hero';
+import type { HeroDesign, Lane, MouthInside, Palette, Particle, ParticleKind } from './Hero';
 import { Hero, Spring, css, glow, mix } from './Hero';
 import { SEASON_LOOKS } from './heroSeasons';
 import type { HeroSeason, RGB } from './heroSeasons';
 import {
 	drawKiFlames,
 	drawSeasonParticle,
+	drawStreak,
 	drawStarGlint,
 	particleLift,
 	particleSize,
@@ -267,6 +268,24 @@ function paintedBow(deviceR: number, season: HeroSeason): HTMLCanvasElement {
 	return c;
 }
 
+/** Speed streaks: lanes off the axis (length, head width, spacing in body radii). */
+const LANES: readonly Lane[] = [
+	{ y: -0.46, len: 1.9, w: 0.111, gap: 1.44 },
+	{ y: -0.22, len: 2.5, w: 0.104, gap: 1.6 },
+	{ y: 0.0, len: 1.8, w: 0.091, gap: 1.28 },
+	{ y: 0.22, len: 2.4, w: 0.104, gap: 1.6 },
+	{ y: 0.46, len: 1.7, w: 0.091, gap: 1.36 }
+];
+const LANES_HOT: readonly Lane[] = [
+	...LANES.map((l) => ({ ...l, len: l.len * 1.25 })),
+	{ y: -0.66, len: 1.8, w: 0.078, gap: 1.44 },
+	{ y: 0.66, len: 1.9, w: 0.078, gap: 1.44 }
+];
+/** The streaks alternate: the season's colour, then pink (gold and rose when powered). */
+const PINK: RGB = [255, 174, 210];
+const PINK_HOT: RGB = [255, 150, 190];
+const GOLD: RGB = [255, 206, 64];
+
 const DESIGN: HeroDesign = {
 	id: 'ms-pacman',
 	calm: CALM,
@@ -279,13 +298,10 @@ const DESIGN: HeroDesign = {
 	grinRun: 0.04,
 	chompRate: 4.8,
 	flare: [255, 214, 236],
+	lanes: LANES,
+	lanesHot: LANES_HOT,
 	death: 'spin'
 };
-
-/** The pink ribbon behind her, calm and powered. */
-const RIBBON_PINK: RGB = [255, 174, 210];
-const RIBBON_PINK_HOT: RGB = [255, 150, 190];
-const RIBBON_GOLD: RGB = [255, 206, 64];
 
 export class MsPacmanHero extends Hero {
 	protected readonly design = DESIGN;
@@ -324,47 +340,6 @@ export class MsPacmanHero extends Hero {
 			// irregular, like a living thing; now and then a double blink
 			this.nextBlink = this.time + (this.blinks % 4 === 0 ? 0.3 : 2.2 + (this.blinks % 3) * 1.1);
 		}
-	}
-
-	/** Two outlined ribbons from the nape, the season's and a pink one, swaying and streaming. */
-	protected drawStreaks(ctx: CanvasRenderingContext2D, R: number, run: number, p: number): void {
-		if (run < 0.02) return;
-		const look = SEASON_LOOKS[this.season];
-		const t = this.time;
-		const ribbon = (
-			y0: number,
-			len: number,
-			w0: number,
-			amp: number,
-			phase: number,
-			lift: number,
-			fill: RGB
-		) => {
-			const n = 16;
-			const x0 = -Math.sqrt(Math.max(0, 1 - y0 * y0)) * R * 0.85;
-			const top: Array<[number, number]> = [];
-			const bottom: Array<[number, number]> = [];
-			for (let i = 0; i <= n; i++) {
-				const s = i / n;
-				const x = x0 - s * len * R * run;
-				const y = y0 * R + lift * s * s * R + amp * R * Math.sin(t * 5 - s * 5 + phase) * s;
-				const w = w0 * R * Math.pow(1 - s, 0.9) * 0.5;
-				top.push([x, y - w]);
-				bottom.push([x, y + w]);
-			}
-			ctx.beginPath();
-			top.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
-			for (let i = n; i >= 0; i--) ctx.lineTo(bottom[i][0], bottom[i][1]);
-			ctx.closePath();
-			ctx.fillStyle = css(fill, 0.97);
-			ctx.fill();
-			ctx.strokeStyle = css(INK, 0.9);
-			ctx.lineWidth = Math.max(1, R * 0.03);
-			ctx.lineJoin = 'round';
-			ctx.stroke();
-		};
-		ribbon(-0.38, 3.0, 0.32, 0.22, 0, -0.5, mix(look.line, RIBBON_GOLD, p));
-		ribbon(0.12, 2.5, 0.22, 0.2, 2.2, 0.35, mix(RIBBON_PINK, RIBBON_PINK_HOT, p));
 	}
 
 	/** Rose-gold ink-outlined ki flames round the back of the body while she is powered. */
@@ -606,6 +581,12 @@ export class MsPacmanHero extends Hero {
 	}
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
+		if (e.kind === 'streak') {
+			const look = SEASON_LOOKS[this.season];
+			const seasonal = (e.lane ?? 0) % 2 === 0;
+			drawStreak(ctx, e, a, seasonal ? (e.hot ? GOLD : look.line) : e.hot ? PINK_HOT : PINK);
+			return;
+		}
 		if (drawSeasonParticle(ctx, e, a, s, this.season)) return;
 		ctx.save();
 		ctx.translate(e.x, e.y);

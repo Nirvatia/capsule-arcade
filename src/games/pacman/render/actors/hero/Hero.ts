@@ -210,6 +210,17 @@ function celDisc(
 	return c;
 }
 
+/**
+ * One lane of speed streaks behind a hero, in body radii: how far off his axis, how long a
+ * streak is, how wide at its head, and how far he runs between two streaks of the lane.
+ */
+export interface Lane {
+	readonly y: number;
+	readonly len: number;
+	readonly w: number;
+	readonly gap: number;
+}
+
 /** The painted inside of the mouth. */
 export interface MouthInside {
 	readonly mid: RGB;
@@ -237,12 +248,15 @@ export interface HeroDesign {
 	readonly hinge?: number;
 	/** The colour of the burst's ring and the last flare of a death. */
 	readonly flare: RGB;
+	/** Speed streaks behind him (calm, and powered): particles left in the world as he runs. */
+	readonly lanes: readonly Lane[];
+	readonly lanesHot: readonly Lane[];
 	/** 'open': the mouth opens all the way round; 'spin': she spins away. */
 	readonly death: 'open' | 'spin';
 }
 
 export type ParticleKind =
-	'ember' | 'star' | 'heart' | 'dust' | 'petal' | 'spark' | 'leaf' | 'flake' | 'none';
+	'ember' | 'star' | 'heart' | 'dust' | 'petal' | 'spark' | 'leaf' | 'flake' | 'streak' | 'none';
 
 export interface Particle {
 	kind: ParticleKind;
@@ -255,6 +269,10 @@ export interface Particle {
 	size: number;
 	hot: boolean;
 	spin: number;
+	/** A speed streak: its length, its direction (it stays where it was born) and its lane. */
+	len?: number;
+	ang?: number;
+	lane?: number;
 }
 
 interface Burst {
@@ -280,8 +298,8 @@ export abstract class Hero {
 	protected flip = 1;
 	private lastH = 1;
 	protected moving = false;
-	/** 0..1: how fast he runs, eased (the speed lines and what streams behind him). */
-	protected run = 0;
+	/** Distance run since each streak lane last dropped a streak. */
+	private laneDist: number[] = [];
 	protected time = 0;
 	protected season: HeroSeason = 'summer';
 	/** The awoken look, 0..1. */
@@ -316,6 +334,7 @@ export abstract class Hero {
 
 	reset(): void {
 		this.embers = [];
+		this.laneDist = [];
 		this.bursts = [];
 		this.power = 0;
 		this.powerOn = false;
@@ -362,7 +381,6 @@ export abstract class Hero {
 					);
 				}
 			}
-			this.run = Math.max(0, this.run - dt * 6);
 			this.size.step(1, dt);
 			this.flash = Math.max(0, this.flash - dt / 0.3);
 			this.tick(dt);
@@ -372,7 +390,9 @@ export abstract class Hero {
 			this.reset();
 			this.dying = -1;
 		}
-		const step = Math.hypot(s.x - this.x, s.y - this.y);
+		const dx = s.x - this.x;
+		const dy = s.y - this.y;
+		const step = Math.hypot(dx, dy);
 		this.x = s.x;
 		this.y = s.y;
 		let turn = Math.abs(s.angle - this.angle) % (Math.PI * 2);
@@ -380,7 +400,6 @@ export abstract class Hero {
 		if (turn > 0.6) this.onTurn?.();
 		this.angle = s.angle;
 		this.moving = s.moving;
-		this.run += ((s.moving ? 1 : 0) - this.run) * Math.min(1, dt * 10);
 		this.ending = s.ending;
 		if (Math.abs(Math.cos(s.angle)) > 0.5) this.lastH = Math.cos(s.angle) > 0 ? 1 : -1;
 		const vertical = Math.abs(Math.sin(s.angle)) > 0.5;
@@ -465,6 +484,23 @@ export abstract class Hero {
 				);
 			}
 		}
+		// speed streaks: dropped in the world along the way he runs, each one lying along the
+		// direction he was going when it was dropped, so a turn bends the whole trail
+		if (step < r * 3 && step > r * 0.01) {
+			const hot = this.power > 0.5;
+			const lanes = hot ? this.design.lanesHot : this.design.lanes;
+			while (this.laneDist.length < lanes.length) {
+				this.laneDist.push(this.random() * lanes[this.laneDist.length].gap * r);
+			}
+			lanes.forEach((lane, i) => {
+				this.laneDist[i] += step;
+				const gap = lane.gap * r;
+				while (this.laneDist[i] >= gap) {
+					this.laneDist[i] -= gap;
+					this.spawnStreak(dx / step, dy / step, lane, i, hot);
+				}
+			});
+		}
 		this.tick(dt);
 	}
 
@@ -482,6 +518,27 @@ export abstract class Hero {
 		this.embers = this.embers.filter((e) => e.life > 0);
 		for (const b of this.bursts) b.t += dt;
 		this.bursts = this.bursts.filter((b) => b.t < 0.5);
+	}
+
+	private spawnStreak(dx: number, dy: number, lane: Lane, index: number, hot: boolean): void {
+		const r = this.r;
+		const back = 0.75 * r;
+		const life = (0.3 + this.random() * 0.12) * (hot ? 1.25 : 1);
+		this.embers.push({
+			kind: 'streak',
+			x: this.x - dx * back - dy * lane.y * r,
+			y: this.y - dy * back + dx * lane.y * r,
+			vx: 0,
+			vy: 0,
+			life,
+			max: life,
+			size: lane.w * r,
+			hot,
+			spin: 0,
+			len: lane.len * r * (0.85 + this.random() * 0.3),
+			ang: Math.atan2(dy, dx),
+			lane: index
+		});
 	}
 
 	private spawn(
@@ -596,8 +653,7 @@ export abstract class Hero {
 		ctx.scale(this.size.value * S, this.size.value * S * this.flip);
 		const R = r;
 
-		// behind: the speed lines, and what the powered look carries behind it
-		this.drawStreaks?.(ctx, R, this.run, p);
+		// behind: what the powered look carries behind it
 		if (p > 0.01) this.drawBehind?.(ctx, R, p * pulse);
 		// inside the mouth, behind the body, seen through the open mouth: a painted cavity
 		// with a tongue
@@ -653,8 +709,6 @@ export abstract class Hero {
 	}
 
 	// ── hooks: what each hero adds ──
-	/** Frame space, behind the body, always: the speed lines (`run` 0..1, `p` the powered look). */
-	protected drawStreaks?(ctx: CanvasRenderingContext2D, R: number, run: number, p: number): void;
 	/** How big and how fast-rising a particle kind is (1 and 0.8 if not given). */
 	protected sizeFor?(kind: ParticleKind): number;
 	protected liftFor?(kind: ParticleKind): number;

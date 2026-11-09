@@ -40,9 +40,40 @@ export function particleLift(kind: ParticleKind): number {
 			return -0.18;
 		case 'star':
 			return 0.15;
+		case 'streak':
+			return 0;
 		default:
 			return 0.6;
 	}
+}
+
+/**
+ * A speed streak: a thin spike, wide at its head (towards the hero), solid for most of its life
+ * and thinning and shrinking at the end. `a` is the shared particle alpha (not used: a streak
+ * wants to stay bright while it is short-lived).
+ */
+export function drawStreak(
+	ctx: CanvasRenderingContext2D,
+	e: Particle,
+	_a: number,
+	colour: RGB
+): void {
+	const u = e.life / e.max;
+	const fadeIn = Math.min(1, (1 - u) * 12);
+	const fadeOut = Math.min(1, u * 2.4);
+	const len = (e.len ?? 0) * (0.45 + 0.55 * fadeOut);
+	const w = e.size * (0.35 + 0.65 * fadeOut);
+	ctx.save();
+	ctx.translate(e.x, e.y);
+	ctx.rotate(e.ang ?? 0);
+	ctx.fillStyle = css(colour, 0.95 * fadeIn * fadeOut);
+	ctx.beginPath();
+	ctx.moveTo(len * 0.5, -w / 2);
+	ctx.lineTo(-len * 0.5, 0);
+	ctx.lineTo(len * 0.5, w / 2);
+	ctx.closePath();
+	ctx.fill();
+	ctx.restore();
 }
 
 /**

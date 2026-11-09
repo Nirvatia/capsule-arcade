@@ -46,6 +46,8 @@ let running = !q.has('rest');
 let slow = false;
 let powerTimer = q.has('power') ? POWER_TIME : 0;
 let phase = 0;
+let bigR = 40;
+let ovalW = 0;
 let gulpClock = 0;
 
 /** The longest straight run of dot tiles in a row of the maze: where the strips run. */
@@ -86,7 +88,8 @@ function layout(): void {
 	view.style.height = `${vh}px`;
 	buildWorld();
 	const S = world.layout.tileSize;
-	big.setRadius(Math.min(vw * 0.5, vh) * 0.22);
+	bigR = Math.min(vw * 0.5, vh) * 0.09;
+	big.setRadius(bigR);
 	mid.setRadius(S * RADIUS * ZOOM);
 	small.setRadius(S * RADIUS);
 	for (const h of [big, mid, small]) h.reset();
@@ -151,13 +154,18 @@ function frame(realDt: number): void {
 	const zoomStrip = { x: sx, y: 16, w: sw, h: Math.min(S * 3 * ZOOM, (vh - 112) * 0.62) };
 	const smallStrip = { x: sx, y: zoomStrip.y + zoomStrip.h + 16, w: sw, h: S * 3 };
 
-	// the big hero runs across the panel and wraps round, so his trail and particles show
-	const bigSpan = panel.w * 0.12;
-	const bigX = panel.x + panel.w * 0.6 + (moving ? (phase * panel.w * 0.1) % bigSpan : 0);
+	// the big hero runs round an oval (so the trail has to bend); at rest he stands in the middle
+	const cxp = panel.x + panel.w * 0.5;
+	const cyp = panel.y + panel.h * 0.5;
+	const ax = panel.w * 0.24;
+	const ay = panel.h * 0.2;
+	// he runs at the game's speed for his size (about 15 body radii a second)
+	if (moving) ovalW += (dt * (SPEED * bigR) / RADIUS) / ((ax + ay) / 2);
+	const w = ovalW;
 	big.update(dt, {
-		x: bigX,
-		y: panel.y + panel.h * 0.52,
-		angle: 0,
+		x: moving ? cxp + Math.cos(w) * ax : cxp,
+		y: moving ? cyp + Math.sin(w) * ay : cyp,
+		angle: moving ? Math.atan2(Math.cos(w) * ay, -Math.sin(w) * ax) : 0,
 		moving,
 		power,
 		ending,
