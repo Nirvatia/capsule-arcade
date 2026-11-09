@@ -7,7 +7,7 @@
 // radii, their length trembling) and puts a star on the highlight. The machinery (acting,
 // bites, spring, energizer beat) is the shared Hero.
 import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from './Hero';
-import { Hero } from './Hero';
+import { Hero, css, mix } from './Hero';
 import { SEASON_LOOKS } from './heroSeasons';
 import {
 	INK,
@@ -72,6 +72,64 @@ export class PacmanHero extends Hero {
 		drawKiFlames(ctx, R, k, this.time, { outer: [255, 132, 28], inner: [255, 228, 98], ink: INK });
 	}
 
+	/** Three fire swirls on the gold ball (white-hot when powered), turning with the roll. */
+	protected paintBallPattern(ctx: CanvasRenderingContext2D, R: number, p: number): void {
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+		for (let k = 0; k < 3; k++) {
+			const a0 = (k * Math.PI * 2) / 3;
+			const swirl = () => {
+				ctx.beginPath();
+				for (let i = 0; i <= 24; i++) {
+					const t = i / 24;
+					const r = R * (0.1 + 1.0 * t);
+					const a = a0 + t * 2.3;
+					if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+					else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+				}
+			};
+			swirl();
+			ctx.strokeStyle = css(INK, 0.9);
+			ctx.lineWidth = R * 0.3;
+			ctx.stroke();
+			swirl();
+			ctx.strokeStyle = css(mix([236, 96, 28], [255, 244, 200], p));
+			ctx.lineWidth = R * 0.2;
+			ctx.stroke();
+			swirl();
+			ctx.strokeStyle = css(mix([255, 210, 80], [255, 255, 255], p));
+			ctx.lineWidth = R * 0.07;
+			ctx.stroke();
+		}
+	}
+
+	/** Three drops of fire circling the ball. */
+	protected paintBallOrbit(ctx: CanvasRenderingContext2D, R: number): void {
+		for (let k = 0; k < 3; k++) {
+			const a = this.time * 7 + (k * Math.PI * 2) / 3;
+			const rr = R * 1.3;
+			drawFlameDrop(
+				ctx,
+				{
+					kind: 'flame',
+					x: Math.cos(a) * rr,
+					y: Math.sin(a) * rr,
+					vx: 0,
+					vy: 0,
+					life: 0.7,
+					max: 1,
+					size: R * 0.3,
+					hot: true,
+					spin: 0,
+					len: R * 0.95,
+					ang: a + Math.PI / 2
+				},
+				[255, 132, 28],
+				[255, 228, 98]
+			);
+		}
+	}
+
 	/** A small four-point star on the highlight while he is powered. */
 	protected drawWorn(
 		ctx: CanvasRenderingContext2D,
@@ -86,8 +144,8 @@ export class PacmanHero extends Hero {
 	/** The season's own little things off the back and on bursts (no dust: it read as gas). */
 	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
 		const own = SEASON_LOOKS[this.season].particle;
-		// powered, the trail is fire; otherwise the season's own things
-		return moment === 'trail' && this.power > 0.5 ? 'ember' : own;
+		// powered or rolled into a ball, the trail is fire; otherwise the season's own things
+		return moment === 'trail' && (this.power > 0.5 || this.ball) ? 'ember' : own;
 	}
 
 	protected sizeFor(kind: ParticleKind): number {

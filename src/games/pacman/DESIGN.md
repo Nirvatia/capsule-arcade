@@ -105,6 +105,13 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   autumn rain, winter blizzard); **night** falls at 75 %.
 - Gameplay tuning (`SeasonCatalog.seasonModifiers`): spring power 6.5 s; summer fruit
   14 s; autumn ghosts ×0.97; winter Pac-Man ×0.97.
+- **Tunnel** (the pads at the maze's sides): two tiles before a pad the hero curls into a
+  rolling ball of his own kind and flashes: Pac-Man a gold ball with fire swirls, fire drops
+  circling it and fire sparks behind; Ms. Pac-Man a pink ball with her bow's scarlet polka-dot
+  ribbons wound round it, twinkles and hearts circling and shed. At the pad the season's
+  particles gather into it and flash; at the exit a ring goes out with a burst of them. The
+  ball keeps rolling for about 0.6 s after the tunnel, then opens back up with a flash.
+  Heroes only; the ghosts go through unmarked (the hell has its own fog).
 - **Season turn** (level clear): beads of light run down the corridors from the last dot,
   then every tile flips like a card to the next level's world, with that world's
   particles thrown up at the front. The next level starts in place, without a fade.

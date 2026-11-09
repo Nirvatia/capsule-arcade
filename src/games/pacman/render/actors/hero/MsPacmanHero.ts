@@ -352,6 +352,72 @@ export class MsPacmanHero extends Hero {
 		});
 	}
 
+	/** Two ribbons of her bow (scarlet, polka-dotted) wound round the pink ball, turning with the roll. */
+	protected paintBallPattern(ctx: CanvasRenderingContext2D, R: number): void {
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+		for (let k = 0; k < 2; k++) {
+			const a0 = k * Math.PI;
+			const point = (t: number) => {
+				const r = R * (0.1 + 1.0 * t);
+				const a = a0 + t * 2.6;
+				return { x: Math.cos(a) * r, y: Math.sin(a) * r };
+			};
+			const ribbon = () => {
+				ctx.beginPath();
+				for (let i = 0; i <= 28; i++) {
+					const q = point(i / 28);
+					if (i === 0) ctx.moveTo(q.x, q.y);
+					else ctx.lineTo(q.x, q.y);
+				}
+			};
+			ribbon();
+			ctx.strokeStyle = css(INK, 0.9);
+			ctx.lineWidth = R * 0.34;
+			ctx.stroke();
+			ribbon();
+			ctx.strokeStyle = css(this.tint.bow);
+			ctx.lineWidth = R * 0.24;
+			ctx.stroke();
+			ctx.fillStyle = 'rgba(255,255,255,0.95)';
+			for (const t of [0.3, 0.5, 0.7, 0.9]) {
+				const q = point(t);
+				ctx.beginPath();
+				ctx.arc(q.x, q.y, R * 0.045, 0, Math.PI * 2);
+				ctx.fill();
+			}
+		}
+	}
+
+	/** Twinkles and little hearts circling the ball. */
+	protected paintBallOrbit(ctx: CanvasRenderingContext2D, R: number): void {
+		ctx.lineJoin = 'round';
+		for (let k = 0; k < 6; k++) {
+			const a = this.time * 5 + (k * Math.PI * 2) / 6;
+			const x = Math.cos(a) * R * 1.32;
+			const y = Math.sin(a) * R * 1.32;
+			if (k % 2 === 0) {
+				ctx.fillStyle = this.power > 0.5 ? css([255, 226, 110]) : 'rgba(255,252,255,1)';
+				ctx.strokeStyle = css([110, 26, 76], 0.9);
+				ctx.lineWidth = R * 0.04;
+				starPath(ctx, x, y, R * 0.2, R * 0.05, a);
+				ctx.fill();
+				ctx.stroke();
+			} else {
+				const h = R * 0.1;
+				ctx.fillStyle = 'rgba(255,72,130,1)';
+				ctx.strokeStyle = css([120, 20, 60], 0.9);
+				ctx.lineWidth = R * 0.035;
+				ctx.beginPath();
+				ctx.moveTo(x, y + h * 0.9);
+				ctx.bezierCurveTo(x - h * 1.3, y + h * 0.1, x - h * 0.9, y - h * 1.1, x, y - h * 0.4);
+				ctx.bezierCurveTo(x + h * 0.9, y - h * 1.1, x + h * 1.3, y + h * 0.1, x, y + h * 0.9);
+				ctx.fill();
+				ctx.stroke();
+			}
+		}
+	}
+
 	/** Blush: three short slanted strokes on the cheek. */
 	private drawBlush(ctx: CanvasRenderingContext2D, R: number, ex: number, ey: number): void {
 		ctx.strokeStyle = css(this.tint.blush, 0.9);
@@ -568,6 +634,7 @@ export class MsPacmanHero extends Hero {
 	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
 		if (moment === 'trail') {
 			const r = this.random();
+			if (this.ball) return r < 0.5 ? 'heart' : 'star';
 			if (this.power > 0.5) return r < 0.5 ? 'ember' : 'star';
 			return r < 0.5 ? SEASON_LOOKS[this.season].particle : 'star';
 		}

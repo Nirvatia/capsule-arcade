@@ -126,6 +126,17 @@ export class LevelFx {
 				this.popup(fx.x, fx.y, '1UP', GOLD);
 				this.pulse(GOLD, 0.4);
 				break;
+			case 'teleport':
+				// into the tunnel: the season's particles gather into the pad and flash; out of it: a
+				// ring goes out, a burst of them and a flash of light
+				this.gather(fx.x, fx.y, style.accent, 10, style.particle);
+				this.flashes.push({ x: fx.x, y: fx.y, age: 0, life: 0.16 });
+				this.ring(fx.x, fx.y, WHITE, 0.9, 0.25);
+				this.ring(fx.tx, fx.ty, style.accent, 2.4, 0.45);
+				this.ring(fx.tx, fx.ty, WHITE, 1.6, 0.35, 0.05);
+				this.burst(fx.tx, fx.ty, style.accent, 10, 4, style.particle);
+				this.flashes.push({ x: fx.tx, y: fx.ty, age: 0, life: 0.2 });
+				break;
 			case 'echo-pop':
 				// a clone caught by a ghost: a small blue ring and a puff of blue sparks
 				this.flashes.push({ x: fx.x, y: fx.y, age: 0, life: 0.12 });
@@ -331,6 +342,35 @@ export class LevelFx {
 				tint,
 				age: 0,
 				life: particle ? 0.9 : 0.45,
+				texture: particle ? particle(this.seed) : null,
+				spin: (this.noise() - 0.5) * 8
+			});
+		}
+	}
+
+	/** Sparks that start round a point and fly into it (the reverse of a burst). */
+	private gather(
+		x: number,
+		y: number,
+		tint: number,
+		count: number,
+		particle: ((i: number) => HTMLCanvasElement) | null
+	): void {
+		const life = 0.3;
+		// the sparks slow down (drag 4 a second): start fast enough to arrive in `life`
+		const reach = 4 / (1 - Math.exp(-4 * life));
+		for (let i = 0; i < count; i += 1) {
+			this.seed += 1;
+			const a = (i / count) * Math.PI * 2 + this.noise() * 0.6;
+			const r = 0.85 + this.noise() * 0.3;
+			this.sparks.push({
+				x: x + Math.cos(a) * r,
+				y: y + Math.sin(a) * r,
+				vx: -Math.cos(a) * r * reach,
+				vy: -Math.sin(a) * r * reach,
+				tint,
+				age: 0,
+				life,
 				texture: particle ? particle(this.seed) : null,
 				spin: (this.noise() - 0.5) * 8
 			});

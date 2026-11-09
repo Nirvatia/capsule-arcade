@@ -85,13 +85,15 @@ export class SharedLayers {
 		const { level } = frame;
 		const dying = frame.state === 'death';
 		const shield = frame.state === 'playing';
+		const padAhead = this.padAhead(frame);
 		if (level.hellMode) {
 			const doom = level.doom;
 			return {
 				look: doom && doom.berserkActive ? 'berserk' : 'normal',
 				charge: doom && doom.bfgCharging ? doom.bfgChargeProgress : 0,
 				dying,
-				shield
+				shield,
+				padAhead
 			};
 		}
 		const combat = level.combat;
@@ -104,6 +106,32 @@ export class SharedLayers {
 		const left =
 			level.profile === 'ms-pacman' ? (hypnosis?.overdriveTimer ?? 0) : (combat?.powerTimer ?? 0);
 		const ending = powered && left < 2;
-		return { look: powered ? 'energized' : 'normal', charge: 0, dying, ending, shield };
+		return {
+			look: powered ? 'energized' : 'normal',
+			charge: 0,
+			dying,
+			ending,
+			shield,
+			padAhead
+		};
+	}
+
+	/** A tunnel pad lies one or two tiles ahead of the hero along his heading. */
+	private padAhead(frame: RenderFrame): boolean {
+		const player = frame.level.player;
+		const facing = player?.facing;
+		if (!player || !facing) {
+			return false;
+		}
+		const v = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[facing];
+		const tile = player.tile;
+		for (const k of [1, 2]) {
+			const x = tile.x + v[0] * k;
+			const y = tile.y + v[1] * k;
+			if (frame.grid.isInside(x, y) && frame.grid.isTeleport(x, y)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

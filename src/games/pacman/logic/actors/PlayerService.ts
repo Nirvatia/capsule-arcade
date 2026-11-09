@@ -400,6 +400,13 @@ export class PlayerService {
 		}
 		this.player.teleportTo(destination);
 		this.events.emit('audio:cue', { cue: 'teleport' });
+		this.events.emit('fx:event', {
+			kind: 'teleport',
+			x: tile.x + 0.5,
+			y: tile.y + 0.5,
+			tx: destination.x + 0.5,
+			ty: destination.y + 0.5
+		});
 		this.progress.collectAt(destination.x, destination.y);
 		return true;
 	}

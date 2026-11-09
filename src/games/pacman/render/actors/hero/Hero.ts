@@ -310,6 +310,9 @@ export abstract class Hero {
 	 */
 	protected readonly size = new Spring(1);
 	private flash = 0;
+	/** Curled up into a rolling ball (at a tunnel), and how far the ball has rolled, radians. */
+	private ballOn = false;
+	private roll = 0;
 	private mouthFlash = 0;
 	private embers: Particle[] = [];
 	private bursts: Burst[] = [];
@@ -344,6 +347,30 @@ export abstract class Hero {
 		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 	}
 
+	/**
+	 * Curls him into a ball that rolls, or opens him back up (a flash and a pop of the spring
+	 * hide the change). The ball is each hero's own (`paintBallPattern`, `paintBallOrbit`).
+	 */
+	setBall(on: boolean): void {
+		if (on === this.ballOn) return;
+		this.ballOn = on;
+		this.flash = 0.8;
+		this.size.value = 0.82;
+		this.size.velocity += on ? 4 : 7;
+		for (let i = 0; i < 10; i++) {
+			this.spawn(
+				this.particleFor?.('burst') ?? 'ember',
+				true,
+				(i / 10) * Math.PI * 2,
+				4 + this.random() * 5
+			);
+		}
+	}
+
+	get ball(): boolean {
+		return this.ballOn;
+	}
+
 	/** A dot: just a small glow at the lips (the run's chomp already bites). */
 	gulp(): void {
 		this.mouthFlash = Math.max(this.mouthFlash, 0.3);
@@ -361,6 +388,7 @@ export abstract class Hero {
 		this.invulnerable = Boolean(s.invulnerable);
 		if (s.season) this.season = s.season;
 		if (s.dying) {
+			this.ballOn = false;
 			if (this.dying < 0) {
 				this.dying = 0;
 				this.flash = 0.8;
@@ -392,6 +420,11 @@ export abstract class Hero {
 		const step = Math.hypot(dx, dy);
 		this.x = s.x;
 		this.y = s.y;
+		// a ball rolls by what it travels: right and down turn it one way, left and up the other
+		if (step < this.r * 3) {
+			const sign = Math.abs(dx) >= Math.abs(dy) ? Math.sign(dx) : Math.sign(dy);
+			this.roll += (step / Math.max(1, this.r)) * sign;
+		}
 		let turn = Math.abs(s.angle - this.angle) % (Math.PI * 2);
 		if (turn > Math.PI) turn = Math.PI * 2 - turn;
 		if (turn > 0.6) this.onTurn?.();
@@ -473,10 +506,10 @@ export abstract class Hero {
 			const ux = dx / step;
 			const uy = dy / step;
 			this.stormDist += step;
-			const gap = r * (hot ? 0.2 : 0.3);
+			const gap = r * (this.ballOn ? 0.14 : hot ? 0.2 : 0.3);
 			while (this.stormDist >= gap) {
 				this.stormDist -= gap;
-				this.spawnStorm(ux, uy, hot);
+				this.spawnStorm(ux, uy, hot || this.ballOn);
 			}
 			if (hot) {
 				this.flameDist += step;
@@ -673,6 +706,14 @@ export abstract class Hero {
 
 		// behind: what the powered look carries behind it
 		if (p > 0.01) this.drawBehind?.(ctx, R, p * pulse);
+		if (this.ballOn) {
+			this.paintBall(ctx, R, lx, ly, p, pal);
+			ctx.restore();
+			this.drawFront?.(ctx);
+			this.drawBursts(ctx);
+			return;
+		}
+
 		// inside the mouth, behind the body, seen through the open mouth: a painted cavity
 		// with a tongue
 		this.drawInside(ctx, R, D.inside, mu, md, R * 0.09 * clamp01(m * 2.5), open, insideK);
@@ -736,6 +777,10 @@ export abstract class Hero {
 	protected drawBehind?(ctx: CanvasRenderingContext2D, R: number, k: number): void;
 	/** Inside the body (the scratch canvas, source-atop): veins, blush, marks. */
 	protected decorate?(sc: CanvasRenderingContext2D, R: number, p: number, k: number): void;
+	/** The rolling ball's pattern (clipped to the ball, turning with the roll `p`): his own. */
+	protected paintBallPattern?(ctx: CanvasRenderingContext2D, R: number, p: number): void;
+	/** What circles the rolling ball, in the frame turned with the roll. */
+	protected paintBallOrbit?(ctx: CanvasRenderingContext2D, R: number, p: number): void;
 	/** Frame space, over the body: what the hero wears (her bow); (lx, ly) is the light. */
 	protected drawWorn?(
 		ctx: CanvasRenderingContext2D,
@@ -881,6 +926,59 @@ export abstract class Hero {
 		ctx.ellipse(R * 0.03, -R * 0.025 * grow, R * 0.15 * grow, R * 0.035 * grow, 0, 0, Math.PI * 2);
 		ctx.fill();
 		ctx.restore();
+	}
+
+	/** The rolling ball: the body's own cel disc (no mouth) with the hero's pattern turning on it. */
+	private paintBall(
+		ctx: CanvasRenderingContext2D,
+		R: number,
+		lx: number,
+		ly: number,
+		p: number,
+		pal: Palette
+	): void {
+		const rb = R * 0.94;
+		const dpr = Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
+		ctx.fillStyle = css(pal.ink);
+		ctx.beginPath();
+		ctx.arc(-lx * rb * 0.026, -ly * rb * 0.026, rb * 1.046, 0, Math.PI * 2);
+		ctx.fill();
+		const disc = bodyDisc(this.design, rb * dpr, Math.atan2(ly, lx), p, this.season);
+		const half = rb * DISC_SPAN;
+		ctx.drawImage(disc, -half, -half, half * 2, half * 2);
+		// the pattern turns with the roll, whatever way he faces (the frame is turned and may be
+		// flipped, so the turn is taken back out of it)
+		const turn = this.flip * (this.roll - this.angle);
+		ctx.save();
+		ctx.beginPath();
+		ctx.arc(0, 0, rb, 0, Math.PI * 2);
+		ctx.clip();
+		ctx.rotate(turn);
+		this.paintBallPattern?.(ctx, rb, p);
+		ctx.restore();
+		// the light stays where it is while the ball turns
+		ctx.fillStyle = css(pal.highlight, 0.95);
+		ctx.beginPath();
+		ctx.ellipse(
+			lx * rb * 0.5,
+			ly * rb * 0.5,
+			rb * 0.2,
+			rb * 0.1,
+			Math.atan2(ly, lx) + Math.PI / 2,
+			0,
+			Math.PI * 2
+		);
+		ctx.fill();
+		ctx.save();
+		ctx.rotate(turn);
+		this.paintBallOrbit?.(ctx, rb, p);
+		ctx.restore();
+		if (this.flash > 0) {
+			ctx.fillStyle = `rgba(255,255,250,${this.flash})`;
+			ctx.beginPath();
+			ctx.arc(0, 0, rb * 1.05, 0, Math.PI * 2);
+			ctx.fill();
+		}
 	}
 
 	private drawEmbers(ctx: CanvasRenderingContext2D): void {

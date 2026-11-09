@@ -162,7 +162,8 @@ still takes it (`LATE_TURN`). Tests: `logic/actors/playerControl.test.ts`.
   each), frightened ghosts run from it.
 - `logic/bonuses/echoClone.test.ts` — the echo: the chance and the window, the token, 7-9 clones for
   2-3 s, dots and fruit eaten, energizers left, active ghosts kill a clone, the end.
-- `render/actors/hero/heroTrail.test.ts` — the heroes' season table and trail.
+- `render/actors/hero/heroTrail.test.ts` — the heroes' season table, trail and rolling ball.
+- `logic/actors/playerTunnel.test.ts` — the tunnel's `teleport` fx.
 - `logic/level/mazeCycle.test.ts` — the maze order, the season levels without the boss
   levels.
 - `logic/level/levelRouting.test.ts` — seasons in order, the hell every 5th level per

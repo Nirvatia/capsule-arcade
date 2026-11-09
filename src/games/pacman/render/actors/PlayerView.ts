@@ -20,6 +20,8 @@ export interface PlayerDrawOptions {
 	 * and only ticks once the level runs, so it would blink on a hero standing still.
 	 */
 	readonly shield?: boolean;
+	/** A tunnel pad lies one or two tiles ahead: a hero curls into a rolling ball for it. */
+	readonly padAhead?: boolean;
 }
 
 interface Palette {

@@ -52,8 +52,8 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
 3. **Mechanics and balance** (Sonnet; Opus for the hypnosis design).
    1. ~~**Echo clone mechanic**~~ Done (see Done, "Part I, 3.1").
    2. ~~**Hypnosis for Ms. Pac-Man, two modes**~~ Done (see Done, "Part I, 3.2").
-   3. Regular levels have no teleport effect (the hell has its teleport fog): add a simple
-      one built from the existing FX (`render/fx/LevelFx.ts`); its final look is step 5.
+   3. ~~Regular levels have no teleport effect~~ Done (see Done, "Part I, 3.3"). Its final look
+      is step 5.4.
    4. **Balance check**, after the mazes: compare speeds, timers and scores with the
       arcade originals and with play on levels 1–15 on all four mazes (dot counts run from
       227 to 268, `grid_04` has no tunnel); change configs only where something is off. If
@@ -345,3 +345,16 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   with 16 planned dots, hunter with the food gone ate a ghost). Tests: `ghostRoutes.test.ts`
   (10), `hypnosis.test.ts` (16); 166 in all. Not done: the crumbs I mentioned for the feeder's
   look (only the pupils tell the mode until step 5.2).
+- Part I, 3.3: the tunnel effect on the season levels (eighth chat), at the owner's wish a
+  rolling ball of the hero's own kind. Two tiles before a pad the hero curls into a ball
+  (`Hero.setBall`, a flash and a spring pop hide the change), rolls (the pattern turns with the
+  distance travelled) and opens back up 0.6 s after the tunnel. Pac-Man: a gold ball with three
+  fire swirls, fire drops circling it, fire sparks behind. Ms. Pac-Man: a pink ball wound with
+  her bow's scarlet polka-dot ribbons, twinkles and hearts circling and shed. `PlayerService`
+  now sends a `teleport` fx (in and out); `LevelFx` gathers the season's particles into the pad
+  with a flash and a ring, and on the exit rings out and bursts; `SharedLayers.padAhead` spots a
+  pad one or two tiles ahead, `HeroView` keeps the ball until the tunnel is behind it. Heroes
+  only (the ghosts go through unmarked, as the hell's fog is only his), never while dying.
+  Fire sparks got bigger and a thinner outline (they read as dark dots). Checked frame by
+  frame in the live game for both heroes (the game's own F8 step). Tests: ball and tunnel
+  cases in `heroTrail.test.ts` and `playerTunnel.test.ts`; 172 in all.

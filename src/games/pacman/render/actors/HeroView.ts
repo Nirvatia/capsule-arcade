@@ -25,6 +25,9 @@ function facingAngle(facing: string | null, fallback: number): number {
 /** The heading a hero shows before its first move (0: facing right). */
 const START_ANGLE = 0;
 
+/** He stays a ball this long after a tunnel, then opens up (seconds). */
+const AFTER_TUNNEL = 0.6;
+
 export class HeroView {
 	constructor(private readonly hero: Hero) {}
 
@@ -34,6 +37,8 @@ export class HeroView {
 	/** Smoothed speed, tiles per second. */
 	private speed = 0;
 	private season: HeroSeason = 'summer';
+	/** Seconds the ball keeps rolling after the tunnel. */
+	private afterTunnel = 0;
 
 	/** The world the hero is in (its colour touches the rim light, the trail, the particles). */
 	setSeason(season: HeroSeason): void {
@@ -41,7 +46,9 @@ export class HeroView {
 	}
 
 	trigger(cue: PacmanAudioCue): void {
-		if (cue === 'dot') {
+		if (cue === 'teleport') {
+			this.afterTunnel = AFTER_TUNNEL;
+		} else if (cue === 'dot') {
 			this.hero.gulp();
 		} else if (cue === 'fruit-collect' || cue === 'egg-collect' || cue === 'ghost-eaten') {
 			this.hero.eat();
@@ -52,6 +59,7 @@ export class HeroView {
 		this.hero.reset();
 		this.last = null;
 		this.speed = 0;
+		this.afterTunnel = 0;
 	}
 
 	draw(
@@ -86,6 +94,9 @@ export class HeroView {
 			this.angle += turn * Math.min(1, dt * 30);
 		}
 
+		// a ball for the tunnel: from two tiles before it until a moment after
+		this.afterTunnel = Math.max(0, this.afterTunnel - dt);
+		this.hero.setBall(!options.dying && (Boolean(options.padAhead) || this.afterTunnel > 0));
 		this.hero.setRadius(S * RADIUS);
 		this.hero.update(dt, {
 			x: layout.offsetX + pos.x * S,

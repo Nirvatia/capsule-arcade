@@ -138,3 +138,64 @@ describe('the trail', () => {
 		expect(hero.particles).toHaveLength(0);
 	});
 });
+
+describe('the rolling ball', () => {
+	function rolled(ms: boolean) {
+		const hero = newHero(ms);
+		run(hero, { x: 0, y: 0 }, { x: 5, y: 0 }, 0.3);
+		hero.setBall(true);
+		return hero;
+	}
+
+	it('curls up and opens again on request, with a burst each time', () => {
+		const hero = newHero();
+		expect(hero.ball).toBe(false);
+		const before = hero.particles.length;
+		hero.setBall(true);
+		expect(hero.ball).toBe(true);
+		expect(hero.particles.length).toBeGreaterThan(before);
+		const mid = hero.particles.length;
+		hero.setBall(true);
+		expect(hero.particles.length).toBe(mid);
+		hero.setBall(false);
+		expect(hero.ball).toBe(false);
+		expect(hero.particles.length).toBeGreaterThan(mid);
+	});
+
+	it('is Pac-Man fire while he rolls, her hearts and twinkles', () => {
+		const pac = rolled(false);
+		run(pac, { x: 100, y: 0 }, { x: 5, y: 0 }, 0.6, { season: 'winter' });
+		const fire = new Set(pac.particles.filter((p) => p.hot).map((p) => p.kind));
+		expect(fire.has('ember')).toBe(true);
+		expect(fire.has('flake')).toBe(false);
+
+		const ms = rolled(true);
+		run(ms, { x: 100, y: 0 }, { x: 5, y: 0 }, 0.6, { season: 'winter' });
+		const kinds = new Set(ms.particles.map((p) => p.kind));
+		expect(kinds.has('heart')).toBe(true);
+		expect(kinds.has('star')).toBe(true);
+		expect(kinds.has('flake')).toBe(false);
+	});
+
+	it('sheds more while it rolls than while he runs', () => {
+		const walker = newHero();
+		run(walker, { x: 0, y: 0 }, { x: 5, y: 0 }, 0.4);
+		const roller = rolled(false);
+		run(roller, { x: 100, y: 0 }, { x: 5, y: 0 }, 0.4);
+		expect(roller.particles.length).toBeGreaterThan(walker.particles.length);
+	});
+
+	it('is cancelled by a death', () => {
+		const hero = rolled(false);
+		hero.update(DT, {
+			x: 300,
+			y: 0,
+			angle: 0,
+			moving: false,
+			power: false,
+			ending: false,
+			dying: true
+		});
+		expect(hero.ball).toBe(false);
+	});
+});

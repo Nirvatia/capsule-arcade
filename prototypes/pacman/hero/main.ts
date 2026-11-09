@@ -93,6 +93,7 @@ function layout(): void {
 	mid.setRadius(S * RADIUS * ZOOM);
 	small.setRadius(S * RADIUS);
 	for (const h of [big, mid, small]) h.reset();
+	applyBall();
 }
 
 function pickHero(): void {
@@ -123,6 +124,15 @@ $('run').addEventListener('click', () => {
 });
 $('bite').addEventListener('click', () => {
 	for (const h of [big, mid, small]) h.eat();
+});
+let ball = q.has('ball');
+function applyBall(): void {
+	for (const h of [big, mid, small]) h.setBall(ball);
+	$('ball').setAttribute('aria-pressed', String(ball));
+}
+$('ball').addEventListener('click', () => {
+	ball = !ball;
+	applyBall();
 });
 $('power').addEventListener('click', () => {
 	powerTimer = POWER_TIME;

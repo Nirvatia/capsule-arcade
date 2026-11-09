@@ -22,6 +22,8 @@ export function particleSize(kind: ParticleKind): number {
 			return 2.6;
 		case 'spark':
 			return 2;
+		case 'ember':
+			return 2.6;
 		case 'star':
 			return 2;
 		default:
@@ -80,7 +82,7 @@ export function drawFireSpark(
 	ctx.globalAlpha = Math.min(1, u * 3);
 	ctx.fillStyle = css(outer);
 	ctx.strokeStyle = css(INK, 0.9);
-	ctx.lineWidth = Math.max(0.8, r * 0.3);
+	ctx.lineWidth = Math.max(0.8, r * 0.18);
 	ctx.beginPath();
 	ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
 	ctx.fill();
