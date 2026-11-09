@@ -51,25 +51,7 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
 
 3. **Mechanics and balance** (Sonnet; Opus for the hypnosis design).
    1. ~~**Echo clone mechanic**~~ Done (see Done, "Part I, 3.1").
-   2. **Hypnosis for Ms. Pac-Man, two modes** (owner's design;
-      `logic/rules/HypnosisService.ts`, `logic/actors/ghostTargets.ts`). Today the
-      hypnotised ghost heads for the dot nearest _in a straight line_
-      (`nearestDotTarget`), through walls, so it is useful only half the time.
-      - When a ghost is hypnotised, plan once for the time it has (hypnosis left, its
-        speed): walk the maze by path length (BFS over ghost-walkable tiles) and count how
-        many dots it can really eat in that time, greedily from cluster to cluster (no
-        doubling back over eaten corridors).
-      - Enough food (at least a threshold of dots, a config value): **feeder** mode, it
-        follows that route and eats.
-      - Too little or too far: **hunter** mode, it chases the nearest other ghost by path
-        and eats it on contact (eyes home, points like Pac-Man's ghost chain).
-      - The mode is fixed for the whole hypnosis; a new hypnosis (moved to another ghost)
-        plans again. It may end with nothing eaten, as a wasted Pac-Man energizer can.
-      - Open points for the plan: the threshold and the chain points; whether hunted
-        ghosts react; how the mode reads on screen (eye colour now, art in step 5).
-      - Tests: the feeder's route beats the straight-line pick on a maze with food behind
-        a wall; the hunter is chosen when the food is gone or out of reach; the mode
-        does not flip mid-hypnosis.
+   2. ~~**Hypnosis for Ms. Pac-Man, two modes**~~ Done (see Done, "Part I, 3.2").
    3. Regular levels have no teleport effect (the hell has its teleport fog): add a simple
       one built from the existing FX (`render/fx/LevelFx.ts`); its final look is step 5.
    4. **Balance check**, after the mazes: compare speeds, timers and scores with the
@@ -343,3 +325,23 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   ice-blue palette; her bow, lipstick and blush blue too). HUD timer from the riot's length; dev
   panel: Echo (token) and Riot (now). Tests: `echoClone.test.ts` (14); 140 in all. Checked in the
   live game for both heroes (token, riot, the end).
+- Part I, 3.2: the hypnosis in two modes (eighth chat). The hypnotised ghost plans once, for the
+  time it has, by path length (`logic/actors/ghostRoutes`: a breadth-first search over tile and
+  facing that moves as a ghost does, never straight back unless it is a dead end, through the
+  tunnels, and a greedy feeding plan that counts the dots passed on the way). With at least 6
+  dots (`config/hypnosisConfig.ts`) it can really eat in its 4 s it is a **feeder** (green
+  pupils), else a **hunter** (red pupils); with no food and no prey it stays a feeder. The mode
+  holds for the whole hypnosis, a hypnosis moved to another ghost plans again. `HypnosisService`
+  guides the ghost (`HypnosisGuide`: next step, speed, whom a frightened ghost flees from);
+  the feeder re-plans from each tile (so a dot eaten by Ms. Pac-Man or a clone changes the
+  route, the mode does not), the hunter walks the shortest path to the nearest ghost out of the
+  lair and eats it on touch: eyes, +200 each (no chain), the `ghost-eaten` fx and sound, also a
+  ghost that is not frightened. A frightened ghost within 4 tiles of the hunter runs from it,
+  not from her. The feeder goes at 0.8 of the ghost's speed as before, the hunter at 1.0 (found
+  in the live trace: at 0.8 a fleeing ghost, 0.6 of the speed, is closed on at ~1 tile a second
+  and a ghost 5 tiles away was never caught in 4 s). Measured: on 60 thinned boards the feeder
+  eats 4 % more than the old straight-line rule (better in 9 cases, worse in 4); the real gain
+  is the mode and a ghost that no longer butts against walls. Checked in the live game (feeder
+  with 16 planned dots, hunter with the food gone ate a ghost). Tests: `ghostRoutes.test.ts`
+  (10), `hypnosis.test.ts` (16); 166 in all. Not done: the crumbs I mentioned for the feeder's
+  look (only the pupils tell the mode until step 5.2).

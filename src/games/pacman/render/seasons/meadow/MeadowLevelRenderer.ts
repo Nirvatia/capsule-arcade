@@ -111,7 +111,15 @@ export class MeadowLevelRenderer implements LevelRenderer, WorldPreview {
 						: 0;
 				const overdrive = Boolean(isMs && hypnosis && hypnosis.overdriveActive);
 				const vanish = level.egg?.vanishProgress ?? 0;
-				this.ghostView.draw(ctx, ghosts, layout, ghostTimer, overdrive, vanish);
+				this.ghostView.draw(
+					ctx,
+					ghosts,
+					layout,
+					ghostTimer,
+					overdrive,
+					vanish,
+					isMs ? (hypnosis?.mode ?? null) : null
+				);
 			}
 			if (state !== 'death') {
 				// while dying, the pipeline draws Pac-Man over the level decay

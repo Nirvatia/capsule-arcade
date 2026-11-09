@@ -44,12 +44,17 @@ size of one tile.
   (6–6.5 s); they flash in the last 2 s. Eaten ghosts give 200, 400, 800, 1600 within one
   energizer and run home as eyes.
 - **Overdrive (Ms. Pac-Man)**: instead of scaring, an energizer starts a 5 s overdrive.
-  Touching a ghost hypnotises it for 4 s (+200); it then eats dots for her. Touching another
-  moves the hypnosis over (+200) and frees the first, scared. A ghost that wakes up on its
-  own is enraged for 2 s (faster, deadly). _Planned (part I, 3.2)_: on hypnosis the ghost
-  picks one mode for its whole time: **feeder** (follows the route, by path length, that
-  eats the most dots it can reach in time) or, when there is too little food in reach,
-  **hunter** (chases and eats the other ghosts).
+  Touching a ghost hypnotises it for 4 s (+200). Touching another moves the hypnosis over
+  (+200) and frees the first, scared. A ghost that wakes up on its own is enraged for 2 s
+  (faster, deadly). The hypnotised ghost plans once, for the time it has, by path length (as
+  a ghost walks: no turning back, tunnels count): with at least 6 dots it can really eat in
+  that time it is a **feeder** (green pupils): it follows the greedy route from dot cluster to
+  cluster (the dots on the way count, an eaten corridor is not walked twice) and eats for her,
+  at 0.8 of its speed. With fewer, or too far, it is a **hunter** (red pupils): it chases the
+  nearest other ghost out of the lair by path, at its full speed, and eats it on touch (it
+  goes home as eyes, +200 for each, no chain). The mode holds for the whole hypnosis; a
+  hypnosis moved to another ghost plans again. A frightened ghost within 4 tiles of a hunter
+  runs from it, not from her. With no food and nobody to hunt, it stays a feeder.
 - **Death**: touching an active ghost costs a life; the board shatters and rebuilds from
   the respawn point (§10). No lives left: game over.
 

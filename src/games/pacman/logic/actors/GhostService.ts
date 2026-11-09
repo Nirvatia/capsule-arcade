@@ -5,6 +5,8 @@ import { GhostModel } from './GhostModel';
 import type { GhostDirection, GhostKind, GhostState, GhostTile } from './GhostModel';
 import { isLairTile, resolveExitTarget } from '../maze/LairExit';
 import type { ArcadeRoundTuning } from '../../config/arcadeConfig';
+import { HYPNOSIS } from '../../config/hypnosisConfig';
+import type { RouteWorld } from './ghostRoutes';
 import { arcadeChaseTarget } from './arcadeTargets';
 import {
 	DIRECTIONS,
@@ -32,11 +34,22 @@ const EMPTY_GHOST_LIST: readonly GhostModel[] = [];
 
 type GhostMode = 'scatter' | 'chase';
 
+/** What the hypnosis service tells the ghosts (see `HypnosisService`). */
+export interface HypnosisGuide {
+	/** The hypnotised ghost's next step; null: it steers by the old rule. */
+	direction(ghost: GhostModel): GhostDirection | null;
+	/** The tile a frightened ghost runs from instead of the player (a hunter near it), or null. */
+	threatFor(ghost: GhostModel): GhostTile | null;
+	/** How fast the hypnotised ghost goes, against its own speed (a feeder and a hunter differ). */
+	speedFactor(ghost: GhostModel): number;
+}
+
 export class GhostService {
 	private readonly grid: GridService;
 	private readonly player: PlayerService;
 	private readonly progress: LevelProgress;
 	private readonly ghosts: GhostModel[];
+	private hypnosisGuide: HypnosisGuide | null = null;
 	private readonly exitTargetValue: GhostTile;
 	private mode: GhostMode = 'scatter';
 	private modeTimer = SCATTER_TIME;
@@ -245,6 +258,29 @@ export class GhostService {
 		}
 	}
 
+	/** The hypnosis service guides the hypnotised ghost and tells frightened ones what to flee. */
+	setHypnosisGuide(guide: HypnosisGuide | null): void {
+		this.hypnosisGuide = guide;
+	}
+
+	/** The maze as a ghost walks it (for route planning): the lair is closed to it. */
+	routeWorld(): RouteWorld {
+		return {
+			walkable: (x, y) => this.grid.isGhostWalkable(x, y, false),
+			teleport: (x, y) => this.grid.teleportDestination(x, y)
+		};
+	}
+
+	/** Whether an uneaten dot lies on the tile. */
+	hasDot(x: number, y: number): boolean {
+		return this.grid.tileAt(x, y) === 'DT' && !this.progress.isCollected(x, y);
+	}
+
+	/** Tiles per second the ghost covers now. */
+	speedOf(ghost: GhostModel): number {
+		return this.effectiveSpeed(ghost);
+	}
+
 	private updateGhost(ghost: GhostModel, dt: number): void {
 		if (ghost.state === 'lair') {
 			ghost.decreaseExitTimer(dt);
@@ -305,7 +341,7 @@ export class GhostService {
 			return ghost.speed * 1.6;
 		}
 		if (ghost.state === 'hypnotized') {
-			return ghost.speed * 0.8;
+			return ghost.speed * (this.hypnosisGuide?.speedFactor(ghost) ?? HYPNOSIS.speedFactor);
 		}
 		if (ghost.state === 'enraged') {
 			return ghost.speed * 1.2;
@@ -378,6 +414,13 @@ export class GhostService {
 		const withoutReverse =
 			facing && opposite ? candidates.filter((direction) => direction !== opposite) : candidates;
 		const choices = withoutReverse.length > 0 ? withoutReverse : candidates;
+		if (ghost.state === 'hypnotized') {
+			const guided = this.hypnosisGuide?.direction(ghost) ?? null;
+			if (guided && choices.includes(guided)) {
+				ghost.setForceReverse(false);
+				return guided;
+			}
+		}
 		const targetTile = this.currentTargetTile(ghost);
 		let best: GhostDirection | null = null;
 		let bestScore = Number.POSITIVE_INFINITY;
@@ -407,7 +450,12 @@ export class GhostService {
 			return this.player.tile;
 		}
 		if (ghost.state === 'frightened') {
-			return fleeTarget(ghost.kind, ghost.tile, this.player.tile);
+			// a frightened ghost near the hypnotised hunter runs from it, else from her
+			return fleeTarget(
+				ghost.kind,
+				ghost.tile,
+				this.hypnosisGuide?.threatFor(ghost) ?? this.player.tile
+			);
 		}
 		if (this.mode === 'scatter') {
 			return SCATTER_TARGETS[ghost.kind];

@@ -79,7 +79,8 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 	const player = new PlayerService(grid, progress, events);
 	const ghosts = new GhostService(grid, player, progress);
 	const lairCode = new LairCodeService(level, events);
-	const hypnosis = new HypnosisService(score, lairCode);
+	const hypnosis = new HypnosisService(score, lairCode, events);
+	hypnosis.attach(ghosts);
 	const combat = new CombatService(player, ghosts, progress, score, events, hypnosis, lairCode);
 	const fruit = new FruitService(profile, level, grid, locator, progress, score, events);
 	const egg = new EasterEggService(level, grid, ghosts, lairCode, progress, events, score);

@@ -1,6 +1,7 @@
 import type { GhostService } from '../../logic/actors/GhostService';
 import type { GhostModel } from '../../logic/actors/GhostModel';
 import type { GridLayout } from '../maze/GridView';
+import type { HypnosisMode } from '../../logic/rules/HypnosisService';
 
 export class GhostView {
 	draw(
@@ -9,14 +10,15 @@ export class GhostView {
 		layout: GridLayout,
 		powerTimer: number,
 		msOverdrive: boolean,
-		vanish = 0
+		vanish = 0,
+		hypnosis: HypnosisMode | null = null
 	): void {
 		if (!Number.isFinite(layout.tileSize) || layout.tileSize <= 0) {
 			console.error('GhostView.draw', 'invalid layout tile size', layout.tileSize);
 			return;
 		}
 		for (const ghost of ghosts.list) {
-			this.drawGhost(ctx, ghost, layout, powerTimer, msOverdrive);
+			this.drawGhost(ctx, ghost, layout, powerTimer, msOverdrive, hypnosis);
 		}
 		if (vanish < 1) {
 			for (const ghost of ghosts.banishedList) {
@@ -74,7 +76,8 @@ export class GhostView {
 		ghost: GhostModel,
 		layout: GridLayout,
 		powerTimer: number,
-		msOverdrive: boolean
+		msOverdrive: boolean,
+		hypnosis: HypnosisMode | null = null
 	): void {
 		const position = ghost.position;
 		if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) {
@@ -167,6 +170,9 @@ export class GhostView {
 		ctx.fill();
 		if (enraged) {
 			ctx.fillStyle = '#ffffff';
+		} else if (hypnotized) {
+			// the pupils say what the hypnosis makes it: green eats dots, red hunts ghosts
+			ctx.fillStyle = hypnosis === 'hunter' ? '#ff1f1f' : '#14b81c';
 		} else if (frightened) {
 			ctx.fillStyle = '#ffb14d';
 		} else {

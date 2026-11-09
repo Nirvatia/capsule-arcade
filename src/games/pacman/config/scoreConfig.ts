@@ -6,6 +6,8 @@ export interface ScoreTable {
 	readonly ghostChain: readonly number[];
 	readonly hypnosis: number;
 	readonly hypnosisTransfer: number;
+	/** A ghost the hypnotised hunter eats (no chain). */
+	readonly hypnosisEat: number;
 	readonly fruit: Record<FruitKind, number>;
 	readonly easterEgg: number;
 	readonly goldenExitDotValue: number;
@@ -22,6 +24,7 @@ export const SCORE_TABLE: ScoreTable = {
 	ghostChain: [200, 400, 800, 1600],
 	hypnosis: 200,
 	hypnosisTransfer: 200,
+	hypnosisEat: 200,
 	fruit: {
 		CHERRY: 100,
 		STRAWBERRY: 300,
