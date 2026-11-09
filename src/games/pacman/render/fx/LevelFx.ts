@@ -108,7 +108,7 @@ export class LevelFx {
 
 	private play(recipe: FxRecipe): void {
 		for (const r of recipe.rings) {
-			this.rings.push({ ...r, delay: r.delay ?? 0, age: 0 });
+			this.rings.push({ ...r, delay: r.delay ?? 0, weak: r.weak ?? false, age: 0 });
 		}
 		for (const f of recipe.flashes) {
 			this.flashes.push({ ...f, age: 0 });

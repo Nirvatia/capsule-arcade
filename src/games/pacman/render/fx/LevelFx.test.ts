@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { PacmanFx } from '../../core/Events';
+import type { GridLayout } from '../maze/GridView';
 import { LevelFx } from './LevelFx';
 import { GOLD, recipeFor } from './fxPresets';
+
+vi.mock('../common/textures', () => ({ glowTexture: () => ({}) }));
 
 const particle = (i: number) => ({ id: i }) as unknown as HTMLCanvasElement;
 const style = { accent: 0x88ff44, particle };
@@ -45,6 +48,73 @@ describe('recipeFor', () => {
 		const r = recipeFor(EVERY_EVENT[5], style);
 		expect(r.gathers[0]).toMatchObject({ x: 0.5, y: 9.5 });
 		expect(r.bursts[0]).toMatchObject({ x: 24.5, y: 9.5 });
+	});
+});
+
+describe('shockwaves', () => {
+	it('make the second ring of a hit weak and the first one main', () => {
+		for (const fx of [EVERY_EVENT[0], EVERY_EVENT[1]]) {
+			const [main, second] = recipeFor(fx, style).rings;
+			expect(main.weak, fx.kind).toBeFalsy();
+			expect(second.weak, fx.kind).toBe(true);
+		}
+	});
+
+	it('last 15 % longer than the plain ring', () => {
+		expect(recipeFor(EVERY_EVENT[1], style).rings[0].life).toBeCloseTo(0.5 * 1.15);
+	});
+});
+
+describe('LevelFx drawing', () => {
+	const layout = { tileSize: 24, offsetX: 10, offsetY: 5 } as GridLayout;
+
+	/** A context that counts calls instead of drawing. */
+	function counting() {
+		const calls: Record<string, number> = {};
+		const gradient = { addColorStop: () => {} };
+		const ctx = new Proxy({} as Record<string, unknown>, {
+			get: (target, key: string) =>
+				key in target
+					? target[key]
+					: () => {
+							calls[key] = (calls[key] ?? 0) + 1;
+							return key.startsWith('create') ? gradient : undefined;
+						},
+			set: (target, key: string, value) => {
+				target[key] = value;
+				return true;
+			}
+		}) as unknown as CanvasRenderingContext2D;
+		return { ctx, calls };
+	}
+
+	it('draws a wave with its pressure disc while it lives and nothing after', () => {
+		const fx = new LevelFx();
+		fx.spawn(EVERY_EVENT[1], style);
+		fx.update(0.1);
+		const alive = counting();
+		fx.drawUnder(alive.ctx, layout);
+		expect(alive.calls.createRadialGradient).toBeGreaterThan(0);
+		expect(alive.calls.arc).toBeGreaterThan(0);
+		for (let i = 0; i < 200; i += 1) {
+			fx.update(1 / 60);
+		}
+		const gone = counting();
+		fx.drawUnder(gone.ctx, layout);
+		expect(gone.calls.arc ?? 0).toBe(0);
+	});
+
+	it('waits for a delayed ring before drawing it', () => {
+		const fx = new LevelFx();
+		fx.spawn(EVERY_EVENT[1], style);
+		fx.update(0.01);
+		const early = counting();
+		fx.drawUnder(early.ctx, layout);
+		const arcsEarly = early.calls.arc ?? 0;
+		fx.update(0.2);
+		const later = counting();
+		fx.drawUnder(later.ctx, layout);
+		expect(later.calls.arc ?? 0).toBeGreaterThan(arcsEarly);
 	});
 });
 

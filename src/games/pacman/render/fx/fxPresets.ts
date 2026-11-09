@@ -12,6 +12,21 @@ export const GOLD = 0xffd84a;
 export const WHITE = 0xffffff;
 const ECHO_BLUE = 0x7fd0ff;
 
+/** Shockwaves linger a little longer than a plain ring would. */
+const WAVE_STRETCH = 1.15;
+
+function wave(
+	x: number,
+	y: number,
+	tint: number,
+	radius: number,
+	life: number,
+	delay = 0,
+	weak = false
+): FxRecipe['rings'][number] {
+	return { x, y, tint, radius, life: life * WAVE_STRETCH, delay, weak };
+}
+
 const NONE: FxRecipe = {
 	rings: [],
 	flashes: [],
@@ -30,8 +45,8 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 				...NONE,
 				flashes: [{ x: fx.x, y: fx.y, life: 0.18 }],
 				rings: [
-					{ x: fx.x, y: fx.y, tint, radius: 1.6, life: 0.4 },
-					{ x: fx.x, y: fx.y, tint: style.accent, radius: 1.1, life: 0.35, delay: 0.06 }
+					wave(fx.x, fx.y, tint, 1.6, 0.4),
+					wave(fx.x, fx.y, style.accent, 1.1, 0.35, 0.06, true)
 				],
 				bursts: [{ x: fx.x, y: fx.y, tint, count: 12, speed: 5.5, particle: null }],
 				popups: [{ x: fx.x, y: fx.y, text: String(fx.points), tint: style.accent }],
@@ -42,8 +57,8 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 			return {
 				...NONE,
 				rings: [
-					{ x: fx.x, y: fx.y, tint: style.accent, radius: 3.2, life: 0.5 },
-					{ x: fx.x, y: fx.y, tint: WHITE, radius: 2.2, life: 0.4, delay: 0.08 }
+					wave(fx.x, fx.y, style.accent, 3.2, 0.5),
+					wave(fx.x, fx.y, WHITE, 2.2, 0.4, 0.08, true)
 				],
 				bursts: [
 					{ x: fx.x, y: fx.y, tint: style.accent, count: 6, speed: 3, particle: style.particle }
@@ -54,7 +69,7 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 		case 'fruit':
 			return {
 				...NONE,
-				rings: [{ x: fx.x, y: fx.y, tint: style.accent, radius: 1.3, life: 0.35 }],
+				rings: [wave(fx.x, fx.y, style.accent, 1.3, 0.35)],
 				bursts: [
 					{ x: fx.x, y: fx.y, tint: style.accent, count: 10, speed: 3.5, particle: style.particle }
 				],
@@ -63,7 +78,7 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 		case 'egg':
 			return {
 				...NONE,
-				rings: [{ x: fx.x, y: fx.y, tint: GOLD, radius: 2.4, life: 0.5 }],
+				rings: [wave(fx.x, fx.y, GOLD, 2.4, 0.5)],
 				bursts: [{ x: fx.x, y: fx.y, tint: GOLD, count: 16, speed: 4.5, particle: null }],
 				popups: [{ x: fx.x, y: fx.y, text: String(fx.points), tint: GOLD }],
 				pulse: { tint: GOLD, strength: 0.6 },
@@ -72,7 +87,7 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 		case 'extra-life':
 			return {
 				...NONE,
-				rings: [{ x: fx.x, y: fx.y, tint: GOLD, radius: 1.8, life: 0.5 }],
+				rings: [wave(fx.x, fx.y, GOLD, 1.8, 0.5)],
 				popups: [{ x: fx.x, y: fx.y, text: '1UP', tint: GOLD }],
 				pulse: { tint: GOLD, strength: 0.4 }
 			};
@@ -87,9 +102,9 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 					{ x: fx.tx, y: fx.ty, life: 0.2 }
 				],
 				rings: [
-					{ x: fx.x, y: fx.y, tint: WHITE, radius: 0.9, life: 0.25 },
-					{ x: fx.tx, y: fx.ty, tint: style.accent, radius: 2.4, life: 0.45 },
-					{ x: fx.tx, y: fx.ty, tint: WHITE, radius: 1.6, life: 0.35, delay: 0.05 }
+					wave(fx.x, fx.y, WHITE, 0.9, 0.25),
+					wave(fx.tx, fx.ty, style.accent, 2.4, 0.45),
+					wave(fx.tx, fx.ty, WHITE, 1.6, 0.35, 0.05, true)
 				],
 				bursts: [
 					{ x: fx.tx, y: fx.ty, tint: style.accent, count: 10, speed: 4, particle: style.particle }
@@ -100,7 +115,7 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 			return {
 				...NONE,
 				flashes: [{ x: fx.x, y: fx.y, life: 0.12 }],
-				rings: [{ x: fx.x, y: fx.y, tint: ECHO_BLUE, radius: 1.0, life: 0.3 }],
+				rings: [wave(fx.x, fx.y, ECHO_BLUE, 1.0, 0.3)],
 				bursts: [{ x: fx.x, y: fx.y, tint: ECHO_BLUE, count: 7, speed: 3.5, particle: null }]
 			};
 		case 'near-miss':

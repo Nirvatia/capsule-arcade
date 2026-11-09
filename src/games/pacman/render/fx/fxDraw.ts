@@ -23,30 +23,65 @@ export function drawGround(
 ): void {
 	const { S, X, Y } = projector(layout);
 	ctx.save();
-	// a dark rim under each ring keeps it readable on the bright seasons too
 	for (const r of rings) {
 		const t = (r.age - r.delay) / r.life;
-		if (t < 0) {
-			continue;
+		if (t >= 0) {
+			drawWave(ctx, X(r.x), Y(r.y), S, r, t);
 		}
-		const ease = 1 - (1 - t) ** 3;
-		const radius = Math.max(0.1, r.radius * S * ease);
-		const width = Math.max(1.5, S * 0.22 * (1 - t));
-		ctx.beginPath();
-		ctx.arc(X(r.x), Y(r.y), radius, 0, Math.PI * 2);
-		ctx.strokeStyle = `rgba(20,12,6,${0.3 * (1 - t)})`;
-		ctx.lineWidth = width + Math.max(1.5, S * 0.06);
-		ctx.stroke();
-		ctx.strokeStyle = rgba(r.tint, 0.95 * (1 - t));
-		ctx.lineWidth = width;
-		ctx.stroke();
 	}
 	ctx.globalCompositeOperation = 'lighter';
 	for (const f of flashes) {
 		const t = f.age / f.life;
-		const size = S * (1.2 + t * 0.8);
+		const size = S * (1.4 + t * 1.1);
 		ctx.globalAlpha = 1 - t;
 		ctx.drawImage(glowTexture(WHITE), X(f.x) - size, Y(f.y) - size, size * 2, size * 2);
+	}
+	ctx.restore();
+}
+
+/**
+ * One shockwave at progress `t` (0..1): a fast, ease-out front, a soft pressure disc
+ * behind it and, on a main wave, a fainter wave trailing at two thirds of the radius. A
+ * dark rim under the front keeps it readable on the bright seasons.
+ */
+function drawWave(
+	ctx: CanvasRenderingContext2D,
+	cx: number,
+	cy: number,
+	S: number,
+	ring: Ring,
+	t: number
+): void {
+	const strength = ring.weak ? 0.6 : 1;
+	const fade = 1 - t;
+	const radius = Math.max(0.1, ring.radius * S * (1 - fade ** 4));
+	const disc = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius);
+	disc.addColorStop(0, rgba(ring.tint, 0));
+	disc.addColorStop(1, rgba(ring.tint, 0.34 * fade * strength));
+	ctx.save();
+	ctx.fillStyle = disc;
+	ctx.beginPath();
+	ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+	ctx.fill();
+	const width = Math.max(1.5, S * 0.2 * strength * (1 - t * 0.8));
+	ctx.beginPath();
+	ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+	ctx.strokeStyle = `rgba(20,12,6,${0.28 * fade})`;
+	ctx.lineWidth = width + S * 0.07;
+	ctx.stroke();
+	ctx.globalCompositeOperation = 'lighter';
+	ctx.strokeStyle = rgba(ring.tint, 0.95 * fade);
+	ctx.lineWidth = width;
+	ctx.stroke();
+	ctx.strokeStyle = rgba(WHITE, 0.8 * fade * fade);
+	ctx.lineWidth = Math.max(1, width * 0.35);
+	ctx.stroke();
+	if (!ring.weak) {
+		ctx.beginPath();
+		ctx.arc(cx, cy, radius * 0.68, 0, Math.PI * 2);
+		ctx.strokeStyle = rgba(ring.tint, 0.4 * fade * fade);
+		ctx.lineWidth = Math.max(1, width * 0.55);
+		ctx.stroke();
 	}
 	ctx.restore();
 }

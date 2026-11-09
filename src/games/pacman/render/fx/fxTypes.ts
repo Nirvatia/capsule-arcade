@@ -18,6 +18,8 @@ export interface Ring {
 	age: number;
 	life: number;
 	delay: number;
+	/** A secondary wave: fainter and thinner, with no trailing ring. */
+	weak: boolean;
 }
 export interface Spark {
 	x: number;
@@ -64,6 +66,7 @@ export interface FxRecipe {
 		radius: number;
 		life: number;
 		delay?: number;
+		weak?: boolean;
 	}>;
 	readonly flashes: ReadonlyArray<{ x: number; y: number; life: number }>;
 	/** Sparks that start round a point and fly into it. */
