@@ -97,6 +97,7 @@ export class HeroView {
 		// a ball for the tunnel: from two tiles before it until a moment after
 		this.afterTunnel = Math.max(0, this.afterTunnel - dt);
 		this.hero.setBall(!options.dying && (Boolean(options.padAhead) || this.afterTunnel > 0));
+		this.hero.setSink(options.padSink ?? 0);
 		this.hero.setRadius(S * RADIUS);
 		this.hero.update(dt, {
 			x: layout.offsetX + pos.x * S,

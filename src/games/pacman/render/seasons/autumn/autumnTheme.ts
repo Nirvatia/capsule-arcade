@@ -6,7 +6,6 @@ import {
 	lazy,
 	makeTexture,
 	radial,
-	ringTexture,
 	streakTexture,
 	tinted,
 	washTexture
@@ -169,7 +168,7 @@ export const autumnTheme: MeadowTheme = {
 			glowSize: (64 * 0.95) / 3,
 			motion: 'sway'
 		},
-		portal: { glow: 0xc88aff, ring: () => ringTexture('rgba(220,170,255,.95)') },
+		portal: { glow: 0xc88aff, deep: 0x2a0a50 },
 		glints: 0xffffff,
 		fog,
 		mistAlpha: (s) => 0.1 + 0.22 * s,

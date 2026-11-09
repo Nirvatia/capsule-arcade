@@ -5,7 +5,6 @@ import {
 	glowTexture,
 	lazy,
 	radial,
-	ringTexture,
 	streakTexture,
 	tinted,
 	washTexture
@@ -134,7 +133,7 @@ export const winterTheme: MeadowTheme = {
 			glowSize: (64 * 0.95) / 3,
 			motion: 'sway'
 		},
-		portal: { glow: 0xa8d8ff, ring: () => ringTexture('rgba(170,232,255,.95)') },
+		portal: { glow: 0xa8d8ff, deep: 0x0a2a58 },
 		glints: 0xffffff,
 		fog,
 		mistAlpha: (s) => 0.1 + 0.22 * s,

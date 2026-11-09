@@ -1,3 +1,4 @@
+import { padSink } from './actors/padSink';
 import type { GridLayout } from './maze/GridView';
 import { PlayerView } from './actors/PlayerView';
 import { HeroView } from './actors/HeroView';
@@ -112,8 +113,29 @@ export class SharedLayers {
 			dying,
 			ending,
 			shield,
-			padAhead
+			padAhead,
+			padSink: this.padSink(frame)
 		};
+	}
+
+	/** How far the hero has sunk into the tunnel pad he stands on or near, 0..1. */
+	private padSink(frame: RenderFrame): number {
+		const player = frame.level.player;
+		if (!player) {
+			return 0;
+		}
+		const { x, y } = player.position;
+		let nearest = Infinity;
+		for (let dy = -1; dy <= 1; dy++) {
+			for (let dx = -1; dx <= 1; dx++) {
+				const tx = Math.floor(x) + dx;
+				const ty = Math.floor(y) + dy;
+				if (frame.grid.isInside(tx, ty) && frame.grid.isTeleport(tx, ty)) {
+					nearest = Math.min(nearest, Math.hypot(x - (tx + 0.5), y - (ty + 0.5)));
+				}
+			}
+		}
+		return padSink(nearest);
 	}
 
 	/** A tunnel pad lies one or two tiles ahead of the hero along his heading. */

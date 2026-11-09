@@ -8,7 +8,6 @@ import {
 	lazy,
 	makeTexture,
 	radial,
-	ringTexture,
 	tinted,
 	washTexture
 } from '../meadow/meadowSprites';
@@ -175,7 +174,7 @@ export const summerTheme: MeadowTheme = {
 			glowSize: (64 * 0.95 * 0.75) / 3,
 			motion: 'sway'
 		},
-		portal: { glow: 0x5ff5d8, ring: () => ringTexture('rgba(120,255,225,.95)') },
+		portal: { glow: 0x5ff5d8, deep: 0x04403a },
 		glints: 0xfff7c0,
 		fog,
 		// the heat's haze stays faint (owner's review): big pale blobs hid the food

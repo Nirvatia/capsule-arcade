@@ -309,6 +309,8 @@ export abstract class Hero {
 	private flash = 0;
 	/** Curled up into a rolling ball (at a tunnel), and how far the ball has rolled, radians. */
 	private ballOn = false;
+	/** How far he has sunk into a tunnel pad, 0..1: he fades and shrinks into it. */
+	private sink = 0;
 	private roll = 0;
 	private mouthFlash = 0;
 	private embers: Particle[] = [];
@@ -342,6 +344,11 @@ export abstract class Hero {
 		t = Math.imul(t ^ (t >>> 15), t | 1);
 		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
 		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	}
+
+	/** How far he has sunk into a tunnel pad (0 not at all, 1 on its centre). */
+	setSink(k: number): void {
+		this.sink = Math.max(0, Math.min(1, k));
 	}
 
 	/**
@@ -697,7 +704,12 @@ export abstract class Hero {
 		ctx.save();
 		ctx.translate(this.x, this.y);
 		ctx.rotate(this.angle + spin);
-		ctx.scale(this.size.value * S, this.size.value * S * this.flip);
+		ctx.globalAlpha *= 1 - this.sink;
+		const squash = 1 - 0.4 * this.sink;
+		ctx.scale(
+			this.size.value * S * squash,
+			this.size.value * S * this.flip * squash * (1 - 0.35 * this.sink)
+		);
 		const R = r;
 
 		// behind: what the powered look carries behind it

@@ -22,6 +22,8 @@ export interface PlayerDrawOptions {
 	readonly shield?: boolean;
 	/** A tunnel pad lies one or two tiles ahead: a hero curls into a rolling ball for it. */
 	readonly padAhead?: boolean;
+	/** How far the hero has sunk into a tunnel pad, 0..1 (`padSink`). */
+	readonly padSink?: number;
 }
 
 interface Palette {

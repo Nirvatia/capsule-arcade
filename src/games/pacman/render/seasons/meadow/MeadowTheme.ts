@@ -153,7 +153,8 @@ export interface MeadowLiveTheme {
 		/** `spin` turns slowly; `sway` rocks from side to side. */
 		readonly motion: 'spin' | 'sway';
 	};
-	readonly portal: { readonly glow: number; readonly ring: () => HTMLCanvasElement };
+	/** The pad's light and the dark heart of its lens (RGB). */
+	readonly portal: { readonly glow: number; readonly deep: number };
 	readonly glints: number;
 	readonly fog: () => HTMLCanvasElement;
 	readonly mistAlpha: (storm: number) => number;

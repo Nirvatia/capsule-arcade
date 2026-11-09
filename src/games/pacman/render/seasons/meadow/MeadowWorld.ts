@@ -8,7 +8,8 @@ import type { GridLayout } from '../../maze/GridView';
 import { bakeMeadow, MEADOW_TILE } from './MeadowBake';
 import { streamY, tunnelRowOf, worldDecor } from '../../common/worldDecor';
 import type { MeadowTheme, WeatherParticle } from './MeadowTheme';
-import { glowTexture, rayTexture, swirlTexture } from './meadowSprites';
+import { glowTexture, rayTexture } from './meadowSprites';
+import { drawRipplePad } from './ripplePad';
 
 const T = MEADOW_TILE;
 const REBAKE_DELAY_MS = 160;
@@ -70,7 +71,6 @@ export class MeadowWorld {
 	private readonly theme: MeadowTheme;
 	private readonly R: number;
 	private readonly C: number;
-	private readonly ring: HTMLCanvasElement;
 	private readonly pellets: Array<Point & { r: number; c: number }> = [];
 	private readonly energizers: Array<Point & { r: number; c: number; ph: number }> = [];
 	private readonly portals: Array<Point & { i: number; ph: number }> = [];
@@ -107,7 +107,6 @@ export class MeadowWorld {
 		this.R = S.length;
 		this.C = S[0].length;
 		const live = theme.live;
-		this.ring = live.portal.ring();
 		const reduce =
 			typeof window !== 'undefined' &&
 			typeof window.matchMedia === 'function' &&
@@ -296,14 +295,8 @@ export class MeadowWorld {
 			);
 		}
 		this.drawGates(ctx);
-		const portalGlow = glowTexture(live.portal.glow);
 		for (const o of this.portals) {
-			sprite(ctx, portalGlow, o.x, o.y, 19.2, 19.2, 0.5 + 0.3 * Math.sin(t * 1.8 + o.i), 0, true);
-			sprite(ctx, swirlTexture(), o.x, o.y, 20, 20, 0.7 + 0.2 * Math.sin(t * 1.6 + o.ph), t * 0.9);
-			sprite(ctx, swirlTexture(), o.x, o.y, 12.4, 12.4, 0.75, -t * 1.5);
-			const br = 0.5 + 0.5 * Math.sin(t * 1.8 + o.ph);
-			const rs = 20 * (0.94 + 0.08 * br);
-			sprite(ctx, this.ring, o.x, o.y, rs, rs, 0.45 + 0.5 * br);
+			drawRipplePad(ctx, o.x, o.y, t, o.ph, live.portal.glow, live.portal.deep);
 		}
 		const glint = glowTexture(live.glints);
 		for (const g of this.glints) {

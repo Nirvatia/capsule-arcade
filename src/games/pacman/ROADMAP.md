@@ -28,7 +28,7 @@ The plan has three parts, done in this order: **I** the main game (four seasons)
 last of all (see Later). Part I is in progress: steps 1 (mazes), 2 (heroes) and 3
 (mechanics and balance) are done; step 4 (sound and tools) has only the mute button, the
 rest is postponed; step 5 (season art) is under way: 5.1 and 5.2 are in the game (5.2 waits
-for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 and 5.5 (teleport art: mock-ups in progress).
+for the owner's review), then 5.3 (echo clones: today's look kept), 5.5 (teleport pad: done) and 5.4.
 
 ## Part I. The main game: four seasons (mechanics and graphics)
 
@@ -90,11 +90,8 @@ for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 and 5.5 
    3. ~~**Echo clone look**~~ (`render/actors/EchoCloneView.ts`): mock-ups of three new looks
       (a trail of echoes, a bubble, a hologram) were made; the owner keeps today's look.
    4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`).
-   5. **Teleport art, redone** (the owner's request): the whole teleport look again. A first
-      round of three chat mock-ups (a funnel, a wreath of the season's things, a burrow) fell
-      short of today's teleport (the rolling ball, the soft additive pad with two thin
-      counter-rotating swirls, the gather-and-flash effect); a second round (a star funnel, a
-      gate of rings, ripples) keeps that light style. Today's look stays until the owner picks.
+   5. ~~**Teleport art, redone**~~ Done (see Done, "Part I, 5.5"): the pad is the owner's pick
+      "ripple"; the hero's rolling ball and the gather-and-flash effect stay.
 
 6. **One death transition for every world** (Opus; design page first, then a prototype the
    owner approves). Today's decay works on the level's picture, but it only knows "from":
@@ -405,3 +402,13 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   `PlayerView` still blinks) and no longer grows while powered (the steady +7 % is gone; the
   wind-up and the burst's pop stay); the stale notes in this file (Order, the maze names
   `classic06`, which every maze already had of its own) are corrected.
+- Part I, 5.5: the tunnel pad as ripples (ninth chat). Two rounds of chat mock-ups (the first
+  too heavy next to the old portal, the second in its light style); the owner picked
+  "ripple". `render/seasons/meadow/ripplePad.ts`: a soft translucent lens whose dark heart
+  and glow follow the season (`portal.glow`, `portal.deep`), four rings that widen and
+  fade, a white rim with two glints and a bright heart; it replaces the swirl sprites and the
+  pulsing ring in `MeadowWorld` (the theme's `portal.ring` and the two textures are gone).
+  The hero sinks into a pad: he fades and shrinks as he nears its centre and comes out of it
+  the same way (`padSink`, `Hero.setSink`, `HeroView`); the rolling ball and the gather-and-flash
+  effect are unchanged. The hell's pads are unchanged. Checked in the `mazes` prototype on all
+  four seasons; `padSink.test.ts`. Not checked in play: the hero going through a tunnel.

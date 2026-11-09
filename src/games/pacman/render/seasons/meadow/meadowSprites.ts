@@ -63,41 +63,6 @@ export function streakTexture(tint: number): HTMLCanvasElement {
 	return texture;
 }
 
-/** Portal swirl: three spiral arms (the same in every season). */
-export const swirlTexture = lazy(() =>
-	makeTexture(20, 20, (x) => {
-		x.translate(10, 10);
-		x.lineCap = 'round';
-		for (let arm = 0; arm < 3; arm++) {
-			x.strokeStyle = 'rgba(255,255,255,.9)';
-			x.lineWidth = 1.2;
-			x.beginPath();
-			for (let i = 0; i <= 20; i++) {
-				const u = i / 20;
-				const a = u * 3.6 + (arm * Math.PI * 2) / 3;
-				const r = 1 + u * 6.8;
-				if (i) {
-					x.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-				} else {
-					x.moveTo(Math.cos(a) * r, Math.sin(a) * r);
-				}
-			}
-			x.stroke();
-		}
-	})
-);
-
-/** Portal ring in the season's colour. */
-export function ringTexture(color: string): HTMLCanvasElement {
-	return makeTexture(20, 20, (x) => {
-		x.strokeStyle = color;
-		x.lineWidth = 1.2;
-		x.beginPath();
-		x.arc(10, 10, 8.8, 0, 7);
-		x.stroke();
-	});
-}
-
 /** A sprite texture multiplied by a tint, keeping its alpha (PIXI's `tint`). */
 const tintCache = new WeakMap<HTMLCanvasElement, Map<number, HTMLCanvasElement>>();
 export function tinted(im: HTMLCanvasElement, tint: number): HTMLCanvasElement {

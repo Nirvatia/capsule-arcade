@@ -5,7 +5,6 @@ import {
 	lazy,
 	makeTexture,
 	radial,
-	ringTexture,
 	streakTexture,
 	tinted,
 	washTexture
@@ -176,7 +175,7 @@ export const springTheme: MeadowTheme = {
 			glowSize: (64 * 0.95 * 0.8) / 3,
 			motion: 'sway'
 		},
-		portal: { glow: 0xffe060, ring: () => ringTexture('rgba(255,226,110,.95)') },
+		portal: { glow: 0xffe060, deep: 0x5a3a00 },
 		glints: 0xffffff,
 		fog,
 		mistAlpha: (s) => 0.1 + 0.22 * s,
