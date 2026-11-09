@@ -48,7 +48,9 @@ render/
                    combat and weapon FX
   arcade/          the secret level: pixel sprites, maze bake, view, CRT pass, intermission,
                    ArcadeLevelRenderer
-  fx/              LevelFx (gameplay effects on the season levels)
+  fx/              LevelFx (gameplay effects on the season levels: it plays and ages the
+                   effects), fxPresets (`recipeFor`: an event to a pure recipe), fxDraw
+                   (the shockwave, flashes, sparks, pop-ups, edge pulse), fxTypes
   transitions/decay/       level decay on death: field (Dijkstra), timeline, WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
   actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); HeroView drives them; PlayerView
@@ -198,6 +200,7 @@ screenshots or an artifact Claude builds from the page, never by opening the fil
 approved prototype already is the game code. Existing: `hell`, `arcade`,
 `hud`, `collectibles` (with each item's reach from its tile centre and a tile grid),
 `mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
-`level-clear`, `easter-egg` (the lair code's reward played by the real
+`level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
+`easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
 `MsPacmanHero`); `winter-decay.html` is an older standalone page.

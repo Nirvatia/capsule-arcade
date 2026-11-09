@@ -28,7 +28,7 @@ The plan has three parts, done in this order: **I** the main game (four seasons)
 last of all (see Later). Part I is in progress: steps 1 (mazes), 2 (heroes) and 3
 (mechanics and balance) are done; step 4 (sound and tools) has only the mute button, the
 rest is postponed; step 5 (season art) is under way: 5.1 and 5.2 are in the game (5.2 waits
-for the owner's review), then 5.3 (echo clones: today's look kept), 5.5 (teleport pad: done) and 5.4.
+for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the effects' shockwaves: done) and 5.5 (teleport pad: done).
 
 ## Part I. The main game: four seasons (mechanics and graphics)
 
@@ -89,7 +89,9 @@ for the owner's review), then 5.3 (echo clones: today's look kept), 5.5 (telepor
       scared blue on winter's grey path).
    3. ~~**Echo clone look**~~ (`render/actors/EchoCloneView.ts`): mock-ups of three new looks
       (a trail of echoes, a bubble, a hologram) were made; the owner keeps today's look.
-   4. **FX**: the stage-7 rings look dull (`render/fx/LevelFx.ts`).
+   4. ~~**FX**~~ Done (see Done, "Part I, 5.4"): the rings are shockwaves. The owner's pick
+      from three chat mock-ups; two non-wave types (a star salute, a vortex) were shown and
+      not taken.
    5. ~~**Teleport art, redone**~~ Done (see Done, "Part I, 5.5"): the pad is the owner's pick
       "ripple"; the hero's rolling ball and the gather-and-flash effect stay.
 
@@ -412,3 +414,17 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   the same way (`padSink`, `Hero.setSink`, `HeroView`); the rolling ball and the gather-and-flash
   effect are unchanged. The hell's pads are unchanged. Checked in the `mazes` prototype on all
   four seasons; `padSink.test.ts`. Not checked in play: the hero going through a tunnel.
+- Part I, 5.4: the gameplay effects as shockwaves. `render/fx/LevelFx.ts` (397
+  lines) is split: `fxPresets.recipeFor` turns an `fx:event` into a pure recipe (rings,
+  flashes, bursts, popups, shake, pulse), `fxDraw` draws, `fxTypes` holds the types, and
+  `LevelFx` plays the recipes and ages them; the split changed no output (the old and the new
+  class made the same draw calls for every event). Then the look: the owner chose "clean
+  wave" from three chat mock-ups (a clean wave, rays, heavy arcs). Every ring is a shockwave
+  (`fxDraw.drawWave`): a fast quartic ease-out front, a soft pressure disc behind it, a
+  trailing fainter ring on a main wave, a dark rim for the bright seasons; a second ring of
+  a hit is `weak` (fainter, thinner, no trailer); lives are 15 % longer (`WAVE_STRETCH`) and
+  the flash is bigger. It covers the energizer (which may leave its tile), the ghost, fruit,
+  egg, 1UP, the tunnel and the clone pop. Sparks, particles, pop-ups, shake and the edge
+  pulse are unchanged. Tests: `render/fx/LevelFx.test.ts`; prototype: `fx` (the real worlds,
+  every event, click to fire anywhere). Not done: the ghost colours are still set in
+  `fxPresets.GHOST_TINT` and in `cuteGhost.ts` with slightly different values.

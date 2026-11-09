@@ -172,12 +172,15 @@ chiptune sound (`config/arcadeConfig.ts`).
 
 ## 9. Feedback and effects
 
-- Eating a ghost: a 0.12 s hit-stop, a flash, a ring and sparks in the ghost's colour, a
-  score pop-up, a small shake.
-- Energizer: a shockwave, the season's particles, an edge pulse. Fruit and egg: a burst of
+- Eating a ghost: a 0.12 s hit-stop, a flash, a shockwave and sparks in the ghost's colour,
+  a score pop-up, a small shake.
+- Energizer: a big shockwave (it may leave its tile), the season's particles, an edge pulse. Fruit and egg: a burst of
   the season's particles and a pop-up. Extra life: "1UP". A ghost brushing past: a whoosh.
 - One style for all seasons, coloured by the season. The hell and the arcade keep their
-  own effects. _Planned (stages 4.4, 8.6)_: livelier rings, a teleport effect, new teleporters.
+  own effects.
+- The shockwave (`fxDraw.drawWave`) is the one ring look: a fast front, a soft disc behind
+  it, a fainter trailing ring, a dark rim. A hit's second ring is fainter and thinner.
+  The tunnel (a gather, a wave at the far mouth) and the echo clone's pop use it too.
 
 ## 10. Flow and screens
 
@@ -235,4 +238,4 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 | Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code                                                  |
 | Season ghosts                                                   | missing: one generic look today (part I, 5.2)                                                     |
 | Echo clone                                                      | to redo (part I, 5.3)                                                                             |
-| Teleporters, ring effects                                       | to improve (part I, 5.4)                                                                          |
+| Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                                         |
