@@ -60,11 +60,11 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
 4. **Sound and tools** (Sonnet).
    1. **Mute** button and key (`M`), and a **volume** slider; both saved in
       `localStorage`, applied on the synth's master gain (`audio/ArcadeSynth`).
-   2. **Dev panel rework** (`ui/debug/*`): readable at 1440p (text and controls scale with
+   2. _(Postponed by the owner.)_ **Dev panel rework** (`ui/debug/*`): readable at 1440p (text and controls scale with
       the screen), buttons grouped in collapsible sections by topic instead of one block,
       the most used actions first; a control for the maze cycle (force a maze, show the
       cycle).
-   3. **Music track support**: a looped file (ogg/mp3 from `static/`) per world, under the
+   3. _(Postponed: the owner is still working out how to generate the music.)_ **Music track support**: a looped file (ogg/mp3 from `static/`) per world, under the
       same volume. The seasons' music is optional; the hell's track is part II, step 1.
 
 5. **Season art, in code** (one subject per chat; prototype first).
