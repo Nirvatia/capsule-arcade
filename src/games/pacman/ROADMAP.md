@@ -59,7 +59,7 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
 
 4. **Sound and tools** (Sonnet).
    1. **Mute** button and key, and a **volume** slider; both saved in `localStorage`.
-      Done: the mute button (bottom-right, `ui/MuteButton.svelte`; `audio/audioSettings`
+      Done: the mute button (top-left, a gold 48 px button; on a narrow screen at the left edge, mid-height, `ui/MuteButton.svelte`; `audio/audioSettings`
       keeps the choice, `PacmanAudioPlayer` mutes the samples and `ArcadeSynth` its master
       gain). Left: the volume slider, and a key (`M` is taken: it switches the hero).
    2. _(Postponed by the owner.)_ **Dev panel rework** (`ui/debug/*`): readable at 1440p (text and controls scale with

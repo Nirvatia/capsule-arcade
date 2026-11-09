@@ -1,4 +1,4 @@
-<!-- The sound switch, a speaker in the bottom-right corner. It never takes focus, so Space and
+<!-- The sound switch, a speaker in the top-left corner. It never takes focus, so Space and
 	Enter keep driving the game after a click. The place is temporary: the interface is
 	redone in part III. -->
 <script lang="ts">
@@ -18,7 +18,7 @@
 	onmousedown={(event) => event.preventDefault()}
 	onclick={() => muted.toggle()}
 >
-	<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+	<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
 		<path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />
 		{#if $muted}
 			<path
@@ -43,24 +43,33 @@
 <style>
 	.mute {
 		position: fixed;
-		bottom: 12px;
-		right: 12px;
-		z-index: 45;
+		top: max(12px, env(safe-area-inset-top, 0px));
+		left: max(12px, env(safe-area-inset-left, 0px));
+		z-index: 100;
 		display: grid;
 		place-items: center;
-		width: 40px;
-		height: 40px;
+		width: 48px;
+		height: 48px;
 		padding: 0;
-		border: 1px solid rgba(255, 255, 255, 0.25);
-		border-radius: 10px;
-		background: rgba(6, 8, 14, 0.8);
-		color: #dfe8f2;
+		border: 2px solid #ffc84a;
+		border-radius: 12px;
+		background: rgba(6, 8, 14, 0.92);
+		color: #ffc84a;
 		cursor: pointer;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+	}
+	/* on a narrow screen the HUD spans the top, so the button sits at the left edge, mid-height */
+	@media (max-width: 720px) {
+		.mute {
+			top: 50%;
+			transform: translateY(-50%);
+		}
 	}
 	.mute[aria-pressed='true'] {
-		color: #ff7a6a;
+		border-color: #ff6a5a;
+		color: #ff6a5a;
 	}
 	.mute:hover {
-		border-color: rgba(255, 255, 255, 0.6);
+		background: rgba(30, 24, 8, 0.95);
 	}
 </style>
