@@ -20,7 +20,7 @@ const GATE_REACH = 1.6;
 /** The ghost shape of each season; the others keep the plain disc. */
 const GHOST_STYLES: Readonly<Record<string, GhostStyle>> = {
 	spring: 'tulip',
-	summer: 'drop',
+	summer: 'turtle',
 	autumn: 'hedgehog',
 	winter: 'bunny'
 };

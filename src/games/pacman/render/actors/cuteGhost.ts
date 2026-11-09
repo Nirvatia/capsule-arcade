@@ -1,6 +1,6 @@
 // The season ghosts: one cel-style painter (ink outline, a belly shade, a highlight, bean feet
 // that step with the ground covered, a face that slides toward the heading) and a body shape
-// per season: a water drop in summer, a hedgehog in autumn, a bunny in winter, a tulip bud in spring. No tentacles and no wavy skirt.
+// per season: a water drop in summer, a hedgehog in autumn, a bunny in winter, a tulip bud in spring, a turtle in summer (the drop is kept). No tentacles and no wavy skirt.
 // Pure drawing: the caller picks the state (`cuteStateFor`), the shape and the colour.
 import type { GhostKind, GhostState } from '../../logic/actors/GhostModel';
 import type { HypnosisMode } from '../../logic/rules/HypnosisService';
@@ -8,7 +8,7 @@ import type { HypnosisMode } from '../../logic/rules/HypnosisService';
 type Ctx = CanvasRenderingContext2D;
 type Palette = { b: string; s: string };
 
-export type CuteShape = 'drop' | 'hedgehog' | 'bunny' | 'tulip';
+export type CuteShape = 'drop' | 'hedgehog' | 'bunny' | 'tulip' | 'turtle';
 export type CuteState = 'normal' | 'scared' | 'overdrive' | 'eyes' | 'rage' | 'feeder' | 'hunter';
 
 export interface CuteOptions {
@@ -274,11 +274,68 @@ const TULIP: GhostShape = {
 	nose: false
 };
 
+/** The summer turtle: a round face in front of a green shell that shows all around. */
+const TURTLE: GhostShape = {
+	paths: [
+		(c) => {
+			c.beginPath();
+			c.ellipse(0, 3.6, 9.2, 8.2, 0, 0, TAU);
+		}
+	],
+	back: (c) => {
+		c.beginPath();
+		c.ellipse(0, 0.2, 12.4, 10.4, 0, 0, TAU);
+		c.fillStyle = '#5fb85a';
+		c.fill();
+		c.strokeStyle = INK;
+		c.lineWidth = 2;
+		c.stroke();
+		c.save();
+		c.beginPath();
+		c.ellipse(0, 0.2, 12.2, 10.2, 0, 0, TAU);
+		c.clip();
+		polygon(c, [
+			[-3.4, -8.4],
+			[3.4, -8.4],
+			[5.6, -4.2],
+			[3.4, -0.4],
+			[-3.4, -0.4],
+			[-5.6, -4.2]
+		]);
+		c.strokeStyle = '#2f7a3a';
+		c.lineWidth = 0.9;
+		c.lineJoin = 'round';
+		c.stroke();
+		line(c, -5.6, -4.2, -11, -3.2, '#2f7a3a', 0.9);
+		line(c, 5.6, -4.2, 11, -3.2, '#2f7a3a', 0.9);
+		line(c, -3.4, -8.4, -6.2, -12, '#2f7a3a', 0.9);
+		line(c, 3.4, -8.4, 6.2, -12, '#2f7a3a', 0.9);
+		ellipse(c, 0, -4.2, 14, 3, 'rgba(255,255,255,.12)');
+		c.restore();
+	},
+	over: (c, pal) => {
+		ellipse(c, 0, 8.2, 5.4, 2.6, lighten(pal.b, 0.5));
+	},
+	lid: (pal) => pal.b,
+	foot: () => '#6bc35f',
+	dy: 1.6,
+	scale: 0.8,
+	highlight: [-5, -0.4],
+	ring: 15.4,
+	ey: 3,
+	ex: 4.1,
+	rx: 3.3,
+	ry: 3.7,
+	my: 4.8,
+	nose: false
+};
+
 export const GHOST_SHAPES: Record<CuteShape, GhostShape> = {
 	drop: DROP,
 	hedgehog: HEDGEHOG,
 	bunny: BUNNY,
-	tulip: TULIP
+	tulip: TULIP,
+	turtle: TURTLE
 };
 
 /** Which look a ghost in this game state takes (the lair's translucency is the caller's). */

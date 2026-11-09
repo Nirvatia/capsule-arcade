@@ -75,8 +75,8 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
    2. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
       summer, autumn, winter, with normal, scared, flashing and eyes-only; focus on
       cuteness; the eyes show the heading; in the style of the heroes' mock-ups.
-      Done in play, all four seasons: spring a tulip bud, summer a water drop, autumn a
-      hedgehog, winter a bunny (owner's picks from chat
+      Done in play, all four seasons: spring a tulip bud, summer a turtle (the water drop is
+      still in `cuteGhost.ts`, unused), autumn a hedgehog, winter a bunny (owner's picks from chat
       mock-ups; no tentacles, no wavy skirt). One painter, `render/actors/cuteGhost.ts`
       (ink outline, belly shade, highlight, two bean feet that step with the tiles walked,
       a face and eyes that follow the heading, a look for every state, menacing brows and
