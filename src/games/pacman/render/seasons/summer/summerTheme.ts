@@ -1,6 +1,6 @@
 // Summer, from the owner's CLAUDE_GRID_SUMMER mock-up: lush meadow, beach umbrellas, a
 // turquoise stream, heat shimmer and fireflies, a violet night. The food is redrawn after
-// the owner's reviews: calm amber drops for pellets and little suns for energizers on a
+// the owner's reviews: white pebbles for pellets and starfish for energizers on a
 // warm dark sand, a faint heat haze and a lighter night, so the food reads at a glance.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
 import {
@@ -12,74 +12,8 @@ import {
 	tinted,
 	washTexture
 } from '../meadow/meadowSprites';
+import { starfish, summerPellet } from '../meadow/seasonFood';
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
-
-/**
- * Pellet: a small amber drop, ~5 world units across (a fifth of a tile). Light centre and
- * a dark rim so it holds against the sand; no inner detail, because 200 of them are on
- * screen at once.
- */
-const drop = lazy(() =>
-	makeTexture(10, 10, (x) => {
-		x.translate(5, 5);
-		x.fillStyle = 'rgba(90,45,10,.35)';
-		x.beginPath();
-		x.arc(0.5, 0.7, 2.7, 0, 7);
-		x.fill();
-		const g = x.createRadialGradient(-0.8, -0.9, 0.2, 0, 0, 2.6);
-		g.addColorStop(0, '#fffbe2');
-		g.addColorStop(0.55, '#ffd56a');
-		g.addColorStop(1, '#f29a2e');
-		x.fillStyle = g;
-		x.beginPath();
-		x.arc(0, 0, 2.6, 0, 7);
-		x.fill();
-		x.strokeStyle = '#a8501a';
-		x.lineWidth = 0.7;
-		x.stroke();
-	})
-);
-
-/**
- * Energizer: a little sun, a hot disc with eight rays, turning slowly. The watermelon slice
- * it replaces clashed with the melon (owner's review): an energizer is power, never food or
- * a collectible.
- */
-const sun = lazy(() =>
-	makeTexture(24, 24, (x) => {
-		x.translate(12, 12);
-		x.lineJoin = 'round';
-		const rays = () => {
-			x.beginPath();
-			for (let i = 0; i < 8; i++) {
-				const a = (i * Math.PI) / 4;
-				const side = Math.PI / 11;
-				x.moveTo(Math.cos(a - side) * 6, Math.sin(a - side) * 6);
-				x.lineTo(Math.cos(a) * 11, Math.sin(a) * 11);
-				x.lineTo(Math.cos(a + side) * 6, Math.sin(a + side) * 6);
-				x.closePath();
-			}
-		};
-		x.strokeStyle = '#7a3a00';
-		x.lineWidth = 1.6;
-		rays();
-		x.stroke();
-		x.fillStyle = '#ff9a1f';
-		rays();
-		x.fill();
-		x.beginPath();
-		x.arc(0, 0, 6.2, 0, 7);
-		x.stroke();
-		const g = x.createRadialGradient(-1.6, -1.8, 0.4, 0, 0, 6.2);
-		g.addColorStop(0, '#fffbe0');
-		g.addColorStop(0.5, '#ffd84a');
-		g.addColorStop(1, '#ff9a1f');
-		x.fillStyle = g;
-		x.beginPath();
-		x.arc(0, 0, 6.2, 0, 7);
-		x.fill();
-	})
-);
 
 const fog = lazy(() =>
 	tinted(
@@ -233,13 +167,13 @@ export const summerTheme: MeadowTheme = {
 		}
 	},
 	live: {
-		pellet: { texture: drop, size: 10 },
+		pellet: { texture: summerPellet, size: 10 },
 		energizer: {
-			texture: sun,
-			size: 24,
+			texture: starfish,
+			size: 26,
 			glow: 0xffb030,
-			glowSize: (64 * 0.85) / 3,
-			motion: 'spin'
+			glowSize: (64 * 0.95) / 3,
+			motion: 'sway'
 		},
 		portal: { glow: 0x5ff5d8, ring: () => ringTexture('rgba(120,255,225,.95)') },
 		glints: 0xfff7c0,

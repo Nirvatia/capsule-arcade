@@ -70,12 +70,8 @@ last of all (see Later). Part I is next: steps 1 (mazes) and 2 (heroes) are done
       same volume. The seasons' music is optional; the hell's track is part II, step 1.
 
 5. **Season art, in code** (one subject per chat; prototype first).
-   1. **Energizers vs fruit**: in spring and autumn the energizers look edible and are
-      mixed up with fruit. Energizers must read as non-food objects (an orb, a crystal, a
-      charm) in every season; fruit stays food.
-      Mock-up done: the `food` prototype shows three sets (pellet + energizer) per season
-      beside the current one (`prototypes/pacman/food/variants.ts`). Next: the owner picks a
-      set per season, then it moves into the season themes (`live.pellet`, `live.energizer`).
+   1. ~~**Energizers vs fruit**~~ Done (see Done, "Part I, 5.1"): a seasonal object per season,
+      never edible.
    2. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
       summer, autumn, winter, with normal, scared, flashing and eyes-only; focus on
       cuteness; the eyes show the heading; in the style of the heroes' mock-ups.
@@ -376,3 +372,14 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   level 12) 6.1 / 5.5, about 2.3x; clear rate 100 % (94 % at game level 17 for Ms. Pac-Man).
   Ghosts get no tunnel slowdown (the owner's choice). The secret level keeps its own rounds.
   Tests: `config/difficulty.test.ts`; 182 in all.
+- Part I, 5.1: the energizers and pellets of the four seasons (ninth chat). The owner picked
+  from mock-ups made in a chat artifact (three sets per season, after a first round of
+  gems and orbs was rejected): spring a cherry blossom, summer a starfish, autumn a
+  jack-o'-lantern, winter a snowman. Pellets: a yellow button, a white pebble, an amber
+  bead, an ice drop. One ink-outlined cel style like the heroes, painted in
+  `render/seasons/meadow/seasonFood.ts` and wired through each theme's `live.pellet` and
+  `live.energizer`; the old tulip, clover, sun, drop, fly agaric, acorn, crystal and ice
+  diamond textures are gone. Energizers sway, none spins, so the snowman stays upright;
+  the autumn glow and night light are warm (the lit face), winter's pale blue. Checked in
+  the `mazes` prototype on all four seasons; no new tests (art). Not done: the pumpkin's
+  flicker and the butterfly-style animation of the mock-up (the world only sways a texture).

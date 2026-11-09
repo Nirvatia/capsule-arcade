@@ -1,6 +1,6 @@
 // Autumn, from the owner's CLAUDE_GRID_AUTUMN mock-up: golden meadow, maples, hay bales,
-// fly-agaric energizers, falling leaves, rain, a grey-violet night. Pellets are redrawn
-// after the owner's review: a small, calm acorn instead of the large one.
+// jack-o'-lantern energizers, amber bead pellets, falling leaves, rain, a grey-violet
+// night.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
 import {
 	lazy,
@@ -11,75 +11,10 @@ import {
 	tinted,
 	washTexture
 } from '../meadow/meadowSprites';
+import { pumpkin, autumnPellet } from '../meadow/seasonFood';
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 
 const LEAVES = [0xe0502a, 0xf0a82a, 0xffd070, 0xb8641a];
-
-/**
- * Pellet: a small acorn, ~5×6 world units (a fifth of a tile): a light amber nut under a
- * darker cap, no outline clutter, bright enough for the dark path.
- */
-const acorn = lazy(() =>
-	makeTexture(10, 10, (x) => {
-		x.translate(5, 5.3);
-		const g = x.createRadialGradient(-0.7, 0, 0.2, 0, 0.6, 2.6);
-		g.addColorStop(0, '#fff0bf');
-		g.addColorStop(0.6, '#f2c060');
-		g.addColorStop(1, '#d08a2e');
-		x.fillStyle = g;
-		x.beginPath();
-		x.ellipse(0, 0.7, 2.2, 2.6, 0, 0, 7);
-		x.fill();
-		x.fillStyle = '#8a4a1e';
-		x.beginPath();
-		x.ellipse(0, -1.3, 2.6, 1.35, 0, 0, 7);
-		x.fill();
-		x.fillRect(-0.35, -3.6, 0.7, 1.4);
-		x.fillStyle = 'rgba(255,220,160,.55)';
-		x.beginPath();
-		x.ellipse(-0.7, -1.7, 1, 0.4, 0, 0, 7);
-		x.fill();
-	})
-);
-
-const amanita = lazy(() =>
-	makeTexture(26, 26, (x) => {
-		x.translate(13, 13);
-		x.lineWidth = 1.2;
-		x.strokeStyle = '#4a1408';
-		x.fillStyle = '#f6e8c8';
-		x.beginPath();
-		x.moveTo(-3.6, 2);
-		x.lineTo(-4.4, 10.5);
-		x.quadraticCurveTo(0, 12.6, 4.4, 10.5);
-		x.lineTo(3.6, 2);
-		x.closePath();
-		x.fill();
-		x.stroke();
-		const g = x.createLinearGradient(0, -10, 0, 4);
-		g.addColorStop(0, '#ff8a5a');
-		g.addColorStop(1, '#c0261a');
-		x.fillStyle = g;
-		x.beginPath();
-		x.moveTo(-11.5, 3.5);
-		x.bezierCurveTo(-11.5, -12, 11.5, -12, 11.5, 3.5);
-		x.quadraticCurveTo(0, 6.5, -11.5, 3.5);
-		x.closePath();
-		x.fill();
-		x.stroke();
-		x.fillStyle = '#fff7e0';
-		for (const [a, c, r] of [
-			[-5, -2.5, 2.4],
-			[3, -5.5, 2.6],
-			[6.5, -0.5, 1.8],
-			[-0.5, 0, 1.5]
-		]) {
-			x.beginPath();
-			x.arc(a, c, r, 0, 7);
-			x.fill();
-		}
-	})
-);
 
 /** A single leaf, white: tinted per particle. */
 const leaf = lazy(() =>
@@ -226,11 +161,11 @@ export const autumnTheme: MeadowTheme = {
 		}
 	},
 	live: {
-		pellet: { texture: acorn, size: 10 },
+		pellet: { texture: autumnPellet, size: 10 },
 		energizer: {
-			texture: amanita,
+			texture: pumpkin,
 			size: 26,
-			glow: 0xff4a2a,
+			glow: 0xffa030,
 			glowSize: (64 * 0.95) / 3,
 			motion: 'sway'
 		},
@@ -301,7 +236,7 @@ export const autumnTheme: MeadowTheme = {
 				[1, 'rgba(40,18,5,.42)']
 			])
 		),
-		lights: { energizer: 0xff5a3a, portal: 0xc88aff },
+		lights: { energizer: 0xffa040, portal: 0xc88aff },
 		chimneySmoke: true
 	},
 	decay: AUTUMN_DECAY

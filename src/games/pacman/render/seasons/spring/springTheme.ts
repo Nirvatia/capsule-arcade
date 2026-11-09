@@ -1,5 +1,5 @@
 // Spring, from the owner's CLAUDE_GRID_SPRING mock-up: fresh green meadow, cherry trees,
-// picnic blankets, clover pellets and tulip energizers, a petal-laden wind, a soft night.
+// picnic blankets, yellow button pellets and cherry-blossom energizers, a petal-laden wind, a soft night.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
 import {
 	lazy,
@@ -10,80 +10,10 @@ import {
 	tinted,
 	washTexture
 } from '../meadow/meadowSprites';
+import { sakura, springPellet } from '../meadow/seasonFood';
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 
 const PETALS = [0xffc2d9, 0xffffff, 0xffdde8, 0xf7a8c4];
-
-const clover = lazy(() =>
-	makeTexture(10, 10, (x) => {
-		x.translate(5, 5);
-		x.strokeStyle = '#d8ff9a';
-		x.lineWidth = 0.9;
-		x.beginPath();
-		x.moveTo(0, 0.5);
-		x.lineTo(0.6, 4.6);
-		x.stroke();
-		x.fillStyle = '#9dff5a';
-		x.strokeStyle = 'rgba(235,255,200,.95)';
-		x.lineWidth = 0.5;
-		for (const [a, c] of [
-			[-2, 0.2],
-			[2, 0.2],
-			[0, -2.4]
-		]) {
-			x.beginPath();
-			x.arc(a, c, 2.1, 0, 7);
-			x.fill();
-			x.stroke();
-		}
-	})
-);
-
-const tulip = lazy(() =>
-	makeTexture(26, 26, (x) => {
-		x.translate(13, 13);
-		x.lineWidth = 1.2;
-		x.strokeStyle = '#5a0f2e';
-		x.fillStyle = '#4fa83a';
-		x.beginPath();
-		x.moveTo(-1, 2);
-		x.lineTo(-1, 12);
-		x.lineTo(1, 12);
-		x.lineTo(1, 2);
-		x.closePath();
-		x.fill();
-		x.stroke();
-		x.beginPath();
-		x.moveTo(1, 11);
-		x.quadraticCurveTo(10, 8, 9, 2);
-		x.quadraticCurveTo(3, 5, 1, 11);
-		x.fill();
-		x.stroke();
-		const g = x.createLinearGradient(0, -12, 0, 4);
-		g.addColorStop(0, '#ff8fc0');
-		g.addColorStop(1, '#d0246e');
-		x.fillStyle = g;
-		x.beginPath();
-		x.moveTo(-8, -8);
-		x.lineTo(-4.5, -3);
-		x.lineTo(0, -11);
-		x.lineTo(4.5, -3);
-		x.lineTo(8, -8);
-		x.bezierCurveTo(10, 0, 5, 6, 0, 6);
-		x.bezierCurveTo(-5, 6, -10, 0, -8, -8);
-		x.closePath();
-		x.fill();
-		x.stroke();
-		x.strokeStyle = 'rgba(255,230,240,.7)';
-		x.lineWidth = 0.9;
-		x.beginPath();
-		x.moveTo(-4.5, -3);
-		x.quadraticCurveTo(-3, 2, 0, 5);
-		x.moveTo(4.5, -3);
-		x.quadraticCurveTo(3, 2, 0, 5);
-		x.stroke();
-	})
-);
 
 /** A single petal, white: tinted per particle. */
 const petal = lazy(() =>
@@ -238,9 +168,9 @@ export const springTheme: MeadowTheme = {
 		}
 	},
 	live: {
-		pellet: { texture: clover, size: 10 },
+		pellet: { texture: springPellet, size: 10 },
 		energizer: {
-			texture: tulip,
+			texture: sakura,
 			size: 26,
 			glow: 0xff5fa0,
 			glowSize: (64 * 0.95) / 3,

@@ -198,7 +198,6 @@ screenshots or an artifact Claude builds from the page, never by opening the fil
 approved prototype already is the game code. Existing: `hell`, `arcade`,
 `hud`, `collectibles` (with each item's reach from its tile centre and a tile grid),
 `mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
-`food` (three candidate pellet + energizer sets per season beside the current one, on a real maze with fruit; the sets are in `prototypes/pacman/food/variants.ts` until one is picked),
 `level-clear`, `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
 `MsPacmanHero`); `winter-decay.html` is an older standalone page.
