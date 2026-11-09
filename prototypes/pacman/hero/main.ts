@@ -20,10 +20,8 @@ const view = $<HTMLCanvasElement>('view');
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const q = new URLSearchParams(location.search);
-// ?trail=puffs|whooshes|both (default both): to compare the trail's two parts
-const trailMode = q.get('trail') ?? 'both';
-TRAIL.puffs = trailMode !== 'whooshes';
-TRAIL.whooshes = trailMode !== 'puffs';
+// ?trail=arcs|chevrons (default arcs): the shape that marks his speed
+TRAIL.shape = q.get('trail') === 'chevrons' ? 'chevrons' : 'arcs';
 
 const POWER_TIME = 6;
 const POWER_ENDING = 1.6;

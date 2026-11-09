@@ -210,8 +210,8 @@ function celDisc(
 	return c;
 }
 
-/** What the trail is made of (a switch for the prototype to compare; both on in the game). */
-export const TRAIL = { puffs: true, whooshes: true };
+/** The shape that marks his speed behind him: a switch for the prototype to compare. */
+export const TRAIL: { shape: 'arcs' | 'chevrons' } = { shape: 'arcs' };
 
 /** The painted inside of the mouth. */
 export interface MouthInside {
@@ -253,7 +253,8 @@ export type ParticleKind =
 	| 'spark'
 	| 'leaf'
 	| 'flake'
-	| 'puff'
+	| 'chevron'
+	| 'flame'
 	| 'whoosh'
 	| 'none';
 
@@ -297,9 +298,9 @@ export abstract class Hero {
 	protected flip = 1;
 	private lastH = 1;
 	protected moving = false;
-	/** Distance run since the last puff and the last whoosh were dropped. */
-	private puffDist = 0;
-	private whooshDist = 0;
+	/** Distance run since the last flame and the last speed mark were dropped. */
+	private flameDist = 0;
+	private markDist = 0;
 	protected time = 0;
 	protected season: HeroSeason = 'summer';
 	/** The awoken look, 0..1. */
@@ -334,8 +335,8 @@ export abstract class Hero {
 
 	reset(): void {
 		this.embers = [];
-		this.puffDist = 0;
-		this.whooshDist = 0;
+		this.flameDist = 0;
+		this.markDist = 0;
 		this.bursts = [];
 		this.power = 0;
 		this.powerOn = false;
@@ -476,7 +477,7 @@ export abstract class Hero {
 		this.afterUpdate?.(dt);
 		if (step < r * 3) {
 			this.travelled += step;
-			const every = r * (this.power > 0.5 ? 0.45 : 1.1);
+			const every = r * (this.power > 0.5 ? 0.4 : 0.75);
 			while (this.travelled > every) {
 				this.travelled -= every;
 				const a = this.angle + Math.PI + (this.random() - 0.5) * 1.2;
@@ -489,26 +490,25 @@ export abstract class Hero {
 				);
 			}
 		}
-		// the trail: bold puffs and crescent whooshes dropped in the world along the way he runs,
-		// each lying along the direction he was going at that moment, so a turn bends it
+		// the trail: a bold speed mark (an arc or a chevron) every stretch he runs, and fire
+		// drops while he is powered, all left in the world and lying along the direction he
+		// was going at that moment, so a turn bends the trail along his path
 		if (step < r * 3 && step > r * 0.01) {
 			const hot = this.power > 0.5;
 			const ux = dx / step;
 			const uy = dy / step;
-			if (TRAIL.puffs) {
-				this.puffDist += step;
-				const gap = r * (hot ? 0.26 : 0.36);
-				while (this.puffDist >= gap) {
-					this.puffDist -= gap;
-					this.spawnPuff(ux, uy, hot);
-				}
+			this.markDist += step;
+			const gap = r * (hot ? 1.3 : 1.8);
+			while (this.markDist >= gap) {
+				this.markDist -= gap;
+				if (TRAIL.shape === 'arcs') this.spawnWhoosh(ux, uy, hot);
+				else this.spawnChevrons(ux, uy, hot);
 			}
-			if (TRAIL.whooshes) {
-				this.whooshDist += step;
-				const gap = r * (hot ? 1.3 : 1.7);
-				while (this.whooshDist >= gap) {
-					this.whooshDist -= gap;
-					this.spawnWhoosh(ux, uy, hot);
+			if (hot) {
+				this.flameDist += step;
+				while (this.flameDist >= r * 0.5) {
+					this.flameDist -= r * 0.5;
+					this.spawnFlame(ux, uy);
 				}
 			}
 		}
@@ -531,23 +531,48 @@ export abstract class Hero {
 		this.bursts = this.bursts.filter((b) => b.t < 0.5);
 	}
 
-	/** A bold round puff behind him, scattered a little across his back, shrinking as it ages. */
-	private spawnPuff(ux: number, uy: number, hot: boolean): void {
+	/** A pair of bold chevrons (like >>) behind him, pointing the way he runs. */
+	private spawnChevrons(ux: number, uy: number, hot: boolean): void {
 		const r = this.r;
-		const spread = (this.random() - 0.5) * (hot ? 1.3 : 1.0) * r;
-		const life = (0.2 + this.random() * 0.08) * (hot ? 1.3 : 1);
+		const life = hot ? 0.26 : 0.22;
+		for (let i = 0; i < 2; i++) {
+			const back = r * (1.05 + i * 0.6);
+			this.embers.push({
+				kind: 'chevron',
+				x: this.x - ux * back,
+				y: this.y - uy * back,
+				vx: -ux * r * 0.6,
+				vy: -uy * r * 0.6,
+				life,
+				max: life,
+				size: r,
+				hot,
+				spin: 0,
+				len: r * (hot ? 1.15 : 1) * (1 - i * 0.25),
+				ang: Math.atan2(uy, ux),
+				lane: i
+			});
+		}
+	}
+
+	/** A drop of fire off his back while powered: a pointed teardrop streaming backwards. */
+	private spawnFlame(ux: number, uy: number): void {
+		const r = this.r;
+		const spread = (this.random() - 0.5) * 1.0 * r;
+		const life = 0.24 + this.random() * 0.1;
 		this.embers.push({
-			kind: 'puff',
-			x: this.x - ux * r * 0.85 - uy * spread,
-			y: this.y - uy * r * 0.85 + ux * spread,
-			vx: -ux * r * 1.0 - uy * spread * 1.2,
-			vy: -uy * r * 1.0 + ux * spread * 1.2,
+			kind: 'flame',
+			x: this.x - ux * r * 0.8 - uy * spread,
+			y: this.y - uy * r * 0.8 + ux * spread,
+			vx: -ux * r * 1.4,
+			vy: -uy * r * 1.4,
 			life,
 			max: life,
-			size: r * (hot ? 0.5 : 0.4) * (0.75 + this.random() * 0.5),
-			hot,
+			size: r * (0.3 + this.random() * 0.16),
+			hot: true,
 			spin: 0,
-			lane: this.random() < 0.5 ? 0 : 1
+			len: r * (0.85 + this.random() * 0.4),
+			ang: Math.atan2(uy, ux)
 		});
 	}
 

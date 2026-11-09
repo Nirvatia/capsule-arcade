@@ -13,7 +13,8 @@ import type { HeroSeason, RGB } from './heroSeasons';
 import {
 	drawKiFlames,
 	drawSeasonParticle,
-	drawPuff,
+	drawChevron,
+	drawFlameDrop,
 	drawWhoosh,
 	drawStarGlint,
 	particleLift,
@@ -548,7 +549,7 @@ export class MsPacmanHero extends Hero {
 	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
 		if (moment === 'trail') {
 			const r = this.random();
-			return r < 0.3 ? 'dust' : r < 0.65 ? SEASON_LOOKS[this.season].particle : 'star';
+			return r < 0.5 ? SEASON_LOOKS[this.season].particle : 'star';
 		}
 		return this.random() < 0.45 ? 'heart' : 'star';
 	}
@@ -563,11 +564,13 @@ export class MsPacmanHero extends Hero {
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
 		const look = SEASON_LOOKS[this.season];
-		if (e.kind === 'puff') {
-			// pink puffs and the season's, alternating; powered: gold cooling to rose
-			if (e.hot) drawPuff(ctx, e, [255, 230, 150], [255, 130, 180]);
-			else if ((e.lane ?? 0) === 0) drawPuff(ctx, e, [255, 232, 242], [255, 150, 196]);
-			else drawPuff(ctx, e, [255, 246, 226], look.line);
+		if (e.kind === 'chevron') {
+			const calm: RGB = (e.lane ?? 0) === 0 ? [255, 190, 220] : look.lineHot;
+			drawChevron(ctx, e, e.hot ? [255, 214, 100] : calm);
+			return;
+		}
+		if (e.kind === 'flame') {
+			drawFlameDrop(ctx, e, [255, 140, 176], [255, 224, 120]);
 			return;
 		}
 		if (e.kind === 'whoosh') {

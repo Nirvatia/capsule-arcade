@@ -13,7 +13,8 @@ import {
 	INK,
 	drawKiFlames,
 	drawSeasonParticle,
-	drawPuff,
+	drawChevron,
+	drawFlameDrop,
 	drawWhoosh,
 	drawStarGlint,
 	particleLift,
@@ -82,10 +83,10 @@ export class PacmanHero extends Hero {
 		drawStarGlint(ctx, R, p, lx, ly);
 	}
 
-	/** Dust puffs and the season's own little things off the back; the season's on bursts. */
+	/** The season's own little things off the back and on bursts (no dust: it read as gas). */
 	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
 		const own = SEASON_LOOKS[this.season].particle;
-		if (moment === 'trail') return this.random() < 0.5 ? 'dust' : own;
+		void moment;
 		return own;
 	}
 
@@ -99,10 +100,12 @@ export class PacmanHero extends Hero {
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
 		const look = SEASON_LOOKS[this.season];
-		if (e.kind === 'puff') {
-			// cream warming to the season's colour; powered: yellow-white cooling to orange
-			if (e.hot) drawPuff(ctx, e, [255, 244, 190], [255, 140, 40]);
-			else drawPuff(ctx, e, [255, 246, 226], look.line);
+		if (e.kind === 'chevron') {
+			drawChevron(ctx, e, e.hot ? [255, 214, 90] : look.lineHot);
+			return;
+		}
+		if (e.kind === 'flame') {
+			drawFlameDrop(ctx, e, [255, 132, 28], [255, 228, 98]);
 			return;
 		}
 		if (e.kind === 'whoosh') {

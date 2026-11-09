@@ -2,7 +2,7 @@
 // ink-outlined "ki" flames behind a powered hero and the little star on his highlight. All drawn
 // in code, in the same outlined style; the colours come from the season (`heroSeasons.ts`).
 import type { Particle, ParticleKind } from './Hero';
-import { css, mix } from './Hero';
+import { css } from './Hero';
 import { SEASON_LOOKS } from './heroSeasons';
 import type { HeroSeason, RGB } from './heroSeasons';
 
@@ -19,9 +19,11 @@ export function particleSize(kind: ParticleKind): number {
 		case 'petal':
 		case 'leaf':
 		case 'flake':
-			return 1.9;
+			return 2.6;
+		case 'spark':
+			return 2;
 		case 'star':
-			return 1.6;
+			return 2;
 		default:
 			return 1.2;
 	}
@@ -40,7 +42,8 @@ export function particleLift(kind: ParticleKind): number {
 			return -0.18;
 		case 'star':
 			return 0.15;
-		case 'puff':
+		case 'chevron':
+		case 'flame':
 		case 'whoosh':
 			return 0;
 		default:
@@ -49,25 +52,76 @@ export function particleLift(kind: ParticleKind): number {
 }
 
 /**
- * A bold round puff of the trail: a flat colour that warms from `young` to `old` as it ages,
- * an ink outline and a small highlight, shrinking to nothing.
+ * A speed chevron (like >): a thick bent bar pointing the way the hero runs, in a flat colour
+ * with an ink outline, shrinking and fading.
  */
-export function drawPuff(ctx: CanvasRenderingContext2D, e: Particle, young: RGB, old: RGB): void {
+export function drawChevron(ctx: CanvasRenderingContext2D, e: Particle, colour: RGB): void {
 	const u = e.life / e.max;
-	const rad = e.size * (0.2 + 0.8 * Math.pow(u, 0.7));
-	if (rad < 0.4) return;
+	const k = 0.55 + 0.45 * u;
+	const R = (e.len ?? e.size) * k;
+	const a = R * 0.42;
+	const b = R * 0.62;
+	const t = R * 0.26;
 	ctx.save();
-	ctx.globalAlpha = Math.min(1, u * 4);
-	ctx.fillStyle = css(mix(young, old, Math.min(1, (1 - u) * 1.5)));
-	ctx.strokeStyle = css(INK, 0.9);
-	ctx.lineWidth = Math.max(0.8, e.size * 0.16);
-	ctx.beginPath();
-	ctx.arc(e.x, e.y, rad, 0, Math.PI * 2);
-	ctx.fill();
+	ctx.translate(e.x, e.y);
+	ctx.rotate(e.ang ?? 0);
+	ctx.globalAlpha = Math.min(1, u * 3);
+	ctx.lineJoin = 'miter';
+	ctx.lineCap = 'butt';
+	ctx.miterLimit = 6;
+	const path = () => {
+		ctx.beginPath();
+		ctx.moveTo(-a, -b);
+		ctx.lineTo(a, 0);
+		ctx.lineTo(-a, b);
+	};
+	path();
+	ctx.strokeStyle = css(INK, 0.95);
+	ctx.lineWidth = t + R * 0.12;
 	ctx.stroke();
-	ctx.fillStyle = 'rgba(255,255,255,0.75)';
-	ctx.beginPath();
-	ctx.ellipse(e.x - rad * 0.3, e.y - rad * 0.32, rad * 0.3, rad * 0.18, -0.6, 0, Math.PI * 2);
+	path();
+	ctx.strokeStyle = css(colour);
+	ctx.lineWidth = t;
+	ctx.stroke();
+	ctx.restore();
+}
+
+/**
+ * A drop of fire: a pointed teardrop streaming backwards (its tip away from the hero), an
+ * orange body with a bright core and an ink outline, shrinking to nothing.
+ */
+export function drawFlameDrop(
+	ctx: CanvasRenderingContext2D,
+	e: Particle,
+	outer: RGB,
+	inner: RGB
+): void {
+	const u = e.life / e.max;
+	const k = 0.25 + 0.75 * Math.pow(u, 0.8);
+	const L = (e.len ?? e.size * 3) * k;
+	const W = e.size * k;
+	if (L < 1) return;
+	ctx.save();
+	ctx.translate(e.x, e.y);
+	ctx.rotate(e.ang ?? 0);
+	ctx.globalAlpha = Math.min(1, u * 4);
+	const drop = (l: number, w: number) => {
+		ctx.beginPath();
+		ctx.moveTo(-l * 0.5, 0);
+		ctx.bezierCurveTo(-l * 0.3, -w, l * 0.1, -w * 0.8, l * 0.5, 0);
+		ctx.bezierCurveTo(l * 0.1, w * 0.8, -l * 0.3, w, -l * 0.5, 0);
+		ctx.closePath();
+	};
+	drop(L, W);
+	ctx.fillStyle = css(outer);
+	ctx.fill();
+	ctx.strokeStyle = css(INK, 0.95);
+	ctx.lineWidth = Math.max(0.8, W * 0.18);
+	ctx.lineJoin = 'round';
+	ctx.stroke();
+	ctx.translate(-L * 0.06, 0);
+	drop(L * 0.55, W * 0.55);
+	ctx.fillStyle = css(inner);
 	ctx.fill();
 	ctx.restore();
 }
