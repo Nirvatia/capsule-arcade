@@ -210,9 +210,6 @@ function celDisc(
 	return c;
 }
 
-/** The shape that marks his speed behind him: a switch for the prototype to compare. */
-export const TRAIL: { shape: 'arcs' | 'chevrons' } = { shape: 'arcs' };
-
 /** The painted inside of the mouth. */
 export interface MouthInside {
 	readonly mid: RGB;
@@ -245,18 +242,7 @@ export interface HeroDesign {
 }
 
 export type ParticleKind =
-	| 'ember'
-	| 'star'
-	| 'heart'
-	| 'dust'
-	| 'petal'
-	| 'spark'
-	| 'leaf'
-	| 'flake'
-	| 'chevron'
-	| 'flame'
-	| 'whoosh'
-	| 'none';
+	'ember' | 'star' | 'heart' | 'dust' | 'petal' | 'spark' | 'leaf' | 'flake' | 'flame' | 'none';
 
 export interface Particle {
 	kind: ParticleKind;
@@ -298,9 +284,9 @@ export abstract class Hero {
 	protected flip = 1;
 	private lastH = 1;
 	protected moving = false;
-	/** Distance run since the last flame and the last speed mark were dropped. */
+	/** Distance run since the last flame and the last trail particle were dropped. */
 	private flameDist = 0;
-	private markDist = 0;
+	private stormDist = 0;
 	protected time = 0;
 	protected season: HeroSeason = 'summer';
 	/** The awoken look, 0..1. */
@@ -326,7 +312,6 @@ export abstract class Hero {
 	private mouthFlash = 0;
 	private embers: Particle[] = [];
 	private bursts: Burst[] = [];
-	private travelled = 0;
 	private seed = 11;
 
 	setRadius(r: number): void {
@@ -336,7 +321,7 @@ export abstract class Hero {
 	reset(): void {
 		this.embers = [];
 		this.flameDist = 0;
-		this.markDist = 0;
+		this.stormDist = 0;
 		this.bursts = [];
 		this.power = 0;
 		this.powerOn = false;
@@ -472,37 +457,20 @@ export abstract class Hero {
 		this.flash = Math.max(0, this.flash - dt / 0.16);
 		this.mouthFlash = Math.max(0, this.mouthFlash - dt / 0.2);
 
-		// the trail and embers, by distance travelled
 		const r = this.r;
 		this.afterUpdate?.(dt);
-		if (step < r * 3) {
-			this.travelled += step;
-			const every = r * (this.power > 0.5 ? 0.4 : 0.75);
-			while (this.travelled > every) {
-				this.travelled -= every;
-				const a = this.angle + Math.PI + (this.random() - 0.5) * 1.2;
-				this.spawn(
-					this.particleFor?.('trail') ?? 'ember',
-					this.power > 0.5,
-					a,
-					1.5 + this.random() * 2.5,
-					true
-				);
-			}
-		}
-		// the trail: a bold speed mark (an arc or a chevron) every stretch he runs, and fire
-		// drops while he is powered, all left in the world and lying along the direction he
-		// was going at that moment, so a turn bends the trail along his path
+		// the trail: a stream of the season's own particles shed along his path (they flutter,
+		// tumble and sparkle where they were dropped, so a turn bends the trail), and drops of
+		// fire while he is powered
 		if (step < r * 3 && step > r * 0.01) {
 			const hot = this.power > 0.5;
 			const ux = dx / step;
 			const uy = dy / step;
-			this.markDist += step;
-			const gap = r * (hot ? 1.3 : 1.8);
-			while (this.markDist >= gap) {
-				this.markDist -= gap;
-				if (TRAIL.shape === 'arcs') this.spawnWhoosh(ux, uy, hot);
-				else this.spawnChevrons(ux, uy, hot);
+			this.stormDist += step;
+			const gap = r * (hot ? 0.2 : 0.3);
+			while (this.stormDist >= gap) {
+				this.stormDist -= gap;
+				this.spawnStorm(ux, uy, hot);
 			}
 			if (hot) {
 				this.flameDist += step;
@@ -522,6 +490,14 @@ export abstract class Hero {
 			e.life -= dt;
 			e.x += e.vx * dt;
 			e.y += e.vy * dt;
+			// the trail's particles flutter: a sideways push that swings with their age
+			const swirl =
+				e.ang !== undefined && e.lane !== undefined ? (this.swirlFor?.(e.kind) ?? 0) : 0;
+			if (swirl > 0) {
+				const push = Math.sin((e.max - e.life) * 9 + (e.lane ?? 0)) * swirl * r;
+				e.vx += -Math.sin(e.ang ?? 0) * push * dt;
+				e.vy += Math.cos(e.ang ?? 0) * push * dt;
+			}
 			const drag = Math.pow(0.9, dt * 60);
 			e.vx *= drag;
 			e.vy = e.vy * drag - r * (this.liftFor?.(e.kind) ?? 0.8) * dt;
@@ -531,28 +507,29 @@ export abstract class Hero {
 		this.bursts = this.bursts.filter((b) => b.t < 0.5);
 	}
 
-	/** A pair of bold chevrons (like >>) behind him, pointing the way he runs. */
-	private spawnChevrons(ux: number, uy: number, hot: boolean): void {
+	/** One particle of the trail: dropped behind him with a kick back, then it flutters on. */
+	private spawnStorm(ux: number, uy: number, hot: boolean): void {
+		const kind = this.particleFor?.('trail') ?? 'ember';
+		if (kind === 'none') return;
 		const r = this.r;
-		const life = hot ? 0.26 : 0.22;
-		for (let i = 0; i < 2; i++) {
-			const back = r * (1.05 + i * 0.6);
-			this.embers.push({
-				kind: 'chevron',
-				x: this.x - ux * back,
-				y: this.y - uy * back,
-				vx: -ux * r * 0.6,
-				vy: -uy * r * 0.6,
-				life,
-				max: life,
-				size: r,
-				hot,
-				spin: 0,
-				len: r * (hot ? 1.15 : 1) * (1 - i * 0.25),
-				ang: Math.atan2(uy, ux),
-				lane: i
-			});
-		}
+		const lateral = (this.random() - 0.5) * r;
+		const back = (1 + this.random() * 2) * r;
+		const side = (this.random() - 0.5) * 1.6 * r;
+		const life = (0.5 + this.random() * 0.3) * (hot ? 0.9 : 1);
+		this.embers.push({
+			kind,
+			x: this.x - ux * r * 0.7 - uy * lateral,
+			y: this.y - uy * r * 0.7 + ux * lateral,
+			vx: -ux * back - uy * side,
+			vy: -uy * back + ux * side,
+			life,
+			max: life,
+			size: r * (0.07 + this.random() * 0.05) * (this.sizeFor?.(kind) ?? 1),
+			hot,
+			spin: (this.random() - 0.5) * 8,
+			ang: Math.atan2(uy, ux),
+			lane: this.random() * Math.PI * 2
+		});
 	}
 
 	/** A drop of fire off his back while powered: a pointed teardrop streaming backwards. */
@@ -572,26 +549,6 @@ export abstract class Hero {
 			hot: true,
 			spin: 0,
 			len: r * (0.85 + this.random() * 0.4),
-			ang: Math.atan2(uy, ux)
-		});
-	}
-
-	/** A crescent shock-arc peeling off his back, left behind as he runs on. */
-	private spawnWhoosh(ux: number, uy: number, hot: boolean): void {
-		const r = this.r;
-		const life = hot ? 0.24 : 0.2;
-		this.embers.push({
-			kind: 'whoosh',
-			x: this.x - ux * r * 0.05,
-			y: this.y - uy * r * 0.05,
-			vx: 0,
-			vy: 0,
-			life,
-			max: life,
-			size: r,
-			hot,
-			spin: 0,
-			len: r * (1.0 + this.random() * 0.25) * (hot ? 1.2 : 1),
 			ang: Math.atan2(uy, ux)
 		});
 	}
@@ -767,6 +724,8 @@ export abstract class Hero {
 	/** How big and how fast-rising a particle kind is (1 and 0.8 if not given). */
 	protected sizeFor?(kind: ParticleKind): number;
 	protected liftFor?(kind: ParticleKind): number;
+	/** How hard a particle kind flutters sideways, body radii per second squared (0 if not given). */
+	protected swirlFor?(kind: ParticleKind): number;
 	/** Frame space, behind the body, while powered (k = look × the end-of-power pulse). */
 	protected drawBehind?(ctx: CanvasRenderingContext2D, R: number, k: number): void;
 	/** Inside the body (the scratch canvas, source-atop): veins, blush, marks. */

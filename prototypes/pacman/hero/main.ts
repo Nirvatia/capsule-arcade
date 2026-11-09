@@ -3,7 +3,6 @@
 // game scale (the mock-up's season rows). Buttons: Pac-Man / Ms. Pac-Man, the four seasons,
 // run / rest, a bite, the energizer (6 s, the last 1.6 s calm down), death, quarter speed.
 // Query: ?season=winter&ms&power&rest&capture (capture: window.__advance(seconds) steps 1/60 s).
-import { TRAIL } from '../../../src/games/pacman/render/actors/hero/Hero';
 import type { Hero } from '../../../src/games/pacman/render/actors/hero/Hero';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
@@ -20,8 +19,6 @@ const view = $<HTMLCanvasElement>('view');
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const q = new URLSearchParams(location.search);
-// ?trail=arcs|chevrons (default arcs): the shape that marks his speed
-TRAIL.shape = q.get('trail') === 'chevrons' ? 'chevrons' : 'arcs';
 
 const POWER_TIME = 6;
 const POWER_ENDING = 1.6;

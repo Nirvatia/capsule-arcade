@@ -13,11 +13,11 @@ import {
 	INK,
 	drawKiFlames,
 	drawSeasonParticle,
-	drawChevron,
+	drawFireSpark,
 	drawFlameDrop,
-	drawWhoosh,
 	drawStarGlint,
 	particleLift,
+	particleSwirl,
 	particleSize
 } from './heroFx';
 
@@ -86,8 +86,8 @@ export class PacmanHero extends Hero {
 	/** The season's own little things off the back and on bursts (no dust: it read as gas). */
 	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
 		const own = SEASON_LOOKS[this.season].particle;
-		void moment;
-		return own;
+		// powered, the trail is fire; otherwise the season's own things
+		return moment === 'trail' && this.power > 0.5 ? 'ember' : own;
 	}
 
 	protected sizeFor(kind: ParticleKind): number {
@@ -98,18 +98,17 @@ export class PacmanHero extends Hero {
 		return particleLift(kind);
 	}
 
+	protected swirlFor(kind: ParticleKind): number {
+		return particleSwirl(kind);
+	}
+
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
-		const look = SEASON_LOOKS[this.season];
-		if (e.kind === 'chevron') {
-			drawChevron(ctx, e, e.hot ? [255, 214, 90] : look.lineHot);
+		if (e.kind === 'ember' && e.hot) {
+			drawFireSpark(ctx, e, s, [255, 132, 28], [255, 228, 98]);
 			return;
 		}
 		if (e.kind === 'flame') {
 			drawFlameDrop(ctx, e, [255, 132, 28], [255, 228, 98]);
-			return;
-		}
-		if (e.kind === 'whoosh') {
-			drawWhoosh(ctx, e, e.hot ? [255, 214, 90] : look.lineHot);
 			return;
 		}
 		drawSeasonParticle(ctx, e, a, s, this.season);

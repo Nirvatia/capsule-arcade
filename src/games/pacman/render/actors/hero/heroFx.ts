@@ -29,6 +29,23 @@ export function particleSize(kind: ParticleKind): number {
 	}
 }
 
+/** How hard a trail particle kind flutters sideways (body radii per second squared). */
+export function particleSwirl(kind: ParticleKind): number {
+	switch (kind) {
+		case 'petal':
+			return 14;
+		case 'leaf':
+			return 11;
+		case 'flake':
+			return 8;
+		case 'spark':
+		case 'star':
+			return 5;
+		default:
+			return 0;
+	}
+}
+
 /** How fast a particle kind rises (negative: it sinks): petals and dust hang about. */
 export function particleLift(kind: ParticleKind): number {
 	switch (kind) {
@@ -42,47 +59,36 @@ export function particleLift(kind: ParticleKind): number {
 			return -0.18;
 		case 'star':
 			return 0.15;
-		case 'chevron':
 		case 'flame':
-		case 'whoosh':
 			return 0;
 		default:
 			return 0.6;
 	}
 }
 
-/**
- * A speed chevron (like >): a thick bent bar pointing the way the hero runs, in a flat colour
- * with an ink outline, shrinking and fading.
- */
-export function drawChevron(ctx: CanvasRenderingContext2D, e: Particle, colour: RGB): void {
+/** A spark of fire while powered: a bead with a bright core and an ink outline, cooling as it ages. */
+export function drawFireSpark(
+	ctx: CanvasRenderingContext2D,
+	e: Particle,
+	s: number,
+	outer: RGB,
+	inner: RGB
+): void {
 	const u = e.life / e.max;
-	const k = 0.55 + 0.45 * u;
-	const R = (e.len ?? e.size) * k;
-	const a = R * 0.42;
-	const b = R * 0.62;
-	const t = R * 0.26;
+	const r = s * (0.5 + 0.5 * u);
 	ctx.save();
-	ctx.translate(e.x, e.y);
-	ctx.rotate(e.ang ?? 0);
 	ctx.globalAlpha = Math.min(1, u * 3);
-	ctx.lineJoin = 'miter';
-	ctx.lineCap = 'butt';
-	ctx.miterLimit = 6;
-	const path = () => {
-		ctx.beginPath();
-		ctx.moveTo(-a, -b);
-		ctx.lineTo(a, 0);
-		ctx.lineTo(-a, b);
-	};
-	path();
-	ctx.strokeStyle = css(INK, 0.95);
-	ctx.lineWidth = t + R * 0.12;
+	ctx.fillStyle = css(outer);
+	ctx.strokeStyle = css(INK, 0.9);
+	ctx.lineWidth = Math.max(0.8, r * 0.3);
+	ctx.beginPath();
+	ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
+	ctx.fill();
 	ctx.stroke();
-	path();
-	ctx.strokeStyle = css(colour);
-	ctx.lineWidth = t;
-	ctx.stroke();
+	ctx.fillStyle = css(inner);
+	ctx.beginPath();
+	ctx.arc(e.x - r * 0.1, e.y - r * 0.1, r * 0.5, 0, Math.PI * 2);
+	ctx.fill();
 	ctx.restore();
 }
 
@@ -127,43 +133,6 @@ export function drawFlameDrop(
 }
 
 /**
- * A shock-arc of the trail: a crescent bulging backwards (tips towards the hero), thickest in
- * the middle, growing a little and fading, with a thin ink outline.
- */
-export function drawWhoosh(ctx: CanvasRenderingContext2D, e: Particle, colour: RGB): void {
-	const u = e.life / e.max;
-	const grow = 0.8 + 0.4 * (1 - u);
-	const R = (e.len ?? e.size) * grow;
-	const th = 0.95;
-	const thick = R * 0.5 * (0.4 + 0.6 * u);
-	const n = 14;
-	ctx.save();
-	ctx.translate(e.x, e.y);
-	ctx.rotate(e.ang ?? 0);
-	ctx.globalAlpha = Math.min(1, u * 2.2);
-	ctx.beginPath();
-	for (let i = 0; i <= n; i++) {
-		const t = -1 + (2 * i) / n;
-		const a = Math.PI + t * th;
-		ctx.lineTo(Math.cos(a) * R, Math.sin(a) * R);
-	}
-	for (let i = n; i >= 0; i--) {
-		const t = -1 + (2 * i) / n;
-		const a = Math.PI + t * th;
-		const r = R - thick * (1 - t * t);
-		ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-	}
-	ctx.closePath();
-	ctx.fillStyle = css(colour);
-	ctx.fill();
-	ctx.strokeStyle = css(INK, 0.85);
-	ctx.lineWidth = Math.max(0.8, R * 0.05);
-	ctx.lineJoin = 'round';
-	ctx.stroke();
-	ctx.restore();
-}
-
-/**
  * One season particle (dust, petal, leaf, flake, spark, ember) at alpha `a` and size `s`.
  * Returns false for a kind it does not know (the caller draws its own).
  */
@@ -201,15 +170,18 @@ export function drawSeasonParticle(
 			ctx.fill();
 			ctx.stroke();
 			break;
-		case 'petal':
+		case 'petal': {
+			// a petal flips over and over as it flutters
+			const flip = Math.max(0.2, Math.abs(Math.cos((e.max - e.life) * 8 + (e.lane ?? 0))));
 			ctx.fillStyle = css(look.particleFill);
 			ctx.strokeStyle = css(look.particleEdge);
 			ctx.lineWidth = Math.max(0.8, s * 0.18);
 			ctx.beginPath();
-			ctx.ellipse(0, 0, s, s * 0.62, 0, 0, Math.PI * 2);
+			ctx.ellipse(0, 0, s, s * 0.62 * flip, 0, 0, Math.PI * 2);
 			ctx.fill();
 			ctx.stroke();
 			break;
+		}
 		case 'leaf':
 			ctx.fillStyle = css(look.particleFill);
 			ctx.strokeStyle = css(look.particleEdge);
