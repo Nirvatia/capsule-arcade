@@ -189,9 +189,11 @@ chiptune sound (`config/arcadeConfig.ts`).
   (the menu already shows level 1); later games go through a fade.
 - Pause from READY, play, death and level clear; it resumes the same moment. A hidden tab
   or a lost window focus pauses on its own.
-- Death: the level shatters into ice-like shards along the corridors from the death point,
-  hangs over the abyss and rebuilds from the respawn point (each season and the hell have
-  their own palette). The arcade has its own pixel death.
+- Death, a black hole (4 s): the colour drains along the corridors from the death point, the
+  world is squeezed into a disc, twisted and pulled into a point whose rim burns in the
+  world's colour, the singularity flashes, and the level unfolds again from the respawn point,
+  grey at first, its colour returning along the corridors (each season and the hell have
+  their own palette). Pac-Man's own death plays on top. The arcade has its own pixel death.
 - Game over: score, new record, play again (input locked for 1 s so a held key does not
   restart at once).
 - HUD: one compact box at the top centre (score and high score, level and world, lives,
@@ -228,7 +230,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 
 | Element                                                         | State                                                                                             |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Seasons (world, food, weather, night), season turn, death decay | final; death to be replaced by one transition (part I, 6)                                         |
+| Seasons (world, food, weather, night), season turn, death decay | final; death is a black hole (part I, 6.2); the seams between worlds are not done (6.3)           |
 | Hell world, Blinky lord of hell, imps, weapons                  | final; phase-3 lighting and corrupted tiles to rework (part II, 1.1–1.2)                          |
 | Arcade                                                          | final (keeps its own pixel HUD)                                                                   |
 | HUD and screens                                                 | final; to be replaced (part III)                                                                  |

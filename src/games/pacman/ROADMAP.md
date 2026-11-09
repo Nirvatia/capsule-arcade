@@ -28,7 +28,7 @@ The plan has three parts, done in this order: **I** the main game (four seasons)
 last of all (see Later). Part I is in progress: steps 1 (mazes), 2 (heroes) and 3
 (mechanics and balance) are done; step 4 (sound and tools) has only the mute button, the
 rest is postponed; step 5 (season art) is under way: 5.1 and 5.2 are in the game (5.2 waits
-for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the effects' shockwaves: done) and 5.5 (teleport pad: done).
+for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the effects' shockwaves: done) and 5.5 (teleport pad: done); step 6 (one death transition): the look is done, the seams are not.
 
 ## Part I. The main game: four seasons (mechanics and graphics)
 
@@ -96,10 +96,10 @@ for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the eff
       "ripple"; the hero's rolling ball and the gather-and-flash effect stay.
 
 6. **One death transition for every world** (Opus; design page first, then a prototype the
-   owner approves). Today's decay works on the level's picture, but it only knows "from":
-   the abyss (a nebula plus square dots) reads random, and losing the hell's fight is a
-   plain fade, so there is no seam from a boss level back to a season. The level clear
-   (`SeasonTurn`) stays as it is.
+   owner approves). The old decay only knew "from": its abyss (a nebula plus square dots)
+   read random, and losing the hell's fight is a plain fade, so there is no seam from a boss
+   level back to a season. The look (6.2) is replaced; the seams (6.3) are left. The level
+   clear (`SeasonTurn`) stays as it is.
    1. **The contract.** One transition pass takes the old frame and the next frame (both
       offscreen textures), an origin, a progress and a style: `(from, to, origin, progress,
 style)`. Any pair works the same way: a death on a season level (`to` is the same
@@ -107,17 +107,15 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
       season, season → boss. A world only supplies a `style` (palette, particle colour); it
       never writes its own death. The pass reuses the death field (`decayField`) and fronts
       (`decayTimeline`).
-   2. **The look (owner's pick, idea 1: drain and rebirth).** The colour drains out of the
-      world in a wave from the death point (a grey, withering look that needs no leaves or
-      snow, so it fits the hell and the neon grid); the world collapses into a point on the
-      hero; a ring then spreads from the respawn point and uncovers the next frame. Open
-      points for the design page: the climax in the middle (what the collapse looks like),
-      the hero's own death burst in the heroes' ki-flame style (drawn with the heroes, step 2),
-      timings in `FLOW.death`, and the style fields.
-   3. The hell's lost fight (the abyss) uses the same pass instead of the fade, and the
-      boss levels of part II take it by adding their `style`.
-   4. Tests: the fronts and the field for any `from` / `to` pair; the no-WebGL fallback
-      still covers the screen; the `decay.test.ts` cases carry over.
+   2. ~~**The look**~~ Done (see Done, "Part I, 6.2"): drain and rebirth, the collapse is a
+      black hole (the owner's pick from a chat mock-up). In every world's death.
+   3. **Not done: the next frame.** The pass still samples one scene, so the rebirth shows the
+      same level again: right for a death, not for the hell's lost fight (it still ends in the
+      fade to the next level) or a boss → season seam. For those the pass needs the next
+      level as a second texture, like `SeasonTurn`; boss levels of part II then take it by
+      adding their `style`.
+   4. ~~Tests~~ for the fronts, the clock and the geometry are in `decay.test.ts`; none yet for
+      a `from` / `to` pair (there is no such pair yet).
 
 ## Part II. Boss levels
 
@@ -428,3 +426,19 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   pulse are unchanged. Tests: `render/fx/LevelFx.test.ts`; prototype: `fx` (the real worlds,
   every event, click to fire anywhere). Not done: the ghost colours are still set in
   `fxPresets.GHOST_TINT` and in `cuteGhost.ts` with slightly different values.
+- Part I, 6.2: the death as a black hole (the owner's pick from a chat mock-up, in an
+  artifact with a real WebGL shader). `render/transitions/decay/decayShader.ts` is new; the
+  ice shards, the abyss and the dust are gone. 4 s in all (it was 5): the colour drains along
+  the corridors from the death point (the geodesic death field, 0–1.2 s), the world is squeezed
+  into a disc, twisted harder toward its middle and pulled into a point (from 1.0 s; the disc's
+  rim burns in the world's colour, arms of light wind round it, a faint colour fringe), the
+  singularity flashes and a shock wave goes out over a dark void with a few stars (`void`),
+  then the same fold runs backwards round the respawn point and the level unfolds, grey, its
+  colour returning along the corridors from the respawn point (the geodesic respawn field).
+  The hero's own 1.75 s death plays on top, inside `shatter` (1.9 s). `FLOW.death`:
+  `shatter` 1.9, `void` 0.45, `rebuild` 1.65. `decayTimeline` is the clock (a pure
+  function, `decayFronts`) and `farCorner` the disc's reach; the style is the world's
+  `DecayPalette` (`rim` the drain front and the hole's rim, `warm` the colour front, `wisp`
+  the arms, `ice` the stars, `deep` / `mid` the void). Tests: `decay.test.ts`; prototype
+  `death` (the real `LevelDecay` on the real season worlds). Not checked in play: the hero's
+  death over the hole, the hell's and Ms. Pac-Man's deaths, a low-end GPU.

@@ -51,7 +51,7 @@ render/
   fx/              LevelFx (gameplay effects on the season levels: it plays and ages the
                    effects), fxPresets (`recipeFor`: an event to a pure recipe), fxDraw
                    (the shockwave, flashes, sparks, pop-ups, edge pulse), fxTypes
-  transitions/decay/       level decay on death: field (Dijkstra), timeline, WebGL2 pass
+  transitions/decay/       the death black hole: field (Dijkstra), timeline (pure clock), WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
   actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); HeroView drives them; PlayerView
           for the hell) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
@@ -118,8 +118,8 @@ pause (Space/P, Esc in play): ready, playing, death, level-clear — freezes and
 same state; tab hidden / window blur auto-pauses; requests during a fade apply after it.
 ```
 
-Phases (`config/flowConfig.ts`): death `shatter` → `void` → `rebuild` (arcade: `fold` →
-`pause`); level clear `lights` → `turn` → `settle` (arcade: `flash` → `intermission`).
+Phases (`config/flowConfig.ts`): death `shatter` (drain, fall into the hole) → `void` (flash,
+dark) → `rebuild` (unfold, colour returns), 4 s (arcade: `fold` → `pause`); level clear `lights` → `turn` → `settle` (arcade: `flash` → `intermission`).
 The screen fade is a DOM layer over the HUD and the screens, under the dev panels.
 
 ## Controls (implementation)
@@ -188,7 +188,7 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
 - `logic/rules/fx.test.ts` — fx events, hit-stop, near misses.
 - `logic/rules/ghostContact.test.ts` — eat, death, overdrive and who never touches, for
   both profiles.
-- `render/transitions/decay/decay.test.ts` — the decay field and timeline.
+- `render/transitions/decay/decay.test.ts` — the decay field, the black hole's clock and reach.
 
 ## Prototypes
 
@@ -198,7 +198,8 @@ New art and effects start as a page built from the game's own sources:
 pages are not stored in git (`.gitignore`); the owner looks at prototypes in the chat, as
 screenshots or an artifact Claude builds from the page, never by opening the files. The
 approved prototype already is the game code. Existing: `hell`, `arcade`,
-`hud`, `collectibles` (with each item's reach from its tile centre and a tile grid),
+`hud`, `death` (the death black hole: the real `LevelDecay` on the real worlds, a slider over the 4 s),
+`collectibles` (with each item's reach from its tile centre and a tile grid),
 `mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
