@@ -10,3 +10,5 @@ bun.lockb
 
 # Design mockups
 /design/
+# Hand-tuned standalone art prototypes
+/prototypes/

@@ -42,7 +42,8 @@ export const games: GameConfig[] = [
 		icon: 'maze',
 		light: '#ffd27a',
 		deep: '#c97a00',
-		status: 'soon'
+		status: 'ready',
+		route: '/games/pacman'
 	},
 	{
 		id: 'tetris',

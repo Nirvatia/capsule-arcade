@@ -21,3 +21,16 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Pac-Man prototype pages are built on demand (node prototypes/pacman/build.mjs <name>), not stored
+prototypes/pacman/arcade.html
+prototypes/pacman/collectibles.html
+prototypes/pacman/death.html
+prototypes/pacman/easter-egg.html
+prototypes/pacman/fx.html
+prototypes/pacman/hell.html
+prototypes/pacman/hero.html
+prototypes/pacman/mood.html
+prototypes/pacman/hud.html
+prototypes/pacman/level-clear.html
+prototypes/pacman/mazes.html

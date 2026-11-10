@@ -1,0 +1,5 @@
+{
+	"permissions": {
+		"deny": ["Read(./src/games/snake/**)", "Read(./src/games/tetris/**)"]
+	}
+}
