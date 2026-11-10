@@ -27,8 +27,9 @@ import type { BossSnapshot } from '../../../src/games/pacman/render/doom/HellBli
 import { drawImp } from '../../../src/games/pacman/render/doom/HellImpView';
 import { glowTexture, pickupSprite } from '../../../src/games/pacman/render/doom/DoomSprites';
 import { HeroView } from '../../../src/games/pacman/render/actors/HeroView';
+import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
-import { armorPainter } from '../../../src/games/pacman/render/actors/hero/heroArmor';
+import { chargePainter } from '../../../src/games/pacman/render/actors/hero/heroArmor';
 import type { GridLayout } from '../../../src/games/pacman/render/maze/GridView';
 
 type Pose = 'chase' | 'windup' | 'dash' | 'cast' | 'stunned' | 'hit';
@@ -52,7 +53,10 @@ const bossView = new HellBlinkyView();
 const echoView = new HellBlinkyView();
 const combat = new DoomCombatView();
 const fx = new DoomFxView();
-const playerView = new HeroView(new PacmanHero(), armorPainter('pacman'));
+const playerView = new HeroView(
+	location.search.includes('ms') ? new MsPacmanHero() : new PacmanHero(),
+	chargePainter
+);
 playerView.setSeason('hell');
 
 function poseState(p: Pose): { state: DoomStateName; shape: DoomShape; progress: number } {
@@ -361,8 +365,8 @@ function drawFight(f: Fight, dt: number, time: number): void {
 		combat.drawPull(ctx, boss, player.position, L, time);
 	}
 	playerView.draw(ctx, player, L, time, {
-		look: doom.berserkActive ? 'berserk' : 'normal',
-		charge: doom.bfgChargeProgress,
+		look: doom.berserkActive || location.search.includes('zerk') ? 'berserk' : 'normal',
+		charge: location.search.includes('chg') ? 0.8 : doom.bfgChargeProgress,
 		dying: false,
 		armor: true
 	});

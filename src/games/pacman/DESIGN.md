@@ -240,7 +240,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   skirt of flames; the echo is violet. The imps keep Pinky's, Inky's and Clyde's colours and the
   heading chevron. A red body sinks into the red flesh, so the ink line, the eyes and the rim
   light carry him.
-- **The hell's heroes (in the game)**: both wear armor, the owner's "doom fighter" in its heavy
+- **The hell's heroes (in the game, being redesigned)**: today they are the season heroes with the BFG charge's light only (see `ROADMAP.md`); the armor below was dropped by the owner:
+  both wore armor, the owner's "doom fighter" in its heavy
   weight: a helmet and a chin guard painted on the ball, cel-shaded in cold steel (green for
   him with a cyan visor slit, indigo for her with her eye in a goggle), clipped to the body so
   the hero stays round and the mouth stays open; a strip of gold or pink stays visible under

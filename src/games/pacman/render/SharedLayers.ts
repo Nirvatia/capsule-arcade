@@ -5,7 +5,7 @@ import { PacmanHero } from './actors/hero/PacmanHero';
 import { MsPacmanHero } from './actors/hero/MsPacmanHero';
 import type { PacmanAudioCue } from '../core/Events';
 import type { PlayerDrawOptions } from './actors/playerDrawOptions';
-import { armorPainter } from './actors/hero/heroArmor';
+import { chargePainter } from './actors/hero/heroArmor';
 import { heroSeasonOf } from './actors/hero/heroSeasons';
 import { EchoCloneView } from './actors/EchoCloneView';
 import { FruitView } from './items/fruit/FruitView';
@@ -20,8 +20,8 @@ import type { RenderFrame } from './RenderFrame';
  * season turn. The HUD and the screens are Svelte (`ui/PacmanUi`), not canvas.
  */
 export class SharedLayers {
-	private readonly heroView = new HeroView(new PacmanHero(), armorPainter('pacman'));
-	private readonly msHeroView = new HeroView(new MsPacmanHero(), armorPainter('ms-pacman'));
+	private readonly heroView = new HeroView(new PacmanHero(), chargePainter);
+	private readonly msHeroView = new HeroView(new MsPacmanHero(), chargePainter);
 	private readonly fruitView = new FruitView();
 	private readonly easterEggView = new EasterEggView();
 	private readonly echoCloneView = new EchoCloneView();

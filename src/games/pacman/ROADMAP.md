@@ -589,3 +589,13 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   burst's own 0.35 s frame in the game, phases 2 and 3 (the same code, other skins), the effects
   with the night or the ash storm over them, the split attack (it shares the dash's wedge look and
   so its crouch and afterimages).
+- Part II, 1.1 revisited, the hell's heroes without armor (eighth chat): the owner judged the
+  doom-fighter armor wrong for the heroes and sent them to a redesign. The armor had been made to
+  read on the light red flesh; with the cord maze and the dark corridors the owner's own heroes
+  read, so for now the hell's heroes are the season heroes (the awoken look is the berserk: his
+  ki flames, her glowing bow) plus one thing the hell adds, the BFG charge: the body swells, a
+  green ring closes in on it, a glow lights the mouth, white-hot at the end
+  (`heroArmor.chargePainter`). Seen in the `hell` prototype (query `?ms`, `?zerk`, `?chg` pick
+  Ms. Pac-Man, the berserk and a charge). `paintArmor` stays in `heroArmor.ts` and in the `hero`
+  prototype's "Броня ада" button only until the redesign is decided. Not checked: the death in
+  the hell, a real BFG fight, the night.
