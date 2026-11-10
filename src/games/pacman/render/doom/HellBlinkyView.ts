@@ -1,8 +1,18 @@
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
 import type { DoomShape, DoomStateName } from '../../logic/doom/DoomBossModel';
 import type { GridLayout } from '../maze/GridView';
-import type { EyeStyle, GhostShape, HornStyle } from './hellGhost';
-import { dirAngle, drawEyes, drawHorns, ghostPath, glow, noise } from './hellGhost';
+import type { CelTones, EyeStyle, GhostShape, HornStyle } from './hellGhost';
+import {
+	INK,
+	celBands,
+	celOutline,
+	dirAngle,
+	drawEyes,
+	drawHorns,
+	ghostPath,
+	lightGlow,
+	noise
+} from './hellGhost';
 
 /** Everything the view needs about one body (the boss or its phase-3 echo). */
 export interface BossSnapshot {
@@ -27,101 +37,73 @@ export interface BossSnapshot {
 	readonly echo: boolean;
 }
 
-interface Skin {
-	readonly top: string;
-	readonly mid: string;
-	readonly low: string;
+interface Skin extends CelTones {
+	/** The rim light along the dome. */
 	readonly rim: string;
 	/** Lava cracks and the fire inside (rgb). */
 	readonly fire: string;
 	readonly horn: HornStyle;
-	readonly eyes: EyeStyle;
+	readonly eye: string;
 }
 
-const HELL_EYES: EyeStyle = {
-	sclera: '#ffe27a',
-	pupil: '#1a0000',
-	glow: '255,140,40',
-	brows: true
-};
+const BONE: readonly [string, string] = ['#f1e4cc', '#8a7860'];
 
-/** Phase 1 → 3: dark red with small horns; cracked with lava; burning from inside. */
+/**
+ * Phase 1 → 3 (the owner's mock-up, `prototypes/pacman/art/hell-flesh-boss.html`): a red
+ * overseer; a charred body split by lava with longer glowing horns; a body burning white-hot
+ * from inside. A red body alone sinks into the red flesh, so every skin keeps the ink line,
+ * yellow eyes and a light rim.
+ */
 const SKINS: readonly Skin[] = [
 	{
-		top: '#e0262a',
-		mid: '#9a0c12',
-		low: '#3a0206',
-		rim: 'rgba(20,0,0,.8)',
-		fire: '255,90,30',
-		horn: {
-			length: 0.5,
-			thick: 0.2,
-			dark: '#2a0a08',
-			light: '#cfbfa8',
-			ember: null,
-			curl: 0
-		},
-		eyes: { ...HELL_EYES, glow: null }
+		light: '#f4604e',
+		mid: '#c8221f',
+		shade: '#7a0c14',
+		rim: '#ffc9a8',
+		fire: '255,110,40',
+		horn: { length: 0.5, curl: 0, bone: ['#f1e4cc', '#9c8a72'], ember: null },
+		eye: '#ffe27a'
 	},
 	{
-		top: '#f0302a',
-		mid: '#8a0a0e',
-		low: '#2a0204',
-		rim: 'rgba(20,0,0,.85)',
-		fire: '255,110,30',
-		horn: {
-			length: 0.62,
-			thick: 0.22,
-			dark: '#1a0404',
-			light: '#e8d8bc',
-			ember: '255,120,40',
-			curl: 0.2
-		},
-		eyes: HELL_EYES
+		light: '#d84a2a',
+		mid: '#7a1216',
+		shade: '#300810',
+		rim: '#ffb070',
+		fire: '255,120,40',
+		horn: { length: 0.68, curl: 0.25, bone: BONE, ember: '255,120,40' },
+		eye: '#ffe27a'
 	},
 	{
-		top: '#ff5a2a',
-		mid: '#c0141a',
-		low: '#3a0204',
-		rim: 'rgba(30,0,0,.9)',
-		fire: '255,170,60',
-		horn: {
-			length: 0.7,
-			thick: 0.24,
-			dark: '#120202',
-			light: '#fff0c8',
-			ember: '255,190,80',
-			curl: 0.35
-		},
-		eyes: { ...HELL_EYES, sclera: '#fff6c0' }
+		light: '#fff2b8',
+		mid: '#ff8a2c',
+		shade: '#c0261a',
+		rim: '#fffbe0',
+		fire: '255,190,70',
+		horn: { length: 0.74, curl: 0.35, bone: ['#fff6dc', '#c8a070'], ember: '255,190,70' },
+		eye: '#fffbd8'
 	}
 ];
 
 const ECHO_SKIN: Skin = {
-	top: '#c8b0ff',
-	mid: '#5a3aa8',
-	low: '#140a30',
-	rim: 'rgba(10,0,30,.8)',
+	light: '#d8c8ff',
+	mid: '#6a46b8',
+	shade: '#241046',
+	rim: '#f0e8ff',
 	fire: '170,120,255',
-	horn: {
-		length: 0.72,
-		thick: 0.18,
-		dark: '#1a0a3a',
-		light: '#e0d4ff',
-		ember: '170,120,255',
-		curl: 0.35
-	},
-	eyes: { sclera: '#e8e0ff', pupil: '#1a0a3a', glow: '150,110,255', brows: true }
+	horn: { length: 0.72, curl: 0.35, bone: ['#e8dcff', '#8068b8'], ember: '170,120,255' },
+	eye: '#efe8ff'
 };
 
 /**
- * Blinky, lord of hell: the red arcade ghost turned demon, one tile in size.
- * Phase 1: dark red, small horns, a closed scowl.
- * Phase 2: lava cracks, longer glowing horns, a torn skirt, a fanged grin.
- * Phase 3: burning from inside, a second pair of horns, a skirt of flames.
+ * Blinky, lord of hell: the red arcade ghost turned demon, one tile in size, cel-shaded like
+ * the heroes (hard tone bands, a thick ink line).
+ * Phase 1: a red overseer, small bone horns, a closed scowl, a stitched belly.
+ * Phase 2: charred, lava cracks, longer glowing horns, a torn skirt, a fanged grin, the belly
+ * split open on his ribs.
+ * Phase 3: white-hot from inside, a second pair of horns, a skirt of flames.
  * The eyes look where it is heading (on the wind-up: at the player); no chevron, the
- * eyes are enough for the boss (the imps keep theirs). Wind-up: it swells and shivers, the grin glows.
- * Dash: stretched along the heading with afterimages. Stunned: spiral eyes.
+ * eyes are enough for the boss (the imps keep theirs). Wind-up: it swells and shivers, the
+ * grin glows. Dash: stretched along the heading with afterimages. Stunned: spiral eyes.
  */
 export class HellBlinkyView {
 	draw(ctx: CanvasRenderingContext2D, snap: BossSnapshot, layout: GridLayout, time: number): void {
@@ -144,8 +126,8 @@ export class HellBlinkyView {
 		let y = layout.offsetY + snap.y * S;
 		const shiver = (transition ? 0.08 : 0) + (stunned ? 0.03 : 0) + tele * 0.04;
 		if (shiver > 0) {
-			x += (Math.random() - 0.5) * R * shiver;
-			y += (Math.random() - 0.5) * R * shiver;
+			x += Math.sin(time * 90) * R * shiver;
+			y += Math.cos(time * 77) * R * shiver;
 		}
 		const bob = Math.sin(t * 3.2) * R * 0.03;
 		const shape: GhostShape = {
@@ -165,14 +147,19 @@ export class HellBlinkyView {
 		ctx.lineCap = 'round';
 
 		// a dark pool and a glow under it, kept inside the tile
-		const pool = ctx.createRadialGradient(x, y, R * 0.2, x, y, R);
+		const pool = ctx.createRadialGradient(x, y + R * 0.2, R * 0.2, x, y + R * 0.2, R);
 		pool.addColorStop(0, 'rgba(0,0,0,0.5)');
 		pool.addColorStop(1, 'rgba(0,0,0,0)');
 		ctx.fillStyle = pool;
-		ctx.fillRect(x - R, y - R, R * 2, R * 2);
-		ctx.globalCompositeOperation = 'lighter';
-		glow(ctx, x, y, R, snap.echo ? '150,90,255' : '255,40,16', 0.16 + 0.08 * phase + tele * 0.3);
-		ctx.globalCompositeOperation = 'source-over';
+		ctx.fillRect(x - R, y - R * 0.8, R * 2, R * 2);
+		lightGlow(
+			ctx,
+			x,
+			y,
+			R * 1.05,
+			snap.echo ? '150,90,255' : '255,70,30',
+			0.14 + 0.08 * phase + tele * 0.3
+		);
 
 		if (dash) {
 			// afterimages trail the dash
@@ -200,12 +187,29 @@ export class HellBlinkyView {
 			ctx.scale(1.14, 0.88);
 			ctx.rotate(-heading);
 		}
-		this.drawBody(ctx, shape, skin, phase, t, pulse, snap);
-		const horns = (at: number, style: HornStyle) => drawHorns(ctx, 0, 0, shape, at, style, pulse);
 		if (phase >= 3 || snap.echo) {
-			horns(1.05, { ...skin.horn, length: skin.horn.length * 0.55, curl: 0.6 });
+			// the second, lower pair of horns
+			drawHorns(
+				ctx,
+				0,
+				0,
+				shape,
+				1.05,
+				{ ...skin.horn, length: skin.horn.length * 0.55, curl: 0.6 },
+				pulse
+			);
 		}
-		horns(0.55, casting || tele > 0 ? { ...skin.horn, ember: skin.fire } : skin.horn);
+		const burning = casting || tele > 0;
+		drawHorns(
+			ctx,
+			0,
+			0,
+			shape,
+			0.55,
+			burning && !skin.horn.ember ? { ...skin.horn, ember: skin.fire } : skin.horn,
+			pulse
+		);
+		this.drawBody(ctx, shape, skin, phase, t, pulse, snap);
 		this.drawFace(ctx, shape, skin, phase, t, tele, casting, stunned, transition, snap);
 		ctx.restore();
 
@@ -226,66 +230,128 @@ export class HellBlinkyView {
 	): void {
 		const { w, domeY, hem } = shape;
 		ghostPath(ctx, 0, 0, shape, t);
-		const fill =
-			phase >= 3 && !snap.echo
-				? ctx.createRadialGradient(0, hem * 0.35, w * 0.1, 0, domeY * 0.5, w * 1.35)
-				: ctx.createLinearGradient(0, domeY - w, 0, hem);
-		fill.addColorStop(0, skin.top);
-		fill.addColorStop(0.55, skin.mid);
-		fill.addColorStop(1, skin.low);
-		ctx.fillStyle = fill;
+		ctx.fillStyle = skin.mid;
 		ctx.fill();
-		ctx.strokeStyle = skin.rim;
-		ctx.lineWidth = Math.max(1, w * 0.07);
-		ctx.stroke();
 
 		ctx.save();
 		ghostPath(ctx, 0, 0, shape, t);
 		ctx.clip();
-		// a sheen on the dome
-		const sheen = ctx.createRadialGradient(
-			-w * 0.35,
-			domeY - w * 0.5,
-			0,
-			-w * 0.35,
-			domeY - w * 0.5,
-			w * 0.7
-		);
-		sheen.addColorStop(0, 'rgba(255,255,255,.28)');
-		sheen.addColorStop(1, 'rgba(255,255,255,0)');
-		ctx.fillStyle = sheen;
-		ctx.fillRect(-w, domeY - w, w * 2, w * 1.4);
+		celBands(ctx, shape, skin);
+		if (!snap.echo) {
+			this.drawBelly(ctx, shape, skin, phase, pulse);
+		}
 		if (phase >= 2 || snap.echo) {
-			// lava cracks
-			ctx.globalCompositeOperation = 'lighter';
-			ctx.strokeStyle = `rgba(${skin.fire},${0.45 + 0.45 * pulse})`;
-			ctx.lineWidth = Math.max(0.8, w * 0.05);
-			for (let i = 0; i < 5; i += 1) {
-				let px = (noise(i, 1) - 0.5) * w * 1.5;
-				// under the face only, so the eyes stay clean
-				let py = domeY + w * 0.95 + noise(i, 2) * (hem - domeY - w * 1.2);
-				ctx.beginPath();
-				ctx.moveTo(px, py);
-				for (let k = 0; k < 3; k += 1) {
-					px += (noise(i, k + 3) - 0.5) * w * 0.5;
-					py += w * 0.18;
-					ctx.lineTo(px, py);
-				}
-				ctx.stroke();
-			}
-			ctx.globalCompositeOperation = 'source-over';
+			this.drawCracks(ctx, shape, skin, pulse);
 		}
 		if (phase >= 3 && !snap.echo) {
 			// the fire inside shows through the skin
-			ctx.globalCompositeOperation = 'lighter';
-			glow(ctx, 0, hem * 0.55, w * (0.7 + 0.1 * pulse), skin.fire, 0.4);
-			ctx.globalCompositeOperation = 'source-over';
+			lightGlow(ctx, 0, hem * 0.35, w * (0.8 + 0.1 * pulse), skin.fire, 0.4);
 		}
 		if (snap.hit > 0) {
-			ctx.fillStyle = `rgba(255,255,255,${0.8 * snap.hit})`;
-			ctx.fillRect(-w * 1.2, domeY - w * 1.2, w * 2.4, hem - domeY + w * 2.4);
+			ctx.fillStyle = `rgba(255,255,255,${0.85 * snap.hit})`;
+			ctx.fillRect(-w * 1.3, domeY - w * 1.3, w * 2.6, hem - domeY + w * 2.6);
 		}
 		ctx.restore();
+		celOutline(ctx, shape, t, skin.rim);
+	}
+
+	/** A seam across the belly: stitched, then split open on his ribs, then a white-hot wound. */
+	private drawBelly(
+		ctx: CanvasRenderingContext2D,
+		shape: GhostShape,
+		skin: Skin,
+		phase: number,
+		pulse: number
+	): void {
+		const { w, domeY } = shape;
+		const sy = domeY + w * 1.18;
+		const sw = w * 0.62;
+		ctx.strokeStyle = INK;
+		if (phase === 1) {
+			ctx.lineWidth = Math.max(1, w * 0.07);
+			ctx.beginPath();
+			ctx.moveTo(-sw, sy);
+			ctx.quadraticCurveTo(0, sy + w * 0.08, sw, sy);
+			ctx.stroke();
+			for (let s = 0; s < 5; s += 1) {
+				const u = -0.8 + s * 0.4;
+				const bow = w * 0.04 * (1 - u * u);
+				ctx.beginPath();
+				ctx.moveTo(u * sw, sy - w * 0.1 + bow);
+				ctx.lineTo(u * sw + w * 0.04, sy + w * 0.14 + bow);
+				ctx.stroke();
+			}
+			return;
+		}
+		const gh = w * (phase === 2 ? 0.42 : 0.52);
+		ctx.fillStyle = '#0d0204';
+		ctx.beginPath();
+		ctx.ellipse(0, sy + gh * 0.2, sw, gh, 0, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.save();
+		ctx.beginPath();
+		ctx.ellipse(0, sy + gh * 0.2, sw * 0.9, gh * 0.85, 0, 0, Math.PI * 2);
+		ctx.clip();
+		ctx.fillStyle = `rgba(${skin.fire},${0.55 + 0.35 * pulse})`;
+		ctx.fillRect(-sw, sy - gh, sw * 2, gh * 2.4);
+		if (phase >= 3) {
+			ctx.fillStyle = `rgba(255,248,214,${0.5 + 0.4 * pulse})`;
+			ctx.beginPath();
+			ctx.ellipse(0, sy + gh * 0.2, sw * 0.5, gh * 0.55, 0, 0, Math.PI * 2);
+			ctx.fill();
+		}
+		ctx.lineWidth = Math.max(1.2, w * 0.1);
+		for (let rb = -1; rb <= 1; rb += 1) {
+			ctx.beginPath();
+			ctx.moveTo(rb * sw * 0.5, sy - gh);
+			ctx.quadraticCurveTo(rb * sw * 0.5 + w * 0.06, sy + gh * 0.2, rb * sw * 0.42, sy + gh * 1.4);
+			ctx.stroke();
+		}
+		ctx.restore();
+		ctx.lineWidth = Math.max(1, w * 0.07);
+		ctx.beginPath();
+		ctx.ellipse(0, sy + gh * 0.2, sw, gh, 0, 0, Math.PI * 2);
+		ctx.stroke();
+	}
+
+	/** Lava cracks on the dome and the sides, clear of the face. */
+	private drawCracks(
+		ctx: CanvasRenderingContext2D,
+		shape: GhostShape,
+		skin: Skin,
+		pulse: number
+	): void {
+		const { w, domeY } = shape;
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+		const seeds: ReadonlyArray<readonly [number, number, number]> = [
+			[-0.72, -0.1, 1],
+			[0.7, 0.05, -1],
+			[-0.5, 0.9, 1],
+			[0.55, 1.0, -1]
+		];
+		seeds.forEach(([sx, sy, dir], i) => {
+			const pts: Array<[number, number]> = [
+				[sx * w, domeY + sy * w + (i > 1 ? w * 0.3 : -w * 0.5)]
+			];
+			for (let q = 1; q < 4; q += 1) {
+				pts.push([
+					pts[q - 1][0] + dir * (noise(i, q) - 0.2) * w * 0.35,
+					pts[q - 1][1] + w * (0.2 + noise(i, q + 3) * 0.14)
+				]);
+			}
+			const line = () => {
+				ctx.beginPath();
+				pts.forEach(([px, py], j) => (j ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+				ctx.stroke();
+			};
+			ctx.strokeStyle = INK;
+			ctx.lineWidth = Math.max(2.2, w * 0.17);
+			line();
+			ctx.strokeStyle = `rgba(${skin.fire},${0.65 + 0.35 * pulse})`;
+			ctx.lineWidth = Math.max(1.1, w * 0.08);
+			line();
+		});
 	}
 
 	private drawFace(
@@ -304,8 +370,11 @@ export class HellBlinkyView {
 		const faceY = domeY + w * 0.35;
 		// on the wind-up the eyes lock onto the player; otherwise they look ahead
 		const look = tele > 0 ? snap.look : dirAngle(snap.dir);
-		const eyes: EyeStyle =
-			tele > 0.5 || casting ? { ...skin.eyes, sclera: '#ffffff', glow: skin.fire } : skin.eyes;
+		const hot = tele > 0.5 || casting;
+		const eyes: EyeStyle = {
+			sclera: hot ? '#ffffff' : skin.eye,
+			glow: phase >= 2 || snap.echo || hot ? skin.fire : null
+		};
 		drawEyes(ctx, 0, faceY, w, look, eyes, transition ? 0 : 1, stunned, t);
 
 		// mouth: a scowl in phase 1, a fanged grin later; it opens and glows on a wind-up
@@ -319,9 +388,7 @@ export class HellBlinkyView {
 		ctx.quadraticCurveTo(0, my + w * 0.02, -mw, my - w * 0.04);
 		ctx.fill();
 		if (open > 0.05) {
-			ctx.save();
-			ctx.globalCompositeOperation = 'lighter';
-			glow(
+			lightGlow(
 				ctx,
 				0,
 				my + w * open * 0.4,
@@ -329,7 +396,6 @@ export class HellBlinkyView {
 				skin.fire,
 				0.3 + tele * 0.6 + (casting ? 0.4 : 0)
 			);
-			ctx.restore();
 			ctx.fillStyle = '#f4ead8';
 			const fangs = 4;
 			for (let i = 0; i < fangs; i += 1) {

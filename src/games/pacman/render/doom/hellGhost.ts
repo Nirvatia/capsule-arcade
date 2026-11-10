@@ -1,12 +1,17 @@
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
 
 /**
- * Shared drawing for the hell's ghost demons (the boss Blinky and its imps): the ghost
- * outline, horns, eyes that look where the body is heading, and the heading chevron.
- * Everything is sized from `r`, half the drawn extent, so a body stays inside its tile.
+ * Shared drawing for the hell's ghost demons (the boss Blinky and its imps), in the heroes'
+ * cel-shaded language (the owner's mock-up `prototypes/pacman/art/hell-flesh-boss.html`): the
+ * ghost outline, hard tone bands, a thick ink line, bone horns, eyes that look where the body is
+ * heading, and the heading chevron. Everything is sized from the body's half-width `w`, so a
+ * body stays inside its tile.
  */
 
 const TAU = Math.PI * 2;
+
+/** The ink line of every demon. */
+export const INK = '#1a0406';
 
 export function dirAngle(dir: DoomDirection | null): number {
 	if (dir === 'UP') return -Math.PI / 2;
@@ -84,22 +89,92 @@ export function ghostPath(
 	ctx.closePath();
 }
 
-export interface HornStyle {
-	/** Horn length relative to the body half-width. */
-	readonly length: number;
-	/** Base thickness relative to the body half-width. */
-	readonly thick: number;
-	readonly dark: string;
+/** A soft additive glow. */
+export function lightGlow(
+	ctx: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	r: number,
+	rgb: string,
+	a: number
+): void {
+	if (a <= 0 || r <= 0) {
+		return;
+	}
+	const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+	g.addColorStop(0, `rgba(${rgb},${Math.min(1, a)})`);
+	g.addColorStop(0.4, `rgba(${rgb},${Math.min(1, a) * 0.4})`);
+	g.addColorStop(1, `rgba(${rgb},0)`);
+	ctx.save();
+	ctx.globalCompositeOperation = 'lighter';
+	ctx.fillStyle = g;
+	ctx.fillRect(x - r, y - r, r * 2, r * 2);
+	ctx.restore();
+}
+
+/** The three tones of a body: a lit patch, the mid tone, a shadow crescent. */
+export interface CelTones {
 	readonly light: string;
-	/** Glowing tips (rgb) or null. */
-	readonly ember: string | null;
-	/** Extra outward curl. */
-	readonly curl: number;
+	readonly mid: string;
+	readonly shade: string;
 }
 
 /**
- * A pair of devil horns growing from the dome at angle `at` from the top (radians): thick
- * at the root, sweeping outwards and hooking up to a point.
+ * The tone bands over a body whose outline is already the clip: the lit patch on the upper
+ * left, the shadow where the light does not reach. The mid tone is the fill under them.
+ */
+export function celBands(ctx: CanvasRenderingContext2D, shape: GhostShape, tones: CelTones): void {
+	const { w, domeY, hem } = shape;
+	ctx.fillStyle = tones.light;
+	ctx.beginPath();
+	ctx.ellipse(-w * 0.22, domeY - w * 0.3, w * 0.82, w * 0.62, -0.25, 0, TAU);
+	ctx.fill();
+	ctx.fillStyle = tones.shade;
+	ctx.beginPath();
+	ctx.rect(-w * 2, domeY - w * 2, w * 4, hem - domeY + w * 4);
+	ctx.ellipse(-w * 0.12, domeY - w * 0.05, w * 1.25, w * 1.35, 0, 0, TAU);
+	ctx.fill('evenodd');
+}
+
+/** The ink line round a body, and a rim light along the upper left of the dome. */
+export function celOutline(
+	ctx: CanvasRenderingContext2D,
+	shape: GhostShape,
+	t: number,
+	rim: string
+): void {
+	const { w, domeY } = shape;
+	ghostPath(ctx, 0, 0, shape, t);
+	ctx.lineWidth = Math.max(1.6, w * 0.15);
+	ctx.strokeStyle = INK;
+	ctx.lineJoin = 'round';
+	ctx.stroke();
+	ctx.save();
+	ctx.globalAlpha *= 0.75;
+	ctx.strokeStyle = rim;
+	ctx.lineWidth = Math.max(1, w * 0.08);
+	ctx.lineCap = 'round';
+	ctx.beginPath();
+	ctx.arc(0, domeY, w * 0.84, Math.PI * 1.08, Math.PI * 1.62);
+	ctx.stroke();
+	ctx.restore();
+}
+
+export interface HornStyle {
+	/** Horn length relative to the body half-width. */
+	readonly length: number;
+	/** Outward curl. */
+	readonly curl: number;
+	/** The bone: lit and shaded. */
+	readonly bone: readonly [string, string];
+	/** Glowing tips (rgb) or null. */
+	readonly ember: string | null;
+}
+
+/**
+ * A pair of bone horns growing from the dome at angle `at` from the top (radians): a curved
+ * cone with a lit streak and an ink line, an ember at the tip when it burns. Drawn round
+ * (x, y), the body's centre.
  */
 export function drawHorns(
 	ctx: CanvasRenderingContext2D,
@@ -111,66 +186,78 @@ export function drawHorns(
 	pulse: number
 ): void {
 	const { w, domeY } = shape;
-	const n = 8;
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.lineJoin = 'round';
 	for (const side of [-1, 1]) {
-		const a = -Math.PI / 2 + side * at;
-		const bx = x + Math.cos(a) * w * 0.86;
-		const by = y + domeY + Math.sin(a) * w * 0.86;
-		const len = w * style.length;
-		// centre line: out to the side, then up
-		const c1x = bx + side * len * (0.75 + style.curl * 0.3);
-		const c1y = by - len * 0.05;
-		const tx = bx + side * len * (0.55 + style.curl * 0.25);
-		const ty = by - len * 0.95;
-		const left: Array<[number, number]> = [];
-		const right: Array<[number, number]> = [];
-		for (let i = 0; i <= n; i += 1) {
-			const u = i / n;
-			const px = (1 - u) * (1 - u) * bx + 2 * u * (1 - u) * c1x + u * u * tx;
-			const py = (1 - u) * (1 - u) * by + 2 * u * (1 - u) * c1y + u * u * ty;
-			const dx = 2 * (1 - u) * (c1x - bx) + 2 * u * (tx - c1x);
-			const dy = 2 * (1 - u) * (c1y - by) + 2 * u * (ty - c1y);
-			const l = Math.hypot(dx, dy) || 1;
-			const half = w * style.thick * (1 - u) ** 1.2;
-			left.push([px - (dy / l) * half, py + (dx / l) * half]);
-			right.push([px + (dy / l) * half, py - (dx / l) * half]);
-		}
-		const g = ctx.createLinearGradient(bx, by, tx, ty);
-		g.addColorStop(0, style.dark);
-		g.addColorStop(0.55, style.dark);
-		g.addColorStop(1, style.light);
-		ctx.fillStyle = g;
-		ctx.beginPath();
-		left.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
-		for (let i = right.length - 1; i >= 0; i -= 1) {
-			ctx.lineTo(right[i][0], right[i][1]);
-		}
-		ctx.closePath();
+		const bx = side * w * Math.sin(at);
+		const by = domeY - w * Math.cos(at) * 0.98;
+		const dir = -Math.PI / 2 + side * (at + 0.3);
+		const len = style.length * w * 1.7;
+		const th = w * 0.26;
+		const dx = Math.cos(dir);
+		const dy = Math.sin(dir);
+		const tipX = bx + dx * len - side * style.curl * w * 0.5;
+		const tipY = by + dy * len;
+		const nx = -dy;
+		const ny = dx;
+		const cone = () => {
+			ctx.beginPath();
+			ctx.moveTo(bx + nx * th, by + ny * th);
+			ctx.quadraticCurveTo(
+				bx + dx * len * 0.55 + nx * th * 0.5 - side * style.curl * w * 0.3,
+				by + dy * len * 0.55 + ny * th * 0.5,
+				tipX,
+				tipY
+			);
+			ctx.quadraticCurveTo(
+				bx + dx * len * 0.5 - nx * th * 0.4 - side * style.curl * w * 0.2,
+				by + dy * len * 0.5 - ny * th * 0.4,
+				bx - nx * th,
+				by - ny * th
+			);
+			ctx.closePath();
+		};
+		cone();
+		ctx.fillStyle = style.bone[1];
 		ctx.fill();
-		ctx.strokeStyle = 'rgba(0,0,0,.6)';
-		ctx.lineWidth = Math.max(0.6, w * 0.035);
+		ctx.save();
+		cone();
+		ctx.clip();
+		ctx.fillStyle = style.bone[0];
+		ctx.beginPath();
+		ctx.ellipse(
+			bx + dx * len * 0.35 - side * w * 0.04,
+			by + dy * len * 0.35,
+			th * 0.55,
+			len * 0.5,
+			dir + Math.PI / 2,
+			0,
+			TAU
+		);
+		ctx.fill();
+		ctx.restore();
+		cone();
+		ctx.lineWidth = Math.max(1.2, w * 0.09);
+		ctx.strokeStyle = INK;
 		ctx.stroke();
 		if (style.ember) {
-			ctx.save();
-			ctx.globalCompositeOperation = 'lighter';
-			glow(ctx, tx, ty, w * 0.2, style.ember, 0.45 + 0.4 * pulse);
-			ctx.restore();
+			lightGlow(ctx, tipX, tipY, w * 0.38, style.ember, 0.5 + 0.4 * pulse);
 		}
 	}
+	ctx.restore();
 }
 
 export interface EyeStyle {
 	readonly sclera: string;
-	readonly pupil: string;
 	/** Glow around the eyes (rgb) or null. */
 	readonly glow: string | null;
-	/** Angry brows over the eyes. */
-	readonly brows: boolean;
 }
 
 /**
  * Two eyes looking along `look` (radians): the pupils shift toward the heading, the way
- * arcade ghosts show where they go. `open` 0 closes them, `daze` turns them into spirals.
+ * arcade ghosts show where they go, under ink brows set in a scowl. `open` 0 closes them,
+ * `daze` turns them into spirals.
  */
 export function drawEyes(
 	ctx: CanvasRenderingContext2D,
@@ -193,14 +280,11 @@ export function drawEyes(
 		const cx = x + side * ex + lx * w * 0.06;
 		const cy = y + ey + ly * w * 0.06;
 		if (style.glow && open > 0.05 && !daze) {
-			ctx.save();
-			ctx.globalCompositeOperation = 'lighter';
-			glow(ctx, cx, cy, rx * 1.8, style.glow, 0.55);
-			ctx.restore();
+			lightGlow(ctx, cx, cy, rx * 1.9, style.glow, 0.6);
 		}
+		ctx.strokeStyle = INK;
 		if (open <= 0.05) {
-			ctx.strokeStyle = 'rgba(10,0,0,.85)';
-			ctx.lineWidth = Math.max(1, w * 0.07);
+			ctx.lineWidth = Math.max(1, w * 0.08);
 			ctx.beginPath();
 			ctx.moveTo(cx - rx, cy);
 			ctx.quadraticCurveTo(cx, cy + ry * 0.4, cx + rx, cy);
@@ -211,8 +295,9 @@ export function drawEyes(
 		ctx.beginPath();
 		ctx.ellipse(cx, cy, rx, ry * open, 0, 0, TAU);
 		ctx.fill();
+		ctx.lineWidth = Math.max(1, w * 0.07);
+		ctx.stroke();
 		if (daze) {
-			ctx.strokeStyle = style.pupil;
 			ctx.lineWidth = Math.max(0.8, w * 0.05);
 			ctx.beginPath();
 			for (let i = 0; i <= 18; i += 1) {
@@ -229,7 +314,7 @@ export function drawEyes(
 			ctx.stroke();
 		} else {
 			// pupils pushed to the edge of the eye in the heading direction
-			ctx.fillStyle = style.pupil;
+			ctx.fillStyle = '#1a0000';
 			ctx.beginPath();
 			ctx.ellipse(
 				cx + lx * rx * 0.48,
@@ -242,22 +327,19 @@ export function drawEyes(
 			);
 			ctx.fill();
 		}
-		if (style.brows) {
-			ctx.strokeStyle = 'rgba(15,0,0,.95)';
-			ctx.lineWidth = Math.max(1, w * 0.09);
-			ctx.lineCap = 'round';
-			ctx.beginPath();
-			// outer end high, inner end low: a scowl
-			ctx.moveTo(cx + side * rx * 1.05, cy - ry * 1.2);
-			ctx.lineTo(cx - side * rx * 0.9, cy - ry * 0.55);
-			ctx.stroke();
-		}
+		// outer end high, inner end low: a scowl
+		ctx.lineWidth = Math.max(1.2, w * 0.11);
+		ctx.lineCap = 'round';
+		ctx.beginPath();
+		ctx.moveTo(cx + side * rx * 1.1, cy - ry * 1.25);
+		ctx.lineTo(cx - side * rx * 0.9, cy - ry * 0.5);
+		ctx.stroke();
 	}
 }
 
 /**
- * The heading chevron, the shared direction rule of the hell: a small arrow on the tile's
- * leading edge. `size` is the tile size, (x, y) the tile centre.
+ * The heading chevron, the shared direction rule of the hell: a small ink-outlined arrow on
+ * the tile's leading edge. `size` is the tile size, (x, y) the tile centre.
  */
 export function drawHeading(
 	ctx: CanvasRenderingContext2D,
@@ -271,21 +353,23 @@ export function drawHeading(
 	if (alpha <= 0.01) {
 		return;
 	}
-	const d = size * 0.44;
+	const d = size * 0.42;
 	const a = size * 0.09;
 	ctx.save();
 	ctx.translate(x + Math.cos(heading) * d, y + Math.sin(heading) * d);
 	ctx.rotate(heading);
-	ctx.globalCompositeOperation = 'lighter';
-	ctx.globalAlpha = alpha;
-	ctx.strokeStyle = `rgb(${rgb})`;
-	ctx.lineWidth = Math.max(1, size * 0.045);
-	ctx.lineCap = 'round';
-	ctx.lineJoin = 'round';
+	ctx.globalAlpha *= alpha;
 	ctx.beginPath();
-	ctx.moveTo(-a, -a * 1.1);
-	ctx.lineTo(0, 0);
-	ctx.lineTo(-a, a * 1.1);
+	ctx.moveTo(a, 0);
+	ctx.lineTo(-a * 0.7, -a * 0.9);
+	ctx.lineTo(-a * 0.3, 0);
+	ctx.lineTo(-a * 0.7, a * 0.9);
+	ctx.closePath();
+	ctx.fillStyle = `rgb(${rgb})`;
+	ctx.fill();
+	ctx.lineWidth = Math.max(1, size * 0.04);
+	ctx.strokeStyle = INK;
+	ctx.lineJoin = 'round';
 	ctx.stroke();
 	ctx.restore();
 }

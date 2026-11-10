@@ -1,28 +1,35 @@
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
 import type { DoomMinionKind } from '../../logic/doom/DoomMinions';
-import type { EyeStyle, GhostShape } from './hellGhost';
-import { dirAngle, drawEyes, drawHeading, drawHorns, ghostPath, glow } from './hellGhost';
+import type { CelTones, EyeStyle, GhostShape } from './hellGhost';
+import {
+	INK,
+	celBands,
+	dirAngle,
+	drawEyes,
+	drawHeading,
+	drawHorns,
+	ghostPath,
+	lightGlow
+} from './hellGhost';
 
-interface ImpSkin {
-	readonly top: string;
-	readonly mid: string;
-	readonly low: string;
+interface ImpSkin extends CelTones {
 	/** Glow and heading chevron (rgb). */
 	readonly tint: string;
 }
 
 /** Blinky's brood keeps the arcade colours of the three ghosts that chase like them. */
 const IMP_SKINS: Record<DoomMinionKind, ImpSkin> = {
-	pinky: { top: '#ffa8dc', mid: '#d8308a', low: '#3a0420', tint: '255,120,200' },
-	inky: { top: '#a8f4ff', mid: '#1aa0c8', low: '#041a30', tint: '90,230,255' },
-	clyde: { top: '#ffd08a', mid: '#e0701a', low: '#3a1404', tint: '255,170,70' }
+	pinky: { light: '#ffc4e6', mid: '#e0388e', shade: '#8a1050', tint: '255,120,200' },
+	inky: { light: '#c4f8ff', mid: '#1fa8d0', shade: '#0c5a82', tint: '90,230,255' },
+	clyde: { light: '#ffe0a8', mid: '#ee7a1e', shade: '#a04010', tint: '255,170,70' }
 };
 
-const IMP_EYES: EyeStyle = { sclera: '#ffe27a', pupil: '#1a0000', glow: null, brows: true };
+const IMP_EYES: EyeStyle = { sclera: '#ffe27a', glow: null };
 
 /**
- * A minion: a small horned ghost in Pinky, Inky or Clyde colours, its eyes and the
- * chevron on the tile edge pointing where it runs. (x, y) is the tile centre in pixels.
+ * A minion: a small horned ghost in Pinky, Inky or Clyde colours, cel-shaded like the boss,
+ * its eyes and the chevron on the tile edge pointing where it runs. (x, y) is the tile
+ * centre in pixels.
  */
 export function drawImp(
 	ctx: CanvasRenderingContext2D,
@@ -54,9 +61,7 @@ export function drawImp(
 	ctx.globalAlpha = alpha;
 	ctx.lineJoin = 'round';
 	ctx.lineCap = 'round';
-	ctx.globalCompositeOperation = 'lighter';
-	glow(ctx, x, y, R * 1.2, skin.tint, 0.28);
-	ctx.globalCompositeOperation = 'source-over';
+	lightGlow(ctx, x, y, R * 1.2, skin.tint, 0.24);
 	ctx.translate(x, y);
 	drawHorns(
 		ctx,
@@ -64,32 +69,27 @@ export function drawImp(
 		0,
 		shape,
 		0.6,
-		{
-			length: 0.45,
-			thick: 0.22,
-			dark: '#1a0404',
-			light: '#e8d8bc',
-			ember: null,
-			curl: 0.1
-		},
+		{ length: 0.42, curl: 0.1, bone: ['#f1e4cc', '#9c8a72'], ember: null },
 		0
 	);
 	ghostPath(ctx, 0, 0, shape, time * 1.3 + seed);
-	const fill = ctx.createLinearGradient(0, shape.domeY - shape.w, 0, shape.hem);
-	fill.addColorStop(0, skin.top);
-	fill.addColorStop(0.5, skin.mid);
-	fill.addColorStop(1, skin.low);
-	ctx.fillStyle = fill;
+	ctx.fillStyle = skin.mid;
 	ctx.fill();
-	ctx.strokeStyle = 'rgba(15,0,0,.8)';
-	ctx.lineWidth = Math.max(1, shape.w * 0.09);
+	ctx.save();
+	ghostPath(ctx, 0, 0, shape, time * 1.3 + seed);
+	ctx.clip();
+	celBands(ctx, shape, skin);
+	ctx.restore();
+	ghostPath(ctx, 0, 0, shape, time * 1.3 + seed);
+	ctx.lineWidth = Math.max(1.4, shape.w * 0.15);
+	ctx.strokeStyle = INK;
 	ctx.stroke();
 	drawEyes(ctx, 0, shape.domeY + shape.w * 0.4, shape.w, heading, IMP_EYES, 1, false, time);
 	ctx.restore();
 	if (facing) {
 		ctx.save();
 		ctx.globalAlpha = alpha;
-		drawHeading(ctx, x, y, tileSize, heading, skin.tint, 0.85);
+		drawHeading(ctx, x, y, tileSize, heading, skin.tint, 1);
 		ctx.restore();
 	}
 }

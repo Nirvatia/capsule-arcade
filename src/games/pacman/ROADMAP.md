@@ -148,8 +148,8 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
         owner's pick is the heavy armor of the "doom fighter" mock-up
         (`prototypes/pacman/art/hell-flesh-heroes.html`, artifact `1H2WF8d37coG2ZFw5z292X`);
         `PlayerView` is gone.
-     2. **Blinky, lord of hell**, in three phases (shape, colour, eyes, the change of look),
-        and the imps.
+     2. ~~**Blinky, lord of hell**~~, in three phases (shape, colour, eyes, the change of look),
+        and the imps. Done (see Done, "Part II, 1.2").
      3. **Weapons and pickups**: BFG, barrel, berserk, medkit; the heart and the exit.
      4. **The attacks, one family at a time**, each with its telegraph and its effect, built
         from the real numbers (`logic/doom/DoomBalance`, `DoomAttackPlanner`): dash, rift,
@@ -495,3 +495,20 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   checked: play on the real game page, the hero's death in the hell with armor, the heroes on
   the flesh hell (it is not ported yet: step 1.7), no unit test for the painting (the test
   environment has no canvas). The old meadow-recoloured hell still shows them.
+- Part II, 1.2, Blinky and the imps (eighth chat): the owner approved the mock-up
+  (`prototypes/pacman/art/hell-flesh-boss.html`, artifact `NxfN9XuEHjLp8DnAfUsjoj`), friendly
+  tone kept. The boss keeps the game's ghost silhouette and states but is cel-shaded like the
+  heroes (hard bands, a thick ink line, a rim light), with bone horns, ink brows and a
+  deterministic shiver. Phase 1 is a red overseer with a stitched belly; phase 2 is charred,
+  cracked by lava (thicker cracks than in the mock-up, so it parts from phase 1 at tile size),
+  with longer glowing horns and the belly split open on his ribs; phase 3 burns white-hot with
+  a second pair of horns and a skirt of flames; the echo is violet. A red body sinks into the red
+  flesh, so every skin keeps the ink line, yellow eyes and the light rim. The imps keep the
+  arcade colours in the same style, with an ink-outlined heading chevron. Code:
+  `render/doom/hellGhost.ts` (shared: `celBands`, `celOutline`, `drawHorns`, `drawEyes`,
+  `drawHeading`, `lightGlow`), `HellBlinkyView`, `HellImpView`; the snapshot and the call
+  signatures are unchanged, the logic is untouched. Checked: `npm run check`, `npm test` (210),
+  ESLint and Prettier on the changed files, the `hell` prototype gallery in all three phases (no
+  console errors). Not checked: the fight in play (wind-up, dash, cast, phase change on the
+  real page), the boss over the flesh hell (not ported yet: step 1.7). `glow` in `hellGhost.ts`
+  is now unused by the boss and the imps.

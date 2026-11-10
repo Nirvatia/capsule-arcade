@@ -225,6 +225,13 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - One style for all of them: a clear silhouette with a wide dark outline, gradient fill,
   a gloss and a glint (`render/common/itemPaint`); the mock-ups' looks are not kept.
 - A boss level ends by the player's choice: the heart (+1 life) or the exit.
+- **Blinky and the imps (in the game)**: the arcade ghost silhouette, cel-shaded like the
+  heroes (hard tone bands, a thick ink line, a rim light), bone horns, ink brows over yellow eyes.
+  Phase 1 a red overseer with a stitched belly; phase 2 charred and cracked by lava, longer
+  glowing horns, the belly split open on his ribs; phase 3 white-hot, a second pair of horns, a
+  skirt of flames; the echo is violet. The imps keep Pinky's, Inky's and Clyde's colours and the
+  heading chevron. A red body sinks into the red flesh, so the ink line, the eyes and the rim
+  light carry him.
 - **The hell's heroes (in the game)**: both wear armor, the owner's "doom fighter" in its heavy
   weight: a helmet and a chin guard painted on the ball, cel-shaded in cold steel (green for
   him with a cyan visor slit, indigo for her with her eye in a goggle), clipped to the body so
@@ -247,7 +254,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 | Element                                                         | State                                                                                   |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | Seasons (world, food, weather, night), season turn, death decay | final; death is a black hole (part I, 6.2); the seams between worlds are not done (6.3) |
-| Hell world, Blinky lord of hell, imps, weapons                  | look decided: the flesh hell (§12); everything to be redone in part II, step 1          |
+| Blinky lord of hell, imps                                       | final: cel-shaded like the heroes (part II, 1.2)                                        |
+| Hell world, weapons                                             | look decided: the flesh hell (§12); to be redone in part II, step 1                     |
 | Arcade                                                          | final (keeps its own pixel HUD)                                                         |
 | HUD and screens                                                 | final; to be replaced (part III)                                                        |
 | Fruit, heart, exit                                              | final (inside the tile, calm glow)                                                      |
