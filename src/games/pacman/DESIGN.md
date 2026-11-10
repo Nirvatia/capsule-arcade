@@ -249,10 +249,11 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   mouth gapes, three seam lights on the nape fill up, the visor and the throat go green; the
   release is a recoil and a flash. The rolling ball at the rifts is the heroes' own.
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
-  world, no void and nothing hanging in the air; the maze's walls are flat muscle ridges with a
-  dark outline and an inner light and shade edge, never given height or a face, so the
-  corridors keep their full width; the corridor floor is the same flesh as the outside, a
-  little darker. Ribs half buried, veins, cysts and pools of blood around; a slow heartbeat
+  world, no void and nothing hanging in the air; the maze is drawn as an outline, "the cord":
+  islands of dark flesh with a quiet texture, each edged by a dark cord with a thin hot line that
+  pulses with the heart, never given height or a face, so the corridors keep their full width;
+  the corridor floor is the same flesh as the outside, a little darker, and the ground outside the
+  maze is dimmed, so the maze parts from the background. Ribs half buried, veins, cysts and pools of blood around; a slow heartbeat
   light; few, bold details on a surface, nothing hanging; a calm background. The teleport is a
   vertical rift of torn flesh around a seam of light. The heroes and the boss are redone to
   read on it (`ROADMAP.md`, part II, step 1).

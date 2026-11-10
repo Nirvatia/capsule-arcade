@@ -122,7 +122,7 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
    the steps). One boss level, done properly before any other exists. Today the hell is the
    meadow recoloured (a meadow's pond and road, grey stone, cute round actors): nothing in
    it belongs together. The owner chose the look from three chat mock-ups (a forged, a
-   flesh and a cult hell): **the flesh hell**, with muscle walls.
+   flesh and a cult hell): **the flesh hell** (its walls became the cord, see Done).
    - **The accepted scene** (background and maze, no actors): the artifact
      `https://claude.ai/artifact/PxgBdvaWVsb7mXwsMLEgMq`, its source kept in
      `prototypes/pacman/art/hell-flesh-scene.html` (a standalone page: open it as a file). It
@@ -131,8 +131,8 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
      (`config/mazes/doom.ts`, 25×26).
    - **Rules of the look** (the owner's, from the rounds): the world is one flesh with no void
      and nothing hanging in the air (the corridor floor is the same flesh as the outside, a
-     little darker); the walls are flat muscle ridges with a dark outline, an inner light and
-     shade edge and a ragged flesh band at their foot, **no height, no face, no extrusion**,
+     little darker); the walls are dark flesh islands edged by a glowing cord (the owner's pick,
+     replacing the muscle ridges), **no height, no face, no extrusion**,
      so the corridors keep their full width; no bright bone or anything that jumps forward;
      details are few and bold and sit on a surface (no drips hanging off the walls); a slow
      heartbeat (about 2.5 s) and a calm background, not many fast animations; the teleport is
@@ -556,20 +556,17 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   up), bake time and frame rate (see Known issues). Not checked: the death transition from the
   hell and the season turn into it, the night and the ash storm over the new world, a narrow or
   ultra-wide screen, a GPU.
-- The hell's wall material under review (eighth chat; the owner: the muscle looks bad, worse on
-  `grid_doom`'s big islands; shell, skin and tendons were tried before and failed; bone was close
-  but its walls were flat and too bright against the background). The wants: the maze parts from
-  the background, the walls are not flat or uniform, not too contrasty against the background, and
-  the corridors do not look far away with the walls floating over them. `fleshBake` now takes a
-  `WallStyle` (`WALL_STYLES`: colours, corridor floor tone, the shadow at the wall's foot, the
-  background's dimming, large-scale mottling over an island, a tile painter) and `DoomWorld`
-  takes it as a parameter; the game still uses `muscle`. The owner then judged that a Pac-Man maze
-  is not meant to be drawn from living matter, and asked whether to go back to Doom's metal or
-  rethink the blood direction (the blood hell, the world, stays: the owner loves it). Answer:
-  keep the world, change what the maze is. Three directions, seen in the `walls` prototype
-  (artifact `XsmmBxMm5ccepuDW1efQiL`): `cut` (the islands are the world's own flesh, a little
-  darker; the maze is cut into it and read by a wet lip on every edge), `cord` (dark islands
-  with a glowing cord round each, as in the classic mazes) and `iron` (blackened gunmetal in the
-  flesh, the fallback). First look: `cord` reads best, `cut` is calm but its islands and floor are
-  too close in tone, `iron` is a separate cold world. The bone, crust and scar candidates were
-  dropped. Nothing is chosen yet.
+- The hell's wall material (eighth chat): the muscle walls were dropped (the owner: a Pac-Man maze
+  is not meant to be drawn from living matter; worse on `grid_doom`'s big islands; shell, skin,
+  tendons and bone had failed before). The blood hell, the world, stays: the owner loves it. The
+  maze is no longer a material but an outline: **the cord**. Islands of dark flesh with a quiet
+  texture, each edged by a dark cord with a thin hot line that pulses with the heart (the classic
+  mazes' outline, in the hell's own matter); the corridor floor stays near the walls in tone, a
+  shadow lies at the foot of every wall, the tone wanders over a big island and the ground outside
+  the maze is dimmed so the maze parts from the background. Chosen from three candidates (the cut:
+  flesh islands with a wet lip, too close in tone to the floor; the cord; blackened gunmetal in the
+  flesh, a cold separate world) compared on the real maze in a throwaway `walls` prototype
+  (deleted). In `fleshBake` the wall is the constant `WALL`; the muscle painter, the flesh band
+  at the walls' foot and the style parameter are gone. Checked: `npm run check`, `npm test` (210),
+  ESLint and Prettier, the `hell` prototype fight view. Not checked: Blinky (red) on the red cord
+  in a real fight, the night and the ash storm over the cord, a GPU.

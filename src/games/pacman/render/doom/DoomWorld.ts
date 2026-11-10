@@ -7,7 +7,6 @@ import type { GridLayout } from '../maze/GridView';
 import { DoomLightmap } from './DoomLightmap';
 import { DOOM_BG, DOOM_TILE } from './DoomBake';
 import { bakeFlesh, MX, MY, SCENE_TILE } from './fleshBake';
-import type { WallStyleId } from './fleshBake';
 import { FleshLive } from './fleshLive';
 import {
 	fogTexture,
@@ -115,11 +114,7 @@ export class DoomWorld {
 	/** The flesh scene: baked the first time the world is drawn (it takes a moment). */
 	private scene: FleshLive | null = null;
 
-	constructor(
-		S: GridMatrix,
-		pickupTiles: ReadonlyArray<{ x: number; y: number }>,
-		private readonly wallStyle: WallStyleId = 'muscle'
-	) {
+	constructor(S: GridMatrix, pickupTiles: ReadonlyArray<{ x: number; y: number }>) {
 		this.S = S;
 		this.R = S.length;
 		this.C = S[0].length;
@@ -257,7 +252,7 @@ export class DoomWorld {
 
 	/** The flesh scene: ground, maze, walls and what moves in them. Leaves the context untransformed. */
 	drawWorld(ctx: CanvasRenderingContext2D): void {
-		this.scene ??= new FleshLive(bakeFlesh(this.S, this.wallStyle));
+		this.scene ??= new FleshLive(bakeFlesh(this.S));
 		ctx.save();
 		ctx.globalAlpha = 1;
 		ctx.globalCompositeOperation = 'source-over';

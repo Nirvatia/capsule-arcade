@@ -51,52 +51,30 @@ const PAL = {
 	bone: '#d9c9ae'
 } as const;
 
-/** One wall tile's top, painted into the wall layer (`tp`) and the glow layer (`ex`). */
-type TilePainter = (
-	tp: CanvasRenderingContext2D,
-	ex: CanvasRenderingContext2D,
-	X3: number,
-	Y3: number,
-	c: number,
-	rr: number,
-	rw: Rng,
-	dir: number,
-	horiz2: boolean,
-	isWall: (c: number, r: number) => boolean
-) => void;
-
-export type WallStyleId = 'muscle' | 'cut' | 'cord' | 'iron';
-
 /**
- * What a wall material is: its colours, how dark the corridor floor and the background are
- * kept (the maze must stand out from the background without the walls floating over a pit),
- * how strong the shadow at the foot of a wall is (it grounds the island), how much its tone
- * wanders over a big island (so it is never one flat colour) and how a tile is painted.
+ * The wall material, the owner's "cord": islands of dark flesh with a fine quiet texture, each
+ * edged by a glowing cord (the classic mazes' outline, in the hell's own matter). The maze must
+ * stand out from the background without the walls floating over a pit, so the corridor floor
+ * stays close to the walls in tone, a shadow lies at the foot of every wall, the tone wanders
+ * over a big island and the ground outside the maze recedes.
  */
-export interface WallStyle {
-	readonly name: string;
-	readonly grad: readonly [string, string, string];
-	readonly rim: string;
-	readonly shade: string;
-	/** Rim light offset in px: the thicker, the more a lip stands out of the island. */
-	readonly lip: number;
-	/** 'gradient': the colours above; 'ground': the flesh of the world, darkened by `topDarken`. */
-	readonly top: 'gradient' | 'ground';
-	readonly topDarken: number;
-	/** A glowing cord (rgb) round every island, or null. */
-	readonly cord: string | null;
-	/** Opacity of the ragged band of flesh creeping over the foot of a wall (0: none). */
-	readonly band: number;
-	/** Darkening of the corridor floor over the bare flesh (the scene's value is .24). */
-	readonly floorShade: number;
+const WALL = {
+	grad: ['#34161a', '#2c1215', '#220d10'],
+	rim: 'rgba(255,120,90,.3)',
+	shade: 'rgba(8,1,3,.7)',
+	/** Rim light offset in px. */
+	lip: 2,
+	/** The cord's hot line (rgb). */
+	cord: '255,96,64',
+	/** Darkening of the corridor floor over the bare flesh. */
+	floorShade: 0.3,
 	/** Opacity of the shadow the walls cast on the floor. */
-	readonly ao: number;
+	ao: 0.5,
 	/** Darkening of the ground outside the maze. */
-	readonly bgDim: number;
+	bgDim: 0.3,
 	/** Strength of the large-scale light and dark patches on the walls. */
-	readonly mottle: number;
-	readonly paint: TilePainter;
-}
+	mottle: 0.35
+} as const;
 
 type Kind = 'none' | 'wall' | 'floor' | 'lair' | 'tele';
 const LAIR_TOKENS: ReadonlySet<string> = new Set(['LT', 'BY', 'IY', 'PY', 'CE', 'DB', 'LE']);
@@ -169,8 +147,8 @@ function kindOf(S: GridMatrix, c: number, r: number): Kind {
 const tx = (c: number): number => MX + c * SCENE_TILE;
 const ty = (r: number): number => MY + r * SCENE_TILE;
 
-export function bakeFlesh(S: GridMatrix, styleId: WallStyleId = 'muscle'): FleshBake {
-	const st = WALL_STYLES[styleId];
+export function bakeFlesh(S: GridMatrix): FleshBake {
+	const st = WALL;
 	const rows = S.length;
 	const cols = S[0].length;
 	const isWall = (c: number, r: number): boolean => kindOf(S, c, r) === 'wall';
@@ -624,19 +602,12 @@ export function bakeFlesh(S: GridMatrix, styleId: WallStyleId = 'muscle'): Flesh
 		}
 		const top = layer();
 		const tp = top.x;
-		if (st.top === 'ground') {
-			// the island is the flesh of the world, a little darker: not a foreign material
-			tp.drawImage(baseLocal, LX, LY);
-			tp.fillStyle = `rgba(18,4,8,${st.topDarken})`;
-			tp.fillRect(LX, LY, LW, LH);
-		} else {
-			const gt0 = tp.createLinearGradient(MX, MY, MX + cols * T, MY + rows * T);
-			gt0.addColorStop(0, st.grad[0]);
-			gt0.addColorStop(0.5, st.grad[1]);
-			gt0.addColorStop(1, st.grad[2]);
-			tp.fillStyle = gt0;
-			tp.fillRect(LX, LY, LW, LH);
-		}
+		const gt0 = tp.createLinearGradient(MX, MY, MX + cols * T, MY + rows * T);
+		gt0.addColorStop(0, st.grad[0]);
+		gt0.addColorStop(0.5, st.grad[1]);
+		gt0.addColorStop(1, st.grad[2]);
+		tp.fillStyle = gt0;
+		tp.fillRect(LX, LY, LW, LH);
 		for (let rr = 0; rr < rows; rr += 1) {
 			for (let c = 0; c < cols; c += 1) {
 				if (!isWall(c, rr)) {
@@ -644,15 +615,13 @@ export function bakeFlesh(S: GridMatrix, styleId: WallStyleId = 'muscle'): Flesh
 				}
 				const X3 = tx(c);
 				const Y3 = ty(rr);
-				const horiz2 = isWall(c - 1, rr) || isWall(c + 1, rr);
-				const dir = horiz2 ? 0 : Math.PI / 2;
 				const v = rw();
 				tp.fillStyle =
 					v < 0.5
 						? `rgba(255,200,180,${0.03 + v * 0.04})`
 						: `rgba(30,6,10,${0.03 + (v - 0.5) * 0.06})`;
 				tp.fillRect(X3 - 1, Y3 - 1, T + 2, T + 2);
-				st.paint(tp, ex, X3, Y3, c, rr, rw, dir, horiz2, isWall);
+				paintQuiet(tp, X3, Y3, rw);
 			}
 		}
 		// the tone wanders over a big island: soft light and dark patches, continuous over tiles
@@ -691,7 +660,7 @@ export function bakeFlesh(S: GridMatrix, styleId: WallStyleId = 'muscle'): Flesh
 		w.drawImage(clipTo(top.cv, wallM), LX, LY);
 		w.drawImage(clipTo(tint(edgeOf(wallM, st.lip, st.lip), st.rim), wallM), LX, LY);
 		w.drawImage(clipTo(tint(edgeOf(wallM, -2, -2), st.shade), wallM), LX, LY);
-		if (st.cord) {
+		{
 			// a cord round every island: a dark body with a thin hot line that pulses with the heart
 			const ring = (r2: number): HTMLCanvasElement => {
 				const c2 = makeCanvas(LW, LH);
@@ -710,40 +679,6 @@ export function bakeFlesh(S: GridMatrix, styleId: WallStyleId = 'muscle'): Flesh
 	const glowCv = blur(emis.cv, 3, true);
 
 	const wallShadow = clipTo(blur(tint(wallM, '#000'), 2, true), deckM);
-	// flesh creeps over the foot of every wall, with a ragged edge: the bone is half sunk
-	const inner = layer();
-	{
-		const rj = rng(55);
-		inner.x.fillStyle = '#fff';
-		for (let rr = 0; rr < rows; rr += 1) {
-			for (let c = 0; c < cols; c += 1) {
-				if (!isWall(c, rr)) {
-					continue;
-				}
-				const ins = (): number => 2 + rj() * 4;
-				const l0 = isWall(c - 1, rr) ? 0 : ins();
-				const r0 = isWall(c + 1, rr) ? 0 : ins();
-				const t0 = isWall(c, rr - 1) ? 0 : ins();
-				const b0 = isWall(c, rr + 1) ? 0 : ins();
-				inner.x.fillRect(tx(c) + l0 - 0.5, ty(rr) + t0 - 0.5, T - l0 - r0 + 1, T - t0 - b0 + 1);
-			}
-		}
-	}
-	const innerM = threshold(blur(inner.cv, 3, true), 5);
-	const bandM = layer();
-	bandM.x.drawImage(wallM, LX, LY);
-	bandM.x.globalCompositeOperation = 'destination-out';
-	bandM.x.drawImage(innerM, LX, LY);
-	const bandTex = layer();
-	bandTex.x.drawImage(baseLocal, LX, LY);
-	bandTex.x.fillStyle = 'rgba(40,8,12,.14)';
-	bandTex.x.fillRect(LX, LY, LW, LH);
-	const band = clipTo(bandTex.cv, bandM.cv);
-	{
-		const bx = context(band);
-		bx.drawImage(clipTo(tint(edgeOf(innerM, 2, 2), 'rgba(12,2,6,.7)'), wallM), 0, 0);
-		bx.drawImage(clipTo(tint(edgeOf(innerM, -1.5, -1.5), 'rgba(235,140,125,.28)'), wallM), 0, 0);
-	}
 
 	// ---- the tunnels (vertical rifts) and the round pads under the spawn and the fruit ----
 	const maw = layer();
@@ -828,8 +763,6 @@ export function bakeFlesh(S: GridMatrix, styleId: WallStyleId = 'muscle'): Flesh
 		m.drawImage(wallShadow, LX, LY);
 		m.globalAlpha = 1;
 		m.drawImage(walls.cv, LX, LY);
-		m.globalAlpha = st.band;
-		m.drawImage(band, LX, LY);
 		m.globalAlpha = 0.8;
 		m.drawImage(bw.cv, LX, LY);
 		m.globalAlpha = 1;
@@ -918,7 +851,7 @@ function sidePockets(S: GridMatrix, cols: number, rows: number): Array<readonly 
 }
 
 /** A quiet tile: faint fibres on the flow of the ground and a few pores, nothing that shouts. */
-const paintQuiet: TilePainter = (tp, _ex, X3, Y3, _c, _rr, rw) => {
+function paintQuiet(tp: CanvasRenderingContext2D, X3: number, Y3: number, rw: Rng): void {
 	const T = SCENE_TILE;
 	tp.save();
 	tp.lineCap = 'round';
@@ -936,117 +869,7 @@ const paintQuiet: TilePainter = (tp, _ex, X3, Y3, _c, _rr, rw) => {
 		tp.fill();
 	}
 	tp.restore();
-};
-
-/** Gunmetal: fine brushed grain along the wall, rivets, a rust or blood stain now and then. */
-const paintIron: TilePainter = (tp, _ex, X3, Y3, _c, _rr, rw, dir) => {
-	const T = SCENE_TILE;
-	tp.save();
-	tp.lineCap = 'round';
-	for (let i = 0; i < 26; i += 1) {
-		const px = X3 + rw() * T;
-		const py = Y3 + rw() * T;
-		const len = 6 + rw() * 14;
-		tp.strokeStyle = rw() < 0.5 ? 'rgba(10,10,16,.22)' : 'rgba(200,205,225,.14)';
-		tp.lineWidth = 0.7;
-		tp.beginPath();
-		tp.moveTo(px, py);
-		tp.lineTo(px + Math.cos(dir) * len, py + Math.sin(dir) * len);
-		tp.stroke();
-	}
-	if (rw() < 0.45) {
-		const px = X3 + 5 + rw() * (T - 10);
-		const py = Y3 + 5 + rw() * (T - 10);
-		tp.fillStyle = 'rgba(8,8,12,.55)';
-		tp.beginPath();
-		tp.arc(px + 0.6, py + 0.8, 2.2, 0, 7);
-		tp.fill();
-		tp.fillStyle = '#7d808c';
-		tp.beginPath();
-		tp.arc(px, py, 2, 0, 7);
-		tp.fill();
-		tp.fillStyle = 'rgba(255,255,255,.55)';
-		tp.beginPath();
-		tp.arc(px - 0.6, py - 0.7, 0.8, 0, 7);
-		tp.fill();
-	}
-	if (rw() < 0.3) {
-		tp.fillStyle = rw() < 0.5 ? 'rgba(120,52,30,.32)' : 'rgba(96,12,16,.4)';
-		tp.beginPath();
-		tp.ellipse(X3 + rw() * T, Y3 + rw() * T, 4 + rw() * 8, 2 + rw() * 4, dir + (rw() - 0.5), 0, 7);
-		tp.fill();
-	}
-	tp.restore();
-};
-
-/** The wall materials. The scene's muscle is the reference; the others are candidates. */
-export const WALL_STYLES: Readonly<Record<WallStyleId, WallStyle>> = {
-	muscle: {
-		name: 'Мышца (как было)',
-		grad: ['#b65248', '#9a3f3d', '#7e2f31'],
-		rim: 'rgba(236,150,136,.55)',
-		shade: 'rgba(24,3,8,.6)',
-		lip: 2,
-		top: 'gradient',
-		topDarken: 0,
-		cord: null,
-		band: 0.93,
-		floorShade: 0.24,
-		ao: 0.2,
-		bgDim: 0,
-		mottle: 0,
-		paint: (tp, ex, X3, Y3, c, rr, rw, dir, horiz2, isWall) =>
-			paintMuscle(tp, ex, X3, Y3, c, rr, rw, dir, horiz2, isWall)
-	},
-	cut: {
-		name: 'Разрез',
-		grad: ['#000', '#000', '#000'],
-		rim: 'rgba(255,170,150,.62)',
-		shade: 'rgba(14,2,5,.7)',
-		lip: 3,
-		top: 'ground',
-		topDarken: 0.06,
-		cord: null,
-		band: 0,
-		floorShade: 0.46,
-		ao: 0.6,
-		bgDim: 0.3,
-		mottle: 0.3,
-		paint: paintQuiet
-	},
-	cord: {
-		name: 'Контур',
-		grad: ['#34161a', '#2c1215', '#220d10'],
-		rim: 'rgba(255,120,90,.3)',
-		shade: 'rgba(8,1,3,.7)',
-		lip: 2,
-		top: 'gradient',
-		topDarken: 0,
-		cord: '255,96,64',
-		band: 0,
-		floorShade: 0.3,
-		ao: 0.5,
-		bgDim: 0.3,
-		mottle: 0.35,
-		paint: paintQuiet
-	},
-	iron: {
-		name: 'Железо в плоти',
-		grad: ['#52505a', '#413f48', '#322f37'],
-		rim: 'rgba(190,200,225,.42)',
-		shade: 'rgba(8,8,14,.65)',
-		lip: 2,
-		top: 'gradient',
-		topDarken: 0,
-		cord: null,
-		band: 0.93,
-		floorShade: 0.16,
-		ao: 0.42,
-		bgDim: 0.3,
-		mottle: 0.3,
-		paint: paintIron
-	}
-};
+}
 
 /** A swelling: lumpy, dark rim, veined, with a wet gloss. */
 function cystSprite(R: number): HTMLCanvasElement {
@@ -1122,129 +945,6 @@ function cystSprite(R: number): HTMLCanvasElement {
 	x.ellipse(cx - R * 0.36, cy - R * 0.4, R * 0.26, R * 0.13, -0.7, 0, 7);
 	x.fill();
 	return c;
-}
-
-/** One wall tile's top: fibres, fat, a vein, glints, stitches over its seams and a wound. */
-function paintMuscle(
-	tp: CanvasRenderingContext2D,
-	ex: CanvasRenderingContext2D,
-	X3: number,
-	Y3: number,
-	c: number,
-	rr: number,
-	rw: Rng,
-	dir: number,
-	horiz2: boolean,
-	isWall: (c: number, r: number) => boolean
-): void {
-	const T = SCENE_TILE;
-	tp.save();
-	tp.lineCap = 'round';
-	fibres(
-		tp,
-		46,
-		rw,
-		X3 - 4,
-		Y3 - 4,
-		T + 8,
-		T + 8,
-		'rgba(60,14,18,.34)',
-		'rgba(220,130,112,.22)',
-		dir
-	);
-	if (rw() < 0.35) {
-		tp.fillStyle = rgbaOf(PAL.fat, 0.16 + rw() * 0.12);
-		tp.beginPath();
-		tp.ellipse(X3 + rw() * T, Y3 + rw() * T, 5 + rw() * 9, 2 + rw() * 4, dir + (rw() - 0.5), 0, 7);
-		tp.fill();
-	}
-	if (rw() < 0.3) {
-		tp.strokeStyle = rgbaOf(PAL.vein, 0.75);
-		tp.lineWidth = 1.5;
-		tp.beginPath();
-		const vy = Y3 + 6 + rw() * (T - 12);
-		const vx = X3 + 6 + rw() * (T - 12);
-		tp.moveTo(horiz2 ? X3 : vx, horiz2 ? vy : Y3);
-		tp.quadraticCurveTo(
-			horiz2 ? X3 + T / 2 : vx + (rw() - 0.5) * 12,
-			horiz2 ? vy + (rw() - 0.5) * 12 : Y3 + T / 2,
-			horiz2 ? X3 + T : vx,
-			horiz2 ? vy : Y3 + T
-		);
-		tp.stroke();
-	}
-	if (rw() < 0.5) {
-		tp.fillStyle = 'rgba(255,225,215,.4)';
-		tp.beginPath();
-		tp.ellipse(X3 + 6 + rw() * 18, Y3 + 5 + rw() * 20, 3 + rw() * 4, 1.4, -0.3, 0, 7);
-		tp.fill();
-	}
-	tp.restore();
-	if (isWall(c + 1, rr) && rw() < 0.14) {
-		tp.strokeStyle = '#0b0206';
-		tp.lineWidth = 1.6;
-		tp.lineCap = 'round';
-		const sy3 = Y3 + 9 + rw() * (T - 18);
-		tp.beginPath();
-		tp.moveTo(X3 + T - 7, sy3);
-		tp.lineTo(X3 + T + 7, sy3);
-		tp.stroke();
-		for (let s = 0; s < 4; s += 1) {
-			const sx3 = X3 + T - 6 + s * 4;
-			tp.beginPath();
-			tp.moveTo(sx3, sy3 - 5);
-			tp.lineTo(sx3 + 1.5, sy3 + 5);
-			tp.stroke();
-		}
-	}
-	if (isWall(c, rr + 1) && rw() < 0.12) {
-		tp.strokeStyle = '#0b0206';
-		tp.lineWidth = 1.6;
-		tp.lineCap = 'round';
-		const sx4 = X3 + 9 + rw() * (T - 18);
-		tp.beginPath();
-		tp.moveTo(sx4, Y3 + T - 7);
-		tp.lineTo(sx4, Y3 + T + 7);
-		tp.stroke();
-		for (let s2 = 0; s2 < 4; s2 += 1) {
-			const sy4 = Y3 + T - 6 + s2 * 4;
-			tp.beginPath();
-			tp.moveTo(sx4 - 5, sy4);
-			tp.lineTo(sx4 + 5, sy4 + 1.5);
-			tp.stroke();
-		}
-	}
-	if (rw() < 0.14) {
-		// a wound: a dark gash with a glowing core (the core is in the emissive layer)
-		const pts: Array<[number, number]> = [];
-		const cx0 = X3 + 5 + rw() * 6;
-		const cy0 = Y3 + 7 + rw() * (T - 14);
-		for (let k = 0; k < 5; k += 1) {
-			pts.push([cx0 + k * 5 + (rw() - 0.5) * 3, cy0 + (rw() - 0.5) * 8]);
-		}
-		const line = (x: CanvasRenderingContext2D): void => {
-			x.beginPath();
-			pts.forEach((p, ii) => {
-				if (ii) {
-					x.lineTo(p[0], p[1]);
-				} else {
-					x.moveTo(p[0], p[1]);
-				}
-			});
-			x.stroke();
-		};
-		tp.strokeStyle = '#24050a';
-		tp.lineWidth = 4;
-		tp.lineJoin = 'round';
-		line(tp);
-		ex.strokeStyle = PAL.glow;
-		ex.lineWidth = 2;
-		ex.lineJoin = 'round';
-		line(ex);
-		ex.strokeStyle = PAL.glowHot;
-		ex.lineWidth = 0.8;
-		line(ex);
-	}
 }
 
 /** A skull set into the wall, its eyes alight. */
