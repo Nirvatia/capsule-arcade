@@ -150,7 +150,8 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
         `PlayerView` is gone.
      2. ~~**Blinky, lord of hell**~~, in three phases (shape, colour, eyes, the change of look),
         and the imps. Done (see Done, "Part II, 1.2").
-     3. **Weapons and pickups**: BFG, barrel, berserk, medkit; the heart and the exit.
+     3. ~~**Weapons and pickups**~~: BFG, barrel, berserk, medkit; the heart and the exit. Done
+        (see Done, "Part II, 1.3").
      4. **The attacks, one family at a time**, each with its telegraph and its effect, built
         from the real numbers (`logic/doom/DoomBalance`, `DoomAttackPlanner`): dash, rift,
         seals, pull, cross, void trail, split, eruption, corruption, blink, brood.
@@ -220,6 +221,7 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
 
 - Headless Chromium without a GPU runs the hell night at ~20 FPS; JS cost is ~2 ms per
   frame, the rest is software rasterisation. Check on real hardware.
+- The `collectibles` prototype throws "undefined is not iterable" in a `forEach` while it draws the item row (also on the commit before part II, 1.3) and so never reaches the exit; find it when the prototype is next touched.
 - `Hero.ts` is still large (~1100 lines); the sprite-free heroes are one class family, cut what no longer serves.
 
 ## Done
@@ -512,3 +514,16 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   console errors). Not checked: the fight in play (wind-up, dash, cast, phase change on the
   real page), the boss over the flesh hell (not ported yet: step 1.7). `glow` in `hellGhost.ts`
   is now unused by the boss and the imps.
+- Part II, 1.3, weapons and pickups (eighth chat): the owner approved the mock-up
+  (`prototypes/pacman/art/hell-flesh-items.html`, artifact `X4hxvo5hUdxShVxo9cyr3t`).
+  `render/doom/doomItems.ts` paints the BFG, barrel, berserk gauntlet and medkit icons (a box of
+  -50..50), baked by `DoomSprites` at the old size, so `DoomCombatView` and the pickup callers are
+  untouched; the mock-up's animated bits (lens, fuse, cracks) stay the pickup's glow. `ExitView`
+  is repainted as the bone arch with rays (its bloom weakened to 0.2 / 0.1 so the frame and the
+  rays survive at tile size). The heart is unchanged: the mock-up's heart was the game's own.
+  `DoomFxView`: the orb is pale green-white with a green halo (was yellow-orange), the berserk's
+  claws and sparks are orange (were red); the rings, blasts and decals are as they were. Checked:
+  `npm run check`, `npm test` (210), ESLint and Prettier on the changed files, the `hell`
+  prototype (the gallery and the pickups on the map), the new exit on a throwaway page at three
+  sizes. Not checked: the pickups, the barrel and the effects in a running fight; the dimmed and
+  respawning states; the orb and claws in motion; everything over the flesh hell (step 1.7).

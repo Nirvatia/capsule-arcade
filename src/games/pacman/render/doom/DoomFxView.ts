@@ -64,6 +64,8 @@ const PLASMA_CORE = 0xffffff;
 const PLASMA_HOT = 0xffee88;
 const PLASMA = 0xff8800;
 const BFG_HALO = 0x40ff50;
+/** The orb's body: pale green-white, like the BFG's lens. */
+const ORB_CORE = 0xa8ffb0;
 
 const PICKUP_TINT: Record<string, number> = {
 	bfg: 0x40ff50,
@@ -179,7 +181,7 @@ export class DoomFxView {
 						angle: -0.9 + i * 0.6 + (Math.random() - 0.5) * 0.3
 					});
 				}
-				this.radial(x, y, 20, 3, 9, 0xff3a2a, 'spark', 0.25, 0.6);
+				this.radial(x, y, 20, 3, 9, 0xff8228, 'spark', 0.25, 0.6);
 				this.shakeValue = Math.max(this.shakeValue, 0.35);
 				break;
 			case 'pickup': {
@@ -339,9 +341,9 @@ export class DoomFxView {
 			const y = Y(shot.y);
 			const tail = 1.6 * S;
 			const grad = ctx.createLinearGradient(x, y, x - ux * tail, y - uy * tail);
-			grad.addColorStop(0, rgba(PLASMA_HOT, 0.9));
-			grad.addColorStop(0.4, rgba(PLASMA, 0.45));
-			grad.addColorStop(1, rgba(PLASMA, 0));
+			grad.addColorStop(0, rgba(ORB_CORE, 0.9));
+			grad.addColorStop(0.4, rgba(BFG_HALO, 0.45));
+			grad.addColorStop(1, rgba(BFG_HALO, 0));
 			ctx.strokeStyle = grad;
 			ctx.lineWidth = S * 0.42;
 			ctx.globalAlpha = 1;
@@ -353,8 +355,8 @@ export class DoomFxView {
 			const halo = S * 1.9 * wobble;
 			ctx.drawImage(glowTexture(BFG_HALO), x - halo / 2, y - halo / 2, halo, halo);
 			const corona = S * 1.1 * wobble;
-			ctx.drawImage(glowTexture(PLASMA), x - corona / 2, y - corona / 2, corona, corona);
-			ctx.fillStyle = rgba(PLASMA_HOT, 1);
+			ctx.drawImage(glowTexture(BFG_HALO), x - corona / 2, y - corona / 2, corona, corona);
+			ctx.fillStyle = rgba(ORB_CORE, 1);
 			ctx.beginPath();
 			ctx.arc(x, y, S * 0.24 * wobble, 0, TAU);
 			ctx.fill();
@@ -387,7 +389,7 @@ export class DoomFxView {
 			const r = S * (0.7 + 0.3 * (1 - k));
 			ctx.globalAlpha = k;
 			for (const [color, width] of [
-				[rgba(0xff2a1a, 0.8), 0.22],
+				[rgba(0xff8228, 0.8), 0.22],
 				[rgba(0xffffff, 1), 0.07]
 			] as const) {
 				ctx.strokeStyle = color;

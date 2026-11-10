@@ -1,78 +1,68 @@
-// The boss-level exit, redrawn for the tile (stage 10.1, the painting kit in
-// `render/common/itemPaint`): an arched doorway with a stone-blue frame, light pouring out
-// of it and a bold arrow up, outlined in deep navy. A stand-in until the owner's exit icon
-// arrives.
+// The boss-level exit, in the hell's look (the owner's mock-up
+// `prototypes/pacman/art/hell-flesh-items.html`, painted with the kit in
+// `render/common/itemPaint`): an arched doorway in a bone frame on a bone step, pale light
+// pouring out of it in rays, outlined in dark ink. The light is the only cold thing in the
+// flesh, so it reads as the way out.
 import type { CollectibleArt, CollectibleMotion } from './collectibleSprite';
 import { drawCollectible, FRUIT_BLOOMS } from './collectibleSprite';
-import { beginItem, outline, sparkle } from '../common/itemPaint';
+import { beginItem } from '../common/itemPaint';
 
-const OUTLINE = 'rgba(8,20,60,0.95)';
-/** The opening's half width and half height, design units. */
-const W = 44;
-const H = 72;
+const INK = 'rgba(20,6,8,0.96)';
+/** The mock-up is drawn in a 100-unit box; the item kit has 256. */
+const SCALE = 2.3;
 
 function paint(ctx: CanvasRenderingContext2D, size: number): void {
 	beginItem(ctx, size);
+	ctx.scale(SCALE, SCALE);
 
-	const door = (grow: number) => () => {
+	const arch = (grow: number) => () => {
 		ctx.beginPath();
-		ctx.moveTo(-W - grow, H);
-		ctx.lineTo(-W - grow, -H + W);
-		ctx.arc(0, -H + W, W + grow, Math.PI, 0);
-		ctx.lineTo(W + grow, H);
+		ctx.moveTo(-30 + grow, 42);
+		ctx.lineTo(-30 + grow, -20);
+		ctx.arc(0, -20, 30 - grow, Math.PI, 0);
+		ctx.lineTo(30 - grow, 42);
 		ctx.closePath();
 	};
-	const frame = door(14);
-	const opening = door(0);
 	const step = () => {
 		ctx.beginPath();
-		ctx.roundRect(-W - 24, H - 4, (W + 24) * 2, 16, 5);
+		ctx.roundRect(-38, 40, 76, 11, 3);
 	};
-	const arrow = () => {
+	const part = (path: () => void, fill: string | CanvasGradient, width: number) => {
+		path();
+		ctx.fillStyle = fill;
+		ctx.fill();
+		ctx.lineWidth = width;
+		ctx.strokeStyle = INK;
+		ctx.stroke();
+	};
+
+	// the bone frame and step
+	const bone = ctx.createLinearGradient(-30, 0, 30, 0);
+	bone.addColorStop(0, '#efe2c8');
+	bone.addColorStop(0.5, '#d3c3a4');
+	bone.addColorStop(1, '#9c8a72');
+	part(arch(0), bone, 6);
+	part(step, '#cdbca2', 5);
+
+	// the opening: light pouring out from the far side, in rays
+	const light = ctx.createLinearGradient(0, -40, 0, 42);
+	light.addColorStop(0, '#ffffff');
+	light.addColorStop(0.6, '#bfe2ff');
+	light.addColorStop(1, '#6aa8f0');
+	part(arch(10), light, 4);
+	ctx.save();
+	arch(10)();
+	ctx.clip();
+	ctx.globalCompositeOperation = 'lighter';
+	ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+	ctx.lineWidth = 3;
+	for (let i = -2; i <= 2; i += 1) {
 		ctx.beginPath();
-		ctx.moveTo(0, H - 18);
-		ctx.lineTo(0, -H + 26);
-		ctx.moveTo(-26, -H + 50);
-		ctx.lineTo(0, -H + 24);
-		ctx.lineTo(26, -H + 50);
-	};
-
-	// 1. outline
-	outline(ctx, [frame, step], OUTLINE);
-
-	// 2. frame and step
-	const stone = ctx.createLinearGradient(-W - 14, 0, W + 14, 0);
-	stone.addColorStop(0, 'rgba(170,200,240,1)');
-	stone.addColorStop(1, 'rgba(70,100,170,1)');
-	ctx.fillStyle = stone;
-	frame();
-	ctx.fill();
-	step();
-	ctx.fill();
-
-	// 3. the opening: light pouring out from the far side
-	const light = ctx.createLinearGradient(0, -H, 0, H);
-	light.addColorStop(0, 'rgba(255,255,255,1)');
-	light.addColorStop(0.5, 'rgba(180,240,255,1)');
-	light.addColorStop(1, 'rgba(90,190,250,1)');
-	ctx.fillStyle = light;
-	ctx.shadowBlur = 12;
-	ctx.shadowColor = 'rgba(160,230,255,1)';
-	opening();
-	ctx.fill();
-	ctx.shadowBlur = 0;
-	ctx.strokeStyle = OUTLINE;
-	ctx.lineWidth = 5;
-	opening();
-	ctx.stroke();
-
-	// 4. arrow up through the door
-	ctx.strokeStyle = 'rgba(20,70,150,1)';
-	ctx.lineWidth = 16;
-	arrow();
-	ctx.stroke();
-
-	sparkle(ctx, W + 4, -H + 4, 3, 'rgba(200,240,255,1)');
+		ctx.moveTo(i * 3, -20);
+		ctx.lineTo(i * 12, 44);
+		ctx.stroke();
+	}
+	ctx.restore();
 
 	ctx.restore();
 }
@@ -83,7 +73,7 @@ function exitMotion(time: number): CollectibleMotion {
 		scale: 1 + Math.sin(time * 2.2) * 0.04,
 		rotation: 0,
 		alpha: 1,
-		bloomAlpha: [0.45 + Math.sin(time * 3) * 0.1, 0.25 + Math.sin(time * 2) * 0.05]
+		bloomAlpha: [0.2 + Math.sin(time * 3) * 0.05, 0.1 + Math.sin(time * 2) * 0.03]
 	};
 }
 

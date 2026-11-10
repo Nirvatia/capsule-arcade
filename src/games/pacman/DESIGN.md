@@ -225,6 +225,14 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - One style for all of them: a clear silhouette with a wide dark outline, gradient fill,
   a gloss and a glint (`render/common/itemPaint`); the mock-ups' looks are not kept.
 - A boss level ends by the player's choice: the heart (+1 life) or the exit.
+- **The hell's weapons and pickups (in the game)**: BFG (a steel cannon with a green lens),
+  barrel (acid green, a flame mark, a lit fuse), berserk (a black iron gauntlet with bone spikes
+  and burning cracks, the hero's own berserk look), medkit (white with a red cross), each with a
+  wide dark outline, a light top and a gloss. The acid greens part from the red flesh, the iron
+  matches the berserk armor; red would sink. The exit is an arch of bone on a bone step with pale
+  light pouring out in rays, the only cold thing in the flesh. The heart stays the mint heart
+  with a plus. The BFG orb is a pale green-white plasma with a green halo; the berserk's claws
+  are orange.
 - **Blinky and the imps (in the game)**: the arcade ghost silhouette, cel-shaded like the
   heroes (hard tone bands, a thick ink line, a rim light), bone horns, ink brows over yellow eyes.
   Phase 1 a red overseer with a stitched belly; phase 2 charred and cracked by lava, longer
@@ -258,7 +266,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 | Hell world, weapons                                             | look decided: the flesh hell (§12); to be redone in part II, step 1                     |
 | Arcade                                                          | final (keeps its own pixel HUD)                                                         |
 | HUD and screens                                                 | final; to be replaced (part III)                                                        |
-| Fruit, heart, exit                                              | final (inside the tile, calm glow)                                                      |
+| Fruit, heart                                                    | final (inside the tile, calm glow)                                                      |
+| Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                    |
 | Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                          |
 | Pac-Man                                                         | final; armor in the hell (part II, 1.1)                                                 |
 | Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; armor in the hell (part II, 1.1)      |
