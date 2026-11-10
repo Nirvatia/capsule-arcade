@@ -196,7 +196,7 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
       hazard (it hurts now). Ideas to try: a pale or white-hot core with a dark outline, a hue
       shift for live hazards, hatching or a moving edge for telegraphs, a floor tint under the whole
       threatened area. Test in grayscale too. A comparison page with every attack at once.
-   3. **Lower the heartbeat's maximum brightness.** The pulse (`fleshLive.heartbeat`: the wounds in
+   3. ~~**Lower the heartbeat's maximum brightness.**~~ Done (see Done, "second round, 3"). The pulse (`fleshLive.heartbeat`: the wounds in
       the walls, the lair's heart, the rifts' light, the cysts, `drawCord` at night) peaks too hot.
       Lower the peak, keep the 2.5 s rhythm; it is mostly a few constants.
    4. **Blinky and the imps get lost** (the owner does not yet know what to do): they are red on a
@@ -694,3 +694,12 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   frozen mock-up pages in `prototypes/pacman/art/` keep their own armor code. Checked:
   `npm run check`, `npm test` (280), ESLint and Prettier on the changed files. Not checked:
   the BFG charge in a running fight (the painter's code is unchanged).
+- The hell's second round of polish, 3: the heartbeat's peak (ninth chat). One constant,
+  `PEAK` (0.4) in `render/doom/fleshLive.ts`, scales the beat before every light that follows it
+  (the wounds and the cord, the lair's heart, the rifts' light, the cysts, the veins' blood); the
+  rhythm (2.5 s, a strong beat and a weak one) and the resting glow are unchanged. Measured in the
+  `hell` prototype with a fake clock over one beat (mean luminance of the region, peak against the
+  old one): the lair 81.5 -> 67.7 (rest 60), the whole maze 51.9 -> 49.2; the pulse still shows
+  (lair peak/rest 1.36 -> 1.13). If it is too flat, raise `PEAK`; at 0.6 the lair peaked at 76.3.
+  Checked: `hell` prototype without console errors. The night's pulse (`MoodStyle.beat` in
+  `DoomWorld`) also reads `heartbeat` and is not scaled; `cord` has it at 0.1.
