@@ -197,7 +197,9 @@ New art and effects start as a page built from the game's own sources:
 `node prototypes/pacman/build.mjs <name>` into `prototypes/pacman/<name>.html`. The built
 pages are not stored in git (`.gitignore`); the owner looks at prototypes in the chat, as
 screenshots or an artifact Claude builds from the page, never by opening the files. The
-approved prototype already is the game code. Existing: `hell`, `arcade`,
+approved prototype already is the game code. `prototypes/pacman/art/hell-flesh-scene.html` is
+not a built prototype but the source of the accepted hell scene (a standalone page, open it as a
+file), the reference for the hell's art pass. Existing: `hell`, `arcade`,
 `hud`, `death` (the death black hole: the real `LevelDecay` on the real worlds, a slider over the 4 s),
 `collectibles` (with each item's reach from its tile centre and a tile grid),
 `mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),

@@ -225,19 +225,27 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - One style for all of them: a clear silhouette with a wide dark outline, gradient fill,
   a gloss and a glint (`render/common/itemPaint`); the mock-ups' looks are not kept.
 - A boss level ends by the player's choice: the heart (+1 life) or the exit.
+- **The hell's look (decided, not in the game yet)**: the flesh hell. One flesh for the whole
+  world, no void and nothing hanging in the air; the maze's walls are flat muscle ridges with a
+  dark outline and an inner light and shade edge, never given height or a face, so the
+  corridors keep their full width; the corridor floor is the same flesh as the outside, a
+  little darker. Ribs half buried, veins, cysts and pools of blood around; a slow heartbeat
+  light; few, bold details on a surface, nothing hanging; a calm background. The teleport is a
+  vertical rift of torn flesh around a seam of light. The heroes and the boss are redone to
+  read on it (`ROADMAP.md`, part II, step 1).
 
 ### Art status
 
-| Element                                                         | State                                                                                             |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Seasons (world, food, weather, night), season turn, death decay | final; death is a black hole (part I, 6.2); the seams between worlds are not done (6.3)           |
-| Hell world, Blinky lord of hell, imps, weapons                  | final; phase-3 lighting and corrupted tiles to rework (part II, 1.1–1.2)                          |
-| Arcade                                                          | final (keeps its own pixel HUD)                                                                   |
-| HUD and screens                                                 | final; to be replaced (part III)                                                                  |
-| Fruit, heart, exit                                              | final (inside the tile, calm glow)                                                                |
-| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                                    |
-| Pac-Man                                                         | final: the owner's "Shonen" mock-up in code (the hell still uses the old look until part II, 1.4) |
-| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code                                                  |
-| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                                                     |
-| Echo clone                                                      | to redo (part I, 5.3)                                                                             |
-| Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                                         |
+| Element                                                         | State                                                                                   |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Seasons (world, food, weather, night), season turn, death decay | final; death is a black hole (part I, 6.2); the seams between worlds are not done (6.3) |
+| Hell world, Blinky lord of hell, imps, weapons                  | look decided: the flesh hell (§12); everything to be redone in part II, step 1          |
+| Arcade                                                          | final (keeps its own pixel HUD)                                                         |
+| HUD and screens                                                 | final; to be replaced (part III)                                                        |
+| Fruit, heart, exit                                              | final (inside the tile, calm glow)                                                      |
+| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                          |
+| Pac-Man                                                         | final on the season levels; to be redone for the hell (part II, step 1, heroes)         |
+| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code                                        |
+| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                                           |
+| Echo clone                                                      | to redo (part I, 5.3)                                                                   |
+| Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                               |

@@ -6,7 +6,7 @@ why: the git history of `feat/pacman` (every stage ends in a commit that says wh
 ## Working agreement
 
 One step per chat. A new chat starts with "read `src/games/pacman/ROADMAP.md`, part I,
-step 2" (or "part II, step 1.3"). Claude reads the parts of `DESIGN.md` and
+step 2" (or "part II, step 1, hero"). Claude reads the parts of `DESIGN.md` and
 `ARCHITECTURE.md` the step needs, analyses the code, proposes a plan, waits for approval,
 works, updates the three documents (this plan; the design and the architecture where they
 changed) and pushes to `feat/pacman`. New art and new effects start as a prototype the
@@ -50,7 +50,7 @@ for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the eff
    "Pac-Man · Shonen" and "Ms. Pac-Man · Maho-shoujo" (the Design canvas
    `3D55jqVpyq2Y5iTD5BWh3w`, anime direction), are `render/actors/hero/*`, in the game
    through `HeroView` and checked in the `hero` prototype. The hell keeps `PlayerView` for
-   Pac-Man until part II, step 1.4 (berserk, BFG).
+   Pac-Man until part II, step 1 (heroes in the hell).
 
 3. **Mechanics and balance** (Sonnet; Opus for the hypnosis design).
    1. ~~**Echo clone mechanic**~~ Done (see Done, "Part I, 3.1").
@@ -70,7 +70,7 @@ for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the eff
       the most used actions first; a control for the maze cycle (force a maze, show the
       cycle).
    3. _(Postponed: the owner is still working out how to generate the music.)_ **Music track support**: a looped file (ogg/mp3 from `static/`) per world, under the
-      same volume. The seasons' music is optional; the hell's track is part II, step 1.
+      same volume. The seasons' music is optional; the hell's track is part II, step 1.8.
 
 5. **Season art, in code** (one subject per chat; prototype first).
    1. ~~**Energizers vs fruit**~~ Done (see Done, "Part I, 5.1"): a seasonal object per season,
@@ -108,7 +108,7 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
       (`decayTimeline`).
    2. ~~**The look**~~ Done (see Done, "Part I, 6.2"): drain and rebirth, the collapse is a
       black hole (the owner's pick from a chat mock-up). In every world's death.
-   3. **Postponed to the hell's art pass (part II, step 1):** the next frame. The pass still samples one scene, so the rebirth shows the
+   3. **Postponed to the hell's art pass (part II, step 1, the port):** the next frame. The pass still samples one scene, so the rebirth shows the
       same level again: right for a death, not for the hell's lost fight (it still ends in the
       fade to the next level) or a boss → season seam. For those the pass needs the next
       level as a second texture, like `SeasonTurn`; boss levels of part II then take it by
@@ -118,21 +118,52 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
 
 ## Part II. Boss levels
 
-1. **The hell: finish and polish first** (Opus). One boss level, done properly before any
-   other exists.
-   1. **Lighting, phase 3**: in the ash storm the lights that follow Pac-Man flicker like
-      a strobe and do not help visibility (`render/doom/DoomLightmap.ts`, the night pass in
-      `DoomWorld`); make them calm and useful.
-   2. **Corrupted tiles**: the purple tiles (`DoomCombatView.drawCorruption`) read well
-      but clash with the hell's look; restyle them in the hell's palette, as readable.
-   3. **The hell's maze**: finish `grid_doom` (a row short today), move the hell onto it
-      and retire the `classic01` fallback for the hell. The arena code (`DoomArena`,
-      `DoomTargeting`) sizes itself by the maze; check it on 27 rows.
-   4. **The heroes in the hell**: the hell's player view (berserk, BFG) in the new heroes'
-      look, for both heroes (Ms. Pac-Man's own berserk and BFG-charge art); retire
-      `PlayerView`.
-   5. **The hell's music track** (the owner brings it: generated or a free licence).
-   6. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
+1. **The hell: the art pass, then the polish** (Opus for the design of a look, Sonnet for
+   the steps). One boss level, done properly before any other exists. Today the hell is the
+   meadow recoloured (a meadow's pond and road, grey stone, cute round actors): nothing in
+   it belongs together. The owner chose the look from three chat mock-ups (a forged, a
+   flesh and a cult hell): **the flesh hell**, with muscle walls.
+   - **The accepted scene** (background and maze, no actors): the artifact
+     `https://claude.ai/artifact/PxgBdvaWVsb7mXwsMLEgMq`, its source kept in
+     `prototypes/pacman/art/hell-flesh-scene.html` (a standalone page: open it as a file). It
+     is the frozen base: every later mock-up is a layer on it, in one chat artifact, and the
+     owner approves it there before any port. The maze in it is the hell's current one
+     (`config/mazes/doom.ts`, 25×26).
+   - **Rules of the look** (the owner's, from the rounds): the world is one flesh with no void
+     and nothing hanging in the air (the corridor floor is the same flesh as the outside, a
+     little darker); the walls are flat muscle ridges with a dark outline, an inner light and
+     shade edge and a ragged flesh band at their foot, **no height, no face, no extrusion**,
+     so the corridors keep their full width; no bright bone or anything that jumps forward;
+     details are few and bold and sit on a surface (no drips hanging off the walls); a slow
+     heartbeat (about 2.5 s) and a calm background, not many fast animations; the teleport is
+     a vertical rift of torn flesh around a seam of light (a round opening was rejected: it
+     reads as an orifice).
+   - **Known fix for the port:** the lair's veins and the walls' fibres are drawn tile by tile
+     in the mock-up, so the lines break at the tile edges. In the game's bake draw the lair as
+     one region in common coordinates and the wall fibres from one flow field, clipped to the
+     mask (the ground outside already does).
+   - **The steps**, each a mock-up on the frozen scene (buttons per state, a slow mode, "was /
+     now" where it helps), approved by the owner, then ported:
+     1. **Both heroes in the hell, redesigned** so that they read on this flesh and in the
+        maze (the owner's decision: the current looks go); the berserk and the BFG-charge
+        looks, Ms. Pac-Man's own; then retire `PlayerView`. The riskiest step, so first.
+     2. **Blinky, lord of hell**, in three phases (shape, colour, eyes, the change of look),
+        and the imps.
+     3. **Weapons and pickups**: BFG, barrel, berserk, medkit; the heart and the exit.
+     4. **The attacks, one family at a time**, each with its telegraph and its effect, built
+        from the real numbers (`logic/doom/DoomBalance`, `DoomAttackPlanner`): dash, rift,
+        seals, pull, cross, void trail, split, eruption, corruption, blink, brood.
+     5. **Weather and light**: the ash storm and the night (today's lights that follow Pac-Man
+        flicker like a strobe, `render/doom/DoomLightmap.ts`), the corrupted tiles in the
+        hell's palette (`DoomCombatView.drawCorruption`).
+     6. **The hell's maze**: `grid_doom` is a row short; decide 25×26 or 27 rows and move the
+        hell onto it (the arena code, `DoomArena` and `DoomTargeting`, sizes itself by the maze).
+     7. **The port**, in this order: the bake (floor, walls, decor, with the seam fix above),
+        the actors, the effects, the light; the world's death seams too (part I, 6.3: the
+        next frame as a second texture). Logic stays untouched; checked in the `hell`
+        prototype and in play.
+     8. **The hell's music track** (the owner brings it: generated or a free licence).
+     9. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
 2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it
    is the only boss. The selection arrives with the second boss: a `BossCatalog` (id,
    world, maze, renderer, design page), a seeded pick per boss level (no immediate repeat),
@@ -188,7 +219,7 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
 
 - Headless Chromium without a GPU runs the hell night at ~20 FPS; JS cost is ~2 ms per
   frame, the rest is software rasterisation. Check on real hardware.
-- `Hero.ts` and `PlayerView.ts` are still large (see part I, step 2 and part II, step 1.4).
+- `Hero.ts` and `PlayerView.ts` are still large (see part I, step 2 and part II, step 1, heroes).
 
 ## Done
 
@@ -242,7 +273,7 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
 - v3 2.1 (seventh chat): every 5th level is the hell for both heroes
   (`LevelLoader.worldOf`; the dev Hell button no longer switches to Pac-Man). Ms. Pac-Man
   plays it as her own hero (`HeroView`), berserk as her powered look; her death, the abyss
-  and the level after work as Pac-Man's. Her own berserk / BFG-charge art: part II, step 1.4.
+  and the level after work as Pac-Man's. Her own berserk / BFG-charge art: part II, step 1 (heroes).
 - v3 2.2 (seventh chat): the fruit follows the arcade orders per hero
   (`fruitForLevel(level, profile)`; her
   random fruit from level 8 is fixed per level so the HUD row and the board agree). Test:
@@ -441,3 +472,7 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   the arms, `ice` the stars, `deep` / `mid` the void). Tests: `decay.test.ts`; prototype
   `death` (the real `LevelDecay` on the real season worlds). Not checked in play: the hero's
   death over the hole, the hell's and Ms. Pac-Man's deaths, a low-end GPU.
+- The hell's look (part II, step 1): three chat mock-ups of the scene (a forged, a flesh and a
+  cult hell) and several rounds on the flesh one; the owner accepted the flesh hell with muscle
+  walls. The scene's source is `prototypes/pacman/art/hell-flesh-scene.html`; the rules of
+  the look and the steps that follow are in part II, step 1. Nothing is in the game yet.
