@@ -14,6 +14,65 @@ export interface DoomLightSource {
 const WALL_BOUNCE = 0.7;
 
 /**
+ * Path distance, in tiles, from a point to every open tile within `reach` (infinity beyond).
+ * It starts from the point's exact position, not from its tile: the first step is the distance
+ * along the grid to the neighbouring tile's centre, then one tile per step (the same measure all
+ * the way, so a side branch does not jump when the point changes tile). It changes smoothly as the
+ * point moves, so a light does not jump when its carrier crosses into the next tile. `queue`
+ * (rows * cols + 1) and `queued` (rows * cols) are scratch space.
+ */
+export function pathDistances(
+	open: Uint8Array,
+	cols: number,
+	rows: number,
+	px: number,
+	py: number,
+	reach: number,
+	dist: Float32Array,
+	queue: Int32Array,
+	queued: Uint8Array
+): void {
+	dist.fill(Number.POSITIVE_INFINITY);
+	queued.fill(0);
+	const sx = Math.floor(px);
+	const sy = Math.floor(py);
+	if (sx < 0 || sy < 0 || sx >= cols || sy >= rows || !open[sy * cols + sx]) {
+		return;
+	}
+	const start = sy * cols + sx;
+	dist[start] = Math.abs(px - (sx + 0.5)) + Math.abs(py - (sy + 0.5));
+	let head = 0;
+	let tail = 0;
+	queue[tail++] = start;
+	queued[start] = 1;
+	while (head !== tail) {
+		const i = queue[head];
+		head = (head + 1) % queue.length;
+		queued[i] = 0;
+		const x = i % cols;
+		const d = dist[i];
+		const neighbours = [x > 0 ? i - 1 : -1, x < cols - 1 ? i + 1 : -1, i - cols, i + cols];
+		for (const j of neighbours) {
+			if (j < 0 || j >= cols * rows || !open[j]) {
+				continue;
+			}
+			const jx = j % cols;
+			const jy = (j - jx) / cols;
+			const nd = i === start ? Math.abs(jx + 0.5 - px) + Math.abs(jy + 0.5 - py) : d + 1;
+			if (nd >= reach || nd >= dist[j]) {
+				continue;
+			}
+			dist[j] = nd;
+			if (!queued[j]) {
+				queued[j] = 1;
+				queue[tail] = j;
+				tail = (tail + 1) % queue.length;
+			}
+		}
+	}
+}
+
+/**
  * One pixel per tile. Light travels along corridors (path distance, not straight line), so
  * it fills the corridor you stand in, leaks round corners and never shines through walls.
  * Wall tiles take a share of the light of the floor next to them so their faces glow.
@@ -24,8 +83,9 @@ export class DoomLightmap {
 	private readonly cols: number;
 	private readonly open: Uint8Array;
 	private readonly rgb: Float32Array;
-	private readonly dist: Int16Array;
+	private readonly dist: Float32Array;
 	private readonly queue: Int32Array;
+	private readonly queued: Uint8Array;
 	private readonly canvas: HTMLCanvasElement;
 	private readonly image: ImageData;
 
@@ -41,8 +101,10 @@ export class DoomLightmap {
 			}
 		}
 		this.rgb = new Float32Array(n * 3);
-		this.dist = new Int16Array(n);
-		this.queue = new Int32Array(n);
+		this.dist = new Float32Array(n);
+		// a circular worklist: a tile may be reached again by a shorter way
+		this.queue = new Int32Array(n + 1);
+		this.queued = new Uint8Array(n);
 		this.canvas = document.createElement('canvas');
 		this.canvas.width = this.cols;
 		this.canvas.height = this.rows;
@@ -54,7 +116,7 @@ export class DoomLightmap {
 	}
 
 	compute(sources: readonly DoomLightSource[]): HTMLCanvasElement {
-		const { cols, rows, open, rgb, dist, queue } = this;
+		const { cols, rows, open, rgb, dist, queue, queued } = this;
 		rgb.fill(0);
 		for (const source of sources) {
 			const sx = Math.floor(source.x);
@@ -63,36 +125,18 @@ export class DoomLightmap {
 				continue;
 			}
 			const [tr, tg, tb] = hexChannels(source.tint);
-			const reach = Math.ceil(source.r);
-			dist.fill(-1);
-			let head = 0;
-			let tail = 0;
-			const start = sy * cols + sx;
-			dist[start] = 0;
-			queue[tail++] = start;
-			while (head < tail) {
-				const i = queue[head++];
+			pathDistances(open, cols, rows, source.x, source.y, source.r, dist, queue, queued);
+			for (let i = 0; i < cols * rows; i += 1) {
 				const d = dist[i];
-				const x = i % cols;
-				const y = (i - x) / cols;
-				// sub-tile offset keeps a moving light smooth between tiles
-				const ex = Math.hypot(x + 0.5 - source.x, y + 0.5 - source.y);
+				if (d >= source.r) {
+					continue;
+				}
 				// a bright plateau near the source, then a linear fade to the end of the reach
-				const k = Math.max(0, 1 - Math.max(d, ex) / source.r);
+				const k = Math.max(0, 1 - d / source.r);
 				const f = Math.min(1, k * 1.8) * source.a;
 				rgb[i * 3] += (tr / 255) * f;
 				rgb[i * 3 + 1] += (tg / 255) * f;
 				rgb[i * 3 + 2] += (tb / 255) * f;
-				if (d >= reach) {
-					continue;
-				}
-				const neighbours = [x > 0 ? i - 1 : -1, x < cols - 1 ? i + 1 : -1, i - cols, i + cols];
-				for (const j of neighbours) {
-					if (j >= 0 && j < cols * rows && open[j] && dist[j] < 0) {
-						dist[j] = d + 1;
-						queue[tail++] = j;
-					}
-				}
 			}
 		}
 		const data = this.image.data;

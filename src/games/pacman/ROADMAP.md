@@ -630,3 +630,13 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
      (`DoomArena.clearCorruption`).
      The night and the ash storm are to be redesigned for the new maze (the owner's request): the
      softening of step 1.5 was a stopgap, not the redesign.
+- The player's light in the night jumped from tile to tile (the owner: it lights the space "at a
+  low frame rate", not following the player). Cause: `DoomLightmap` measured the light's reach in
+  whole steps along the corridor from the source's tile, so the light changed in a step whenever the
+  player entered a new tile. Now `pathDistances` measures from the source's exact position (the
+  distance along the grid to the neighbouring tile's centre, then one tile per step), so every tile's
+  brightness changes continuously as the source moves. A first version measured the first step in a
+  straight line and jumped at side branches; the test (`DoomLightmap.test.ts`, a source dragged along a
+  corridor in steps of 0.02 tile: no tile's distance may change by more than the step) found it, and
+  fails on the old tile-based scheme. The light map is still one pixel per tile, smoothed on
+  upscaling. Not checked in motion by eye.
