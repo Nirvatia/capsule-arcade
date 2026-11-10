@@ -155,6 +155,8 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
      4. **The attacks, one family at a time**, each with its telegraph and its effect, built
         from the real numbers (`logic/doom/DoomBalance`, `DoomAttackPlanner`): dash, rift,
         seals, pull, cross, void trail, split, eruption, corruption, blink, brood.
+        Family 1 (dash and rift) is done (see Done, "Part II, 1.4, family 1"); next: seals and
+        pull.
      5. **Weather and light**: the ash storm and the night (today's lights that follow Pac-Man
         flicker like a strobe, `render/doom/DoomLightmap.ts`), the corrupted tiles in the
         hell's palette (`DoomCombatView.drawCorruption`).
@@ -570,3 +572,20 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   at the walls' foot and the style parameter are gone. Checked: `npm run check`, `npm test` (210),
   ESLint and Prettier, the `hell` prototype fight view. Not checked: Blinky (red) on the red cord
   in a real fight, the night and the ash storm over the cord, a GPU.
+- Part II, 1.4, family 1, the dash and the rift (eighth chat): the owner approved the mock-up
+  (`prototypes/pacman/art/hell-flesh-attacks.html`, artifact `1Q8vziT7GyqAkkrTcT72nB`); the
+  dash's floor lane stayed out (it would add information the game does not give today).
+  The rift (`render/doom/doomRift.ts`, wired into `DoomCombatView`): the marking is a jagged
+  seam whose red lips pull apart from the middle as the blast nears, the burst is a dark gap with
+  a white-hot core along the whole corridor, and a scar smoulders and fades for 2.2 s after it
+  (`RiftScars` follows the hazards). The dash (`render/doom/doomDashFx.ts`, wired into
+  `HellBlinkyView`): the crouch (he rocks back and squashes, embers fly off his heels), the burst
+  with four outlined afterimages (the body drawn again, fainter, `ghost`), speed lines, a dust ring
+  at both ends and a skid mark on the floor that fades over 1.6 s, then the recovery: eyes half
+  shut, a glow under him and steam, the sign that he takes ×1.25 damage. The logic and the numbers
+  are untouched. Checked: `npm run check`, `npm test` (210), ESLint and Prettier, the `hell`
+  prototype with both attacks forced (frame series, a close-up of each): the marking, the scar, the
+  crouch, the skid, the speed lines and the steam show and the console is clean. Not checked: the
+  burst's own 0.35 s frame in the game, phases 2 and 3 (the same code, other skins), the effects
+  with the night or the ash storm over them, the split attack (it shares the dash's wedge look and
+  so its crouch and afterimages).

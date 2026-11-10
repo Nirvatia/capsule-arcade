@@ -7,8 +7,11 @@ import { VOID_FLICKER } from '../../logic/doom/DoomBalance';
 import { DOOM_TILE } from './DoomBake';
 import { barrelSprite, glowTexture, pickupSprite } from './DoomSprites';
 import { drawImp } from './HellImpView';
+import { drawRiftBeam, drawRiftWarning, RiftScars } from './doomRift';
 
 export class DoomCombatView {
+	private readonly scars = new RiftScars();
+
 	/** Everything lying on the floor, drawn under the boss. */
 	drawGround(
 		ctx: CanvasRenderingContext2D,
@@ -21,6 +24,8 @@ export class DoomCombatView {
 		this.drawCorruption(ctx, boss, grid, layout, time);
 		this.drawVoidCells(ctx, boss, layout, time);
 		this.drawPendingSeals(ctx, boss, layout, time);
+		this.scars.track(boss.hazardList, time);
+		this.scars.draw(ctx, layout, time);
 		this.drawHazardWarnings(ctx, boss, layout, time);
 		this.drawCrossTelegraph(ctx, boss, grid, layout);
 		this.drawPickups(ctx, doom, layout, time);
@@ -180,6 +185,10 @@ export class DoomCombatView {
 			const soon = Math.min(1, Math.max(0.3, 1.3 - hazard.warn));
 			const flicker = (p > 0.75 && hazard.warn < 0.4 ? 0.5 + 0.5 * Math.sin(time * 50) : 1) * soon;
 			const rift = hazard.kind === 'rift';
+			if (rift) {
+				drawRiftWarning(ctx, hazard, layout, p, flicker, time);
+				continue;
+			}
 			for (const tile of hazard.tiles) {
 				const px = layout.offsetX + tile.x * s;
 				const py = layout.offsetY + tile.y * s;
@@ -231,34 +240,7 @@ export class DoomCombatView {
 			}
 			const k = Math.max(0, hazard.active / hazard.activeTotal);
 			if (hazard.kind === 'rift' && hazard.tiles.length > 0) {
-				const a = hazard.tiles[0];
-				const b = hazard.tiles[hazard.tiles.length - 1];
-				const x0 = layout.offsetX + (a.x + 0.5) * s;
-				const y0 = layout.offsetY + (a.y + 0.5) * s;
-				const x1 = layout.offsetX + (b.x + 0.5) * s;
-				const y1 = layout.offsetY + (b.y + 0.5) * s;
-				ctx.lineCap = 'round';
-				ctx.globalCompositeOperation = 'lighter';
-				const passes: Array<[string, number]> = [
-					[`rgba(255,40,20,${0.55 * k})`, s * 1.1],
-					[`rgba(255,140,60,${0.8 * k})`, s * 0.55],
-					[`rgba(255,255,240,${k})`, s * 0.18]
-				];
-				for (const [color, width] of passes) {
-					ctx.strokeStyle = color;
-					ctx.lineWidth = width * (0.7 + 0.3 * Math.sin(time * 60));
-					ctx.beginPath();
-					ctx.moveTo(x0, y0);
-					ctx.lineTo(x1, y1);
-					ctx.stroke();
-				}
-				ctx.globalCompositeOperation = 'source-over';
-				ctx.strokeStyle = `rgba(0,0,0,${0.85 * k})`;
-				ctx.lineWidth = s * 0.08;
-				ctx.beginPath();
-				ctx.moveTo(x0, y0);
-				ctx.lineTo(x1, y1);
-				ctx.stroke();
+				drawRiftBeam(ctx, hazard, layout, k, time);
 				continue;
 			}
 			for (const tile of hazard.tiles) {

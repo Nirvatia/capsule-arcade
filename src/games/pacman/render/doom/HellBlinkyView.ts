@@ -13,6 +13,7 @@ import {
 	lightGlow,
 	noise
 } from './hellGhost';
+import { DashTrack, drawCrouchEmbers, drawSpeedLines, drawSteam } from './doomDashFx';
 
 /** Everything the view needs about one body (the boss or its phase-3 echo). */
 export interface BossSnapshot {
@@ -106,7 +107,16 @@ const ECHO_SKIN: Skin = {
  * grin glows. Dash: stretched along the heading with afterimages. Stunned: spiral eyes.
  */
 export class HellBlinkyView {
-	draw(ctx: CanvasRenderingContext2D, snap: BossSnapshot, layout: GridLayout, time: number): void {
+	private readonly dashTrack = new DashTrack();
+
+	/** `ghost`: one of the dash's afterimages (the body only, no effects, no floor marks). */
+	draw(
+		ctx: CanvasRenderingContext2D,
+		snap: BossSnapshot,
+		layout: GridLayout,
+		time: number,
+		ghost = false
+	): void {
 		if (snap.alpha <= 0.01) {
 			return;
 		}
@@ -117,6 +127,8 @@ export class HellBlinkyView {
 		const stunned = snap.state === 'STUNNED';
 		const transition = snap.state === 'TRANSITION';
 		const dash = snap.state === 'ACTIVE' && snap.shape === 'wedge';
+		const dashTele = snap.state === 'TELEGRAPH' && snap.shape === 'wedge';
+		const recover = snap.state === 'RECOVER';
 		const casting = snap.state === 'ACTIVE' && snap.shape === 'cast';
 		const skin = snap.echo ? ECHO_SKIN : SKINS[phase - 1];
 		const t = time * (stunned ? 0.35 : 1);
@@ -124,6 +136,16 @@ export class HellBlinkyView {
 		const R = S * 0.5 * (0.3 + 0.7 * intro) * (1 + tele * 0.06);
 		let x = layout.offsetX + snap.x * S;
 		let y = layout.offsetY + snap.y * S;
+		if (dashTele) {
+			// he crouches and rocks back before the dash
+			const back = S * 0.2 * Math.min(1, tele * 2);
+			x -= Math.cos(heading) * back;
+			y -= Math.sin(heading) * back;
+		}
+		if (!ghost) {
+			this.dashTrack.update(x, y, dash, recover, time);
+			this.dashTrack.drawFloor(ctx, S, heading, x, y, time);
+		}
 		const shiver = (transition ? 0.08 : 0) + (stunned ? 0.03 : 0) + tele * 0.04;
 		if (shiver > 0) {
 			x += Math.sin(time * 90) * R * shiver;
@@ -147,40 +169,48 @@ export class HellBlinkyView {
 		ctx.lineCap = 'round';
 
 		// a dark pool and a glow under it, kept inside the tile
-		const pool = ctx.createRadialGradient(x, y + R * 0.2, R * 0.2, x, y + R * 0.2, R);
-		pool.addColorStop(0, 'rgba(0,0,0,0.5)');
-		pool.addColorStop(1, 'rgba(0,0,0,0)');
-		ctx.fillStyle = pool;
-		ctx.fillRect(x - R, y - R * 0.8, R * 2, R * 2);
-		lightGlow(
-			ctx,
-			x,
-			y,
-			R * 1.05,
-			snap.echo ? '150,90,255' : '255,70,30',
-			0.14 + 0.08 * phase + tele * 0.3
-		);
+		if (!ghost) {
+			const pool = ctx.createRadialGradient(x, y + R * 0.2, R * 0.2, x, y + R * 0.2, R);
+			pool.addColorStop(0, 'rgba(0,0,0,0.5)');
+			pool.addColorStop(1, 'rgba(0,0,0,0)');
+			ctx.fillStyle = pool;
+			ctx.fillRect(x - R, y - R * 0.8, R * 2, R * 2);
+			lightGlow(
+				ctx,
+				x,
+				y,
+				R * 1.05,
+				snap.echo ? '150,90,255' : '255,70,30',
+				0.14 + 0.08 * phase + tele * 0.3
+			);
+		}
 
-		if (dash) {
-			// afterimages trail the dash
-			for (let k = 2; k >= 1; k -= 1) {
-				ctx.save();
-				ctx.globalAlpha *= 0.22 * (3 - k);
-				ghostPath(
+		if (dash && !ghost) {
+			// afterimages trail the dash: the whole body again, fainter the further back
+			for (let k = 4; k >= 1; k -= 1) {
+				const off = k * 0.42;
+				this.draw(
 					ctx,
-					x - Math.cos(heading) * R * 0.22 * k,
-					y - Math.sin(heading) * R * 0.22 * k,
-					shape,
-					t
+					{
+						...snap,
+						x: snap.x - Math.cos(heading) * off,
+						y: snap.y - Math.sin(heading) * off,
+						alpha: snap.alpha * (0.34 - k * 0.065)
+					},
+					layout,
+					time,
+					true
 				);
-				ctx.fillStyle = skin.mid;
-				ctx.fill();
-				ctx.restore();
 			}
 		}
 
 		ctx.save();
 		ctx.translate(x, y);
+		if (dashTele) {
+			ctx.rotate(heading);
+			ctx.scale(1 - 0.1 * tele, 1 + 0.07 * tele);
+			ctx.rotate(-heading);
+		}
 		if (dash) {
 			// stretched along the heading, squeezed across it
 			ctx.rotate(heading);
@@ -210,11 +240,20 @@ export class HellBlinkyView {
 			pulse
 		);
 		this.drawBody(ctx, shape, skin, phase, t, pulse, snap);
-		this.drawFace(ctx, shape, skin, phase, t, tele, casting, stunned, transition, snap);
+		this.drawFace(ctx, shape, skin, phase, t, tele, casting, stunned, transition, recover, snap);
 		ctx.restore();
 
 		if (phase >= 3 && !snap.echo) {
 			this.drawFlames(ctx, x, y, shape, skin, t);
+		}
+		if (!ghost) {
+			if (dashTele) {
+				drawCrouchEmbers(ctx, S, heading, x, y, tele, time);
+			} else if (dash) {
+				drawSpeedLines(ctx, S, heading, x, y);
+			} else if (recover) {
+				drawSteam(ctx, S, x, y, time);
+			}
 		}
 		ctx.restore();
 	}
@@ -364,6 +403,7 @@ export class HellBlinkyView {
 		casting: boolean,
 		stunned: boolean,
 		transition: boolean,
+		recover: boolean,
 		snap: BossSnapshot
 	): void {
 		const { w, domeY } = shape;
@@ -375,7 +415,7 @@ export class HellBlinkyView {
 			sclera: hot ? '#ffffff' : skin.eye,
 			glow: phase >= 2 || snap.echo || hot ? skin.fire : null
 		};
-		drawEyes(ctx, 0, faceY, w, look, eyes, transition ? 0 : 1, stunned, t);
+		drawEyes(ctx, 0, faceY, w, look, eyes, transition ? 0 : recover ? 0.55 : 1, stunned, t);
 
 		// mouth: a scowl in phase 1, a fanged grin later; it opens and glows on a wind-up
 		const my = faceY + w * 0.42;
