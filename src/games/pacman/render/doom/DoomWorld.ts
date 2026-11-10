@@ -1,11 +1,13 @@
-// Live part of the CLAUDE_GRID_DOOM_v3 prototype: camera, animated world objects and the
-// screen-space post effects (mist, ash dust, embers storm, hellish night with lights).
+// The hell's world on screen: the camera, the flesh scene (baked once in `fleshBake`, moved in
+// `fleshLive`) and the screen-space post effects (mist, ash dust, embers storm, hellish night
+// with lights).
 import type { GridMatrix } from '../../config/gridConfig';
 import { isTeleportToken } from '../../config/gridConfig';
 import type { GridLayout } from '../maze/GridView';
 import { DoomLightmap } from './DoomLightmap';
-import { bakeDoomWorld, DOOM_BG, DOOM_TILE, PENTAGRAM_EX } from './DoomBake';
-import { streamY, tunnelRowOf, worldDecor } from '../common/worldDecor';
+import { DOOM_BG, DOOM_TILE } from './DoomBake';
+import { bakeFlesh, MX, MY, SCENE_TILE } from './fleshBake';
+import { FleshLive } from './fleshLive';
 import {
 	fogTexture,
 	glowTexture,
@@ -16,7 +18,8 @@ import {
 } from './DoomSprites';
 
 const T = DOOM_TILE;
-const REBAKE_DELAY_MS = 160;
+/** World units per unit of the flesh scene (which is drawn at 32 to a tile). */
+const SCENE_SCALE = T / SCENE_TILE;
 const SHADE_SCALE = 0.25;
 const FOG_LIFE = 0.85;
 
@@ -26,14 +29,6 @@ export interface DoomLight {
 	readonly r: number;
 	readonly tint: number;
 	readonly a: number;
-}
-
-interface StaticLight extends DoomLight {
-	readonly flicker: boolean;
-}
-
-interface WorldObject {
-	draw(ctx: CanvasRenderingContext2D, t: number): void;
 }
 
 interface Mist {
@@ -90,9 +85,6 @@ export class DoomWorld {
 	private readonly S: GridMatrix;
 	private readonly R: number;
 	private readonly C: number;
-	private readonly objects: WorldObject[] = [];
-	/** Lamps and cabins outside the maze: radial glows as in the prototype. */
-	private readonly lights: StaticLight[] = [];
 	/** Portals, pickups and the lair: sources of the maze light map. */
 	private readonly mazeLights: DoomLight[] = [];
 	private readonly lightmap: DoomLightmap;
@@ -103,7 +95,6 @@ export class DoomWorld {
 		age: number;
 		sparks: Array<{ a: number; v: number; s: number; up: number }>;
 	}> = [];
-	private readonly smoke: Array<{ cx: number; cy: number; u: number; ph: number }> = [];
 	private readonly mist: Mist[];
 	private readonly dust: Dust[];
 	private flakes: Flake[] = [];
@@ -120,11 +111,8 @@ export class DoomWorld {
 	private stormT = 0;
 	private nightV = 0;
 	private nightT = 0;
-	private bg: HTMLCanvasElement | null = null;
-	private bgX = 0;
-	private bgY = 0;
-	private bgRS = 1;
-	private rebakeAt = 0;
+	/** The flesh scene: baked the first time the world is drawn (it takes a moment). */
+	private scene: FleshLive | null = null;
 
 	constructor(S: GridMatrix, pickupTiles: ReadonlyArray<{ x: number; y: number }>) {
 		this.S = S;
@@ -136,13 +124,9 @@ export class DoomWorld {
 			window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 		this.motion = reduce ? 0.2 : 1;
 
-		const ctr = (r: number, c: number) => ({ x: (c + 0.5) * T, y: (r + 0.5) * T });
-		let portalIndex = 0;
 		this.S.forEach((row, r) =>
 			row.forEach((tt, c) => {
 				if (isTeleportToken(tt)) {
-					const p = ctr(r, c);
-					this.objects.push(this.portal(p.x, p.y, portalIndex++, r + c));
 					this.mazeLights.push({ x: c + 0.5, y: r + 0.5, r: 2.5, tint: 0xff3a2a, a: 0.8 });
 				}
 			})
@@ -158,30 +142,6 @@ export class DoomWorld {
 			a: 0.55
 		});
 		this.lightmap = new DoomLightmap(S);
-		for (let i = 0; i < 22; i++) {
-			const x = (-18 + (i * (this.C + 36)) / 22) * T + Math.random() * T * 2;
-			const y = streamY(this.R, x) + (Math.random() - 0.5) * 10;
-			const ph = Math.random() * 6;
-			this.objects.push({
-				draw(ctx, t) {
-					const a = Math.pow(Math.max(0, Math.sin(t * 2 + ph)), 3) * 0.8;
-					const s = (64 * 0.3) / 3;
-					img(ctx, glowTexture(0xff8a2a), x - s / 2, y - s / 2, s, s, a, true);
-				}
-			});
-		}
-		for (const o of worldDecor(this.R, this.C, PENTAGRAM_EX, tunnelRowOf(this.S))) {
-			if (o.k === 'lamp') {
-				this.lights.push({ x: o.x, y: o.y, r: 4 * T, tint: 0xffd890, a: 0.85, flicker: true });
-			} else if (o.k === 'cabin') {
-				const w = o.w ?? 0;
-				const h = o.h ?? 0;
-				this.lights.push({ x: o.x, y: o.y, r: 5 * T, tint: 0xffc77a, a: 0.5, flicker: false });
-				for (let i = 0; i < 5; i++) {
-					this.smoke.push({ cx: o.x + w * 0.25, cy: o.y - h * 0.22, u: i / 5, ph: i });
-				}
-			}
-		}
 		this.mist = [0, 1, 2, 3].map((i) => ({
 			x: 0,
 			y: 0,
@@ -238,9 +198,6 @@ export class DoomWorld {
 		this.dust.forEach((p) => (p.sz = 64 * this.sc * (0.035 + Math.random() * 0.05)));
 		if (first) {
 			this.flakes = this.makeFlakes();
-			this.rebake();
-		} else {
-			this.rebakeAt = performance.now() + REBAKE_DELAY_MS;
 		}
 	}
 
@@ -285,9 +242,6 @@ export class DoomWorld {
 				p.px = Math.random();
 			}
 		}
-		for (const q of this.smoke) {
-			q.u = (q.u + 0.0025 * d) % 1;
-		}
 		for (let i = this.fogs.length - 1; i >= 0; i -= 1) {
 			this.fogs[i].age += ms / 1000;
 			if (this.fogs[i].age >= FOG_LIFE) {
@@ -296,38 +250,25 @@ export class DoomWorld {
 		}
 	}
 
-	/** Background, maze and animated world objects. Leaves the context untransformed. */
+	/** The flesh scene: ground, maze, walls and what moves in them. Leaves the context untransformed. */
 	drawWorld(ctx: CanvasRenderingContext2D): void {
-		if (this.rebakeAt > 0 && performance.now() >= this.rebakeAt) {
-			this.rebake();
-		}
+		this.scene ??= new FleshLive(bakeFlesh(this.S));
 		ctx.save();
 		ctx.globalAlpha = 1;
 		ctx.globalCompositeOperation = 'source-over';
 		ctx.fillStyle = DOOM_BG;
 		ctx.fillRect(0, 0, this.vw, this.vh);
 		ctx.translate(this.wx, this.wy);
-		ctx.scale(this.sc, this.sc);
-		if (this.bg) {
-			img(ctx, this.bg, this.bgX, this.bgY, this.bg.width / this.bgRS, this.bg.height / this.bgRS);
-		}
-		for (const o of this.objects) {
-			o.draw(ctx, this.t);
-		}
-		for (const q of this.smoke) {
-			const x = q.cx + q.u * 26 + Math.sin(this.t * 1.5 + q.ph) * 4;
-			const y = q.cy - q.u * 34;
-			const s = 8 + q.u * 22;
-			img(
-				ctx,
-				glowTexture(0xf2f6fa),
-				x - s / 2,
-				y - s / 2,
-				s,
-				s,
-				(1 - q.u) * 0.5 * Math.min(1, q.u * 8)
-			);
-		}
+		// the scene is drawn at 32 to a tile with the maze's corner at (MX, MY)
+		ctx.scale(this.sc * SCENE_SCALE, this.sc * SCENE_SCALE);
+		ctx.translate(-MX, -MY);
+		const k = this.sc * SCENE_SCALE;
+		this.scene.draw(ctx, this.t, {
+			x: -this.wx / k + MX,
+			y: -this.wy / k + MY,
+			w: this.vw / k,
+			h: this.vh / k
+		});
 		ctx.restore();
 	}
 
@@ -362,19 +303,10 @@ export class DoomWorld {
 		const na = (0.82 + 0.06 * Math.sin(t * 3.2)) * this.nightV;
 		if (na > 0) {
 			const light = this.lightmap.compute([...this.mazeLights, ...actorLights]);
-			const shade = this.shadeLayer(light, t);
+			const shade = this.shadeLayer(light);
 			ctx.globalCompositeOperation = 'multiply';
 			ctx.globalAlpha = na;
 			ctx.drawImage(shade, 0, 0, vw, vh);
-			// the prototype's glows around lamps and cabins outside the maze
-			ctx.save();
-			ctx.translate(this.wx, this.wy);
-			ctx.scale(this.sc, this.sc);
-			for (const g of this.lights) {
-				const a = this.nightV * g.a * (g.flicker ? 0.88 + 0.12 * Math.sin(t * 7 + g.x) : 1);
-				img(ctx, glowTexture(g.tint), g.x - g.r, g.y - g.r, 2 * g.r, 2 * g.r, a, true);
-			}
-			ctx.restore();
 		}
 		ctx.restore();
 	}
@@ -407,7 +339,7 @@ export class DoomWorld {
 	 * Night tint with holes where light falls, multiplied over the world. Rendered at a
 	 * quarter of the screen resolution: upscaling it is the blur, and it stays cheap.
 	 */
-	private shadeLayer(light: HTMLCanvasElement, t: number): HTMLCanvasElement {
+	private shadeLayer(light: HTMLCanvasElement): HTMLCanvasElement {
 		const q = SHADE_SCALE;
 		const w = Math.max(1, Math.ceil(this.vw * q));
 		const h = Math.max(1, Math.ceil(this.vh * q));
@@ -430,68 +362,8 @@ export class DoomWorld {
 		g.scale(this.sc, this.sc);
 		g.imageSmoothingEnabled = true;
 		g.drawImage(light, 0, 0, this.C * T, this.R * T);
-		for (const l of this.lights) {
-			const a = l.a * (l.flicker ? 0.88 + 0.12 * Math.sin(t * 7 + l.x) : 1);
-			g.globalAlpha = Math.min(1, a);
-			g.drawImage(glowTexture(0xffffff), l.x - l.r, l.y - l.r, 2 * l.r, 2 * l.r);
-		}
 		g.globalAlpha = 1;
 		return this.shade;
-	}
-
-	/** Live teleporter: the engraving smoulders and pulses, embers rise off the plate. */
-	private portal(x: number, y: number, i: number, ph: number): WorldObject {
-		return {
-			draw(ctx, t) {
-				ctx.save();
-				ctx.translate(x, y);
-				const pulse = 0.5 + 0.5 * Math.sin(t * 2.2 + ph);
-				const gs = 26;
-				img(ctx, glowTexture(0xff3a1a), -gs / 2, -gs / 2, gs, gs, 0.35 + 0.35 * pulse, true);
-				ctx.globalCompositeOperation = 'lighter';
-				ctx.globalAlpha = 0.55 + 0.45 * pulse;
-				ctx.lineJoin = 'round';
-				const r = 6.6;
-				for (const [color, width] of [
-					['rgba(255,60,20,.55)', 2.6],
-					['#ffb070', 0.8]
-				] as const) {
-					ctx.strokeStyle = color;
-					ctx.lineWidth = width;
-					ctx.beginPath();
-					ctx.arc(0, 0, r, 0, Math.PI * 2);
-					for (let k = 0; k <= 5; k += 1) {
-						const a = -Math.PI / 2 + (k * 4 * Math.PI) / 5 + Math.sin(t * 0.5 + i) * 0.02;
-						const ex = Math.cos(a) * r * 0.93;
-						const ey = Math.sin(a) * r * 0.93;
-						if (k) {
-							ctx.lineTo(ex, ey);
-						} else {
-							ctx.moveTo(ex, ey);
-						}
-					}
-					ctx.stroke();
-				}
-				// embers drifting up from the plate
-				for (let k = 0; k < 9; k += 1) {
-					const u = (t * (0.35 + (k % 3) * 0.08) + k / 9 + i * 0.37) % 1;
-					const ex = Math.sin(k * 12.7 + i) * 6 + Math.sin(t * 2 + k) * 1.5;
-					const ey = 5 - u * 22;
-					const sz = 3.2 * (1 - u);
-					img(
-						ctx,
-						glowTexture(k % 2 ? 0xff8a2a : 0xffd27a),
-						ex - sz,
-						ey - sz,
-						sz * 2,
-						sz * 2,
-						(1 - u) * 0.9,
-						true
-					);
-				}
-				ctx.restore();
-			}
-		};
 	}
 
 	/** Doom's teleport fog, in tile-center coordinates. */
@@ -567,22 +439,5 @@ export class DoomWorld {
 				im: st ? streakTexture() : glowTexture(tints[i % 3])
 			};
 		});
-	}
-
-	private rebake(): void {
-		this.rebakeAt = 0;
-		const m = 2 * T;
-		const bx = -this.wx / this.sc - m;
-		const by = -this.wy / this.sc - m;
-		const bw = this.vw / this.sc + 2 * m;
-		const bh = this.vh / this.sc + 2 * m;
-		let RS = this.sc * this.dpr;
-		while (RS * RS * bw * bh > 1.3e7) {
-			RS *= 0.92;
-		}
-		this.bg = bakeDoomWorld(this.S, bx, by, bw, bh, RS);
-		this.bgX = bx;
-		this.bgY = by;
-		this.bgRS = RS;
 	}
 }

@@ -158,12 +158,14 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
      5. **Weather and light**: the ash storm and the night (today's lights that follow Pac-Man
         flicker like a strobe, `render/doom/DoomLightmap.ts`), the corrupted tiles in the
         hell's palette (`DoomCombatView.drawCorruption`).
-     6. **The hell's maze**: `grid_doom` is a row short; decide 25×26 or 27 rows and move the
-        hell onto it (the arena code, `DoomArena` and `DoomTargeting`, sizes itself by the maze).
+     6. ~~**The hell's maze**~~ Decided: the hell stays on `config/mazes/doom.ts` (25×26), the
+        scene's own maze; `grid_doom.ts` (a row short) is an unused draft.
      7. **The port**, in this order: the bake (floor, walls, decor, with the seam fix above),
         the actors, the effects, the light; the world's death seams too (part I, 6.3: the
         next frame as a second texture). Logic stays untouched; checked in the `hell`
-        prototype and in play.
+        prototype and in play. The bake is done (see Done, "Part II, 1.7a"); the actors and
+        effects went in with their steps (1.1 to 1.3); the attack effects (1.4) and the light
+        and weather (1.5) and the death seams are open.
      8. **The hell's music track** (the owner brings it: generated or a free licence).
      9. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
 2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it
@@ -221,6 +223,10 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
 
 - Headless Chromium without a GPU runs the hell night at ~20 FPS; JS cost is ~2 ms per
   frame, the rest is software rasterisation. Check on real hardware.
+- The flesh hell's first frame blocks for about a second while `bakeFlesh` paints the world
+  (measured in headless Chromium without a GPU; one long task, once per level); its frames
+  cost more than the old hell's (33 against 45 fps in the same headless run). Check on real
+  hardware; the bake can be spread over frames if it shows.
 - The `collectibles` prototype throws "undefined is not iterable" in a `forEach` while it draws the item row (also on the commit before part II, 1.3) and so never reaches the exit; find it when the prototype is next touched.
 - `Hero.ts` is still large (~1100 lines); the sprite-free heroes are one class family, cut what no longer serves.
 
@@ -527,3 +533,21 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   prototype (the gallery and the pickups on the map), the new exit on a throwaway page at three
   sizes. Not checked: the pickups, the barrel and the effects in a running fight; the dimmed and
   respawning states; the orb and claws in motion; everything over the flesh hell (step 1.7).
+- Part II, 1.7a, the flesh hell's world (eighth chat; the owner pointed out that the actors were
+  in the game but the maze was not): the accepted scene is ported. `render/doom/fleshNoise.ts`
+  (seeded noise, canvas masks, fibres, veins), `fleshBake.ts` (the ground with fibres, pores,
+  veins, ribs and pools of blood on a 3000 x 1700 frame so any screen stays inside flesh; the
+  maze layer with corridors, blood, rifts, muscle walls with a ragged flesh band, skulls and the
+  lair gate; cysts) and `fleshLive.ts` (the heartbeat, about 2.5 s, driving the glow of the
+  wounds, the lair's heart, the rifts' light and the cysts; blood running along the veins; the
+  pools' ripples). The scene is painted in its own units (32 to a tile) and `DoomWorld` draws it
+  scaled by 24/32, baked once, the first time the world is drawn. The old stone, meadow, pond,
+  cabins, lamps, pentagrams and the lava stream are gone (`doomBakeDecor`, `doomBakeWalls` and
+  the old `DoomBake` painting deleted; `DoomBake.ts` keeps the two constants). The seam fix of
+  the scene's note is in: the walls' fibres follow one flow field and the lair's veins run over
+  its whole floor, so no line breaks at a tile's edge. The mist, ash storm, night and the
+  corridor light map are unchanged (step 1.5). Checked: `npm run check`, `npm test` (210),
+  ESLint and Prettier on the changed files, the `hell` prototype fight view (screenshots, close
+  up), bake time and frame rate (see Known issues). Not checked: the death transition from the
+  hell and the season turn into it, the night and the ash storm over the new world, a narrow or
+  ultra-wide screen, a GPU.

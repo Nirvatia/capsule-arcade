@@ -248,7 +248,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   her glowing bow); never red, it sinks into the flesh. BFG charge: the body swells and the
   mouth gapes, three seam lights on the nape fill up, the visor and the throat go green; the
   release is a recoil and a flash. The rolling ball at the rifts is the heroes' own.
-- **The hell's look (decided, the scene is not in the game yet)**: the flesh hell. One flesh for the whole
+- **The hell's look (in the game)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze's walls are flat muscle ridges with a
   dark outline and an inner light and shade edge, never given height or a face, so the
   corridors keep their full width; the corridor floor is the same flesh as the outside, a
@@ -263,7 +263,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | Seasons (world, food, weather, night), season turn, death decay | final; death is a black hole (part I, 6.2); the seams between worlds are not done (6.3) |
 | Blinky lord of hell, imps                                       | final: cel-shaded like the heroes (part II, 1.2)                                        |
-| Hell world, weapons                                             | look decided: the flesh hell (§12); to be redone in part II, step 1                     |
+| Hell world (the flesh hell)                                     | final: the accepted scene is in the game (part II, 1.7a); weather and light follow      |
+| Hell weapons                                                    | final (part II, 1.3)                                                                    |
 | Arcade                                                          | final (keeps its own pixel HUD)                                                         |
 | HUD and screens                                                 | final; to be replaced (part III)                                                        |
 | Fruit, heart                                                    | final (inside the tile, calm glow)                                                      |

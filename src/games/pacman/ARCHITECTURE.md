@@ -43,9 +43,9 @@ render/
                    walls in meadowBakeDecor / meadowBakeWalls) + MeadowWorld (live layer) +
                    MeadowLevelRenderer, driven by a MeadowTheme per season
                    (seasons/<season>/<season>Theme.ts)
-  doom/            DoomLevelRenderer, baked world (DoomBake, same layer shape as the
-                   meadow), light map, Blinky lord of hell, imps,
-                   combat and weapon FX
+  doom/            DoomLevelRenderer, the flesh hell: DoomWorld (camera, mood) over a scene
+                   baked once (fleshBake, with fleshNoise) and moved by the heartbeat
+                   (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX
   arcade/          the secret level: pixel sprites, maze bake, view, CRT pass, intermission,
                    ArcadeLevelRenderer
   fx/              LevelFx (gameplay effects on the season levels: it plays and ages the
