@@ -65,7 +65,7 @@ type TilePainter = (
 	isWall: (c: number, r: number) => boolean
 ) => void;
 
-export type WallStyleId = 'muscle' | 'bone' | 'crust' | 'scar';
+export type WallStyleId = 'muscle' | 'cut' | 'cord' | 'iron';
 
 /**
  * What a wall material is: its colours, how dark the corridor floor and the background are
@@ -78,6 +78,15 @@ export interface WallStyle {
 	readonly grad: readonly [string, string, string];
 	readonly rim: string;
 	readonly shade: string;
+	/** Rim light offset in px: the thicker, the more a lip stands out of the island. */
+	readonly lip: number;
+	/** 'gradient': the colours above; 'ground': the flesh of the world, darkened by `topDarken`. */
+	readonly top: 'gradient' | 'ground';
+	readonly topDarken: number;
+	/** A glowing cord (rgb) round every island, or null. */
+	readonly cord: string | null;
+	/** Opacity of the ragged band of flesh creeping over the foot of a wall (0: none). */
+	readonly band: number;
 	/** Darkening of the corridor floor over the bare flesh (the scene's value is .24). */
 	readonly floorShade: number;
 	/** Opacity of the shadow the walls cast on the floor. */
@@ -615,12 +624,19 @@ export function bakeFlesh(S: GridMatrix, styleId: WallStyleId = 'muscle'): Flesh
 		}
 		const top = layer();
 		const tp = top.x;
-		const gt0 = tp.createLinearGradient(MX, MY, MX + cols * T, MY + rows * T);
-		gt0.addColorStop(0, st.grad[0]);
-		gt0.addColorStop(0.5, st.grad[1]);
-		gt0.addColorStop(1, st.grad[2]);
-		tp.fillStyle = gt0;
-		tp.fillRect(LX, LY, LW, LH);
+		if (st.top === 'ground') {
+			// the island is the flesh of the world, a little darker: not a foreign material
+			tp.drawImage(baseLocal, LX, LY);
+			tp.fillStyle = `rgba(18,4,8,${st.topDarken})`;
+			tp.fillRect(LX, LY, LW, LH);
+		} else {
+			const gt0 = tp.createLinearGradient(MX, MY, MX + cols * T, MY + rows * T);
+			gt0.addColorStop(0, st.grad[0]);
+			gt0.addColorStop(0.5, st.grad[1]);
+			gt0.addColorStop(1, st.grad[2]);
+			tp.fillStyle = gt0;
+			tp.fillRect(LX, LY, LW, LH);
+		}
 		for (let rr = 0; rr < rows; rr += 1) {
 			for (let c = 0; c < cols; c += 1) {
 				if (!isWall(c, rr)) {
@@ -673,8 +689,22 @@ export function bakeFlesh(S: GridMatrix, styleId: WallStyleId = 'muscle'): Flesh
 			paintSkull(tp, ex, tx(p[0]) + T / 2, ty(p[1]) + T / 2);
 		}
 		w.drawImage(clipTo(top.cv, wallM), LX, LY);
-		w.drawImage(clipTo(tint(edgeOf(wallM, 2, 2), st.rim), wallM), LX, LY);
+		w.drawImage(clipTo(tint(edgeOf(wallM, st.lip, st.lip), st.rim), wallM), LX, LY);
 		w.drawImage(clipTo(tint(edgeOf(wallM, -2, -2), st.shade), wallM), LX, LY);
+		if (st.cord) {
+			// a cord round every island: a dark body with a thin hot line that pulses with the heart
+			const ring = (r2: number): HTMLCanvasElement => {
+				const c2 = makeCanvas(LW, LH);
+				const x2 = context(c2);
+				for (let k = 0; k < 8; k += 1) {
+					const an = (k / 8) * 6.2832;
+					x2.drawImage(edgeOf(wallM, Math.cos(an) * r2, Math.sin(an) * r2), 0, 0);
+				}
+				return c2;
+			};
+			w.drawImage(clipTo(tint(ring(4), 'rgba(58,10,14,.95)'), wallM), LX, LY);
+			ex.drawImage(clipTo(tint(ring(1.8), `rgba(${st.cord},.9)`), wallM), LX, LY);
+		}
 		paintGate(S, w, ex, cols, rows);
 	}
 	const glowCv = blur(emis.cv, 3, true);
@@ -798,7 +828,7 @@ export function bakeFlesh(S: GridMatrix, styleId: WallStyleId = 'muscle'): Flesh
 		m.drawImage(wallShadow, LX, LY);
 		m.globalAlpha = 1;
 		m.drawImage(walls.cv, LX, LY);
-		m.globalAlpha = 0.93;
+		m.globalAlpha = st.band;
 		m.drawImage(band, LX, LY);
 		m.globalAlpha = 0.8;
 		m.drawImage(bw.cv, LX, LY);
@@ -887,204 +917,66 @@ function sidePockets(S: GridMatrix, cols: number, rows: number): Array<readonly 
 	return out;
 }
 
-/** A short random-walk crack from (x, y), `n` segments; strokes it with the current style. */
-function crack(
-	x: CanvasRenderingContext2D,
-	rw: Rng,
-	px: number,
-	py: number,
-	n: number,
-	step: number
-): void {
-	let a = rw() * 6.28;
-	x.beginPath();
-	x.moveTo(px, py);
-	for (let i = 0; i < n; i += 1) {
-		a += (rw() - 0.5) * 1.3;
-		px += Math.cos(a) * (step * 0.6 + rw() * step);
-		py += Math.sin(a) * (step * 0.6 + rw() * step);
-		x.lineTo(px, py);
-		if (i === 1 && rw() < 0.6) {
-			const bx = px + Math.cos(a + 1) * step;
-			const by = py + Math.sin(a + 1) * step;
-			x.moveTo(px, py);
-			x.lineTo(bx, by);
-			x.moveTo(px, py);
-		}
-	}
-	x.stroke();
-}
-
-/** Porous bone: fine grain along the wall, pores, stains, hairline cracks, now and then a cavity. */
-const paintBone: TilePainter = (tp, _ex, X3, Y3, _c, _rr, rw, dir) => {
+/** A quiet tile: faint fibres on the flow of the ground and a few pores, nothing that shouts. */
+const paintQuiet: TilePainter = (tp, _ex, X3, Y3, _c, _rr, rw) => {
 	const T = SCENE_TILE;
 	tp.save();
 	tp.lineCap = 'round';
-	fibres(
-		tp,
-		34,
-		rw,
-		X3 - 3,
-		Y3 - 3,
-		T + 6,
-		T + 6,
-		'rgba(70,50,38,.26)',
-		'rgba(245,230,205,.2)',
-		dir
-	);
-	for (let i = 0; i < 9; i += 1) {
-		const px = X3 + 2 + rw() * (T - 4);
-		const py = Y3 + 2 + rw() * (T - 4);
-		const rx = 0.9 + rw() * 1.6;
-		tp.fillStyle = 'rgba(38,22,16,.5)';
+	fibres(tp, 16, rw, X3 - 4, Y3 - 4, T + 8, T + 8, 'rgba(14,3,8,.16)', 'rgba(190,90,80,.1)');
+	for (let i = 0; i < 4; i += 1) {
+		const px = X3 + 3 + rw() * (T - 6);
+		const py = Y3 + 3 + rw() * (T - 6);
+		tp.fillStyle = 'rgba(0,0,0,.22)';
 		tp.beginPath();
-		tp.ellipse(px, py, rx, rx * 0.7, dir, 0, 7);
+		tp.arc(px + 0.8, py + 1, 1.8 + rw() * 2, 0, 7);
 		tp.fill();
-		tp.fillStyle = 'rgba(255,240,215,.3)';
+		tp.fillStyle = 'rgba(210,120,110,.12)';
 		tp.beginPath();
-		tp.ellipse(px - 0.6, py - 0.7, rx * 0.5, rx * 0.3, dir, 0, 7);
+		tp.arc(px - 0.6, py - 0.8, 1.4 + rw() * 1.6, 0, 7);
+		tp.fill();
+	}
+	tp.restore();
+};
+
+/** Gunmetal: fine brushed grain along the wall, rivets, a rust or blood stain now and then. */
+const paintIron: TilePainter = (tp, _ex, X3, Y3, _c, _rr, rw, dir) => {
+	const T = SCENE_TILE;
+	tp.save();
+	tp.lineCap = 'round';
+	for (let i = 0; i < 26; i += 1) {
+		const px = X3 + rw() * T;
+		const py = Y3 + rw() * T;
+		const len = 6 + rw() * 14;
+		tp.strokeStyle = rw() < 0.5 ? 'rgba(10,10,16,.22)' : 'rgba(200,205,225,.14)';
+		tp.lineWidth = 0.7;
+		tp.beginPath();
+		tp.moveTo(px, py);
+		tp.lineTo(px + Math.cos(dir) * len, py + Math.sin(dir) * len);
+		tp.stroke();
+	}
+	if (rw() < 0.45) {
+		const px = X3 + 5 + rw() * (T - 10);
+		const py = Y3 + 5 + rw() * (T - 10);
+		tp.fillStyle = 'rgba(8,8,12,.55)';
+		tp.beginPath();
+		tp.arc(px + 0.6, py + 0.8, 2.2, 0, 7);
+		tp.fill();
+		tp.fillStyle = '#7d808c';
+		tp.beginPath();
+		tp.arc(px, py, 2, 0, 7);
+		tp.fill();
+		tp.fillStyle = 'rgba(255,255,255,.55)';
+		tp.beginPath();
+		tp.arc(px - 0.6, py - 0.7, 0.8, 0, 7);
 		tp.fill();
 	}
 	if (rw() < 0.3) {
-		tp.fillStyle = 'rgba(95,52,32,.16)';
+		tp.fillStyle = rw() < 0.5 ? 'rgba(120,52,30,.32)' : 'rgba(96,12,16,.4)';
 		tp.beginPath();
-		tp.ellipse(X3 + rw() * T, Y3 + rw() * T, 6 + rw() * 9, 3 + rw() * 5, dir + rw(), 0, 7);
-		tp.fill();
-	}
-	if (rw() < 0.28) {
-		tp.strokeStyle = 'rgba(40,24,16,.55)';
-		tp.lineWidth = 1;
-		crack(tp, rw, X3 + 4 + rw() * (T - 8), Y3 + 4 + rw() * (T - 8), 4, 5);
-	}
-	if (rw() < 0.07) {
-		const px = X3 + 8 + rw() * (T - 16);
-		const py = Y3 + 8 + rw() * (T - 16);
-		tp.fillStyle = 'rgba(200,175,145,.6)';
-		tp.beginPath();
-		tp.ellipse(px, py, 5.4, 4.2, dir, 0, 7);
-		tp.fill();
-		tp.fillStyle = '#2a1812';
-		tp.beginPath();
-		tp.ellipse(px, py + 0.6, 4, 3, dir, 0, 7);
+		tp.ellipse(X3 + rw() * T, Y3 + rw() * T, 4 + rw() * 8, 2 + rw() * 4, dir + (rw() - 0.5), 0, 7);
 		tp.fill();
 	}
 	tp.restore();
-};
-
-/** A burnt crust: plates split by dark cracks, speckles, and the odd seam of embers. */
-const paintCrust: TilePainter = (tp, ex, X3, Y3, _c, _rr, rw, dir) => {
-	const T = SCENE_TILE;
-	tp.save();
-	tp.lineCap = 'round';
-	tp.lineJoin = 'round';
-	fibres(tp, 18, rw, X3 - 3, Y3 - 3, T + 6, T + 6, 'rgba(10,3,3,.3)', 'rgba(150,90,70,.18)', dir);
-	for (let i = 0; i < 16; i += 1) {
-		tp.fillStyle = rw() < 0.5 ? 'rgba(130,80,64,.4)' : 'rgba(8,2,2,.4)';
-		tp.fillRect(X3 + rw() * T, Y3 + rw() * T, 1 + rw() * 1.6, 1 + rw() * 1.4);
-	}
-	for (let k = 0; k < 2; k += 1) {
-		const sx = X3 + 4 + rw() * (T - 8);
-		const sy = Y3 + 4 + rw() * (T - 8);
-		const seed = rw();
-		tp.strokeStyle = 'rgba(150,100,85,.28)';
-		tp.lineWidth = 3.2;
-		crack(tp, rng(Math.round(seed * 1e6)), sx + 0.8, sy + 1, 5, 5);
-		tp.strokeStyle = 'rgba(8,2,2,.85)';
-		tp.lineWidth = 2.2;
-		crack(tp, rng(Math.round(seed * 1e6)), sx, sy, 5, 5);
-	}
-	tp.restore();
-	if (rw() < 0.1) {
-		const sx = X3 + 4 + rw() * (T - 8);
-		const sy = Y3 + 4 + rw() * (T - 8);
-		const seed = Math.round(rw() * 1e6);
-		tp.strokeStyle = '#14040a';
-		tp.lineWidth = 4;
-		tp.lineCap = 'round';
-		crack(tp, rng(seed), sx, sy, 4, 5);
-		ex.lineCap = 'round';
-		ex.strokeStyle = PAL.glow;
-		ex.lineWidth = 2;
-		crack(ex, rng(seed), sx, sy, 4, 5);
-		ex.strokeStyle = PAL.glowHot;
-		ex.lineWidth = 0.8;
-		crack(ex, rng(seed), sx, sy, 4, 5);
-	}
-};
-
-/** Scar tissue: wavy ridges along the wall with a light edge, nodules, now and then stitches. */
-const paintScar: TilePainter = (tp, _ex, X3, Y3, c, rr, rw, dir, horiz2, isWall) => {
-	const T = SCENE_TILE;
-	tp.save();
-	tp.lineCap = 'round';
-	for (let k = 0; k < 4; k += 1) {
-		const off = 4 + k * 7 + (rw() - 0.5) * 2;
-		const ph = rw() * 6;
-		const wave = (dx: number, dy: number): void => {
-			tp.beginPath();
-			for (let i = 0; i <= 8; i += 1) {
-				const u = i / 8;
-				const along = -2 + u * (T + 4);
-				const wob = Math.sin(u * 5 + ph) * 1.4;
-				const px = horiz2 ? X3 + along : X3 + off + wob;
-				const py = horiz2 ? Y3 + off + wob : Y3 + along;
-				if (i) {
-					tp.lineTo(px + dx, py + dy);
-				} else {
-					tp.moveTo(px + dx, py + dy);
-				}
-			}
-			tp.stroke();
-		};
-		tp.strokeStyle = 'rgba(40,12,12,.5)';
-		tp.lineWidth = 1.5;
-		wave(0, 0);
-		tp.strokeStyle = 'rgba(255,215,195,.34)';
-		tp.lineWidth = 1;
-		wave(horiz2 ? 0 : -1.3, horiz2 ? -1.3 : 0);
-	}
-	for (let i = 0; i < 5; i += 1) {
-		const px = X3 + 3 + rw() * (T - 6);
-		const py = Y3 + 3 + rw() * (T - 6);
-		const r = 1.6 + rw() * 1.4;
-		tp.fillStyle = 'rgba(40,12,12,.35)';
-		tp.beginPath();
-		tp.arc(px + 0.7, py + 0.8, r, 0, 7);
-		tp.fill();
-		tp.fillStyle = 'rgba(255,215,195,.3)';
-		tp.beginPath();
-		tp.arc(px - 0.5, py - 0.6, r, 0, 7);
-		tp.fill();
-	}
-	tp.restore();
-	if (rw() < 0.12 && isWall(c, rr)) {
-		tp.strokeStyle = '#1a0606';
-		tp.lineWidth = 1.5;
-		tp.lineCap = 'round';
-		const mid = (horiz2 ? Y3 : X3) + 8 + rw() * (T - 16);
-		tp.beginPath();
-		if (horiz2) {
-			tp.moveTo(X3 + 4, mid);
-			tp.lineTo(X3 + T - 4, mid);
-		} else {
-			tp.moveTo(mid, Y3 + 4);
-			tp.lineTo(mid, Y3 + T - 4);
-		}
-		tp.stroke();
-		for (let s = 0; s < 4; s += 1) {
-			const q = 8 + s * 5;
-			tp.beginPath();
-			if (horiz2) {
-				tp.moveTo(X3 + q, mid - 4);
-				tp.lineTo(X3 + q + 1.2, mid + 4);
-			} else {
-				tp.moveTo(mid - 4, Y3 + q);
-				tp.lineTo(mid + 4, Y3 + q + 1.2);
-			}
-			tp.stroke();
-		}
-	}
-	void dir;
 };
 
 /** The wall materials. The scene's muscle is the reference; the others are candidates. */
@@ -1094,6 +986,11 @@ export const WALL_STYLES: Readonly<Record<WallStyleId, WallStyle>> = {
 		grad: ['#b65248', '#9a3f3d', '#7e2f31'],
 		rim: 'rgba(236,150,136,.55)',
 		shade: 'rgba(24,3,8,.6)',
+		lip: 2,
+		top: 'gradient',
+		topDarken: 0,
+		cord: null,
+		band: 0.93,
 		floorShade: 0.24,
 		ao: 0.2,
 		bgDim: 0,
@@ -1101,38 +998,53 @@ export const WALL_STYLES: Readonly<Record<WallStyleId, WallStyle>> = {
 		paint: (tp, ex, X3, Y3, c, rr, rw, dir, horiz2, isWall) =>
 			paintMuscle(tp, ex, X3, Y3, c, rr, rw, dir, horiz2, isWall)
 	},
-	bone: {
-		name: 'Пористая кость',
-		grad: ['#8c7660', '#7a6450', '#66523f'],
-		rim: 'rgba(235,215,185,.4)',
-		shade: 'rgba(26,12,8,.6)',
-		floorShade: 0.1,
-		ao: 0.38,
-		bgDim: 0.38,
-		mottle: 0.5,
-		paint: paintBone
+	cut: {
+		name: 'Разрез',
+		grad: ['#000', '#000', '#000'],
+		rim: 'rgba(255,170,150,.62)',
+		shade: 'rgba(14,2,5,.7)',
+		lip: 3,
+		top: 'ground',
+		topDarken: 0.06,
+		cord: null,
+		band: 0,
+		floorShade: 0.46,
+		ao: 0.6,
+		bgDim: 0.3,
+		mottle: 0.3,
+		paint: paintQuiet
 	},
-	crust: {
-		name: 'Обугленная корка',
-		grad: ['#5c3733', '#4a2b28', '#391f1d'],
-		rim: 'rgba(210,130,100,.4)',
-		shade: 'rgba(10,2,3,.6)',
-		floorShade: 0.06,
+	cord: {
+		name: 'Контур',
+		grad: ['#34161a', '#2c1215', '#220d10'],
+		rim: 'rgba(255,120,90,.3)',
+		shade: 'rgba(8,1,3,.7)',
+		lip: 2,
+		top: 'gradient',
+		topDarken: 0,
+		cord: '255,96,64',
+		band: 0,
+		floorShade: 0.3,
+		ao: 0.5,
+		bgDim: 0.3,
+		mottle: 0.35,
+		paint: paintQuiet
+	},
+	iron: {
+		name: 'Железо в плоти',
+		grad: ['#52505a', '#413f48', '#322f37'],
+		rim: 'rgba(190,200,225,.42)',
+		shade: 'rgba(8,8,14,.65)',
+		lip: 2,
+		top: 'gradient',
+		topDarken: 0,
+		cord: null,
+		band: 0.93,
+		floorShade: 0.16,
 		ao: 0.42,
-		bgDim: 0.42,
-		mottle: 0.6,
-		paint: paintCrust
-	},
-	scar: {
-		name: 'Рубцовая ткань',
-		grad: ['#82594d', '#6f4a40', '#5c3d35'],
-		rim: 'rgba(235,175,155,.4)',
-		shade: 'rgba(24,6,6,.55)',
-		floorShade: 0.12,
-		ao: 0.36,
-		bgDim: 0.38,
-		mottle: 0.5,
-		paint: paintScar
+		bgDim: 0.3,
+		mottle: 0.3,
+		paint: paintIron
 	}
 };
 

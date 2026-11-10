@@ -563,7 +563,13 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   the corridors do not look far away with the walls floating over them. `fleshBake` now takes a
   `WallStyle` (`WALL_STYLES`: colours, corridor floor tone, the shadow at the wall's foot, the
   background's dimming, large-scale mottling over an island, a tile painter) and `DoomWorld`
-  takes it as a parameter; the game still uses `muscle`. Candidates, to be seen in the `walls`
-  prototype (artifact `XsmmBxMm5ccepuDW1efQiL`): porous bone, a burnt crust, scar tissue. In the
-  first look bone and scar were still too pale against the background; the crust was the calmest
-  and a little dark. Nothing is chosen yet.
+  takes it as a parameter; the game still uses `muscle`. The owner then judged that a Pac-Man maze
+  is not meant to be drawn from living matter, and asked whether to go back to Doom's metal or
+  rethink the blood direction (the blood hell, the world, stays: the owner loves it). Answer:
+  keep the world, change what the maze is. Three directions, seen in the `walls` prototype
+  (artifact `XsmmBxMm5ccepuDW1efQiL`): `cut` (the islands are the world's own flesh, a little
+  darker; the maze is cut into it and read by a wet lip on every edge), `cord` (dark islands
+  with a glowing cord round each, as in the classic mazes) and `iron` (blackened gunmetal in the
+  flesh, the fallback). First look: `cord` reads best, `cut` is calm but its islands and floor are
+  too close in tone, `iron` is a separate cold world. The bone, crust and scar candidates were
+  dropped. Nothing is chosen yet.

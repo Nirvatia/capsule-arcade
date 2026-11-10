@@ -8,7 +8,7 @@ import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinky
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { armorPainter } from '../../../src/games/pacman/render/actors/hero/heroArmor';
 
-const ORDER: readonly WallStyleId[] = ['muscle', 'bone', 'crust', 'scar'];
+const ORDER: readonly WallStyleId[] = ['muscle', 'cut', 'cord', 'iron'];
 const q = new URLSearchParams(location.search);
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const grid = document.getElementById('grid') as HTMLElement;
