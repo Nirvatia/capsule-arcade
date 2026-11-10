@@ -640,3 +640,11 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   corridor in steps of 0.02 tile: no tile's distance may change by more than the step) found it, and
   fails on the old tile-based scheme. The light map is still one pixel per tile, smoothed on
   upscaling. Not checked in motion by eye.
+- The hell's night and storm redesign, candidates (eighth chat; the owner wanted a redesign for the
+  cord maze, not a softening): `DoomWorld` takes a `MoodStyle` (`MOOD_STYLES`: the darkness's strength
+  and colour, how much of the cord's own glow stays through it, a second light thrown ahead of the
+  player, how far the dark recedes on a heartbeat, the storm's tint) and `FleshLive.drawCord` draws
+  the cord's and the wounds' light again over the night, so what glows by itself is not darkened.
+  Three candidates in the `mood` prototype (artifact: see the chat): `cord` (the cord glows through
+  the dark and holds the maze; the game's default for now), `torch` (a denser dark, a light thrown
+  ahead along the heading), `pulse` (the dark recedes on every heartbeat). Nothing is chosen yet.

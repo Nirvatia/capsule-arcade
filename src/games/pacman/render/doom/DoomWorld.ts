@@ -7,7 +7,7 @@ import type { GridLayout } from '../maze/GridView';
 import { DoomLightmap } from './DoomLightmap';
 import { DOOM_BG, DOOM_TILE } from './DoomBake';
 import { bakeFlesh, MX, MY, SCENE_TILE } from './fleshBake';
-import { FleshLive } from './fleshLive';
+import { FleshLive, heartbeat } from './fleshLive';
 import {
 	fogTexture,
 	glowTexture,
@@ -22,6 +22,58 @@ const T = DOOM_TILE;
 const SCENE_SCALE = T / SCENE_TILE;
 const SHADE_SCALE = 0.25;
 const FOG_LIFE = 0.85;
+
+export type MoodStyleId = 'cord' | 'torch' | 'pulse';
+
+/** How the night and the ash storm look (the owner's redesign for the cord maze). */
+export interface MoodStyle {
+	readonly name: string;
+	/** Darkness at full night, 0..1, and its colour (it multiplies the world). */
+	readonly night: number;
+	readonly shade: string;
+	/** How much of the cord's own glow stays through the dark, 0..1. */
+	readonly cord: number;
+	/** How far ahead of the player a second light reaches, in tiles (0: none). */
+	readonly headlight: number;
+	/** How far the dark recedes on each heartbeat, 0..1. */
+	readonly beat: number;
+	/** The ash storm's tint and strength. */
+	readonly storm: string;
+	readonly stormAlpha: number;
+}
+
+export const MOOD_STYLES: Readonly<Record<MoodStyleId, MoodStyle>> = {
+	cord: {
+		name: 'Свет шнура',
+		night: 0.62,
+		shade: 'rgb(70,42,44)',
+		cord: 0.9,
+		headlight: 0,
+		beat: 0.1,
+		storm: 'rgb(120,44,24)',
+		stormAlpha: 0.12
+	},
+	torch: {
+		name: 'Факел',
+		night: 0.8,
+		shade: 'rgb(56,34,34)',
+		cord: 0.35,
+		headlight: 2.6,
+		beat: 0,
+		storm: 'rgb(120,44,24)',
+		stormAlpha: 0.1
+	},
+	pulse: {
+		name: 'Пульс',
+		night: 0.7,
+		shade: 'rgb(64,36,40)',
+		cord: 0.6,
+		headlight: 0,
+		beat: 0.45,
+		storm: 'rgb(130,40,24)',
+		stormAlpha: 0.14
+	}
+};
 
 export interface DoomLight {
 	readonly x: number;
@@ -113,6 +165,7 @@ export class DoomWorld {
 	private nightT = 0;
 	/** The flesh scene: baked the first time the world is drawn (it takes a moment). */
 	private scene: FleshLive | null = null;
+	private styleId: MoodStyleId = 'cord';
 
 	constructor(S: GridMatrix, pickupTiles: ReadonlyArray<{ x: number; y: number }>) {
 		this.S = S;
@@ -173,6 +226,14 @@ export class DoomWorld {
 	}
 
 	/** Ash storm and hellish night ease in and out like the prototype toggles. */
+	get moodStyle(): MoodStyle {
+		return MOOD_STYLES[this.styleId];
+	}
+
+	setMoodStyle(id: MoodStyleId): void {
+		this.styleId = id;
+	}
+
 	setMood(storm: boolean, night: boolean): void {
 		this.stormT = storm ? 1 : 0;
 		this.nightT = night ? 1 : 0;
@@ -295,18 +356,30 @@ export class DoomWorld {
 		img(ctx, washTexture(), 0, 0, vw, vh);
 		if (this.stormV > 0) {
 			ctx.globalCompositeOperation = 'source-over';
-			ctx.globalAlpha = 0.14 * this.stormV;
-			ctx.fillStyle = 'rgb(120,40,20)';
+			ctx.globalAlpha = this.moodStyle.stormAlpha * this.stormV;
+			ctx.fillStyle = this.moodStyle.storm;
 			ctx.fillRect(0, 0, vw, vh);
 		}
 		// darker than the prototype's red wash so the light map actually reads as light
-		const na = (0.6 + 0.03 * Math.sin(t * 1.6)) * this.nightV;
+		const st = this.moodStyle;
+		const beat = Math.min(1, heartbeat(t));
+		const na = st.night * (1 - st.beat * beat) * this.nightV;
 		if (na > 0) {
 			const light = this.lightmap.compute([...this.mazeLights, ...actorLights]);
 			const shade = this.shadeLayer(light);
 			ctx.globalCompositeOperation = 'multiply';
 			ctx.globalAlpha = na;
 			ctx.drawImage(shade, 0, 0, vw, vh);
+			if (this.scene && st.cord > 0) {
+				// what glows by itself is not darkened: the cord keeps the maze readable
+				ctx.globalCompositeOperation = 'source-over';
+				ctx.globalAlpha = 1;
+				ctx.translate(this.wx, this.wy);
+				const k = this.sc * SCENE_SCALE;
+				ctx.scale(k, k);
+				ctx.translate(-MX, -MY);
+				this.scene.drawCord(ctx, t, st.cord * this.nightV);
+			}
 		}
 		ctx.restore();
 	}
@@ -355,7 +428,7 @@ export class DoomWorld {
 		g.setTransform(q, 0, 0, q, 0, 0);
 		g.globalCompositeOperation = 'source-over';
 		g.globalAlpha = 1;
-		g.fillStyle = 'rgb(96,50,46)';
+		g.fillStyle = this.moodStyle.shade;
 		g.fillRect(0, 0, this.vw, this.vh);
 		g.globalCompositeOperation = 'destination-out';
 		g.translate(this.wx, this.wy);

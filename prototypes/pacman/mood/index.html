@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Плотский ад, ночь и буря</title>
+    <!-- Prototype: the hell's night and ash storm for the cord maze (part II, 1.5): the real world
+         on the real `grid_doom`, one world per candidate style, the hero walking a corridor to show
+         how the light follows him. `node prototypes/pacman/build.mjs mood`; open as a file. -->
+    <style>
+      :root{color-scheme:dark}
+      html,body{margin:0;background:#0d0709;color:#efe0d8;font:14px "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+      body{padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+      h1{margin:0 0 4px;font:700 22px "Arial Narrow",system-ui,sans-serif;letter-spacing:.03em;text-transform:uppercase}
+      p{margin:0 0 12px;color:#b09890;max-width:80ch}
+      .bar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+      button{font:700 14px "Arial Narrow",system-ui,sans-serif;letter-spacing:.03em;color:#efe0d8;background:#1a0e11;border:1px solid #402225;border-radius:6px;padding:7px 14px;cursor:pointer}
+      button[aria-pressed="true"]{background:#e0483c;color:#1a0504;border-color:#e0483c}
+      #grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+      figure{margin:0;position:relative;border:1px solid #402225;border-radius:8px;overflow:hidden;background:#000}
+      canvas{display:block;width:100%;aspect-ratio:1/1.05}
+      figcaption{position:absolute;left:8px;top:8px;padding:3px 9px;border-radius:5px;background:rgba(13,7,9,.78);font:700 13px "Arial Narrow",system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;pointer-events:none}
+      @media (max-width:900px){#grid{grid-template-columns:minmax(0,1fr)}}
+    </style>
+  </head>
+  <body>
+    <h1>Плотский ад: ночь и буря</h1>
+    <p>Три варианта на настоящей карте. Герой ходит по коридору туда и обратно, чтобы было видно, как за ним идёт свет. «Свет шнура»: шнур светится сквозь тьму и держит лабиринт. «Факел»: тьма гуще, свет вытянут вперёд по ходу героя. «Пульс»: тьма отступает с каждым ударом сердца.</p>
+    <div class="bar" id="bar">
+      <button type="button" data-m="2" aria-pressed="false">Фаза 2: буря</button>
+      <button type="button" data-m="3" aria-pressed="true">Фаза 3: буря и ночь</button>
+      <button type="button" data-m="n" aria-pressed="false">Только ночь</button>
+    </div>
+    <div id="grid"></div>
+    <script>
+/*SCRIPT*/
+    </script>
+  </body>
+</html>

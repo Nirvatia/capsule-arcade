@@ -39,6 +39,25 @@ export class FleshLive {
 	constructor(private readonly bake: FleshBake) {}
 
 	/**
+	 * Draws the wounds' and the cord's own light again, on top of the night: what glows by itself
+	 * is not darkened, so the maze stays readable in the dark. `k` 0..1 is how much of it stays.
+	 */
+	drawCord(ctx: CanvasRenderingContext2D, t: number, k: number): void {
+		if (k <= 0) {
+			return;
+		}
+		const b = this.bake;
+		const beat = heartbeat(t);
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		ctx.globalAlpha = k * (0.55 + 0.45 * Math.min(1, beat + 0.2));
+		ctx.drawImage(b.emis, b.local.x, b.local.y);
+		ctx.globalAlpha = k * (0.4 + 0.4 * Math.min(1, beat));
+		ctx.drawImage(b.glow, b.local.x, b.local.y);
+		ctx.restore();
+	}
+
+	/**
 	 * Draws the scene, in scene units. `view` is the part of the scene on screen: only that part
 	 * of the big ground is drawn.
 	 */

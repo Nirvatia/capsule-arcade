@@ -68,7 +68,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		ctx.save();
 		ctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
 		world.drawWorld(ctx);
-		world.drawMood(ctx, this.lights(level, state));
+		world.drawMood(ctx, this.lights(level, state, grid, world.moodStyle.headlight));
 
 		// on level clear only the world: the season turn flips it over, actors stay out
 		if (state !== 'level-clear') {
@@ -168,12 +168,32 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 	}
 
 	/** Light-map sources carried by the actors (tile-center coordinates, radius in tiles). */
-	private lights(level: LevelLoader, state: PacmanStateName): DoomLight[] {
+	private lights(
+		level: LevelLoader,
+		state: PacmanStateName,
+		grid: GridService,
+		ahead: number
+	): DoomLight[] {
 		const lights: DoomLight[] = [];
 		const player = level.player;
 		if (player && state !== 'death') {
 			const p = player.position;
 			lights.push({ x: p.x, y: p.y, r: 6.5, tint: 0xffe2b0, a: 1 });
+			if (ahead > 0 && player.facing) {
+				// a second light thrown along his heading, as far as the corridor goes
+				const v = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[player.facing];
+				for (let d = ahead; d >= 0.5; d -= 0.25) {
+					const x = p.x + v[0] * d;
+					const y = p.y + v[1] * d;
+					if (
+						grid.isInside(Math.floor(x), Math.floor(y)) &&
+						grid.isWalkable(Math.floor(x), Math.floor(y))
+					) {
+						lights.push({ x, y, r: 4.5, tint: 0xffd8a0, a: 0.8 });
+						break;
+					}
+				}
+			}
 		}
 		const boss = level.doomBoss;
 		const doom = level.doom;
