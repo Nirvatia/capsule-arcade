@@ -75,7 +75,7 @@ for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the eff
 5. **Season art, in code** (one subject per chat; prototype first).
    1. ~~**Energizers vs fruit**~~ Done (see Done, "Part I, 5.1"): a seasonal object per season,
       never edible.
-   2. **Ghosts per season** (`render/actors/GhostView.ts`, one generic look today): spring,
+   2. ~~**Ghosts per season**~~ (`render/actors/GhostView.ts`, one generic look before): spring,
       summer, autumn, winter, with normal, scared, flashing and eyes-only; focus on
       cuteness; the eyes show the heading; in the style of the heroes' mock-ups.
       Done in play, all four seasons: spring a tulip bud, summer a turtle (the water drop is
@@ -85,8 +85,7 @@ for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the eff
       a face and eyes that follow the heading, a look for every state, menacing brows and
       fangs in the chase wave and cute while scattering), and a body shape per season
       (`GHOST_SHAPES`); `GhostView.style` is set by `MeadowLevelRenderer` (`GHOST_STYLES`).
-      Next: the owner's review of all four in play, then fixes (sizes, faces, contrast of the
-      scared blue on winter's grey path).
+      The owner approved all four ghosts as they are.
    3. ~~**Echo clone look**~~ (`render/actors/EchoCloneView.ts`): mock-ups of three new looks
       (a trail of echoes, a bubble, a hologram) were made; the owner keeps today's look.
    4. ~~**FX**~~ Done (see Done, "Part I, 5.4"): the rings are shockwaves. The owner's pick
@@ -109,7 +108,7 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
       (`decayTimeline`).
    2. ~~**The look**~~ Done (see Done, "Part I, 6.2"): drain and rebirth, the collapse is a
       black hole (the owner's pick from a chat mock-up). In every world's death.
-   3. **Not done: the next frame.** The pass still samples one scene, so the rebirth shows the
+   3. **Postponed to the hell's art pass (part II, step 1):** the next frame. The pass still samples one scene, so the rebirth shows the
       same level again: right for a death, not for the hell's lost fight (it still ends in the
       fade to the next level) or a boss → season seam. For those the pass needs the next
       level as a second texture, like `SeasonTurn`; boss levels of part II then take it by
