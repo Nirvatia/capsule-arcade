@@ -55,7 +55,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 					this.bossHitFlash = 1;
 				}
 				if (event.kind === 'bfg-fire') {
-					this.shared.playerView.fireBurst();
+					this.shared.fireBurst();
 				}
 			}
 			this.fxView.update(dt, doom.shots, doom.barrelList);

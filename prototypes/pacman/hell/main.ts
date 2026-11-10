@@ -26,7 +26,9 @@ import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinky
 import type { BossSnapshot } from '../../../src/games/pacman/render/doom/HellBlinkyView';
 import { drawImp } from '../../../src/games/pacman/render/doom/HellImpView';
 import { glowTexture, pickupSprite } from '../../../src/games/pacman/render/doom/DoomSprites';
-import { PlayerView } from '../../../src/games/pacman/render/actors/PlayerView';
+import { HeroView } from '../../../src/games/pacman/render/actors/HeroView';
+import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
+import { armorPainter } from '../../../src/games/pacman/render/actors/hero/heroArmor';
 import type { GridLayout } from '../../../src/games/pacman/render/maze/GridView';
 
 type Pose = 'chase' | 'windup' | 'dash' | 'cast' | 'stunned' | 'hit';
@@ -50,7 +52,8 @@ const bossView = new HellBlinkyView();
 const echoView = new HellBlinkyView();
 const combat = new DoomCombatView();
 const fx = new DoomFxView();
-const playerView = new PlayerView();
+const playerView = new HeroView(new PacmanHero(), armorPainter('pacman'));
+playerView.setSeason('hell');
 
 function poseState(p: Pose): { state: DoomStateName; shape: DoomShape; progress: number } {
 	switch (p) {
@@ -360,7 +363,8 @@ function drawFight(f: Fight, dt: number, time: number): void {
 	playerView.draw(ctx, player, L, time, {
 		look: doom.berserkActive ? 'berserk' : 'normal',
 		charge: doom.bfgChargeProgress,
-		dying: false
+		dying: false,
+		armor: true
 	});
 	fx.draw(ctx, L, doom.shots, doom.tracerList);
 	world.drawFx(ctx);
@@ -446,6 +450,7 @@ window.addEventListener('keydown', (e) => {
 		}
 	} else if ((e.code === 'KeyF' || e.code === 'ShiftLeft') && fight) {
 		fight.doom.fire(fight.player);
+		playerView.kick();
 	}
 });
 window.addEventListener('keyup', (e) => {

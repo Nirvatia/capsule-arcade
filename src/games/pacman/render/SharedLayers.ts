@@ -1,11 +1,11 @@
 import { padSink } from './actors/padSink';
 import type { GridLayout } from './maze/GridView';
-import { PlayerView } from './actors/PlayerView';
 import { HeroView } from './actors/HeroView';
 import { PacmanHero } from './actors/hero/PacmanHero';
 import { MsPacmanHero } from './actors/hero/MsPacmanHero';
 import type { PacmanAudioCue } from '../core/Events';
-import type { PlayerDrawOptions } from './actors/PlayerView';
+import type { PlayerDrawOptions } from './actors/playerDrawOptions';
+import { armorPainter } from './actors/hero/heroArmor';
 import { heroSeasonOf } from './actors/hero/heroSeasons';
 import { EchoCloneView } from './actors/EchoCloneView';
 import { FruitView } from './items/fruit/FruitView';
@@ -20,9 +20,8 @@ import type { RenderFrame } from './RenderFrame';
  * season turn. The HUD and the screens are Svelte (`ui/PacmanUi`), not canvas.
  */
 export class SharedLayers {
-	readonly playerView = new PlayerView();
-	private readonly heroView = new HeroView(new PacmanHero());
-	private readonly msHeroView = new HeroView(new MsPacmanHero());
+	private readonly heroView = new HeroView(new PacmanHero(), armorPainter('pacman'));
+	private readonly msHeroView = new HeroView(new MsPacmanHero(), armorPainter('ms-pacman'));
 	private readonly fruitView = new FruitView();
 	private readonly easterEggView = new EasterEggView();
 	private readonly echoCloneView = new EchoCloneView();
@@ -58,9 +57,14 @@ export class SharedLayers {
 
 	/** Eating, power-ups, teleports: both players react, only the one on screen shows it. */
 	trigger(cue: PacmanAudioCue): void {
-		this.playerView.trigger(cue);
 		this.heroView.trigger(cue);
 		this.msHeroView.trigger(cue);
+	}
+
+	/** The BFG's release: whoever is on screen recoils. */
+	fireBurst(): void {
+		this.heroView.kick();
+		this.msHeroView.kick();
 	}
 
 	drawPlayer(frame: RenderFrame, layout: GridLayout): void {
@@ -71,15 +75,9 @@ export class SharedLayers {
 		const season = heroSeasonOf(frame.season.name, frame.level.hellMode);
 		this.heroView.setSeason(season);
 		this.msHeroView.setSeason(season);
-		if (frame.level.profile === 'ms-pacman') {
-			// Ms. Pac-Man the heroine, the hell included
-			this.msHeroView.draw(frame.ctx, player, layout, frame.time, this.playerOptions(frame));
-		} else if (frame.level.hellMode) {
-			this.playerView.draw(frame.ctx, player, layout, frame.time, this.playerOptions(frame));
-		} else {
-			// the season levels: Pac-Man the hero
-			this.heroView.draw(frame.ctx, player, layout, frame.time, this.playerOptions(frame));
-		}
+		// Ms. Pac-Man the heroine or Pac-Man the hero, the hell included
+		const view = frame.level.profile === 'ms-pacman' ? this.msHeroView : this.heroView;
+		view.draw(frame.ctx, player, layout, frame.time, this.playerOptions(frame));
 	}
 
 	private playerOptions(frame: RenderFrame): PlayerDrawOptions {
@@ -94,7 +92,8 @@ export class SharedLayers {
 				charge: doom && doom.bfgCharging ? doom.bfgChargeProgress : 0,
 				dying,
 				shield,
-				padAhead
+				padAhead,
+				armor: true
 			};
 		}
 		const combat = level.combat;

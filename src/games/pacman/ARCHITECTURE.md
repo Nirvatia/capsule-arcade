@@ -53,8 +53,7 @@ render/
                    (the shockwave, flashes, sparks, pop-ups, edge pulse), fxTypes
   transitions/decay/       the death black hole: field (Dijkstra), timeline (pure clock), WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
-  actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); HeroView drives them; PlayerView
-          for the hell) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
+  actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroArmor (the hell's armor, painted over the body), playerDrawOptions; HeroView drives them, in every world) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
   common/          textures, GlPass (every WebGL2 pass), colour, maths, seeded random,
                    worldDecor (the decor layout and stream shared by every world)
 audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), ArcadeSynth
@@ -199,11 +198,12 @@ pages are not stored in git (`.gitignore`); the owner looks at prototypes in the
 screenshots or an artifact Claude builds from the page, never by opening the files. The
 approved prototype already is the game code. `prototypes/pacman/art/hell-flesh-scene.html` is
 not a built prototype but the source of the accepted hell scene (a standalone page, open it as a
-file), the reference for the hell's art pass. Existing: `hell`, `arcade`,
+file), the reference for the hell's art pass; `hell-flesh-heroes.html` is the same scene with
+the heroes' mock-up on it (the armor the game now has). Existing: `hell`, `arcade`,
 `hud`, `death` (the death black hole: the real `LevelDecay` on the real worlds, a slider over the 4 s),
 `collectibles` (with each item's reach from its tile centre and a tile grid),
 `mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
-services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`); `winter-decay.html` is an older standalone page.
+services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's armor and BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
+`MsPacmanHero`, `heroArmor`); `winter-decay.html` is an older standalone page.

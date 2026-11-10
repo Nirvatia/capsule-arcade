@@ -225,7 +225,15 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - One style for all of them: a clear silhouette with a wide dark outline, gradient fill,
   a gloss and a glint (`render/common/itemPaint`); the mock-ups' looks are not kept.
 - A boss level ends by the player's choice: the heart (+1 life) or the exit.
-- **The hell's look (decided, not in the game yet)**: the flesh hell. One flesh for the whole
+- **The hell's heroes (in the game)**: both wear armor, the owner's "doom fighter" in its heavy
+  weight: a helmet and a chin guard painted on the ball, cel-shaded in cold steel (green for
+  him with a cyan visor slit, indigo for her with her eye in a goggle), clipped to the body so
+  the hero stays round and the mouth stays open; a strip of gold or pink stays visible under
+  the helmet. Berserk: black plates with burning cracks, fangs, the awoken look (his ki flames,
+  her glowing bow); never red, it sinks into the flesh. BFG charge: the body swells and the
+  mouth gapes, three seam lights on the nape fill up, the visor and the throat go green; the
+  release is a recoil and a flash. The rolling ball at the rifts is the heroes' own.
+- **The hell's look (decided, the scene is not in the game yet)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze's walls are flat muscle ridges with a
   dark outline and an inner light and shade edge, never given height or a face, so the
   corridors keep their full width; the corridor floor is the same flesh as the outside, a
@@ -244,8 +252,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 | HUD and screens                                                 | final; to be replaced (part III)                                                        |
 | Fruit, heart, exit                                              | final (inside the tile, calm glow)                                                      |
 | Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                          |
-| Pac-Man                                                         | final on the season levels; to be redone for the hell (part II, step 1, heroes)         |
-| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code                                        |
+| Pac-Man                                                         | final; armor in the hell (part II, 1.1)                                                 |
+| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; armor in the hell (part II, 1.1)      |
 | Season ghosts                                                   | missing: one generic look today (part I, 5.2)                                           |
 | Echo clone                                                      | to redo (part I, 5.3)                                                                   |
 | Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                               |

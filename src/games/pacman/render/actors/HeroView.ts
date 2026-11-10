@@ -2,13 +2,13 @@
 // everywhere she plays. It turns the player's position, heading and speed, the energizer (her
 // overdrive) and its last seconds, the death and the respawn shield into the hero's state, and
 // the game's cues into acting (a glow at the lips per dot, a real bite for fruit, the egg and
-// ghosts). The hell keeps PlayerView for Pac-Man (berserk and the BFG charge are its own
-// looks); Ms. Pac-Man plays the hell as this hero too. The arcade draws its own sprites.
+// ghosts). In the hell both heroes wear armor (`armor`, over the body): the berserk is the
+// awoken look, the BFG charge swells the body. The arcade draws its own sprites.
 import type { PlayerService } from '../../logic/actors/PlayerService';
 import type { PacmanAudioCue } from '../../core/Events';
 import type { GridLayout } from '../maze/GridView';
-import type { PlayerDrawOptions } from './PlayerView';
-import type { Hero } from './hero/Hero';
+import type { PlayerDrawOptions } from './playerDrawOptions';
+import type { Hero, OverPainter } from './hero/Hero';
 import type { HeroSeason } from './hero/heroSeasons';
 
 /** Body radius in tiles (Pac-Man 10 % smaller than the first cut, the owner's review). */
@@ -29,7 +29,11 @@ const START_ANGLE = 0;
 const AFTER_TUNNEL = 0.6;
 
 export class HeroView {
-	constructor(private readonly hero: Hero) {}
+	constructor(
+		private readonly hero: Hero,
+		/** What this hero wears in the hell. */
+		private readonly armor: OverPainter | null = null
+	) {}
 
 	private lastTime = -1;
 	private angle = START_ANGLE;
@@ -53,6 +57,11 @@ export class HeroView {
 		} else if (cue === 'fruit-collect' || cue === 'egg-collect' || cue === 'ghost-eaten') {
 			this.hero.eat();
 		}
+	}
+
+	/** The BFG's release: the body recoils and flashes. */
+	kick(): void {
+		this.hero.kick();
 	}
 
 	reset(): void {
@@ -98,13 +107,15 @@ export class HeroView {
 		this.afterTunnel = Math.max(0, this.afterTunnel - dt);
 		this.hero.setBall(!options.dying && (Boolean(options.padAhead) || this.afterTunnel > 0));
 		this.hero.setSink(options.padSink ?? 0);
+		this.hero.setOver(options.armor ? this.armor : null);
+		this.hero.setCharge(options.dying ? 0 : options.charge);
 		this.hero.setRadius(S * RADIUS);
 		this.hero.update(dt, {
 			x: layout.offsetX + pos.x * S,
 			y: layout.offsetY + pos.y * S,
 			angle: this.angle,
 			moving: !options.dying && this.speed > 0.5,
-			// in the hell Ms. Pac-Man's berserk shows as her powered look (her own art: stage 8)
+			// the hell's berserk is the awoken look, for both heroes
 			power: options.look === 'energized' || options.look === 'berserk',
 			ending: Boolean(options.ending),
 			dying: options.dying,

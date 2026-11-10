@@ -49,8 +49,8 @@ for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the eff
 2. ~~**The heroes in code**~~ Done (see Done, "Part I, 2"). The owner's mock-ups,
    "Pac-Man · Shonen" and "Ms. Pac-Man · Maho-shoujo" (the Design canvas
    `3D55jqVpyq2Y5iTD5BWh3w`, anime direction), are `render/actors/hero/*`, in the game
-   through `HeroView` and checked in the `hero` prototype. The hell keeps `PlayerView` for
-   Pac-Man until part II, step 1 (heroes in the hell).
+   through `HeroView` and checked in the `hero` prototype. In the hell both wear armor
+   (part II, step 1.1).
 
 3. **Mechanics and balance** (Sonnet; Opus for the hypnosis design).
    1. ~~**Echo clone mechanic**~~ Done (see Done, "Part I, 3.1").
@@ -144,9 +144,10 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
      mask (the ground outside already does).
    - **The steps**, each a mock-up on the frozen scene (buttons per state, a slow mode, "was /
      now" where it helps), approved by the owner, then ported:
-     1. **Both heroes in the hell, redesigned** so that they read on this flesh and in the
-        maze (the owner's decision: the current looks go); the berserk and the BFG-charge
-        looks, Ms. Pac-Man's own; then retire `PlayerView`. The riskiest step, so first.
+     1. ~~**Both heroes in the hell, redesigned**~~ Done (see Done, "Part II, 1.1"): the
+        owner's pick is the heavy armor of the "doom fighter" mock-up
+        (`prototypes/pacman/art/hell-flesh-heroes.html`, artifact `1H2WF8d37coG2ZFw5z292X`);
+        `PlayerView` is gone.
      2. **Blinky, lord of hell**, in three phases (shape, colour, eyes, the change of look),
         and the imps.
      3. **Weapons and pickups**: BFG, barrel, berserk, medkit; the heart and the exit.
@@ -219,7 +220,7 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
 
 - Headless Chromium without a GPU runs the hell night at ~20 FPS; JS cost is ~2 ms per
   frame, the rest is software rasterisation. Check on real hardware.
-- `Hero.ts` and `PlayerView.ts` are still large (see part I, step 2 and part II, step 1, heroes).
+- `Hero.ts` is still large (~1100 lines); the sprite-free heroes are one class family, cut what no longer serves.
 
 ## Done
 
@@ -476,3 +477,21 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   cult hell) and several rounds on the flesh one; the owner accepted the flesh hell with muscle
   walls. The scene's source is `prototypes/pacman/art/hell-flesh-scene.html`; the rules of
   the look and the steps that follow are in part II, step 1. Nothing is in the game yet.
+- Part II, 1.1, both heroes in the hell (eighth chat): the owner chose the heavy armor of the
+  "doom fighter" mock-up. `render/actors/hero/heroArmor.ts` paints a helmet and a chin guard on
+  the existing ball (clipped to the body outline, so the mouth stays cut and the hero stays
+  round); an open strip of gold or pink stays under the helmet so the hero still reads. Pac-Man
+  reads by a cyan visor slit, Ms. Pac-Man keeps her eye in a goggle. The berserk is the awoken
+  look (`power`: black plates with burning cracks, fangs, the ki flames for him, the glowing bow
+  for her); the BFG charge swells the body, opens the mouth wider, lights three seam lights on
+  the nape, the visor and the throat green; the release is `Hero.kick()`. `Hero` takes the paint
+  through `setOver(painter)` and `setCharge(k)`; `HeroView` passes `armor` from
+  `PlayerDrawOptions` (now `actors/playerDrawOptions.ts`), `SharedLayers` draws both heroes
+  through `HeroView` everywhere and `PlayerView` (748 lines) is deleted. The rolling ball at the
+  rifts stays the heroes' own (no armor). The `hero` prototype got "Броня ада" and "Заряд BFG"
+  buttons, the `hell` and `easter-egg` prototypes draw through `HeroView`. Checked: `npm run
+check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` prototype in
+  six states (screenshots), the `hell` fight and `easter-egg` pages without errors. Not
+  checked: play on the real game page, the hero's death in the hell with armor, the heroes on
+  the flesh hell (it is not ported yet: step 1.7), no unit test for the painting (the test
+  environment has no canvas). The old meadow-recoloured hell still shows them.

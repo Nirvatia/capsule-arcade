@@ -22,6 +22,29 @@ interface Pt {
 	readonly y: number;
 }
 
+/**
+ * The body this frame, handed to what is painted over it (the hell's armor): the outline
+ * path (clip to it and the mouth stays cut), the mouth's three points, the light in the
+ * frame, and the state the paint reacts to. Frame space: facing +x, units in px.
+ */
+export interface BodyCut {
+	/** Begins the body's path (disc minus the mouth) on `ctx`. */
+	readonly outline: (ctx: CanvasRenderingContext2D) => void;
+	readonly hinge: Pt;
+	readonly upper: Pt;
+	readonly lower: Pt;
+	readonly lightX: number;
+	readonly lightY: number;
+	/** The awoken look, 0..1. */
+	readonly power: number;
+	/** The BFG charge, 0..1. */
+	readonly charge: number;
+	readonly time: number;
+}
+
+/** Paints over the body, under the lips: what the hero wears in a world that gives it armor. */
+export type OverPainter = (ctx: CanvasRenderingContext2D, R: number, cut: BodyCut) => void;
+
 export interface HeroState {
 	/** Centre, css px. */
 	readonly x: number;
@@ -313,6 +336,9 @@ export abstract class Hero {
 	private sink = 0;
 	private roll = 0;
 	private mouthFlash = 0;
+	private over: OverPainter | null = null;
+	/** The BFG charge, 0..1: the body swells and the mouth gapes. */
+	private charge = 0;
 	private embers: Particle[] = [];
 	private bursts: Burst[] = [];
 	private seed = 11;
@@ -373,6 +399,23 @@ export abstract class Hero {
 
 	get ball(): boolean {
 		return this.ballOn;
+	}
+
+	/** What he wears over the body (the hell's armor), or nothing. */
+	setOver(painter: OverPainter | null): void {
+		this.over = painter;
+	}
+
+	/** The BFG charge, 0..1 (0 when there is none). */
+	setCharge(k: number): void {
+		this.charge = clamp01(k);
+	}
+
+	/** The BFG's release: the body recoils and flashes. */
+	kick(): void {
+		this.flash = 0.8;
+		this.size.value = 0.8;
+		this.size.velocity += 5;
 	}
 
 	/** A dot: just a small glow at the lips (the run's chomp already bites). */
@@ -671,9 +714,10 @@ export abstract class Hero {
 		this.drawEmbers(ctx);
 
 		const open = this.openness();
-		let m = 0.04 + Math.min(1.15, open) * D.mouthSpan;
+		let m = 0.04 + Math.min(1.15, open) * D.mouthSpan + this.charge * 0.12;
 		let grin = this.moving ? D.grinRun : D.grinRest;
-		let S = 1;
+		// the charge swells him and, near the end, makes him shake
+		let S = 1 + this.charge * 0.08 * (1 + 0.3 * Math.sin(this.time * 40));
 		let spin = 0;
 		// the mouth's cavity goes first when he is caught, before the body opens round it
 		let insideK = 1;
@@ -731,23 +775,37 @@ export abstract class Hero {
 		const U = { x: Math.cos(mu) * R, y: -Math.sin(mu) * R };
 		const Dn = { x: Math.cos(md) * R, y: Math.sin(md) * R };
 		const bend = R * 0.09 * clamp01(m * 2.5);
+		const outline = (c: CanvasRenderingContext2D) => {
+			c.beginPath();
+			c.moveTo(U.x, U.y);
+			c.arc(0, 0, R, -mu, md, true);
+			c.quadraticCurveTo((Dn.x + A.x) / 2, (Dn.y + A.y) / 2 - bend, A.x, A.y);
+			c.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x, U.y);
+			c.closePath();
+		};
 		{
 			ctx.save();
 			// a thin ink line, heavier on the shadow side
 			ctx.translate(-lx * R * 0.026, -ly * R * 0.026);
 			ctx.scale(1.046, 1.046);
-			ctx.beginPath();
-			ctx.moveTo(U.x, U.y);
-			ctx.arc(0, 0, R, -mu, md, true);
-			ctx.quadraticCurveTo((Dn.x + A.x) / 2, (Dn.y + A.y) / 2 - bend, A.x, A.y);
-			ctx.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x, U.y);
-			ctx.closePath();
+			outline(ctx);
 			ctx.fillStyle = css(pal.ink);
 			ctx.fill();
 			ctx.restore();
 		}
 		const body = this.composeBody(R, lx, ly, p, pulse, mu, md, bend);
 		ctx.drawImage(body.canvas, -body.half, -body.half, body.half * 2, body.half * 2);
+		this.over?.(ctx, R, {
+			outline,
+			hinge: A,
+			upper: U,
+			lower: Dn,
+			lightX: lx,
+			lightY: ly,
+			power: p,
+			charge: this.charge,
+			time: this.time
+		});
 
 		// lips along the cut, then what the hero wears
 		ctx.lineCap = 'round';

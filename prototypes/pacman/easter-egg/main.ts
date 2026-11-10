@@ -18,7 +18,8 @@ import { GhostService } from '../../../src/games/pacman/logic/actors/GhostServic
 import { LairCodeService } from '../../../src/games/pacman/logic/rules/LairCodeService';
 import { EasterEggService } from '../../../src/games/pacman/logic/bonuses/EasterEggService';
 import { GhostView } from '../../../src/games/pacman/render/actors/GhostView';
-import { PlayerView } from '../../../src/games/pacman/render/actors/PlayerView';
+import { HeroView } from '../../../src/games/pacman/render/actors/HeroView';
+import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import {
 	drawEasterEgg,
 	EasterEggView
@@ -45,7 +46,7 @@ let vw = 0;
 let vh = 0;
 
 const ghostView = new GhostView();
-const playerView = new PlayerView();
+const playerView = new HeroView(new PacmanHero());
 const eggView = new EasterEggView();
 
 interface Scene {
@@ -184,6 +185,7 @@ function frame(now: number): void {
 	const S = L.tileSize;
 	eggView.draw(ctx, egg, L, time);
 	ghostView.draw(ctx, ghosts, L, 0, false, egg.vanishProgress);
+	playerView.setSeason(season);
 	playerView.draw(ctx, player, L, time);
 	world.drawOverlay(ctx);
 

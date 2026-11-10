@@ -5,6 +5,7 @@
 // Query: ?season=winter&ms&power&rest&capture (capture: window.__advance(seconds) steps 1/60 s).
 import type { Hero } from '../../../src/games/pacman/render/actors/hero/Hero';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
+import { armorPainter } from '../../../src/games/pacman/render/actors/hero/heroArmor';
 import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
 import type { HeroSeason } from '../../../src/games/pacman/render/actors/hero/heroSeasons';
 import { GRID_01 } from '../../../src/games/pacman/config/mazes';
@@ -94,6 +95,7 @@ function layout(): void {
 	small.setRadius(S * RADIUS);
 	for (const h of [big, mid, small]) h.reset();
 	applyBall();
+	applyKit();
 }
 
 function pickHero(): void {
@@ -133,6 +135,25 @@ function applyBall(): void {
 $('ball').addEventListener('click', () => {
 	ball = !ball;
 	applyBall();
+});
+// the hell's kit: the armor over the body and the BFG charge (0, 0.5, 1); the energizer is the berserk
+let armor = q.has('armor');
+let charge = Number(q.get('charge') ?? 0);
+function applyKit(): void {
+	for (const h of [big, mid, small]) {
+		h.setOver(armor ? armorPainter(ms ? 'ms-pacman' : 'pacman') : null);
+		h.setCharge(charge);
+	}
+	$('armor').setAttribute('aria-pressed', String(armor));
+	$('charge').textContent = `Заряд BFG ${Math.round(charge * 100)} %`;
+}
+$('armor').addEventListener('click', () => {
+	armor = !armor;
+	applyKit();
+});
+$('charge').addEventListener('click', () => {
+	charge = charge >= 1 ? 0 : charge + 0.5;
+	applyKit();
 });
 $('power').addEventListener('click', () => {
 	powerTimer = POWER_TIME;
