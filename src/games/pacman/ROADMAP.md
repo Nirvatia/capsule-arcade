@@ -59,8 +59,8 @@ polish is the next work (see "Next chat" in part II). Part III (the interface) f
 2. ~~**The heroes in code**~~ Done (see Done, "Part I, 2"). The owner's mock-ups,
    "Pac-Man · Shonen" and "Ms. Pac-Man · Maho-shoujo" (the Design canvas
    `3D55jqVpyq2Y5iTD5BWh3w`, anime direction), are `render/actors/hero/*`, in the game
-   through `HeroView` and checked in the `hero` prototype. In the hell both wear armor
-   (part II, step 1.1).
+   through `HeroView` and checked in the `hero` prototype. In the hell they are the same heroes
+   with the BFG charge's light (part II, step 1.1).
 
 3. **Mechanics and balance** (Sonnet; Opus for the hypnosis design).
    1. ~~**Echo clone mechanic**~~ Done (see Done, "Part I, 3.1").
@@ -203,12 +203,9 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
       red world. Options to try in a comparison page: a pale rim light or a thin pale outer outline,
       a faint halo in the boss's own colour, a colour shift away from red (blackened iron with hot
       features), brighter eyes, a small shadow disc on the floor. The imps keep the arcade colours.
-   5. **Open decisions** to ask about, not to assume: the night's style (the owner has not chosen
-      among `cord`, `torch` and `pulse`) and a real redesign of the storm (now it is the old ash
-      streaks and embers with a tint); the heroes (the owner may want a small hell mark on the
-      season heroes or a new look; until told, they stay as they are); the armor code
-      (`paintArmor`, `armorPainter` in `render/actors/hero/heroArmor.ts` and the `hero` prototype's
-      "Броня ада" button) is to be deleted once the heroes are settled.
+   5. ~~**Open decisions**~~ Decided by the owner: the night stays `cord` (`torch` and `pulse`
+      remain only as candidates in the `mood` prototype); the storm's redesign is still open (ask
+      before touching it); the heroes stay as they are; the armor code is deleted (see Done).
       Then part III (the interface), from a mock-up image the owner brings.
 
 2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it
@@ -688,3 +685,12 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   Three candidates in the `mood` prototype (artifact: see the chat): `cord` (the cord glows through
   the dark and holds the maze; the game's default for now), `torch` (a denser dark, a light thrown
   ahead along the heading), `pulse` (the dark recedes on every heartbeat). Nothing is chosen yet.
+- The hell's second round of polish, 5: the owner's decisions (ninth chat). The night stays
+  `cord`, the heroes stay the season heroes. The armor code is gone: `paintArmor`, `armorPainter`
+  and the armor palettes are deleted, `heroArmor.ts` became `heroCharge.ts` (only `chargePainter`,
+  the BFG charge's light), and the option and parameter that used to be called `armor` (they
+  already carried only the charge painter) are `chargeLight` in `HeroView`, `PlayerDrawOptions`,
+  `SharedLayers` and the `hell` prototype. The `hero` prototype lost its "Броня ада" button. The
+  frozen mock-up pages in `prototypes/pacman/art/` keep their own armor code. Checked:
+  `npm run check`, `npm test` (280), ESLint and Prettier on the changed files. Not checked:
+  the BFG charge in a running fight (the painter's code is unchanged).

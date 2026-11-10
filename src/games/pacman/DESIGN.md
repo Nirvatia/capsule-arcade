@@ -240,16 +240,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   skirt of flames; the echo is violet. The imps keep Pinky's, Inky's and Clyde's colours and the
   heading chevron. A red body sinks into the red flesh, so the ink line, the eyes and the rim
   light carry him.
-- **The hell's heroes (in the game, being redesigned)**: today they are the season heroes with the BFG charge's light only (see `ROADMAP.md`); the armor below was dropped by the owner:
-  both wore armor, the owner's "doom fighter" in its heavy
-  weight: a helmet and a chin guard painted on the ball, cel-shaded in cold steel (green for
-  him with a cyan visor slit, indigo for her with her eye in a goggle), clipped to the body so
-  the hero stays round and the mouth stays open; a strip of gold or pink stays visible under
-  the helmet. Berserk: black plates with burning cracks, fangs, the awoken look (his ki flames,
-  her glowing bow); never red, it sinks into the flesh. BFG charge: the body swells and the
-  mouth gapes, three seam lights on the nape fill up, the visor and the throat go green; the
-  release is a recoil and a flash. The rolling ball at the rifts is the heroes' own.
-- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner will choose among the night's candidates and redesign the storm (`ROADMAP.md`, part II, next chat).
+- **The hell's heroes (final, as they are)**: the season heroes (the owner's decision: they stay as they are, no hell mark, no armor) plus one thing the hell adds, the BFG charge: the body swells and the mouth gapes, a green ring closes in on it, a glow lights the throat, white-hot at the end; the release is a recoil and a flash. The berserk is the awoken look (his ki flames, her glowing bow). The rolling ball at the rifts is the heroes' own.
+- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, next chat).
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze is drawn as an outline, "the cord":
   islands of dark flesh with a quiet texture, each edged by a dark cord with a thin hot line that
@@ -257,7 +249,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   the corridor floor is the same flesh as the outside, a little darker, and the ground outside the
   maze is dimmed, so the maze parts from the background. Ribs half buried, veins, cysts and pools of blood around; a slow heartbeat
   light; few, bold details on a surface, nothing hanging; a calm background. The teleport is a
-  vertical rift of torn flesh around a seam of light. The heroes and the boss are redone to
+  vertical rift of torn flesh around a seam of light. The boss is redone to
   read on it (`ROADMAP.md`, part II, step 1).
 
 ### Art status
@@ -273,8 +265,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 | Fruit, heart                                                    | final (inside the tile, calm glow)                                                      |
 | Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                    |
 | Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                          |
-| Pac-Man                                                         | final; armor in the hell (part II, 1.1)                                                 |
-| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; armor in the hell (part II, 1.1)      |
+| Pac-Man                                                         | final; the same in the hell, plus the BFG charge's light                                |
+| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; the same in the hell                  |
 | Season ghosts                                                   | missing: one generic look today (part I, 5.2)                                           |
 | Echo clone                                                      | to redo (part I, 5.3)                                                                   |
 | Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                               |

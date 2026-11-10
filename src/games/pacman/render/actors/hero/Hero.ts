@@ -23,7 +23,7 @@ interface Pt {
 }
 
 /**
- * The body this frame, handed to what is painted over it (the hell's armor): the outline
+ * The body this frame, handed to what is painted over it (the hell's BFG charge light): the outline
  * path (clip to it and the mouth stays cut), the mouth's three points, the light in the
  * frame, and the state the paint reacts to. Frame space: facing +x, units in px.
  */
@@ -42,7 +42,7 @@ export interface BodyCut {
 	readonly time: number;
 }
 
-/** Paints over the body, under the lips: what the hero wears in a world that gives it armor. */
+/** Paints over the body, under the lips: what a world paints on the hero (the hell's BFG charge light). */
 export type OverPainter = (ctx: CanvasRenderingContext2D, R: number, cut: BodyCut) => void;
 
 export interface HeroState {
@@ -401,7 +401,7 @@ export abstract class Hero {
 		return this.ballOn;
 	}
 
-	/** What he wears over the body (the hell's armor), or nothing. */
+	/** What is painted over the body (the hell's BFG charge light), or nothing. */
 	setOver(painter: OverPainter | null): void {
 		this.over = painter;
 	}
