@@ -2,7 +2,7 @@ import type { GridService } from '../maze/GridService';
 import type { GridPoint } from '../maze/GridModel';
 import type { PlayerService } from '../actors/PlayerService';
 import type { DoomDirection } from './DoomGraph';
-import { adjacentTile } from './DoomGraph';
+import { adjacentTile, isCorridorTile } from './DoomGraph';
 import { chooseChaseDirection } from './DoomMovement';
 import { DoomBossModel } from './DoomBossModel';
 import type { DoomAttackKind } from './DoomAttackCore';
@@ -88,6 +88,8 @@ export class DoomBossService {
 	private attackRetryTimer = 0;
 	private personalCooldowns: Record<DoomAttackKind, number> = noCooldowns();
 	private splitSegment: DoomSegment | null = null;
+	/** The board was cleared after the boss fell (once). */
+	private defeatCleared = false;
 	private lastAttackKind: DoomAttackKind | null = null;
 	private playerBaseSpeed = 6;
 	private bossContactHitValue = false;
@@ -267,6 +269,12 @@ export class DoomBossService {
 		this.updateCooldowns(dt);
 		this.arena.tick(dt);
 		if (this.model.defeated) {
+			if (!this.defeatCleared) {
+				// the fight is won: nothing of it stays on the board (no slow tiles, no void)
+				this.defeatCleared = true;
+				this.clearVoidAndMinions();
+				this.arena.clearCorruption();
+			}
 			this.clearArena();
 			return;
 		}
@@ -427,6 +435,7 @@ export class DoomBossService {
 		this.model.reset();
 		this.swarm.clear();
 		this.arena.reset();
+		this.defeatCleared = false;
 		this.splitSegment = null;
 		this.attackRetryTimer = 0;
 		this.lastAttackKind = null;
@@ -509,7 +518,7 @@ export class DoomBossService {
 				const next = adjacentTile(this.model.tile, direction);
 				if (
 					!this.grid.isInside(next.x, next.y) ||
-					!this.grid.isWalkable(next.x, next.y) ||
+					!isCorridorTile(this.grid, next.x, next.y) ||
 					this.model.dashTilesRemaining <= 0
 				) {
 					this.finishAttack(recover, RECOVER_DAMAGE_MUL);

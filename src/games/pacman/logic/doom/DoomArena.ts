@@ -2,7 +2,7 @@ import type { GridService } from '../maze/GridService';
 import type { GridPoint } from '../maze/GridModel';
 import type { PlayerService } from '../actors/PlayerService';
 import type { DoomDirection } from './DoomGraph';
-import { adjacentTile } from './DoomGraph';
+import { adjacentTile, isCorridorTile } from './DoomGraph';
 import { tileDistance } from './DoomAttackCore';
 import type { DoomHazard } from './DoomHazards';
 import { DoomHazardField } from './DoomHazards';
@@ -302,6 +302,11 @@ export class DoomArena {
 	}
 
 	/** Stops the timed effects; the echo fades out. Void cells stay. */
+	/** The decay of the outer corridors ends (the fight is over). */
+	clearCorruption(): void {
+		this.corruptionValue = 0;
+	}
+
 	clearEffects(): void {
 		this.hazards.clear();
 		this.pendingSeals.length = 0;
@@ -348,7 +353,7 @@ export class DoomArena {
 		while (remaining > 1e-6 && !echo.done) {
 			if (!echo.target) {
 				const next = adjacentTile(echo.tile, echo.dir);
-				if (echo.remaining <= 0 || !this.grid.isWalkable(next.x, next.y)) {
+				if (echo.remaining <= 0 || !isCorridorTile(this.grid, next.x, next.y)) {
 					echo.done = true;
 					break;
 				}

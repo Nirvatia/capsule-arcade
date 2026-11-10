@@ -1,4 +1,5 @@
 import type { GridService } from '../maze/GridService';
+import { isLairToken } from '../maze/LairExit';
 
 export interface DoomTile {
 	readonly x: number;
@@ -6,6 +7,24 @@ export interface DoomTile {
 }
 
 export type DoomDirection = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+
+/** The lair's tiles, the boss's birth tile `DB` included. */
+export function isLairSpace(grid: GridService, x: number, y: number): boolean {
+	if (!grid.isInside(x, y)) {
+		return false;
+	}
+	const token = grid.tileAt(x, y);
+	return isLairToken(token) || token === 'DB';
+}
+
+/**
+ * A tile of the corridors: walkable, and neither the lair nor a tunnel's pad. The boss's
+ * attacks, blinks and dashes land and run on these only (a pad is a dead end he can be stuck
+ * on; the lair is where he is born, not where he reappears).
+ */
+export function isCorridorTile(grid: GridService, x: number, y: number): boolean {
+	return grid.isWalkable(x, y) && !grid.isTeleport(x, y) && !isLairSpace(grid, x, y);
+}
 
 export function doomTileKey(tile: DoomTile): string {
 	return `${tile.x},${tile.y}`;

@@ -20,7 +20,8 @@ import {
 	INTRO_DURATION,
 	SEAL_TELEGRAPH
 } from './DoomBalance';
-import { bfsDistanceFrom } from './DoomGraph';
+import { bfsDistanceFrom, isCorridorTile, isLairSpace } from './DoomGraph';
+import { chooseChaseDirection } from './DoomMovement';
 import {
 	DoomHazardField,
 	canEscape,
@@ -34,7 +35,7 @@ import { DoomBossService } from './DoomBossService';
 import { minionPosition } from './DoomMinions';
 import type { DoomArena } from './DoomArena';
 import type { DoomMinionSwarm } from './DoomMinionSwarm';
-import { pickSeals } from './DoomTargeting';
+import { findBlinkTarget, pickSeals } from './DoomTargeting';
 import type { SealPickContext } from './DoomTargeting';
 import { DoomPickupService } from './DoomPickupService';
 import { findDoomCorners } from './DoomMapValidation';
@@ -529,5 +530,99 @@ describe('doom boss attacks', () => {
 			boss.consumeBossContactHit();
 		}
 		expect(boss.voidCellList.filter((c) => c.kind === 'seal').length).toBe(0);
+	});
+});
+
+describe('the boss and the board', () => {
+	afterEach(() => vi.restoreAllMocks());
+
+	it('never blinks into the lair or onto a tunnel pad', () => {
+		const { grid } = makeWorld();
+		let picked = 0;
+		for (let seed = 1; seed <= 12; seed += 1) {
+			vi.spyOn(Math, 'random').mockImplementation(seededRandom(seed));
+			for (let y = 0; y < grid.height; y += 1) {
+				for (let x = 0; x < grid.width; x += 1) {
+					if (!grid.isPlayerWalkable(x, y)) {
+						continue;
+					}
+					const target = findBlinkTarget(grid, { x: 1, y: 1 }, { x, y }, null);
+					if (target) {
+						picked += 1;
+						expect(isLairSpace(grid, target.x, target.y)).toBe(false);
+						expect(grid.isTeleport(target.x, target.y)).toBe(false);
+					}
+				}
+			}
+			vi.restoreAllMocks();
+		}
+		expect(picked).toBeGreaterThan(0);
+	});
+
+	it('runs rifts and splits along corridors only, never through the lair or a pad', () => {
+		const { grid } = makeWorld();
+		for (let y = 0; y < grid.height; y += 1) {
+			for (let x = 0; x < grid.width; x += 1) {
+				if (!isCorridorTile(grid, x, y)) {
+					continue;
+				}
+				for (const axis of ['x', 'y'] as const) {
+					for (const t of straightSegment(grid, { x, y }, axis).tiles) {
+						expect(isLairSpace(grid, t.x, t.y)).toBe(false);
+						expect(grid.isTeleport(t.x, t.y)).toBe(false);
+					}
+				}
+			}
+		}
+	});
+
+	it('does not step onto a tunnel pad and is not held in a dead end by the locked reverse', () => {
+		const { grid } = makeWorld();
+		let pad: { x: number; y: number } | null = null;
+		for (let y = 0; y < grid.height; y += 1) {
+			for (let x = 0; x < grid.width; x += 1) {
+				if (grid.isTeleport(x, y) && !pad) {
+					pad = { x, y };
+				}
+			}
+		}
+		expect(pad).not.toBeNull();
+		const p = pad as { x: number; y: number };
+		const inward = grid.walkableNeighbors(p.x, p.y).find((n) => !grid.isTeleport(n.x, n.y));
+		expect(inward).toBeDefined();
+		const first = inward as { x: number; y: number };
+		const toward = first.x < p.x ? 'LEFT' : first.x > p.x ? 'RIGHT' : first.y < p.y ? 'UP' : 'DOWN';
+		// next to the pad, chasing someone beyond it: he never chooses the pad
+		const far = { x: p.x, y: p.y };
+		const away = chooseChaseDirection(grid, first, toward === 'LEFT' ? 'LEFT' : 'RIGHT', far, true);
+		const stepped =
+			away === null
+				? null
+				: { x: first.x + (away === 'RIGHT' ? 1 : away === 'LEFT' ? -1 : 0), y: first.y };
+		expect(stepped && grid.isTeleport(stepped.x, stepped.y)).toBeFalsy();
+		// standing on the pad, facing out, reverse locked: he is let back in
+		const out = chooseChaseDirection(grid, p, toward === 'LEFT' ? 'RIGHT' : 'LEFT', first, true);
+		expect(out).not.toBeNull();
+	});
+
+	it('leaves no slow tiles and no void behind when he falls', () => {
+		const { grid, player, boss } = makeWorld();
+		skipIntro(boss, player);
+		enterPhase(boss, player, 3);
+		const { arena } = boss as unknown as { arena: DoomArena };
+		(arena as unknown as { corruptionValue: number }).corruptionValue = 0.7;
+		arena.placeTrailVoid({ x: 8, y: 2 }, player, 3);
+		expect(boss.corruption).toBeGreaterThan(0);
+		boss.debugKill();
+		boss.update(STEP, player);
+		expect(boss.defeated).toBe(true);
+		expect(boss.corruption).toBe(0);
+		expect(boss.voidCellList).toHaveLength(0);
+		for (let y = 0; y < grid.height; y += 1) {
+			for (let x = 0; x < grid.width; x += 1) {
+				expect(boss.isCorrupted(x, y)).toBe(false);
+				expect(grid.isVoidBlocked(x, y)).toBe(false);
+			}
+		}
 	});
 });

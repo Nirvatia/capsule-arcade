@@ -1,7 +1,7 @@
 import type { GridService } from '../maze/GridService';
 import type { GridPoint } from '../maze/GridModel';
 import type { DoomDirection } from './DoomGraph';
-import { adjacentTile, doomTileKey } from './DoomGraph';
+import { adjacentTile, doomTileKey, isCorridorTile } from './DoomGraph';
 
 export type DoomHazardKind = 'rift' | 'eruption';
 
@@ -99,20 +99,20 @@ export class DoomHazardField {
 	}
 }
 
-/** The longest straight run of walkable tiles through `tile` along one axis. */
+/** The longest straight run of corridor tiles through `tile` along one axis. */
 export function straightSegment(grid: GridService, tile: GridPoint, axis: 'x' | 'y'): DoomSegment {
 	const back: DoomDirection = axis === 'x' ? 'LEFT' : 'UP';
 	const forward: DoomDirection = axis === 'x' ? 'RIGHT' : 'DOWN';
 	let start = tile;
 	for (
 		let next = adjacentTile(start, back);
-		grid.isWalkable(next.x, next.y);
+		isCorridorTile(grid, next.x, next.y);
 		next = adjacentTile(next, back)
 	) {
 		start = next;
 	}
 	const tiles: GridPoint[] = [];
-	for (let cur = start; grid.isWalkable(cur.x, cur.y); cur = adjacentTile(cur, forward)) {
+	for (let cur = start; isCorridorTile(grid, cur.x, cur.y); cur = adjacentTile(cur, forward)) {
 		tiles.push(cur);
 	}
 	return { tiles, axis };

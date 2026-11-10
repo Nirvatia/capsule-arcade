@@ -614,3 +614,19 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   show in the new palette, the night keeps the maze and the cord readable, the console is clean.
   Not checked: the pull's chains and the corrupted tiles in play (not on screen in the frames),
   the seal's own burst, the split attack, a long night fight for strobing, a GPU.
+- Bugs from the owner's play (eighth chat), all fixed with tests in `doomMechanics.test.ts`
+  ("the boss and the board"; each was checked to fail on the old behaviour):
+  1. The boss could get stuck on a tunnel's pad: a dash along the tunnel row ended on the pad (a
+     dead end), and with the reverse locked the chase found no direction. Now the boss never steps
+     onto a pad (`chooseChaseDirection`), a dash stops before it, and a dead end with the reverse
+     locked lets him turn back.
+  2. In phase 3 he vanished and reappeared in the lair: the blink's target (and the split's
+     segment ends, the rift's run and the echo's path) were picked among all walkable tiles, and the
+     lair is walkable for him. New `isCorridorTile` / `isLairSpace` (`DoomGraph`): attacks, blinks,
+     dashes, rifts and the echo use corridor tiles only (not the lair, not a pad), and out of the lair
+     he does not go back in.
+  3. The slow tiles (and the void cells) stayed after he fell: only `clearEffects` ran on defeat. Now
+     the first update after the defeat clears the void, the minions and the corruption
+     (`DoomArena.clearCorruption`).
+     The night and the ash storm are to be redesigned for the new maze (the owner's request): the
+     softening of step 1.5 was a stopgap, not the redesign.

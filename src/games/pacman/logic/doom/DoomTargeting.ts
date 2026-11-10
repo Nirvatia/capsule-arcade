@@ -2,7 +2,7 @@ import type { GridService } from '../maze/GridService';
 import type { GridPoint } from '../maze/GridModel';
 import type { PlayerService } from '../actors/PlayerService';
 import type { DoomDirection } from './DoomGraph';
-import { adjacentTile, doomTileKey, oppositeDirection } from './DoomGraph';
+import { adjacentTile, doomTileKey, isCorridorTile, oppositeDirection } from './DoomGraph';
 import { tileDistance } from './DoomAttackCore';
 import type { DoomSegment } from './DoomHazards';
 import { distanceRings, straightSegment } from './DoomHazards';
@@ -217,7 +217,7 @@ export function findBlinkTarget(
 	const candidates: GridPoint[] = [];
 	for (let y = 0; y < grid.height; y += 1) {
 		for (let x = 0; x < grid.width; x += 1) {
-			if (!grid.isWalkable(x, y) || grid.isVoidBlocked(x, y) || grid.exitsCount(x, y) < 3) {
+			if (!isCorridorTile(grid, x, y) || grid.isVoidBlocked(x, y) || grid.exitsCount(x, y) < 3) {
 				continue;
 			}
 			const dist = tileDistance({ x, y }, playerTile);
