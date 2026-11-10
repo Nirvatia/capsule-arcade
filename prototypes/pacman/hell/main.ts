@@ -44,9 +44,9 @@ let pose: Pose = 'chase';
 let vw = 0;
 let vh = 0;
 const world = new DoomWorld(GRID_DOOM, [
-	{ x: 4, y: 7 },
-	{ x: 18, y: 7 },
-	{ x: 20, y: 7 }
+	{ x: 3, y: 8 },
+	{ x: 18, y: 8 },
+	{ x: 20, y: 8 }
 ]);
 const bossView = new HellBlinkyView();
 const echoView = new HellBlinkyView();
@@ -158,26 +158,26 @@ function gallery(time: number): void {
 	const speed = pose === 'dash' ? 8 : pose === 'chase' ? 3 : 0;
 	const walk = patrol(6, 16, speed || 0.0001, time);
 	const bx = speed ? walk.x : 11.5;
-	bossView.draw(ctx, snapshot(bx, 5.5, phase, pose, speed ? walk.dir : 'DOWN', time), L, time);
+	bossView.draw(ctx, snapshot(bx, 8.5, phase, pose, speed ? walk.dir : 'DOWN', time), L, time);
 	if (phase >= 3) {
 		const e = patrol(2, 22, 5, time, 0.5);
-		echoView.draw(ctx, snapshot(e.x, 23.5, 3, 'chase', e.dir, time, true), L, time);
+		echoView.draw(ctx, snapshot(e.x, 24.5, 3, 'chase', e.dir, time, true), L, time);
 	}
 	const kinds: DoomMinionKind[] = ['pinky', 'inky', 'clyde'];
 	kinds.forEach((kind, i) => {
 		const m = patrol(2, 11, 4, time, i * 0.6);
 		const px = L.offsetX + m.x * S;
-		const py = L.offsetY + (17.5 + (i === 2 ? 0 : 0)) * S;
+		const py = L.offsetY + 18.5 * S;
 		if (i < 2) {
 			drawImp(ctx, kind, px, py + (i === 1 ? 4 * S : 0), S, m.dir, time, 1);
 		} else {
 			const v = patrol(12, 21, 4, time, 0.3);
-			drawImp(ctx, kind, L.offsetX + v.x * S, L.offsetY + 17.5 * S, S, v.dir, time, 1);
+			drawImp(ctx, kind, L.offsetX + v.x * S, L.offsetY + 18.5 * S, S, v.dir, time, 1);
 		}
 	});
-	drawFist(ctx, L.offsetX + 4.5 * S, L.offsetY + 7.5 * S, S, time);
-	drawPickupIcon(ctx, 'medkit', L.offsetX + 18.5 * S, L.offsetY + 7.5 * S, S);
-	drawPickupIcon(ctx, 'bfg', L.offsetX + 20.5 * S, L.offsetY + 7.5 * S, S);
+	drawFist(ctx, L.offsetX + 3.5 * S, L.offsetY + 8.5 * S, S, time);
+	drawPickupIcon(ctx, 'medkit', L.offsetX + 18.5 * S, L.offsetY + 8.5 * S, S);
+	drawPickupIcon(ctx, 'bfg', L.offsetX + 20.5 * S, L.offsetY + 8.5 * S, S);
 	world.drawOverlay(ctx);
 
 	// magnified close-up: rows 4..8 (the boss's corridor and the pickups)

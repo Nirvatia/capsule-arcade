@@ -1,31 +1,17 @@
-import { parseMaze } from './parseMaze';
+import type { GridMatrix, TileType } from '../gridConfig';
+import { GRID_DOOM as GRID_DOOM_DRAWN } from './grid_doom';
 
-/** The hell's maze (level 5). */
-export const GRID_DOOM = parseMaze('doom', [
-	'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES',
-	'ES WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
-	'ES WL FL FL FL FL FL FL FL FL FL FL WL FL FL FL FL FL FL FL FL FL FL WL ES',
-	'ES WL FL WL WL WL FL WL WL WL WL FL WL FL WL WL WL WL FL WL WL WL FL WL ES',
-	'ES WL FL WL WL WL FL WL WL WL WL FL WL FL WL WL WL WL FL WL WL WL FL WL ES',
-	'ES WL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL WL ES',
-	'ES WL FL WL WL WL FL WL FL WL WL WL WL WL WL WL FL WL FL WL WL WL FL WL ES',
-	'ES WL FL FL FL FL FL WL FL FL FL FL WL FL FL FL FL WL FL FL FL FL FL WL ES',
-	'ES WL WL WL WL WL FL WL WL WL WL FL WL FL WL WL WL WL FL WL WL WL WL WL ES',
-	'ES ES ES ES ES WL FL WL FL FL FL FL FL FL FL FL FL WL FL WL ES ES ES ES ES',
-	'ES ES ES ES ES WL FL WL FL WL WL LE LE LE WL WL FL WL FL WL ES ES ES ES ES',
-	'ES WL WL WL WL WL FL WL FL WL LT LT LT LT LT WL FL WL FL WL WL WL WL WL ES',
-	'ES 0A FL FL FL FL FL FL FL WL BY IY DB PY CE WL FL FL FL FL FL FL FL 0A ES',
-	'ES WL WL WL WL WL FL WL FL WL LT LT LT LT LT WL FL WL FL WL WL WL WL WL ES',
-	'ES ES ES ES ES WL FL WL FL WL WL WL WL WL WL WL FL WL FL WL ES ES ES ES ES',
-	'ES ES ES ES ES WL FL WL FL FL FL FL FT FL FL FL FL WL FL WL ES ES ES ES ES',
-	'ES WL WL WL WL WL FL WL FL WL WL WL WL WL WL WL FL WL FL WL WL WL WL WL ES',
-	'ES WL FL FL FL FL FL FL FL FL FL FL WL FL FL FL FL FL FL FL FL FL FL WL ES',
-	'ES WL FL WL WL WL FL WL WL WL WL FL WL FL WL WL WL WL FL WL WL WL FL WL ES',
-	'ES WL FL FL FL WL FL FL FL FL FL FL PM FL FL FL FL FL FL WL FL FL FL WL ES',
-	'ES WL WL WL FL WL FL WL FL WL WL WL WL WL WL WL FL WL FL WL FL WL WL WL ES',
-	'ES WL FL FL FL FL FL WL FL FL FL FL WL FL FL FL FL WL FL FL FL FL FL WL ES',
-	'ES WL FL WL WL WL WL WL WL WL WL FL WL FL WL WL WL WL WL WL WL WL FL WL ES',
-	'ES WL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL FL WL ES',
-	'ES WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
-	'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES'
-]);
+/**
+ * The hell's maze (level 5): the owner's `grid_doom`, with two changes the fight needs. The
+ * hell has no food, so dots and energizers become floor (`assertDoomMap` demands a map without
+ * dots); and the boss is born on the lair's centre tile, `DB`, the one between Inky's and
+ * Pinky's (`IY` · centre · `PY`).
+ */
+export const GRID_DOOM: GridMatrix = GRID_DOOM_DRAWN.map((row) =>
+	row.map((token, c): TileType => {
+		if (token === 'DT' || token === 'EU') {
+			return 'FL';
+		}
+		return token === 'LT' && row[c - 1] === 'IY' && row[c + 1] === 'PY' ? 'DB' : token;
+	})
+);

@@ -128,6 +128,12 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 	const isDeck = (c: number, r: number): boolean => kindOf(S, c, r) !== 'none';
 	const T = SCENE_TILE;
 
+	// the maze-sized layers: the maze and a margin, painted in scene coordinates
+	const LX = MX - MARGIN;
+	const LY = MY - MARGIN;
+	const LW = cols * T + 2 * MARGIN;
+	const LH = rows * T + 2 * MARGIN;
+
 	// ---- the ground of the whole world ----
 	const ground = makeCanvas(FRAME.w, FRAME.h);
 	const g = context(ground);
@@ -178,6 +184,10 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 		g.fill();
 	}
 	g.lineCap = 'round';
+	// the corridors and the walls' foot are painted from the bare flesh, before the veins, the
+	// ribs and the pools lie on it (as in the scene): a copy of the maze's part of the ground
+	const baseLocal = makeCanvas(LW, LH);
+	context(baseLocal).drawImage(ground, FRAME.x0 - LX, FRAME.y0 - LY);
 
 	// veins: dark under the skin; a few thick ones come in from the edges of the stage
 	const veins: Vein[] = [];
@@ -366,10 +376,6 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 	});
 
 	// ---- the maze: layers the size of the maze and a margin, painted in scene coordinates ----
-	const LX = MX - MARGIN;
-	const LY = MY - MARGIN;
-	const LW = cols * T + 2 * MARGIN;
-	const LH = rows * T + 2 * MARGIN;
 	const layer = (): { cv: HTMLCanvasElement; x: CanvasRenderingContext2D } => {
 		const cv = makeCanvas(LW, LH);
 		const x = context(cv);
@@ -396,7 +402,7 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 	const arena = layer();
 	{
 		const a = arena.x;
-		a.drawImage(ground, FRAME.x0, FRAME.y0);
+		a.drawImage(baseLocal, LX, LY);
 		a.fillStyle = 'rgba(16,3,7,.24)';
 		a.fillRect(MX - 8, MY - 8, cols * T + 16, rows * T + 16);
 		const sh = a.createLinearGradient(MX, MY, MX + cols * T, MY + rows * T);
@@ -633,7 +639,7 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 	bandM.x.globalCompositeOperation = 'destination-out';
 	bandM.x.drawImage(innerM, LX, LY);
 	const bandTex = layer();
-	bandTex.x.drawImage(ground, FRAME.x0, FRAME.y0);
+	bandTex.x.drawImage(baseLocal, LX, LY);
 	bandTex.x.fillStyle = 'rgba(40,8,12,.14)';
 	bandTex.x.fillRect(LX, LY, LW, LH);
 	const band = clipTo(bandTex.cv, bandM.cv);
@@ -735,23 +741,10 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 
 	// ---- cysts: swellings in the side pockets and the margins ----
 	const cysts: Cyst[] = [];
-	const pockets: ReadonlyArray<readonly [number, number, number]> = [
-		[2.5, 10, 30],
-		[22.5, 10, 30],
-		[2.5, 15, 30],
-		[22.5, 15, 30]
-	];
-	for (const p of pockets) {
-		if (cols < 25 || rows < 16) {
-			break;
-		}
-		cysts.push({
-			x: tx(0) + p[0] * T,
-			y: ty(0) + p[1] * T,
-			r: p[2],
-			sprite: cystSprite(p[2]),
-			ph: p[0] + p[1]
-		});
+	for (const p of sidePockets(S, cols, rows)) {
+		const x = tx(0) + p[0] * T;
+		const y = ty(0) + p[1] * T;
+		cysts.push({ x, y, r: 30, sprite: cystSprite(30), ph: p[0] + p[1] });
 	}
 	const rc = rng(71);
 	const margins: ReadonlyArray<readonly [number, number, number]> = [
@@ -793,6 +786,40 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 }
 
 // ---- parts ----
+
+/**
+ * The empty pockets at the maze's sides (void tiles between the outer wall and the edge, two
+ * rows or more tall): their centres in tiles, where a cyst fills them.
+ */
+function sidePockets(S: GridMatrix, cols: number, rows: number): Array<readonly [number, number]> {
+	const out: Array<readonly [number, number]> = [];
+	for (const side of [0, 1]) {
+		const run = (rr: number): number => {
+			let n = 0;
+			while (n < cols && S[rr][side ? cols - 1 - n : n] === 'ES') {
+				n += 1;
+			}
+			return n;
+		};
+		let r = 1;
+		while (r < rows - 1) {
+			const n = run(r);
+			if (n < 3 || n >= cols - 2) {
+				r += 1;
+				continue;
+			}
+			let r1 = r;
+			while (r1 + 1 < rows - 1 && run(r1 + 1) === n) {
+				r1 += 1;
+			}
+			if (r1 > r) {
+				out.push([side ? cols - n / 2 : n / 2, (r + r1 + 1) / 2]);
+			}
+			r = r1 + 1;
+		}
+	}
+	return out;
+}
 
 /** A swelling: lumpy, dark rim, veined, with a wet gloss. */
 function cystSprite(R: number): HTMLCanvasElement {
@@ -886,7 +913,18 @@ function paintMuscle(
 	const T = SCENE_TILE;
 	tp.save();
 	tp.lineCap = 'round';
-	fibres(tp, 46, rw, X3 - 4, Y3 - 4, T + 8, T + 8, 'rgba(60,14,18,.34)', 'rgba(220,130,112,.22)');
+	fibres(
+		tp,
+		46,
+		rw,
+		X3 - 4,
+		Y3 - 4,
+		T + 8,
+		T + 8,
+		'rgba(60,14,18,.34)',
+		'rgba(220,130,112,.22)',
+		dir
+	);
 	if (rw() < 0.35) {
 		tp.fillStyle = rgbaOf(PAL.fat, 0.16 + rw() * 0.12);
 		tp.beginPath();

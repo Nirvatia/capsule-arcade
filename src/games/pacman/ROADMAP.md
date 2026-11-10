@@ -158,8 +158,11 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
      5. **Weather and light**: the ash storm and the night (today's lights that follow Pac-Man
         flicker like a strobe, `render/doom/DoomLightmap.ts`), the corrupted tiles in the
         hell's palette (`DoomCombatView.drawCorruption`).
-     6. ~~**The hell's maze**~~ Decided: the hell stays on `config/mazes/doom.ts` (25×26), the
-        scene's own maze; `grid_doom.ts` (a row short) is an unused draft.
+     6. ~~**The hell's maze**~~ Done: the owner's `config/mazes/grid_doom.ts` (25×27, finished)
+        is the hell's maze. `config/mazes/doom.ts` derives it: dots and energizers become floor
+        (the hell has no food and `assertDoomMap` demands none) and the lair's centre token
+        becomes `DB`, the boss's birth tile. Four tests of `doomMechanics.test.ts` were tied to the
+        old layout (a corridor's coordinates, one seed) and were moved to the new one.
      7. **The port**, in this order: the bake (floor, walls, decor, with the seam fix above),
         the actors, the effects, the light; the world's death seams too (part I, 6.3: the
         next frame as a second texture). Logic stays untouched; checked in the `hell`
@@ -543,9 +546,11 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   pools' ripples). The scene is painted in its own units (32 to a tile) and `DoomWorld` draws it
   scaled by 24/32, baked once, the first time the world is drawn. The old stone, meadow, pond,
   cabins, lamps, pentagrams and the lava stream are gone (`doomBakeDecor`, `doomBakeWalls` and
-  the old `DoomBake` painting deleted; `DoomBake.ts` keeps the two constants). The seam fix of
-  the scene's note is in: the walls' fibres follow one flow field and the lair's veins run over
-  its whole floor, so no line breaks at a tile's edge. The mist, ash storm, night and the
+  the old `DoomBake` painting deleted; `DoomBake.ts` keeps the two constants). The scene's
+  seam note is half done: the lair's veins run over its whole floor, so no line breaks at a
+  tile's edge; the walls' fibres still run along each wall tile as in the scene (a single flow
+  field made diagonal streaks unlike the scene, so that part of the note stays open). The corridors and the walls' foot are painted from the bare flesh,
+  before the veins, ribs and pools, as in the scene. The mist, ash storm, night and the
   corridor light map are unchanged (step 1.5). Checked: `npm run check`, `npm test` (210),
   ESLint and Prettier on the changed files, the `hell` prototype fight view (screenshots, close
   up), bake time and frame rate (see Known issues). Not checked: the death transition from the

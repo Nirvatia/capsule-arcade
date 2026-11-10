@@ -354,7 +354,7 @@ describe('doom boss attacks', () => {
 
 	it('rift corridors can always be left in time', () => {
 		const { grid } = makeWorld();
-		const tile = { x: 6, y: 12 };
+		const tile = { x: 6, y: 8 };
 		const segment = straightSegment(grid, tile, 'x');
 		expect(segment.tiles.length).toBeGreaterThanOrEqual(4);
 		const keys = new Set(segment.tiles.map((t) => `${t.x},${t.y}`));
@@ -364,8 +364,8 @@ describe('doom boss attacks', () => {
 
 	it('eruption: running straight out of the disc dodges both waves', () => {
 		const { grid, player } = makeWorld();
-		walk(player, pathTo(grid, player.tile, { x: 8, y: 5 }));
-		expect(player.tile.y).toBe(5);
+		walk(player, pathTo(grid, player.tile, { x: 6, y: 8 }));
+		expect(player.tile.y).toBe(8);
 		const waves = eruptionWaves(grid, player.tile, ERUPTION_INNER, ERUPTION_RADIUS);
 		const field = new DoomHazardField();
 		field.add('eruption', waves.disc, ERUPTION_TELEGRAPH, ERUPTION_ACTIVE);
@@ -442,7 +442,7 @@ describe('doom boss attacks', () => {
 		const { grid, player, boss } = makeWorld();
 		skipIntro(boss, player);
 		enterPhase(boss, player, 2);
-		walk(player, pathTo(grid, player.tile, { x: 2, y: 23 }));
+		walk(player, pathTo(grid, player.tile, { x: 3, y: 24 }));
 		player.setDesiredDirection('RIGHT');
 		player.update(STEP);
 		const { arena } = boss as unknown as { arena: DoomArena };
@@ -450,7 +450,7 @@ describe('doom boss attacks', () => {
 		expect(seals.length).toBeGreaterThanOrEqual(2);
 		// the first seal lies on the row ahead, where a player running on arrives in time
 		const aim = seals[0];
-		expect(aim.y).toBe(23);
+		expect(aim.y).toBe(24);
 		expect(aim.x).toBeGreaterThan(player.tile.x + 1);
 		arena.queueSeals(seals);
 		let hit = false;
@@ -489,7 +489,7 @@ describe('doom boss attacks', () => {
 	});
 
 	it('seals lock intersections without cutting the player off', () => {
-		vi.spyOn(Math, 'random').mockImplementation(seededRandom(5));
+		vi.spyOn(Math, 'random').mockImplementation(seededRandom(6));
 		const { grid, player, boss } = makeWorld();
 		skipIntro(boss, player);
 		enterPhase(boss, player, 2);
