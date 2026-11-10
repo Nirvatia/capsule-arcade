@@ -203,6 +203,7 @@ the heroes' mock-up on it (the armor the game now has). Existing: `hell`, `arcad
 `hud`, `death` (the death black hole: the real `LevelDecay` on the real worlds, a slider over the 4 s),
 `collectibles` (with each item's reach from its tile centre and a tile grid),
 `mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
+`mood` (the hell's night and ash storm styles side by side on the real `grid_doom`, the hero walking a corridor so the light can be judged in motion),
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's armor and BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,

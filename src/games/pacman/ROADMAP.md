@@ -13,6 +13,16 @@ changed) and pushes to `feat/pacman`. New art and new effects start as a prototy
 owner approves first, in the chat, as screenshots (the built pages are not committed; see
 `ARCHITECTURE.md`, Prototypes), unless the owner says to go straight into the game.
 
+How the looks are decided (what worked in the eighth chat): a mock-up first, and only for what
+defines a world (the world, the heroes, the boss, the walls). A candidate comparison is a throwaway
+page built from the game's own sources on the real maze (`node prototypes/pacman/build.mjs <name>`,
+then published as an artifact: strip the document wrapper from the built page; delete the page
+when the owner has chosen), not a hand-drawn picture. Effects inside an accepted language are
+restyled in one pass and shown as frame series from the `hell` prototype, not mock-up by mock-up.
+Every bug fix gets a test that is checked to fail on the old behaviour. Checks before a push:
+`npm run check`, `npm test`, `npx eslint src/games/pacman`, `npx prettier --check` on the changed
+files (the repository-wide `npm run lint` is red for files of other games; leave them).
+
 **All graphics are drawn in code** (Canvas2D / WebGL2). No PNG sprites, no sprite sheets,
 no image pipeline. An owner's mock-up is a picture of the target look that Claude
 reproduces in code; it is never loaded as an asset. Motion, particles and seasonal details
@@ -23,12 +33,12 @@ a suggestion.
 
 ## Order
 
-The plan has three parts, done in this order: **I** the main game (four seasons),
-**II** the boss levels, **III** the interface. The depth and post-processing pass comes
-last of all (see Later). Part I is in progress: steps 1 (mazes), 2 (heroes) and 3
-(mechanics and balance) are done; step 4 (sound and tools) has only the mute button, the
-rest is postponed; step 5 (season art) is under way: 5.1 and 5.2 are in the game (5.2 waits
-for the owner's review), then 5.3 (echo clones: today's look kept), 5.4 (the effects' shockwaves: done) and 5.5 (teleport pad: done); step 6 (one death transition): the look is done, the seams are not.
+The plan has three parts, done in this order: **I** the main game (four seasons), **II** the boss
+levels, **III** the interface. The depth and post-processing pass comes last of all (see Later).
+Part I is done except the postponed items of step 4 (sound and tools: only the mute button is in)
+and step 6.3 (the death transition's seams between worlds). Part II is in step 1, the hell: its
+world, maze, heroes, boss, weapons, attacks and light are in the game; the owner's second round of
+polish is the next work (see "Next chat" in part II). Part III (the interface) follows it.
 
 ## Part I. The main game: four seasons (mechanics and graphics)
 
@@ -127,8 +137,8 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
      `https://claude.ai/artifact/PxgBdvaWVsb7mXwsMLEgMq`, its source kept in
      `prototypes/pacman/art/hell-flesh-scene.html` (a standalone page: open it as a file). It
      is the frozen base: every later mock-up is a layer on it, in one chat artifact, and the
-     owner approves it there before any port. The maze in it is the hell's current one
-     (`config/mazes/doom.ts`, 25×26).
+     owner approves it there before any port. The maze in it was the old hell's (25×26); the
+     game's is now `grid_doom` (25×27).
    - **Rules of the look** (the owner's, from the rounds): the world is one flesh with no void
      and nothing hanging in the air (the corridor floor is the same flesh as the outside, a
      little darker); the walls are dark flesh islands edged by a glowing cord (the owner's pick,
@@ -152,27 +162,55 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
         and the imps. Done (see Done, "Part II, 1.2").
      3. ~~**Weapons and pickups**~~: BFG, barrel, berserk, medkit; the heart and the exit. Done
         (see Done, "Part II, 1.3").
-     4. **The attacks, one family at a time**, each with its telegraph and its effect, built
-        from the real numbers (`logic/doom/DoomBalance`, `DoomAttackPlanner`): dash, rift,
-        seals, pull, cross, void trail, split, eruption, corruption, blink, brood.
-        Family 1 (dash and rift) is done (see Done, "Part II, 1.4, family 1"); the other attacks
-        were restyled in one pass without a mock-up each (see Done, "Part II, 1.4 and 1.5").
-     5. **Weather and light**: the ash storm and the night (today's lights that follow Pac-Man
-        flicker like a strobe, `render/doom/DoomLightmap.ts`), the corrupted tiles in the
-        hell's palette (`DoomCombatView.drawCorruption`).
-     6. ~~**The hell's maze**~~ Done: the owner's `config/mazes/grid_doom.ts` (25×27, finished)
-        is the hell's maze. `config/mazes/doom.ts` derives it: dots and energizers become floor
-        (the hell has no food and `assertDoomMap` demands none) and the lair's centre token
-        becomes `DB`, the boss's birth tile. Four tests of `doomMechanics.test.ts` were tied to the
-        old layout (a corridor's coordinates, one seed) and were moved to the new one.
-     7. **The port**, in this order: the bake (floor, walls, decor, with the seam fix above),
-        the actors, the effects, the light; the world's death seams too (part I, 6.3: the
-        next frame as a second texture). Logic stays untouched; checked in the `hell`
-        prototype and in play. The bake is done (see Done, "Part II, 1.7a"); the actors and
-        effects went in with their steps (1.1 to 1.3); the attack effects (1.4) and the light
-        and weather (1.5) and the death seams are open.
+     4. ~~**The attacks**~~ Done (see Done, "Part II, 1.4, family 1" and "1.4 and 1.5"): the dash
+        and the rift from a mock-up, the others restyled in one pass into the hell's palette.
+     5. ~~**Weather and light**~~ First version done (see Done, "1.5" entries): the night and the storm
+        have a `MoodStyle` (`cord` is the game's default, `torch` and `pulse` are candidates in the
+        `mood` prototype); the player's light follows him smoothly.
+     6. ~~**The hell's maze**~~ Done: the owner's `config/mazes/grid_doom.ts` (25×27) is the hell's
+        maze; `config/mazes/doom.ts` derives it (dots and energizers become floor, the lair's centre
+        token becomes `DB`).
+     7. ~~**The port**~~ Done: the flesh world (`fleshBake`, `fleshLive`), the cord walls, the heroes
+        (the season heroes plus the BFG charge's light; the doom-fighter armor was dropped), Blinky
+        and the imps, the weapons and pickups, the attacks. The world's death seams (part I, 6.3)
+        are still open.
      8. **The hell's music track** (the owner brings it: generated or a free licence).
      9. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
+
+   **Next chat: the hell's second round of polish** (the owner's list, in this order). Start from
+   the `hell` prototype (`node prototypes/pacman/build.mjs hell`: "Бой" runs the real fight, the
+   attack buttons force an attack, "Бессмертие" keeps the hero alive, "Фаза 1-3" jump to a phase;
+   query `?ms` Ms. Pac-Man, `?zerk` the berserk, `?chg` a BFG charge) and the `mood` prototype.
+   1. **A full redesign of the teleports, so that they are not lost.** Today they are the scene's
+      tall rifts of torn flesh (`fleshBake` rifts, `fleshLive` their light) and on the cord maze
+      they sink into the red: a hero running for one cannot find it. The new look must stand out
+      from the maze and the background at tile size (a hue the hell does not otherwise use, the
+      pale light of the exit is taken by the exit, so pick a different one; or a clear frame and
+      a motion), keep the "no round opening" rule of the scene, and show where it leads (the other
+      pad). The teleport fog (`DoomWorld.teleportFog`) and the hero's rolling ball at the pad
+      go with it. A comparison page first.
+   2. **Readability of the boss's attacks.** Many attacks merge with the background and the maze,
+      all in the same red tones: the rift's seam and burst, the cross, the eruption, the seals, the
+      void cells, the corrupted tiles, the pull's cords. The rule to meet: danger reads at a glance
+      against the cord maze and the dark floor, and a telegraph (it will hurt) differs from a live
+      hazard (it hurts now). Ideas to try: a pale or white-hot core with a dark outline, a hue
+      shift for live hazards, hatching or a moving edge for telegraphs, a floor tint under the whole
+      threatened area. Test in grayscale too. A comparison page with every attack at once.
+   3. **Lower the heartbeat's maximum brightness.** The pulse (`fleshLive.heartbeat`: the wounds in
+      the walls, the lair's heart, the rifts' light, the cysts, `drawCord` at night) peaks too hot.
+      Lower the peak, keep the 2.5 s rhythm; it is mostly a few constants.
+   4. **Blinky and the imps get lost** (the owner does not yet know what to do): they are red on a
+      red world. Options to try in a comparison page: a pale rim light or a thin pale outer outline,
+      a faint halo in the boss's own colour, a colour shift away from red (blackened iron with hot
+      features), brighter eyes, a small shadow disc on the floor. The imps keep the arcade colours.
+   5. **Open decisions** to ask about, not to assume: the night's style (the owner has not chosen
+      among `cord`, `torch` and `pulse`) and a real redesign of the storm (now it is the old ash
+      streaks and embers with a tint); the heroes (the owner may want a small hell mark on the
+      season heroes or a new look; until told, they stay as they are); the armor code
+      (`paintArmor`, `armorPainter` in `render/actors/hero/heroArmor.ts` and the `hero` prototype's
+      "Броня ада" button) is to be deleted once the heroes are settled.
+      Then part III (the interface), from a mock-up image the owner brings.
+
 2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it
    is the only boss. The selection arrives with the second boss: a `BossCatalog` (id,
    world, maze, renderer, design page), a seeded pick per boss level (no immediate repeat),
@@ -232,6 +270,8 @@ far as WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   (measured in headless Chromium without a GPU; one long task, once per level); its frames
   cost more than the old hell's (33 against 45 fps in the same headless run). Check on real
   hardware; the bake can be spread over frames if it shows.
+- The hell's first-frame bake and the 33 fps figure above are from a GPU-less headless browser;
+  nobody has timed them on real hardware yet.
 - The `collectibles` prototype throws "undefined is not iterable" in a `forEach` while it draws the item row (also on the commit before part II, 1.3) and so never reaches the exit; find it when the prototype is next touched.
 - `Hero.ts` is still large (~1100 lines); the sprite-free heroes are one class family, cut what no longer serves.
 

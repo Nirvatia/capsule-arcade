@@ -249,6 +249,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   her glowing bow); never red, it sinks into the flesh. BFG charge: the body swells and the
   mouth gapes, three seam lights on the nape fill up, the visor and the throat go green; the
   release is a recoil and a flash. The rolling ball at the rifts is the heroes' own.
+- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner will choose among the night's candidates and redesign the storm (`ROADMAP.md`, part II, next chat).
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze is drawn as an outline, "the cord":
   islands of dark flesh with a quiet texture, each edged by a dark cord with a thin hot line that
