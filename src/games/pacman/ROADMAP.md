@@ -556,3 +556,14 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   up), bake time and frame rate (see Known issues). Not checked: the death transition from the
   hell and the season turn into it, the night and the ash storm over the new world, a narrow or
   ultra-wide screen, a GPU.
+- The hell's wall material under review (eighth chat; the owner: the muscle looks bad, worse on
+  `grid_doom`'s big islands; shell, skin and tendons were tried before and failed; bone was close
+  but its walls were flat and too bright against the background). The wants: the maze parts from
+  the background, the walls are not flat or uniform, not too contrasty against the background, and
+  the corridors do not look far away with the walls floating over them. `fleshBake` now takes a
+  `WallStyle` (`WALL_STYLES`: colours, corridor floor tone, the shadow at the wall's foot, the
+  background's dimming, large-scale mottling over an island, a tile painter) and `DoomWorld`
+  takes it as a parameter; the game still uses `muscle`. Candidates, to be seen in the `walls`
+  prototype (artifact `XsmmBxMm5ccepuDW1efQiL`): porous bone, a burnt crust, scar tissue. In the
+  first look bone and scar were still too pale against the background; the crust was the calmest
+  and a little dark. Nothing is chosen yet.

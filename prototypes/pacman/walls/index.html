@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Плотский ад, материал стен</title>
+    <!-- Prototype: the hell's wall material (part II, 1.7a, the owner's review): the real flesh
+         world on the real `grid_doom`, one world per candidate material, the hero and Blinky for
+         the contrast with the floor. Built from the sources:
+         `node prototypes/pacman/build.mjs walls`; open as a file. -->
+    <style>
+      :root{color-scheme:dark}
+      html,body{margin:0;background:#0d0709;color:#efe0d8;font:14px "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+      body{padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+      h1{margin:0 0 4px;font:700 22px "Arial Narrow",system-ui,sans-serif;letter-spacing:.03em;text-transform:uppercase}
+      p{margin:0 0 12px;color:#b09890;max-width:80ch}
+      #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+      #grid.single{grid-template-columns:minmax(0,1fr)}
+      figure{margin:0;position:relative;border:1px solid #402225;border-radius:8px;overflow:hidden;background:#000;cursor:pointer}
+      figure.hidden{display:none}
+      canvas{display:block;width:100%;aspect-ratio:1/1}
+      #grid.single canvas{aspect-ratio:16/10}
+      figcaption{position:absolute;left:8px;top:8px;padding:3px 9px;border-radius:5px;background:rgba(13,7,9,.78);font:700 13px "Arial Narrow",system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;pointer-events:none}
+      @media (max-width:700px){#grid{grid-template-columns:minmax(0,1fr)}}
+    </style>
+  </head>
+  <body>
+    <h1>Плотский ад: материал стен</h1>
+    <p>Четыре мира на настоящей карте. Нажми на картинку, чтобы развернуть её, ещё раз, чтобы вернуть сетку. В новых вариантах пол светлее и ближе к стенам по тону, у основания стены лежит тень, тон стены гуляет по большому острову, а фон темнее и тише игровой области.</p>
+    <div id="grid"></div>
+    <script>
+/*SCRIPT*/
+    </script>
+  </body>
+</html>
