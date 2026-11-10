@@ -202,7 +202,9 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		for (const hazard of boss.hazardList) {
 			if (hazard.warn <= 0 && hazard.tiles.length > 0) {
 				const mid = hazard.tiles[Math.floor(hazard.tiles.length / 2)];
-				lights.push({ x: mid.x + 0.5, y: mid.y + 0.5, r: 6, tint: 0xff6a3a, a: 1 });
+				// the light of a burst dies down with it instead of cutting out
+				const k = Math.max(0, Math.min(1, hazard.active / hazard.activeTotal));
+				lights.push({ x: mid.x + 0.5, y: mid.y + 0.5, r: 6, tint: 0xff6a3a, a: 0.25 + 0.75 * k });
 			}
 		}
 		return lights;

@@ -295,12 +295,12 @@ export class DoomWorld {
 		img(ctx, washTexture(), 0, 0, vw, vh);
 		if (this.stormV > 0) {
 			ctx.globalCompositeOperation = 'source-over';
-			ctx.globalAlpha = 0.26 * this.stormV;
-			ctx.fillStyle = 'rgb(138,42,16)';
+			ctx.globalAlpha = 0.14 * this.stormV;
+			ctx.fillStyle = 'rgb(120,40,20)';
 			ctx.fillRect(0, 0, vw, vh);
 		}
 		// darker than the prototype's red wash so the light map actually reads as light
-		const na = (0.82 + 0.06 * Math.sin(t * 3.2)) * this.nightV;
+		const na = (0.6 + 0.03 * Math.sin(t * 1.6)) * this.nightV;
 		if (na > 0) {
 			const light = this.lightmap.compute([...this.mazeLights, ...actorLights]);
 			const shade = this.shadeLayer(light);
@@ -355,7 +355,7 @@ export class DoomWorld {
 		g.setTransform(q, 0, 0, q, 0, 0);
 		g.globalCompositeOperation = 'source-over';
 		g.globalAlpha = 1;
-		g.fillStyle = 'rgb(118,34,22)';
+		g.fillStyle = 'rgb(96,50,46)';
 		g.fillRect(0, 0, this.vw, this.vh);
 		g.globalCompositeOperation = 'destination-out';
 		g.translate(this.wx, this.wy);

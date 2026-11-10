@@ -205,7 +205,7 @@ export class DoomFxView {
 			}
 			case 'boss-hit':
 				this.flash(x, y, 1.6, 0xffffff, 0.18);
-				this.radial(x, y, 18, 2, 7, 0xc060ff, 'spark', 0.3, 0.7);
+				this.radial(x, y, 18, 2, 7, 0xffb070, 'spark', 0.3, 0.7);
 				break;
 			case 'player-hit':
 				this.ring(x, y, 1.2, 0xff2a1a, 0.35, 0.12);

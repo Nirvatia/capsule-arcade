@@ -25,19 +25,31 @@ function noise(i: number, k: number): number {
 	return v - Math.floor(v);
 }
 
+/** A straight run of tiles, from its first to its last. */
+export interface Lane {
+	readonly a: { readonly x: number; readonly y: number };
+	readonly b: { readonly x: number; readonly y: number };
+}
+
 function beamOf(hazard: DoomHazard, layout: GridLayout): Beam | null {
 	const a = hazard.tiles[0];
 	const b = hazard.tiles[hazard.tiles.length - 1];
-	if (!a || !b) {
-		return null;
-	}
+	return a && b ? beamBetween(a, b, hazard.axis, layout) : null;
+}
+
+function beamBetween(
+	a: { readonly x: number; readonly y: number },
+	b: { readonly x: number; readonly y: number },
+	axis: 'x' | 'y' | null,
+	layout: GridLayout
+): Beam {
 	const s = layout.tileSize;
 	const x0 = layout.offsetX + (a.x + 0.5) * s;
 	const y0 = layout.offsetY + (a.y + 0.5) * s;
 	const x1 = layout.offsetX + (b.x + 0.5) * s;
 	const y1 = layout.offsetY + (b.y + 0.5) * s;
 	const len = Math.hypot(x1 - x0, y1 - y0);
-	const ang = len > 0 ? Math.atan2(y1 - y0, x1 - x0) : hazard.axis === 'y' ? Math.PI / 2 : 0;
+	const ang = len > 0 ? Math.atan2(y1 - y0, x1 - x0) : axis === 'y' ? Math.PI / 2 : 0;
 	return { x0, y0, ang, len, seed: a.x * 7 + a.y * 13 };
 }
 
@@ -77,9 +89,31 @@ export function drawRiftWarning(
 	time: number
 ): void {
 	const beam = beamOf(hazard, layout);
-	if (!beam) {
-		return;
+	if (beam) {
+		warnBeam(ctx, beam, layout, p, soon, time);
 	}
+}
+
+/** The same marking along any straight run of tiles (the cross's four arms). */
+export function drawLaneWarning(
+	ctx: CanvasRenderingContext2D,
+	lane: Lane,
+	layout: GridLayout,
+	p: number,
+	soon: number,
+	time: number
+): void {
+	warnBeam(ctx, beamBetween(lane.a, lane.b, null, layout), layout, p, soon, time);
+}
+
+function warnBeam(
+	ctx: CanvasRenderingContext2D,
+	beam: Beam,
+	layout: GridLayout,
+	p: number,
+	soon: number,
+	time: number
+): void {
 	const s = layout.tileSize;
 	const pts = seam(beam, s);
 	ctx.save();
@@ -128,9 +162,29 @@ export function drawRiftBeam(
 	time: number
 ): void {
 	const beam = beamOf(hazard, layout);
-	if (!beam) {
-		return;
+	if (beam) {
+		burstBeam(ctx, beam, layout, k, time);
 	}
+}
+
+/** The same burst along any straight run of tiles. */
+export function drawLaneBeam(
+	ctx: CanvasRenderingContext2D,
+	lane: Lane,
+	layout: GridLayout,
+	k: number,
+	time: number
+): void {
+	burstBeam(ctx, beamBetween(lane.a, lane.b, null, layout), layout, k, time);
+}
+
+function burstBeam(
+	ctx: CanvasRenderingContext2D,
+	beam: Beam,
+	layout: GridLayout,
+	k: number,
+	time: number
+): void {
 	const s = layout.tileSize;
 	const pts = seam(beam, s);
 	const wobble = 0.7 + 0.3 * Math.sin(time * 60);

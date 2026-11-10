@@ -155,8 +155,8 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
      4. **The attacks, one family at a time**, each with its telegraph and its effect, built
         from the real numbers (`logic/doom/DoomBalance`, `DoomAttackPlanner`): dash, rift,
         seals, pull, cross, void trail, split, eruption, corruption, blink, brood.
-        Family 1 (dash and rift) is done (see Done, "Part II, 1.4, family 1"); next: seals and
-        pull.
+        Family 1 (dash and rift) is done (see Done, "Part II, 1.4, family 1"); the other attacks
+        were restyled in one pass without a mock-up each (see Done, "Part II, 1.4 and 1.5").
      5. **Weather and light**: the ash storm and the night (today's lights that follow Pac-Man
         flicker like a strobe, `render/doom/DoomLightmap.ts`), the corrupted tiles in the
         hell's palette (`DoomCombatView.drawCorruption`).
@@ -599,3 +599,18 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   Ms. Pac-Man, the berserk and a charge). `paintArmor` stays in `heroArmor.ts` and in the `hero`
   prototype's "Броня ада" button only until the redesign is decided. Not checked: the death in
   the hell, a real BFG fight, the night.
+- Part II, 1.4 (the other attacks) and 1.5 (weather and light), one pass (eighth chat; the owner
+  agreed to stop making a mock-up per family once the look was set): the old violet and the flat
+  red fills are gone from the attacks, the hell's palette is the maze's cord (ink, red, orange,
+  white-hot). Pull: the chains are dark-bodied cords with a hot line and ember beads. Cross: its
+  four arms are marked and burst like the rift (`doomRift` takes any straight run of tiles). The
+  eruption's marking and burst are orange (were violet), the corrupted tiles are ink with hot
+  cracks, the locked seals and the boss's hit sparks are in the same palette. Weather and light:
+  the night is weaker and softer in colour (a neutral dark maroon, not one red multiplier), the
+  ash storm's tint is lighter, and the light of a burst dies down with it instead of cutting out.
+  The echo keeps its cold violet on purpose, to tell it from the boss. Checked: `npm run check`,
+  `npm test` (210), ESLint and Prettier, the `hell` prototype with attacks forced in phases 2 and
+  3 (frame series): the cross's arms, the eruption's rings, the void cells and the rift's burst
+  show in the new palette, the night keeps the maze and the cord readable, the console is clean.
+  Not checked: the pull's chains and the corrupted tiles in play (not on screen in the frames),
+  the seal's own burst, the split attack, a long night fight for strobing, a GPU.

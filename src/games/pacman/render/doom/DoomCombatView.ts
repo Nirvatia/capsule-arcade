@@ -7,10 +7,20 @@ import { VOID_FLICKER } from '../../logic/doom/DoomBalance';
 import { DOOM_TILE } from './DoomBake';
 import { barrelSprite, glowTexture, pickupSprite } from './DoomSprites';
 import { drawImp } from './HellImpView';
-import { drawRiftBeam, drawRiftWarning, RiftScars } from './doomRift';
+import {
+	drawLaneBeam,
+	drawLaneWarning,
+	drawRiftBeam,
+	drawRiftWarning,
+	RiftScars
+} from './doomRift';
+import type { Lane } from './doomRift';
+import { CROSS_ACTIVE } from '../../logic/doom/DoomBalance';
 
 export class DoomCombatView {
 	private readonly scars = new RiftScars();
+	/** When the cross's burst was first seen, for its short fade. */
+	private crossT0 = -1;
 
 	/** Everything lying on the floor, drawn under the boss. */
 	drawGround(
@@ -27,7 +37,7 @@ export class DoomCombatView {
 		this.scars.track(boss.hazardList, time);
 		this.scars.draw(ctx, layout, time);
 		this.drawHazardWarnings(ctx, boss, layout, time);
-		this.drawCrossTelegraph(ctx, boss, grid, layout);
+		this.drawCrossTelegraph(ctx, boss, grid, layout, time);
 		this.drawPickups(ctx, doom, layout, time);
 		this.drawBarrels(ctx, doom, layout, time);
 	}
@@ -66,28 +76,37 @@ export class DoomCombatView {
 		const nx = len > 0 ? -(y1 - y0) / len : 0;
 		const ny = len > 0 ? (x1 - x0) / len : 0;
 		ctx.save();
-		ctx.globalCompositeOperation = 'lighter';
 		for (let strand = 0; strand < 3; strand += 1) {
-			ctx.strokeStyle = `rgba(170,60,255,${0.35 * fade})`;
-			ctx.lineWidth = Math.max(1, s * 0.06);
-			ctx.beginPath();
-			for (let i = 0; i <= 24; i += 1) {
-				const u = i / 24;
-				const wave = Math.sin(u * 10 - time * 9 + strand * 2.1) * s * 0.18 * Math.sin(u * Math.PI);
-				const x = x0 + (x1 - x0) * u + nx * wave;
-				const y = y0 + (y1 - y0) * u + ny * wave;
-				if (i === 0) {
-					ctx.moveTo(x, y);
-				} else {
-					ctx.lineTo(x, y);
+			const cord = () => {
+				ctx.beginPath();
+				for (let i = 0; i <= 24; i += 1) {
+					const u = i / 24;
+					const wave =
+						Math.sin(u * 10 - time * 9 + strand * 2.1) * s * 0.18 * Math.sin(u * Math.PI);
+					const x = x0 + (x1 - x0) * u + nx * wave;
+					const y = y0 + (y1 - y0) * u + ny * wave;
+					if (i === 0) {
+						ctx.moveTo(x, y);
+					} else {
+						ctx.lineTo(x, y);
+					}
 				}
-			}
-			ctx.stroke();
+				ctx.stroke();
+			};
+			// a dark body, then the hot line: the same cord as the maze's outline
+			ctx.globalCompositeOperation = 'source-over';
+			ctx.strokeStyle = `rgba(30,4,8,${0.7 * fade})`;
+			ctx.lineWidth = Math.max(1.4, s * 0.1);
+			cord();
+			ctx.globalCompositeOperation = 'lighter';
+			ctx.strokeStyle = `rgba(255,96,64,${0.55 * fade})`;
+			ctx.lineWidth = Math.max(1, s * 0.04);
+			cord();
 		}
 		// beads crawling toward the boss
 		for (let i = 0; i < 6; i += 1) {
 			const u = 1 - ((time * 0.9 + i / 6) % 1);
-			ctx.fillStyle = `rgba(220,150,255,${0.7 * fade})`;
+			ctx.fillStyle = `rgba(255,190,120,${0.8 * fade})`;
 			ctx.beginPath();
 			ctx.arc(x0 + (x1 - x0) * u, y0 + (y1 - y0) * u, Math.max(1, s * 0.07), 0, Math.PI * 2);
 			ctx.fill();
@@ -117,10 +136,10 @@ export class DoomCombatView {
 				const py = layout.offsetY + y * s;
 				const pulse = 0.5 + 0.5 * Math.sin(time * 2.2 + x * 0.9 + y * 1.3);
 				ctx.globalAlpha = 0.75;
-				ctx.fillStyle = '#0a0410';
+				ctx.fillStyle = '#12030a';
 				ctx.fillRect(px, py, s, s);
 				ctx.globalAlpha = 0.35 + 0.3 * pulse;
-				ctx.strokeStyle = '#8a2aff';
+				ctx.strokeStyle = '#d0472a';
 				ctx.lineWidth = Math.max(0.8, s * 0.045);
 				ctx.beginPath();
 				for (let k = 0; k < 3; k += 1) {
@@ -194,11 +213,11 @@ export class DoomCombatView {
 				const py = layout.offsetY + tile.y * s;
 				ctx.globalCompositeOperation = 'source-over';
 				ctx.globalAlpha = (0.18 + 0.32 * p) * flicker;
-				ctx.fillStyle = rift ? '#3a0010' : '#1a0020';
+				ctx.fillStyle = rift ? '#3a0010' : '#2a0508';
 				ctx.fillRect(px + 1, py + 1, s - 2, s - 2);
 				ctx.globalCompositeOperation = 'lighter';
 				ctx.globalAlpha = (0.3 + 0.7 * p) * flicker;
-				ctx.strokeStyle = rift ? '#ff3a1a' : '#c02aff';
+				ctx.strokeStyle = rift ? '#ff3a1a' : '#ff7a3a';
 				ctx.lineWidth = Math.max(0.8, s * (0.04 + 0.05 * p));
 				ctx.beginPath();
 				// a crack that grows across the tile as the blast nears
@@ -249,8 +268,8 @@ export class DoomCombatView {
 				const r = s * (0.3 + 0.5 * (1 - k));
 				ctx.globalCompositeOperation = 'lighter';
 				const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-				g.addColorStop(0, `rgba(255,220,255,${k})`);
-				g.addColorStop(0.4, `rgba(200,60,255,${0.8 * k})`);
+				g.addColorStop(0, `rgba(255,236,210,${k})`);
+				g.addColorStop(0.4, `rgba(255,110,40,${0.8 * k})`);
 				g.addColorStop(1, 'rgba(0,0,0,0)');
 				ctx.fillStyle = g;
 				ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
@@ -281,7 +300,7 @@ export class DoomCombatView {
 			if (cell.kind === 'seal') {
 				ctx.save();
 				ctx.globalAlpha = alpha * 0.85;
-				ctx.fillStyle = '#050005';
+				ctx.fillStyle = '#12030a';
 				ctx.fillRect(px, py, s, s);
 				ctx.restore();
 				drawSigil(ctx, px + s / 2, py + s / 2, s * 0.46, time, alpha, 1);
@@ -312,58 +331,59 @@ export class DoomCombatView {
 		}
 	}
 
+	/** The cross's four arms: marked like the rift while he winds up, burst when he lets go. */
 	private drawCrossTelegraph(
 		ctx: CanvasRenderingContext2D,
 		boss: DoomBossService,
 		grid: GridService,
-		layout: GridLayout
+		layout: GridLayout,
+		time: number
 	): void {
 		const rs = boss.renderState;
-		if (boss.state !== 'TELEGRAPH' || rs.shape !== 'cross') {
+		const telegraph = boss.state === 'TELEGRAPH' && rs.shape === 'cross';
+		const active = boss.state === 'ACTIVE' && rs.shape === 'cross';
+		if (!active) {
+			this.crossT0 = -1;
+		}
+		if (!telegraph && !active) {
 			return;
 		}
 		const tile = boss.tile;
-		const progress = rs.progress;
-		const alpha = 0.15 + 0.45 * progress;
-		const s = layout.tileSize;
-		ctx.save();
-		ctx.globalAlpha = alpha;
-		ctx.fillStyle = '#ff2200';
-		const directions: Array<{ dx: number; dy: number }> = [
+		const lanes: Lane[] = [];
+		for (const dir of [
 			{ dx: 1, dy: 0 },
 			{ dx: -1, dy: 0 },
 			{ dx: 0, dy: 1 },
 			{ dx: 0, dy: -1 }
-		];
-		for (const dir of directions) {
+		]) {
 			let cx = tile.x + dir.dx;
 			let cy = tile.y + dir.dy;
 			let steps = 0;
+			let last: { x: number; y: number } | null = null;
 			while (steps < 32 && grid.isInside(cx, cy) && grid.isWalkable(cx, cy)) {
-				const px = layout.offsetX + cx * s;
-				const py = layout.offsetY + cy * s;
-				ctx.fillRect(px + 1, py + 1, s - 2, s - 2);
+				last = { x: cx, y: cy };
 				cx += dir.dx;
 				cy += dir.dy;
 				steps += 1;
 			}
+			if (last) {
+				lanes.push({ a: { x: tile.x + dir.dx, y: tile.y + dir.dy }, b: last });
+			}
 		}
-		if (progress > 0.85) {
-			const flashAlpha = 0.3 * Math.abs(Math.sin(progress * 40));
-			ctx.globalAlpha = flashAlpha;
-			ctx.fillStyle = '#ffffff';
-			for (const dir of directions) {
-				let cx = tile.x + dir.dx;
-				let cy = tile.y + dir.dy;
-				let steps = 0;
-				while (steps < 32 && grid.isInside(cx, cy) && grid.isWalkable(cx, cy)) {
-					const px = layout.offsetX + cx * s;
-					const py = layout.offsetY + cy * s;
-					ctx.fillRect(px, py, s, s);
-					cx += dir.dx;
-					cy += dir.dy;
-					steps += 1;
-				}
+		ctx.save();
+		if (telegraph) {
+			const p = rs.progress;
+			const soon = p > 0.85 ? 0.55 + 0.45 * Math.sin(p * 120) : 1;
+			for (const lane of lanes) {
+				drawLaneWarning(ctx, lane, layout, p, soon, time);
+			}
+		} else {
+			if (this.crossT0 < 0) {
+				this.crossT0 = time;
+			}
+			const k = Math.max(0, 1 - (time - this.crossT0) / CROSS_ACTIVE);
+			for (const lane of lanes) {
+				drawLaneBeam(ctx, lane, layout, k, time);
 			}
 		}
 		ctx.restore();
