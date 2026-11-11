@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Переход в аркаду и обратно</title>
+    <!-- Prototype for the arcade shift (the way in and out): the game's own `ArcadeShift` pass
+         on a real season world and the arcade's first screen. Built from the sources:
+         `node prototypes/pacman/build.mjs shift`; open as a file.
+         Query: ?kind=enter|leave&t=0..1&season=summer|autumn|winter|spring -->
+    <style>
+      html,body{height:100%;margin:0;overflow:hidden;background:#101014}
+      #view{position:fixed;inset:0;display:block}
+      #dock{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:8px;width:calc(100vw - 32px);max-width:640px;font:700 13px "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+      #tl{display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:999px;background:rgba(20,22,26,.85);color:#e8f4ee;width:100%;box-sizing:border-box}
+      #tl input{flex:1;accent-color:#5fe0a8}
+      #tt{min-width:72px;text-align:right;font-variant-numeric:tabular-nums}
+      #ctl{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+      .bt{border:0;cursor:pointer;padding:8px 13px;border-radius:999px;color:#102018;background:#cfeedd}
+      .bt[aria-pressed="true"]{color:#fff;background:#1e9a6a}
+      .bt.go{background:#7fe0b0}
+    </style>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <div id="dock">
+      <div id="tl"><input id="ts" type="range" min="0" max="1000" value="0" aria-label="время" /><span id="tt"></span></div>
+      <div id="ctl">
+        <button class="bt" data-kind="enter">Вход в аркаду</button>
+        <button class="bt" data-kind="leave">Выход из аркады</button>
+        <button class="bt go" id="bp">▶ Играть</button>
+        <button class="bt" id="bv">1×</button>
+        <button class="bt" data-season="summer">Лето</button>
+        <button class="bt" data-season="autumn">Осень</button>
+        <button class="bt" data-season="winter">Зима</button>
+        <button class="bt" data-season="spring">Весна</button>
+      </div>
+    </div>
+    <script>/*SCRIPT*/</script>
+  </body>
+</html>

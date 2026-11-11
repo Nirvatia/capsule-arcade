@@ -5,7 +5,7 @@ import { PacmanHero } from './actors/hero/PacmanHero';
 import { MsPacmanHero } from './actors/hero/MsPacmanHero';
 import type { PacmanAudioCue } from '../core/Events';
 import type { PlayerDrawOptions } from './actors/playerDrawOptions';
-import { chargePainter } from './actors/hero/heroArmor';
+import { chargePainter } from './actors/hero/heroCharge';
 import { heroSeasonOf } from './actors/hero/heroSeasons';
 import { EchoCloneView } from './actors/EchoCloneView';
 import { FruitView } from './items/fruit/FruitView';
@@ -93,7 +93,7 @@ export class SharedLayers {
 				dying,
 				shield,
 				padAhead,
-				armor: true
+				chargeLight: true
 			};
 		}
 		const combat = level.combat;

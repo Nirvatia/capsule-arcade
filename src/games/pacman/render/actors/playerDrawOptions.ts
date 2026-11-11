@@ -20,6 +20,6 @@ export interface PlayerDrawOptions {
 	readonly padAhead?: boolean;
 	/** How far the hero has sunk into a tunnel pad, 0..1 (`padSink`). */
 	readonly padSink?: number;
-	/** The hell's armor: a level with a boss fight dresses both heroes in it. */
-	readonly armor?: boolean;
+	/** The hell's BFG charge light: a level with a boss fight gives both heroes it. */
+	readonly chargeLight?: boolean;
 }

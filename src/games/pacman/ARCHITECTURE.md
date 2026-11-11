@@ -53,12 +53,18 @@ render/
                    (the shockwave, flashes, sparks, pop-ups, edge pulse), fxTypes
   transitions/decay/       the death black hole: field (Dijkstra), timeline (pure clock), WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
-  actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroArmor (the hell's armor, painted over the body), playerDrawOptions; HeroView drives them, in every world) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
-  common/          textures, GlPass (every WebGL2 pass), colour, maths, seeded random,
+  transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
+  actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
+  common/          textures, GlPass (every WebGL2 pass), boardScale (where the maze goes on the
+                   screen: 85 % of the height, below the HUD band), colour, maths, seeded random,
                    worldDecor (the decor layout and stream shared by every world)
 audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), ArcadeSynth
-ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (GameHud, ArcadeHud,
-             hudSnapshot, hudFrame), screens/, debug/ (dev panel and log), i18n
+ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the HUD of the
+             four season worlds, `SeasonHud` in the side margins and `SeasonHudStack` in two bands
+             on a taller screen, over `seasonArt` and `seasonThemes`; `BossHud`, the boss levels' one, over
+             `hellArt`; ArcadeHud; hudSnapshot, hudFrame), screens/ (`WorldScreens` over `screenArt` for the
+             seasons and the hell; `GameScreens`, the older cards, for the arcade),
+             debug/ (dev panel and log), MuteButton (a knob, bottom left), i18n
 ```
 
 ## Rules of thumb
@@ -105,16 +111,23 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (GameHud, Arc
 ## Game flow
 
 ```
-menu ──(fade, not on the session's 1st game)──▶ ready(intro 5 s, jingle) ──▶ playing ──▶ death ──▶ ready(short 2 s)
+menu ──(no fade on the first world)──▶ ready(intro 5 s, jingle) ──▶ playing ──▶ death ──▶ ready(short 2 s)
                   ▲   skip: Enter                │  │          └─ no lives ─▶ game-over
                   │                              │  └─▶ level-clear (season turn) ─▶ ready(short)
-game-over ─fade───┘  (input locked 1 s)          └─ Easter egg ──fade──▶ arcade ready(short)
-hell: losing the fight (abyss) ──fade──▶ next level, ready(short)
+game-over ─no fade (same overlay, same world)┘   └─ Easter egg ─▶ world-shift (enter) ─▶ arcade ready(short)
+game-over / menu ─▶ start: on level 1 at once; from another world world-shift (rebirth: the
+      death's black hole unfolds level 1) ─▶ ready(intro); a dev start-at level keeps the fade
+hell: losing the fight (abyss) ──black hole unfolds the next world, no fade──▶ next level, ready(short)
 boss level: boss dies → heart + exit → taking either ends the level (level-clear)
-arcade: death ─▶ ready(short) | last try ─fade─▶ main game; level-clear: flash
-      (+ intermission after round 2) ─▶ next round in place | after round 3 ─fade─▶ home
+arcade: death ─▶ ready(short) | last try ─world-shift (leave)─▶ main game; level-clear: flash
+      (+ intermission after round 2) ─▶ next round in place | after round 3 ─world-shift (leave)─▶ home
+```
+
+Fades remain for the pause and READY → menu, a dev jump to a level and a dev start-at level.
+
 pause (Space/P, Esc in play): ready, playing, death, level-clear — freezes and resumes the
 same state; tab hidden / window blur auto-pauses; requests during a fade apply after it.
+
 ```
 
 Phases (`config/flowConfig.ts`): death `shatter` (drain, fall into the hole) → `void` (flash,
@@ -141,9 +154,10 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
 
 ## Debug tools (dev build only)
 
-- Dev panels: `` ` `` or the DEV button; `F8` steps one frame. Panel groups: FLOW, LEVEL,
-  PLAYER, BOSS, SPAWNS, RENDER (grid, headings, hitboxes, decay / turn fronts); the log
-  window shows live timers and the `debug:log` stream.
+- Dev panels: `` ` `` or the DEV button; `F8` steps one frame. Panel groups (`ui/debug/`, the
+  look is `devUi.css`): a status card, then ВРЕМЯ, УРОВЕНЬ, ИГРОК, БОСС (the hell), СПАВН,
+  ОТРИСОВКА (grid, headings, hitboxes, decay / turn fronts); the log window shows live timers
+  and the `debug:log` stream. The text grows with the screen (12 to 16 px).
 - `window.__pacman = { level, director, render }` for the console and Playwright.
   Directions are upper case: `level.setDesiredDirection('LEFT')`. `director.startGame()`
   fades for 0.8 s before READY; wait for it before `showPlaying()` / `debug*()` (both are
@@ -199,12 +213,13 @@ screenshots or an artifact Claude builds from the page, never by opening the fil
 approved prototype already is the game code. `prototypes/pacman/art/hell-flesh-scene.html` is
 not a built prototype but the source of the accepted hell scene (a standalone page, open it as a
 file), the reference for the hell's art pass; `hell-flesh-heroes.html` is the same scene with
-the heroes' mock-up on it (the armor the game now has). Existing: `hell`, `arcade`,
+the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arcade`,
 `hud`, `death` (the death black hole: the real `LevelDecay` on the real worlds, a slider over the 4 s),
 `collectibles` (with each item's reach from its tile centre and a tile grid),
 `mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
 `mood` (the hell's night and ash storm styles side by side on the real `grid_doom`, the hero walking a corridor so the light can be judged in motion),
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
-services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's armor and BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`, `heroArmor`); `winter-decay.html` is an older standalone page.
+services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
+`MsPacmanHero`, `heroCharge`); `winter-decay.html` is an older standalone page.
+```

@@ -52,7 +52,7 @@ export class PlayingState implements GameState {
 			echo.update(dt, player, { ghosts, fruit });
 		}
 		if (egg.consumeSecretRequested()) {
-			ctx.director.changeLevel(() => ctx.level.enterSecretLevel());
+			ctx.director.shiftWorld('enter', () => ctx.level.enterSecretLevel());
 			return;
 		}
 		const fireRequested = ctx.level.consumeFireRequest();

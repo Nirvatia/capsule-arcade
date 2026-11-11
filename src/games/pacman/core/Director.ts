@@ -15,6 +15,8 @@ import type { DeathSnapshot } from './states/DeathState';
 import { LevelClearState } from './states/LevelClearState';
 import type { LevelClearSnapshot } from './states/LevelClearState';
 import { GameOverState } from './states/GameOverState';
+import { WorldShiftState } from './states/WorldShiftState';
+import type { WorldShiftKind, WorldShiftSnapshot } from './states/WorldShiftState';
 import { debugLog } from '../logic/debug/debugLog';
 
 export type { GameState, GameStateContext } from './flow/GameState';
@@ -24,12 +26,13 @@ export type { GameState, GameStateContext } from './flow/GameState';
  * instead of replacing it. Debug shortcuts bypass the table.
  */
 const TRANSITIONS: Readonly<Record<PacmanStateName, readonly PacmanStateName[]>> = {
-	menu: ['ready'],
+	menu: ['ready', 'world-shift'],
 	ready: ['playing', 'menu'],
-	playing: ['death', 'level-clear', 'game-over', 'ready'],
-	death: ['ready', 'game-over'],
-	'level-clear': ['ready'],
-	'game-over': ['ready', 'menu'],
+	playing: ['death', 'level-clear', 'world-shift', 'game-over', 'ready'],
+	death: ['ready', 'world-shift', 'game-over'],
+	'level-clear': ['ready', 'world-shift'],
+	'world-shift': ['ready'],
+	'game-over': ['ready', 'menu', 'world-shift'],
 	paused: ['menu']
 };
 
@@ -114,6 +117,12 @@ export class Director {
 		return state instanceof LevelClearState ? state.levelClear : null;
 	}
 
+	/** The arcade shift on screen (its kind and where it starts), or null. */
+	get worldShift(): WorldShiftSnapshot | null {
+		const state = this.activeState;
+		return state instanceof WorldShiftState ? state.shift : null;
+	}
+
 	update(dt: number): void {
 		if (!Number.isFinite(dt) || dt < 0) {
 			console.error('Director.update', 'invalid delta time', dt);
@@ -134,8 +143,9 @@ export class Director {
 		if (this.current.name !== 'menu' && this.current.name !== 'game-over') {
 			return;
 		}
+		const level = this.context.level;
 		const start = (): void => {
-			this.context.level.startNewGame();
+			level.startNewGame();
 			this.setState(new ReadyState('intro'));
 		};
 		// the menu already shows level 1's world: the session's first game starts without a fade
@@ -145,6 +155,16 @@ export class Director {
 			return;
 		}
 		this.playedOnce = true;
+		// a run lost on level 1 stands on the first world already
+		if (level.level === 1 && !level.secretMode && !level.hellMode) {
+			start();
+			return;
+		}
+		// from any other world the death's black hole unfolds the first level
+		if (level.peekNewGame()) {
+			this.shiftWorld('rebirth', () => level.startNewGame());
+			return;
+		}
 		this.fadeTo(start);
 	}
 
@@ -185,7 +205,12 @@ export class Director {
 			return;
 		}
 		const from = this.current.name;
-		if (from === 'paused' || from === 'ready' || from === 'game-over') {
+		if (from === 'game-over') {
+			// the menu is the same overlay over the same world: nothing to fade between
+			this.setState(new MenuState());
+			return;
+		}
+		if (from === 'paused' || from === 'ready') {
 			this.fadeTo(() => this.setState(new MenuState()));
 		}
 	}
@@ -202,6 +227,14 @@ export class Director {
 		this.setState(new LevelClearState());
 	}
 
+	/**
+	 * Leaves the level for another world behind the arcade shift; `route` builds the next level
+	 * at the end, when the new world is already on screen.
+	 */
+	shiftWorld(kind: WorldShiftKind, route: () => void): void {
+		this.setState(new WorldShiftState(kind, route));
+	}
+
 	showGameOver(): void {
 		this.setState(new GameOverState());
 	}
@@ -213,6 +246,12 @@ export class Director {
 	startLevelInPlace(route: () => void): void {
 		route();
 		this.setState(new ReadyState('short'));
+	}
+
+	/** Starts a new run in place, when its first world is already on screen (after a rebirth). */
+	startGameInPlace(route: () => void): void {
+		route();
+		this.setState(new ReadyState('intro'));
 	}
 
 	/**
@@ -277,6 +316,11 @@ export class Director {
 
 	debugEnterSecret(): void {
 		if (this.fadeValue) {
+			return;
+		}
+		if (this.current.name === 'playing') {
+			// the dev panel's Secret button shows the real way in, as the Easter egg does
+			this.shiftWorld('enter', () => this.context.level.debugEnterSecret());
 			return;
 		}
 		this.context.level.debugEnterSecret();

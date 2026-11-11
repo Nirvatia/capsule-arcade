@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Экраны Pac-Man</title>
+    <!-- Mock-up of the screens (menu, READY, pause, death, game over) in the world's own stuff,
+         built from the game's art modules (`ui/hud/season/seasonArt`, `ui/screens/screenArt`):
+         `node prototypes/pacman/build.mjs screens`; open as a file. The frames behind are real
+         game frames injected by the publishing step (`window.__BG`); without them the stage is dark. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@500;600&family=Caveat:wght@600&display=swap" />
+    <style>
+      /* Layout: a switch row, then one stage (a game frame with the screen drawn over it), then notes. Single dark page on purpose: the frames carry their own colour. */
+      :root{--page:#0c0f14;--ink:#e9eef7;--dim:#97a3b8;--line:#232b3a;--accent:#ffcf5a;--btn:#161d2a;color-scheme:dark}
+      *{box-sizing:border-box}
+      body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 Fredoka,system-ui,sans-serif;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+      .wrap{max-width:1296px;margin:0 auto;display:grid;gap:14px}
+      h1{font:600 20px Fredoka,system-ui,sans-serif;margin:0;text-wrap:balance}
+      .lead{margin:2px 0 0;color:var(--dim);max-width:80ch}
+      .row{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+      .grp{display:flex;flex-wrap:wrap;gap:6px}
+      .grp button,.opt{border:1px solid var(--line);background:var(--btn);color:var(--ink);font:600 13px Fredoka,system-ui,sans-serif;padding:7px 14px;border-radius:999px;cursor:pointer}
+      .grp button[aria-pressed="true"],.opt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#1a1405}
+      button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+      .viewport{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000;display:flex;justify-content:center}
+      .stage{position:relative;transform-origin:top left;background:#10161c center/100% 100% no-repeat}
+      .stage .veil{position:absolute;inset:0;pointer-events:none}
+      .stage svg.screen{position:absolute;overflow:visible}
+      .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+      .notes div{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:rgba(255,255,255,.03)}
+      .notes h2{font:600 15px Fredoka,system-ui,sans-serif;margin:0 0 4px}
+      .notes p{margin:0;color:var(--dim);max-width:60ch}
+      /* the drawn texts */
+      .lab{font-family:Fredoka,'Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif;font-weight:600;letter-spacing:2.4px;fill:var(--label);stroke:var(--ink-line);stroke-width:3.2px;paint-order:stroke;stroke-linejoin:round}
+      .num{font-family:'Lilita One','Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif;fill:url(#grad);stroke:var(--num-ink);stroke-width:.17em;paint-order:stroke;stroke-linejoin:round;font-variant-numeric:tabular-nums}
+      .num.red{fill:url(#grad-red)}
+      .chalk{font-family:Caveat,'Comic Sans MS',cursive;font-weight:600;fill:#f3f0e0;opacity:.92}
+      .sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 6s ease-in-out infinite}
+      .sway.hang{transform-origin:50% 0%}
+      .sway.b{animation-duration:7.2s;animation-delay:-2s}
+      @keyframes sway{0%,100%{transform:rotate(calc(var(--rot,0deg) - .6deg))}50%{transform:rotate(calc(var(--rot,0deg) + .6deg))}}
+      .bob{transform-box:fill-box;transform-origin:50% 100%;animation:bob 2.4s ease-in-out infinite}
+      @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+      .hit{cursor:pointer;transition:transform .12s ease,filter .12s ease;transform-box:fill-box;transform-origin:50% 50%}
+      .hit:hover{transform:translateY(-3px);filter:brightness(1.1)}
+      .hit:active{transform:translateY(1px) scale(.98)}
+      .coin{cursor:pointer;transition:transform .2s ease}
+      .coin:hover{transform:translateY(-3px)}
+      @media (prefers-reduced-motion:reduce){.sway,.bob{animation:none}.hit,.coin{transition:none}}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div>
+        <h1>Экраны Pac-Man</h1>
+        <p class="lead">Меню, READY, пауза, смерть и game over в семье вывесок: те же доски, верёвки и ленты, что в HUD, из материала мира на экране. Кнопки висят на верёвках под вывеской, подсказки написаны мелом, выбор героя это монеты на бревне. Нажимай на кнопки: они реагируют.</p>
+      </div>
+      <div class="row">
+        <div class="grp" id="screens" role="group" aria-label="Экран"></div>
+        <div class="grp" id="orient" role="group" aria-label="Экран устройства"></div>
+        <div class="grp" id="opts"></div>
+      </div>
+      <div class="viewport" id="viewport"><div class="stage" id="stage"></div></div>
+      <div class="notes">
+        <div><h2>Вывеска, кнопки, мел</h2><p>У каждого экрана вывеска с названием на двух кольях, а кнопки подвешены на верёвках, как таблички. Главная (старт, продолжить, ещё раз) крупнее и в кольце света мира. Подсказки управления написаны мелом на доске.</p></div>
+        <div class="grp-note"><h2>Мир остаётся мирами</h2><p>Меню в лете, READY в осени, пауза в зиме, game over в весне. Экран берёт материал текущего мира, как HUD. Фон затемнён, чтобы вывеска читалась, но мир виден.</p></div>
+        <div><h2>Что сохраняется</h2><p>Те же экраны и данные: выбор героя и рекорд в меню, уровень и мир, отсчёт и пропуск в READY, возобновить, перезапуск и меню в паузе, счёт и новый рекорд в game over, число жизней при смерти. Язык переключается кнопкой-ручкой.</p></div>
+      </div>
+    </div>
+    <script>/*SCRIPT*/</script>
+  </body>
+</html>

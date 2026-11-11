@@ -5,7 +5,7 @@ import { DoomWorld, MOOD_STYLES } from '../../../src/games/pacman/render/doom/Do
 import type { DoomLight, MoodStyleId } from '../../../src/games/pacman/render/doom/DoomWorld';
 import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinkyView';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
-import { chargePainter } from '../../../src/games/pacman/render/actors/hero/heroArmor';
+import { chargePainter } from '../../../src/games/pacman/render/actors/hero/heroCharge';
 
 const ORDER: readonly MoodStyleId[] = ['cord', 'torch', 'pulse'];
 const q = new URLSearchParams(location.search);

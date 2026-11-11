@@ -65,7 +65,7 @@ export class DeathState implements GameState {
 		if (ctx.level.secretMode) {
 			// the arcade's own tries: the last one returns to the main game, no penalty
 			if (combat.arcadeLost) {
-				ctx.director.changeLevel(() => ctx.level.leaveArcade());
+				ctx.director.shiftWorld('leave', () => ctx.level.leaveArcade());
 				return;
 			}
 			ctx.level.prepareAfterDeath();
@@ -73,8 +73,9 @@ export class DeathState implements GameState {
 			return;
 		}
 		if (combat.hellDefeat) {
-			// falling into the abyss ends the hell level, not the run
-			ctx.director.changeLevel(() => ctx.level.advanceLevel());
+			// falling into the abyss ends the hell level, not the run; the black hole has unfolded
+			// the next level's world (the pipeline), so it starts in place, with no fade
+			ctx.director.startLevelInPlace(() => ctx.level.advanceLevel());
 			return;
 		}
 		if (combat.lives > 0) {

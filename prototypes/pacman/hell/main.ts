@@ -29,7 +29,7 @@ import { glowTexture, pickupSprite } from '../../../src/games/pacman/render/doom
 import { HeroView } from '../../../src/games/pacman/render/actors/HeroView';
 import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
-import { chargePainter } from '../../../src/games/pacman/render/actors/hero/heroArmor';
+import { chargePainter } from '../../../src/games/pacman/render/actors/hero/heroCharge';
 import type { GridLayout } from '../../../src/games/pacman/render/maze/GridView';
 
 type Pose = 'chase' | 'windup' | 'dash' | 'cast' | 'stunned' | 'hit';
@@ -368,7 +368,7 @@ function drawFight(f: Fight, dt: number, time: number): void {
 		look: doom.berserkActive || location.search.includes('zerk') ? 'berserk' : 'normal',
 		charge: location.search.includes('chg') ? 0.8 : doom.bfgChargeProgress,
 		dying: false,
-		armor: true
+		chargeLight: true
 	});
 	fx.draw(ctx, L, doom.shots, doom.tracerList);
 	world.drawFx(ctx);

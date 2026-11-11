@@ -97,7 +97,12 @@ export class GameMain implements GameModule {
 			},
 			menu: () => {
 				const state = director.stateName;
-				if (state === 'playing' || state === 'death' || state === 'level-clear') {
+				if (
+					state === 'playing' ||
+					state === 'death' ||
+					state === 'level-clear' ||
+					state === 'world-shift'
+				) {
 					director.togglePause();
 					return;
 				}

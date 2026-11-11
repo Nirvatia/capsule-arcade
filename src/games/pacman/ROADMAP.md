@@ -35,8 +35,8 @@ a suggestion.
 
 The plan has three parts, done in this order: **I** the main game (four seasons), **II** the boss
 levels, **III** the interface. The depth and post-processing pass comes last of all (see Later).
-Part I is done except the postponed items of step 4 (sound and tools: only the mute button is in)
-and step 6.3 (the death transition's seams between worlds). Part II is in step 1, the hell: its
+Part I is done except the postponed items of step 4 (sound and tools: only the mute button is in).
+Part II is in step 1, the hell: its
 world, maze, heroes, boss, weapons, attacks and light are in the game; the owner's second round of
 polish is the next work (see "Next chat" in part II). Part III (the interface) follows it.
 
@@ -59,8 +59,8 @@ polish is the next work (see "Next chat" in part II). Part III (the interface) f
 2. ~~**The heroes in code**~~ Done (see Done, "Part I, 2"). The owner's mock-ups,
    "Pac-Man · Shonen" and "Ms. Pac-Man · Maho-shoujo" (the Design canvas
    `3D55jqVpyq2Y5iTD5BWh3w`, anime direction), are `render/actors/hero/*`, in the game
-   through `HeroView` and checked in the `hero` prototype. In the hell both wear armor
-   (part II, step 1.1).
+   through `HeroView` and checked in the `hero` prototype. In the hell they are the same heroes
+   with the BFG charge's light (part II, step 1.1).
 
 3. **Mechanics and balance** (Sonnet; Opus for the hypnosis design).
    1. ~~**Echo clone mechanic**~~ Done (see Done, "Part I, 3.1").
@@ -75,10 +75,8 @@ polish is the next work (see "Next chat" in part II). Part III (the interface) f
       Done: the mute button (top-left, a gold 48 px button; on a narrow screen at the left edge, mid-height, `ui/MuteButton.svelte`; `audio/audioSettings`
       keeps the choice, `PacmanAudioPlayer` mutes the samples and `ArcadeSynth` its master
       gain). Left: the volume slider, and a key (`M` is taken: it switches the hero).
-   2. _(Postponed by the owner.)_ **Dev panel rework** (`ui/debug/*`): readable at 1440p (text and controls scale with
-      the screen), buttons grouped in collapsible sections by topic instead of one block,
-      the most used actions first; a control for the maze cycle (force a maze, show the
-      cycle).
+   2. ~~**Dev panel rework**~~ Done (see Done, "Part I, 4.2"); the maze-cycle control was left out at
+      the owner's word (nothing beyond the layout).
    3. _(Postponed: the owner is still working out how to generate the music.)_ **Music track support**: a looped file (ogg/mp3 from `static/`) per world, under the
       same volume. The seasons' music is optional; the hell's track is part II, step 1.8.
 
@@ -118,13 +116,11 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
       (`decayTimeline`).
    2. ~~**The look**~~ Done (see Done, "Part I, 6.2"): drain and rebirth, the collapse is a
       black hole (the owner's pick from a chat mock-up). In every world's death.
-   3. **Postponed to the hell's art pass (part II, step 1, the port):** the next frame. The pass still samples one scene, so the rebirth shows the
-      same level again: right for a death, not for the hell's lost fight (it still ends in the
-      fade to the next level) or a boss → season seam. For those the pass needs the next
-      level as a second texture, like `SeasonTurn`; boss levels of part II then take it by
-      adding their `style`.
-   4. ~~Tests~~ for the fronts, the clock and the geometry are in `decay.test.ts`; none yet for
-      a `from` / `to` pair (there is no such pair yet).
+   3. ~~**The next frame.**~~ Done (see Done, "Part I, 6.3"): the pass takes the next level as a
+      second texture; losing the hell's fight now unfolds the next world. Boss levels of part II
+      take it by adding their `style`.
+   4. ~~Tests~~ for the fronts, the clock and the geometry are in `decay.test.ts`; the flow of a
+      lost boss fight is in `director.test.ts`.
 
 ## Part II. Boss levels
 
@@ -172,8 +168,8 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
         token becomes `DB`).
      7. ~~**The port**~~ Done: the flesh world (`fleshBake`, `fleshLive`), the cord walls, the heroes
         (the season heroes plus the BFG charge's light; the doom-fighter armor was dropped), Blinky
-        and the imps, the weapons and pickups, the attacks. The world's death seams (part I, 6.3)
-        are still open.
+        and the imps, the weapons and pickups, the attacks. The world's death seam (part I, 6.3)
+        is closed.
      8. **The hell's music track** (the owner brings it: generated or a free licence).
      9. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
 
@@ -196,19 +192,16 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
       hazard (it hurts now). Ideas to try: a pale or white-hot core with a dark outline, a hue
       shift for live hazards, hatching or a moving edge for telegraphs, a floor tint under the whole
       threatened area. Test in grayscale too. A comparison page with every attack at once.
-   3. **Lower the heartbeat's maximum brightness.** The pulse (`fleshLive.heartbeat`: the wounds in
+   3. ~~**Lower the heartbeat's maximum brightness.**~~ Done (see Done, "second round, 3"). The pulse (`fleshLive.heartbeat`: the wounds in
       the walls, the lair's heart, the rifts' light, the cysts, `drawCord` at night) peaks too hot.
       Lower the peak, keep the 2.5 s rhythm; it is mostly a few constants.
    4. **Blinky and the imps get lost** (the owner does not yet know what to do): they are red on a
       red world. Options to try in a comparison page: a pale rim light or a thin pale outer outline,
       a faint halo in the boss's own colour, a colour shift away from red (blackened iron with hot
       features), brighter eyes, a small shadow disc on the floor. The imps keep the arcade colours.
-   5. **Open decisions** to ask about, not to assume: the night's style (the owner has not chosen
-      among `cord`, `torch` and `pulse`) and a real redesign of the storm (now it is the old ash
-      streaks and embers with a tint); the heroes (the owner may want a small hell mark on the
-      season heroes or a new look; until told, they stay as they are); the armor code
-      (`paintArmor`, `armorPainter` in `render/actors/hero/heroArmor.ts` and the `hero` prototype's
-      "Броня ада" button) is to be deleted once the heroes are settled.
+   5. ~~**Open decisions**~~ Decided by the owner: the night stays `cord` (`torch` and `pulse`
+      remain only as candidates in the `mood` prototype); the storm's redesign is still open (ask
+      before touching it); the heroes stay as they are; the armor code is deleted (see Done).
       Then part III (the interface), from a mock-up image the owner brings.
 
 2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it
@@ -236,17 +229,17 @@ in-game look, built from mock-ups the owner brings (made in a generator or found
 reference), not designed in the chat: Claude implements a given picture well and designs
 one poorly. The whole interface is code-drawn (CSS / SVG / Canvas), no raster assets.
 
-1. **One skeleton.** The same layout and slots in every world: score and high score,
-   level and world, lives, fruit row, power timer or weapon, dot progress, pause. Built
-   once, on the `HudSnapshot` that exists.
-2. **A skin per season.** The skeleton stays; the palette and small details follow the
-   season (a few small things, not a new layout).
-3. **A skin per boss level.** Each boss world has its own interface (the hell's boss box:
+1. ~~**One skeleton.**~~ Done for the season worlds on landscape screens (see Done, "Part III, 1-2"):
+   score and high score, level and world, lives, power timer, food trail, pause, in the side
+   margins (the fruit row was dropped by the owner), and in two bands on a taller screen. Left:
+   the hell's HUD (with the boss's own interface, a design to come).
+2. ~~**A skin per season.**~~ Done with the skeleton: the four materials.
+3. **A skin per boss level.** (The hell's is done, see Done, "Part III, 3".) Each boss world has its own interface (the hell's boss box:
    name, phase, HP with phase marks, the player's HP, weapon, berserk, BFG charge, the
    reward hint), on the same skeleton. Added as each boss lands; the hell's comes first.
-4. **The screens**: menu, pause and READY in the same family.
-5. **A full game-over screen**: the final score, the best score, level reached, fruit
-   collected, restart and menu.
+4. ~~**The screens**~~ Done (see Done, "Part III, 4-5"): menu, pause and READY in the same family.
+5. ~~**A full game-over screen**~~ Done with them: the score, the record, play again, the other
+   hero, menu. (Not the level reached and the fruit collected: the owner kept what it had.)
 6. The arcade (secret level) keeps its own pixel HUD.
 
 ## Later
@@ -688,3 +681,175 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   Three candidates in the `mood` prototype (artifact: see the chat): `cord` (the cord glows through
   the dark and holds the maze; the game's default for now), `torch` (a denser dark, a light thrown
   ahead along the heading), `pulse` (the dark recedes on every heartbeat). Nothing is chosen yet.
+- The hell's second round of polish, 5: the owner's decisions (ninth chat). The night stays
+  `cord`, the heroes stay the season heroes. The armor code is gone: `paintArmor`, `armorPainter`
+  and the armor palettes are deleted, `heroArmor.ts` became `heroCharge.ts` (only `chargePainter`,
+  the BFG charge's light), and the option and parameter that used to be called `armor` (they
+  already carried only the charge painter) are `chargeLight` in `HeroView`, `PlayerDrawOptions`,
+  `SharedLayers` and the `hell` prototype. The `hero` prototype lost its "Броня ада" button. The
+  frozen mock-up pages in `prototypes/pacman/art/` keep their own armor code. Checked:
+  `npm run check`, `npm test` (280), ESLint and Prettier on the changed files. Not checked:
+  the BFG charge in a running fight (the painter's code is unchanged).
+- The hell's second round of polish, 3: the heartbeat's peak (ninth chat). One constant,
+  `PEAK` (0.4) in `render/doom/fleshLive.ts`, scales the beat before every light that follows it
+  (the wounds and the cord, the lair's heart, the rifts' light, the cysts, the veins' blood); the
+  rhythm (2.5 s, a strong beat and a weak one) and the resting glow are unchanged. Measured in the
+  `hell` prototype with a fake clock over one beat (mean luminance of the region, peak against the
+  old one): the lair 81.5 -> 67.7 (rest 60), the whole maze 51.9 -> 49.2; the pulse still shows
+  (lair peak/rest 1.36 -> 1.13). If it is too flat, raise `PEAK`; at 0.6 the lair peaked at 76.3.
+  Checked: `hell` prototype without console errors. The night's pulse (`MoodStyle.beat` in
+  `DoomWorld`) also reads `heartbeat` and is not scaled; `cord` has it at 0.1.
+- Screen size, the tunnel pad and the fruit's edge (tenth chat, the owner's list; the owner put the
+  hell's second round (items 1, 2, 4 above) aside and went on to part III). The board:
+  `render/common/boardScale.boardPlacement` replaces the `0.75 * min(...)` of `MeadowWorld` and
+  `DoomWorld`. The old scale gave the walls ~69 % of the height at best (650 px on a 1080p browser
+  window), and page zoom changes the container and the css px in step, so it never helped. Now the
+  walls (the board without its empty border) take 85 % of the height (`BOARD_HEIGHT_SHARE`), at most
+  92 % of the width, and sit centred below a 96 px band that the HUD covers (`BOARD_TOP_RESERVE`);
+  on a short window (620 px high) the band wins and the walls take 84 %. Checked in the game at
+  1920x950, 1280x620 and 420x800 (the HUD clears the walls at each; the hell's boss box, which
+  makes the HUD taller, was not looked at). Tests: `boardScale.test.ts`. The tunnel pad's radius
+  is 10 % smaller (`PAD_RADIUS` 10.8 -> 9.72; the hell's rifts are unchanged). The fruit looked
+  sharp because the 250 px texture was shrunk to a 30-50 px tile in one `drawImage`, which a
+  bilinear sample cannot do cleanly past 2x; `collectibleSprite` now keeps the texture halved
+  down to 16 px (`mipChain`) and draws from the mip that is shrunk by 1x to 2x (`mipLevel`,
+  tested). Before and after, 32 px tile: the edges are smooth, the look is the owner's. The `ghosts`
+  comparison page (Blinky and the imps on the red) is deleted unchosen; the options were a pale
+  rim, a halo, blackened iron, bright eyes, a floor shadow and a combination (git history, commit
+  `39791b5`).
+- Part I, 6.3: the lost boss fight unfolds the next world (tenth chat). The death pass
+  (`DecayPass`, `decayShader`) has a second texture, `uNext`: with `DecayRequest.next` (the next
+  level's maze and respawn tile) the rebirth phase unfolds that picture, and its colour returns
+  along the next maze's corridors from its spawn tile (`LevelDecay.beginNext`); without it the
+  pass is as before. `RenderPipeline` renders the next level (`previewFor`, the same preview the
+  season turn uses) while a death with `combat.hellDefeat` plays, and stops drawing the hero once
+  the hole has closed (the next world has none until its READY). `DeathState` then starts the next
+  level in place (`startLevelInPlace`) instead of fading to black. Before: the hole unfolded the
+  hell again and a black fade cut to the next level. Other pairs (a season death, the season turn
+  into and out of a boss level) were already right. Checked in the real game (dev panel: Hell,
+  Die; frames every half second): the hell drains, falls into the hole, and the summer meadow of
+  level 6 unfolds out of it, READY follows with no black frame; no console errors. The HUD still
+  shows the hell's boss box and "3 lives left" until READY. Test: `director.test.ts` (checked to
+  fail on the old behaviour). Not done: the same for the arcade seams (the Easter egg into the
+  arcade, the arcade back to the main game, game over to the menu), which still use the screen
+  fade; the no-WebGL fallback veil shows no next world.
+- The arcade shift, the pass, its prototype and the flow (tenth chat; the owner approved the look). The owner picked one look for each way: **in**, the Easter egg
+  flashes, the world breaks into a mosaic of growing blocks with fewer colours and dims to black,
+  and the CRT switches on (a bright line, then it opens upward, the tube's overdrive fading);
+  **out**, the CRT switches off (the picture squashes to a line, the line to a dot, the dot
+  glows on and fades) and the next world unfolds out of the dot in a ring of light. Code:
+  `render/transitions/arcadeShift/` (`arcadeShiftTimeline`, a pure clock; `arcadeShiftShader`;
+  `ArcadeShift`, per frame `from()` and `to()` then `compose()`; 2.6 s in, 2.2 s out), and
+  `ArcadeLevelRenderer.preview` (the arcade's first screen, no actors) so the arcade can be a
+  destination. Prototype `shift` (`node prototypes/pacman/build.mjs shift`: a time slider, both
+  ways, four seasons). Tests: `arcadeShift.test.ts` (the clock). Wired in: a `world-shift` state
+  (`core/states/WorldShiftState`, `Director.shiftWorld`, `FLOW.worldShift`) is entered from `playing`
+  when the egg is taken, and from `death` (every arcade try lost) and `level-clear` (the last round)
+  on the way out; the game is frozen while it runs and at the end `route` builds the level and a
+  short READY opens it in place, with no fade. `RenderPipeline` draws the frozen level into
+  `from` and the destination into `to` (the arcade's first screen going in, the next level's
+  world coming out, the same preview the season turn uses), the arcade renderer draws a bare
+  board while it runs, and the HUD is hidden during it. The dev panel's Secret button (in play)
+  now shows the real way in. Checked in the real game at 1280x720 (dev panel: Secret, then Die
+  three times): the summer world pixelates, the line opens, the arcade is on, READY; then the CRT
+  switches off and the autumn world of level 2 unfolds from the dot, READY; no console errors.
+  Tests: `director.test.ts` (in, and out after the last try). Not checked: the hell as the
+  destination, the way out after the last round (the same call as after the last try), pause in
+  the middle of a shift, a low-end GPU; without WebGL2 the shift cuts through black.
+  board while it runs.
+- Game over and the menu (tenth chat; the owner: the menu is the same overlay as the rest, so the
+  death's own transition will do, and the whole interface is to be redone anyway). Game over ->
+  menu has no transition now: the same overlay over the same world, so no fade. Starting a new run
+  from game over or the menu: on level 1 at once (the first world is already on screen); from any
+  other world the death's black hole unfolds level 1 (`world-shift`, kind `rebirth`,
+  `FLOW.worldShift.rebirth` 2.5 s: the death's clock run 1.6x faster, `RenderPipeline`'s `dying`),
+  then the intro READY opens it in place; a dev "start at" level keeps the old fade
+  (`LevelLoader.peekNewGame` is null then). Checked in the real game (dev panel: autumn, Die
+  three times, Enter on game over): the autumn world drains, falls into the hole, the summer world
+  of level 1 unfolds, READY; no console errors. Tests: `director.test.ts` (four, three of them
+  rewritten: a later game no longer always fades). Not done: pause -> menu and READY -> menu
+  still fade, as does a dev jump; the menu still shows whatever world the run ended on, which the
+  interface rework (part III) decides.
+- Part I, 4.2: the dev panel's layout (tenth chat). The owner wanted the same buttons in a proper
+  layout, nothing added. A chat mock-up (an artifact, season and hell views) was approved as it
+  stood, then ported to `ui/debug/` with no change to `DebugController`: `devUi.css` (the look: a
+  "label, controls" grid, one control height, `dev-seg` for one-of-many, `dev-switch` for on/off,
+  `dev-step` for a number, chips for the long lists; everything in em from the window's font size,
+  which grows with the screen: 12 to 16 px), `DevWindow` (the width is in em now; the panel opens
+  below the mute button), `DevGroup` (an optional summary when folded), `PacmanDebugPanel` (a status
+  card on top with FPS, state, level, lives, score and the GOD / FROZEN / PAUSED badges; groups
+  ВРЕМЯ, УРОВЕНЬ, ИГРОК, БОСС in the hell, СПАВН, ОТРИСОВКА; the boss's health as three bars between
+  its phase thresholds) and `DevLogWindow` (the watch rows with a bar for percentages, the channels
+  as chips, the same grid). Two small changes of meaning, both visible in the mock-up: the hero is a
+  two-way segment that shows who plays (it was a bare Profile button), and the lives show their
+  number between -1 and +1. Checked in the real game at 1920x1080 and 1280x720, in a season and in
+  the hell, with the speed, God mode and Freeze controls; no console errors. Not checked: 1440p and
+  a phone, and nothing automatic (the panel is a dev overlay, with no tests).
+- Part III, 1-2: the side HUD of the season worlds, and the mute knob (tenth chat). The owner
+  asked for an interface that reads as part of the world, not as plates, and got there in two
+  rounds of chat mock-ups (an artifact over real frames of the four seasons; the hell was left
+  out, its interface comes with the boss levels): things in the margins at both sides of the
+  maze, made of each world's stuff. Code: `ui/hud/season/` (`seasonThemes`: the four materials,
+  `seasonArt`: the shapes as SVG markup, `SeasonHud.svelte`: the component with the live numbers,
+  the pellet trail, the timer ring, the night dimming at 0.75 of the dots, the pause knob, a
+  screen-reader line), `config/hudLayout` (`hudModeFor`: side from an aspect of 1.5 up, else the
+  old bar; `hudScaleFor`: the art is drawn for 720 px high and scales with the screen height),
+  `PacmanUi` (picks the HUD), and `MuteButton` (a knob of the same stuff at the bottom left, the
+  colours of the world on screen). `boardPlacement` takes the band at the top as a parameter:
+  `MeadowWorld` passes 0 when the HUD stands in the margins, so the maze is centred on 85 % of
+  the height; the hell and the narrow layout keep the 96 px band. The fonts (Lilita One for
+  numbers, Fredoka for labels) are linked from `PacmanUi`. Two small changes of meaning:
+  the food is a percentage (the snapshot carries a ratio), and the pause knob is new (Space and
+  P still work). The dev panel's DEV button moved to the bottom right to leave the pause knob
+  alone. Checked in the real game at 1920x1080, 1600x900, 1280x720 and 1024x768 (the bar), in
+  summer, autumn and winter, with the mute click, the Energizer timer and the pause knob; no
+  console errors. Not checked: spring in play, a phone, 21:9, a very long score. Tests:
+  `hudLayout.test.ts` and the placement cases in `boardScale.test.ts` (no test for the markup).
+- Part III, 1-2, tall and squarish screens (tenth chat). From an aspect of 1.25 up the side HUD
+  stands in the margins, its scale now also limited by the margins (a 4:3 screen gets it at about
+  0.84); below that the same things are smaller and in two bands, one above the maze and one below
+  it (`SeasonHudStack`, a 400 x 800 design scaled by `min(width / 400, height / 800)`): the score
+  board with the record tag and the level board with its banner and the lives at the top; the food
+  trail, the dial in the middle and the pause knob at the bottom, with the sound knob at the left.
+  `config/hudLayout.hudLayoutFor` gives the mode, the scale and the two bands; `boardPlacement`
+  takes a bottom band too, so the maze sits centred between them (`MeadowWorld`); the board
+  constants moved to `config/boardConfig`. The old bar now serves only the hell. The art functions
+  take their geometry (banner, trail, dial). Checked in the real game at 400x800, 360x640,
+  768x1024 and 1024x768 (summer, winter, spring), no console errors. Not checked: autumn in
+  portrait, a phone with a notch (the safe-area insets are only applied to the sound knob), a
+  landscape phone (the side HUD at about 0.55), the death banner, which now crosses the dial in
+  the stacked layout. Tests: `hudLayout.test.ts` and the bottom-band case in `boardScale.test.ts`.
+- Part III, 3: the hell's interface (tenth chat). Its own HUD for boss levels, in the same
+  skeleton as the season one but in bone, flesh and ember, and with the boss's things: above the
+  maze the boss's health bar in a bone frame (three phase compartments draining from the right,
+  trailing light, a hotter fill in the last phase; the reward hint hangs there after he falls);
+  at the sides (or in two bands on a tall screen) the score board and the record tag, the level
+  board with a skull and the banner, the lives counter, the hero's hearts on a bone rail (the
+  health on this level, apart from the lives) and a dial whose ring is the BFG's charge or the
+  berserk running down, with the weapon in it (BFG, barrel, gauntlet). Numerals glow like embers,
+  the full hearts beat at the hell's 2.5 s pulse. Code: `ui/hud/season/BossHud.svelte`, `hellArt`,
+  `HELL_THEME` in `seasonThemes` (the boards got a bone rim and veins),
+  `config/hudLayout.bossHudLayoutFor` (the boss bar takes 72 units above the maze, 56 above the
+  stacked band), and `DoomWorld` places the board with it instead of the old 96 px band. The old
+  bar `GameHud.svelte` is deleted (nothing used it any more). The sound knob is bone in the hell.
+  Checked in the real game at 1280x720 and 400x800 (a full bar, hearts lost, berserk, BFG, the
+  boss killed: the reward banner), no console errors; losing the fight on the way also showed the
+  black hole into the next season. Not checked: the BFG's charge while it charges, 1920x1080, a
+  boss with the echo in phase 3, the barrel in the dial. Tests: the boss layout cases in
+  `hudLayout.test.ts`.
+- Part III, 4-5: the screens (tenth chat). The owner approved the mock-up (an artifact over real
+  frames, landscape and portrait) as it stood. `ui/screens/WorldScreens.svelte`, over
+  `screenArt.ts`, draws menu, READY, pause, the death banner and game over for the seasons and the
+  hell in the world's own material: a signboard on stakes, plank buttons hung under it on ropes (the
+  main one in a ring of light), a chalk board with the keys, hero coins on a log (the chosen one
+  lifted), a READY banner between two posts with the countdown as a trail of pellets and a skip
+  knob, a cracked grey sign for game over with a gold ribbon for a new record, round knobs for the
+  language. The planks are buttons that never keep the focus; Enter, Space and Esc work as before.
+  `PacmanUi` picks it; the secret level keeps `GameScreens`. The screen is drawn as large as the
+  window allows (0.8 of the width on a landscape screen, 0.94 on a tall one, READY at most 1.5x).
+  The prototype `screens` (`node prototypes/pacman/build.mjs screens`, the frames are injected by
+  the publishing step) is the mock-up's source. Checked in the real game at 1280x720 and 400x800:
+  the menu (the hero chosen on the coin), READY, pause, resume by the plank, the death banner, game
+  over; no console errors. Not checked: the hell's screens, a landscape phone, a screen reader, the
+  language knob in Russian, Caveat's own face (the page loads it; offline a system cursive stands in).
+  The old `GameScreens` stays only for the arcade; its card styles for the other worlds are dead.

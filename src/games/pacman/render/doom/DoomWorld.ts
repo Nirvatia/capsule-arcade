@@ -1,6 +1,8 @@
 // The hell's world on screen: the camera, the flesh scene (baked once in `fleshBake`, moved in
 // `fleshLive`) and the screen-space post effects (mist, ash dust, embers storm, hellish night
 // with lights).
+import { boardPlacement } from '../common/boardScale';
+import { bossHudLayoutFor } from '../../config/hudLayout';
 import type { GridMatrix } from '../../config/gridConfig';
 import { isTeleportToken } from '../../config/gridConfig';
 import type { GridLayout } from '../maze/GridView';
@@ -247,9 +249,11 @@ export class DoomWorld {
 		this.vw = vw;
 		this.vh = vh;
 		this.dpr = dpr;
-		this.sc = 0.75 * Math.min(vw / ((this.C + 2.5) * T), vh / ((this.R + 2.5) * T));
-		this.wx = vw / 2 - ((this.C * T) / 2) * this.sc;
-		this.wy = vh / 2 - ((this.R * T) / 2) * this.sc;
+		const hud = bossHudLayoutFor(vw, vh);
+		const board = boardPlacement(vw, vh, this.C, this.R, T, hud.top, hud.bottom);
+		this.sc = board.scale;
+		this.wx = board.x;
+		this.wy = board.y;
 		const W = Math.max(vw, vh);
 		this.mist.forEach((f, i) => {
 			f.w = W * 0.8;

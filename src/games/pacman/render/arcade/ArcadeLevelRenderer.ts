@@ -1,7 +1,7 @@
 import type { GridMatrix } from '../../config/gridConfig';
 import { SCORE_TABLE } from '../../config/scoreConfig';
 import type { GhostKind } from '../../logic/actors/GhostModel';
-import type { LevelRenderer, RenderFrame } from '../RenderFrame';
+import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../RenderFrame';
 import type { GridLayout } from '../maze/GridView';
 import { ArcadeView } from './ArcadeView';
 import type { ArcadeGhostLook, ArcadeScene } from './ArcadeView';
@@ -29,7 +29,7 @@ interface Popup {
  * the CRT pass (`ArcadeScreen`). Death, the maze flash and the intermission are drawn here
  * from the flow phases; the pipeline's level decay and season turn stay out of it.
  */
-export class ArcadeLevelRenderer implements LevelRenderer {
+export class ArcadeLevelRenderer implements LevelRenderer, WorldPreview {
 	private readonly screen = new ArcadeScreen();
 	private view: ArcadeView | null = null;
 	private viewGrid: GridMatrix | null = null;
@@ -66,9 +66,11 @@ export class ArcadeLevelRenderer implements LevelRenderer {
 			const combat = level.combat;
 			const dying = flow.state === 'death';
 			const clearing = flow.state === 'level-clear';
+			// leaving the arcade: the bare board, the shift takes it from here
+			const leaving = flow.state === 'world-shift';
 			const death = dying ? frame.director.death : null;
 			let pac: ArcadeScene['pac'] = null;
-			if (player) {
+			if (player && !leaving) {
 				const p = death ?? player.position;
 				this.trackTravel(p);
 				if (player.facing) {
@@ -77,7 +79,7 @@ export class ArcadeLevelRenderer implements LevelRenderer {
 				pac = { x: p.x, y: p.y, dir: this.lastDir, travel: this.travel };
 			}
 			const scared = combat?.isPowerActive ? combat.powerTimer : 0;
-			const ghosts = dying || clearing ? [] : this.ghosts(frame, scared);
+			const ghosts = dying || clearing || leaving ? [] : this.ghosts(frame, scared);
 			this.trackPopups(frame, dt);
 			const fruit = level.fruit;
 			const fruitKind = fruit?.active ?? null;
@@ -93,7 +95,7 @@ export class ArcadeLevelRenderer implements LevelRenderer {
 				pac,
 				death: dying ? (flow.phase === 'fold' ? flow.phaseProgress : 1) : null,
 				ghosts,
-				fruit: fruit && fruitKind ? { kind: fruitKind, ...fruit.position } : null,
+				fruit: fruit && fruitKind && !leaving ? { kind: fruitKind, ...fruit.position } : null,
 				popups: this.popups,
 				flash: clearing && Math.floor((flow.elapsed / 0.25) % 2) === 1,
 				frozen: flow.state === 'ready' || frame.paused
@@ -107,6 +109,43 @@ export class ArcadeLevelRenderer implements LevelRenderer {
 			layout.offsetY,
 			S * grid.width,
 			S * grid.height,
+			frame.pixelRatio
+		);
+		return layout;
+	}
+
+	/**
+	 * The arcade's first screen, untouched: the maze full of food, no actors, the board as the
+	 * CRT shows it. The way into the arcade (`ArcadeShift`) lands on it.
+	 */
+	preview(frame: PreviewFrame): GridLayout {
+		const { ctx, width, height, season } = frame;
+		const view = this.viewFor(season.grid);
+		const layout = this.layout(view, width, height);
+		view.draw({
+			time: 0,
+			food: (x, y) => {
+				const token = season.grid[y]?.[x];
+				return token === 'DT' ? 'dot' : token === 'EU' ? 'energizer' : null;
+			},
+			pac: null,
+			death: null,
+			ghosts: [],
+			fruit: null,
+			popups: [],
+			flash: false,
+			frozen: true
+		});
+		ctx.fillStyle = '#000';
+		ctx.fillRect(0, 0, width, height);
+		const S = layout.tileSize;
+		this.screen.present(
+			ctx,
+			view.canvas,
+			layout.offsetX,
+			layout.offsetY,
+			S * (view.canvas.width / ARCADE_TILE),
+			S * (view.canvas.height / ARCADE_TILE),
 			frame.pixelRatio
 		);
 		return layout;

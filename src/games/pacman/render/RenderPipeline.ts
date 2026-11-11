@@ -9,11 +9,17 @@ import { MeadowLevelRenderer } from './seasons/meadow/MeadowLevelRenderer';
 import { meadowThemeFor } from './seasons/meadow/meadowThemes';
 import { EMBER_PALETTE, ICE_PALETTE, LevelDecay } from './transitions/decay/LevelDecay';
 import type { LevelRenderer, RenderFrame, WorldPreview } from './RenderFrame';
+import { ArcadeShift } from './transitions/arcadeShift/ArcadeShift';
 import { SeasonTurn } from './transitions/seasonTurn/SeasonTurn';
 import type { SeasonTurnRequest } from './transitions/seasonTurn/SeasonTurn';
 import { glowTexture } from './common/textures';
 import { FLOW } from '../config/flowConfig';
+import type { GridMatrix } from '../config/gridConfig';
 import type { NextLevel } from '../logic/level/LevelLoader';
+import { secretSeason } from '../logic/level/SeasonCatalog';
+import type { SeasonData } from '../logic/level/SeasonCatalog';
+import { GridModel } from '../logic/maze/GridModel';
+import type { GridPoint } from '../logic/maze/GridModel';
 import type { DecayPalette } from './transitions/decay/DecayPass';
 import { DebugOverlayView } from './debug/DebugOverlayView';
 import type { DebugRenderFlags } from './debug/DebugOverlayView';
@@ -22,6 +28,12 @@ import type { DebugRenderFlags } from './debug/DebugOverlayView';
 
 /** Seconds over which the hero fades out at the end of the season turn's lights. */
 const HERO_FADE = 0.3;
+
+/** Seconds of the death's black hole, which a rebirth plays faster. */
+const DEATH_TOTAL = FLOW.death.shatter + FLOW.death.void + FLOW.death.rebuild;
+
+/** The flash and ring of the way into the arcade: the Easter egg's pink. */
+const EGG_LIGHT = 0xffd6ec;
 
 /** Light of the season turn into a season; into a boss world it takes the boss palette. */
 const SEASON_LIGHT = { light: 0xffe3a0, gap: 0xfff4d6 };
@@ -45,6 +57,7 @@ export class RenderPipeline {
 	private readonly doomRenderer: DoomLevelRenderer;
 	private readonly decay = new LevelDecay();
 	private readonly turn = new SeasonTurn();
+	private readonly shift = new ArcadeShift();
 	private debugFlags: DebugRenderFlags | null = null;
 	private debugView: DebugOverlayView | null = null;
 	private readonly canvas: HTMLCanvasElement;
@@ -54,6 +67,8 @@ export class RenderPipeline {
 	private pixelRatio = 1;
 	private lastRenderTime = 0;
 	private timeValue = 0;
+	/** The next level's respawn tile for the death transition into it (a lost boss fight). */
+	private nextSpawn: { level: number; spawn: GridPoint } | null = null;
 
 	constructor(
 		container: HTMLElement,
@@ -124,16 +139,37 @@ export class RenderPipeline {
 		// the arcade draws its own death and level clear: no decay, no season turn
 		const arcade = this.level.secretMode;
 		const death = flow.state === 'death' && !arcade ? this.director.death : null;
+		// the way into the arcade and out of it, and a new run: the frozen level, and the world it opens onto
+		const worldShift = flow.state === 'world-shift' ? this.director.worldShift : null;
+		const rebirth = worldShift?.kind === 'rebirth' ? worldShift : null;
+		// the death's black hole: a death, or the end of a run (the same hole, faster)
+		const dying = death ?? rebirth;
+		const decayClock = rebirth
+			? flow.elapsed * (DEATH_TOTAL / FLOW.worldShift.rebirth)
+			: flow.elapsed;
 		const clear = flow.state === 'level-clear' && !arcade ? this.director.levelClear : null;
 		const next = clear ? this.level.peekNextLevel() : null;
 		const nextView = next ? this.previewFor(next) : null;
 		const turning = clear && next && nextView;
+		// the black hole unfolds another world: the next level after a lost boss fight (it ends the
+		// level, not the run), the first level of a new run after a game over
+		const defeat =
+			death && this.level.hellMode && this.level.combat?.hellDefeat
+				? this.level.peekNextLevel()
+				: rebirth
+					? this.level.peekNewGame()
+					: null;
+		const defeatView = defeat ? this.previewFor(defeat) : null;
+		const shiftTo =
+			worldShift && worldShift.kind !== 'rebirth' ? this.shiftDestination(worldShift.kind) : null;
 		const shake = death && !flow.paused ? this.decay.shake(flow.elapsed) : { x: 0, y: 0 };
-		const target = death
+		const target = dying
 			? this.decay.begin(this.canvas.width, this.canvas.height)
 			: turning
 				? this.turn.old(this.canvas.width, this.canvas.height)
-				: this.ctx;
+				: worldShift && shiftTo
+					? this.shift.from(this.canvas.width, this.canvas.height)
+					: this.ctx;
 		target.setTransform(pr, 0, 0, pr, pr * shake.x, pr * shake.y);
 		target.globalAlpha = 1;
 		target.globalCompositeOperation = 'source-over';
@@ -158,17 +194,40 @@ export class RenderPipeline {
 		const layout = this.rendererFor().render(frame);
 		const screen: RenderFrame = { ...frame, ctx: this.ctx };
 		this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
-		if (death) {
+		if (dying) {
+			let next: { grid: GridMatrix; spawnX: number; spawnY: number } | undefined;
+			if (defeat && defeatView) {
+				const nextCtx = this.decay.beginNext(this.canvas.width, this.canvas.height);
+				nextCtx.setTransform(pr, 0, 0, pr, 0, 0);
+				nextCtx.globalAlpha = 1;
+				nextCtx.globalCompositeOperation = 'source-over';
+				defeatView.preview({
+					ctx: nextCtx,
+					width: this.width,
+					height: this.height,
+					pixelRatio: pr,
+					dt,
+					paused: flow.paused,
+					season: defeat.season
+				});
+				this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
+				const spawn = this.spawnOf(defeat);
+				next = { grid: defeat.season.grid, spawnX: spawn.x, spawnY: spawn.y };
+			}
 			this.decay.compose(this.ctx, this.width, this.height, pr, layout, shake, this.timeValue, {
 				grid: season.grid,
-				deathX: death.x,
-				deathY: death.y,
+				deathX: dying.x,
+				deathY: dying.y,
 				spawnX: grid.playerSpawn.x,
 				spawnY: grid.playerSpawn.y,
-				elapsed: flow.elapsed,
-				palette: this.decayPalette()
+				elapsed: decayClock,
+				palette: this.decayPalette(),
+				next
 			});
-			this.shared.drawPlayer(screen, layout);
+			// the next world has no hero until its READY: he is gone once the hole has closed
+			if (death && (!next || flow.elapsed < FLOW.death.shatter + FLOW.death.void)) {
+				this.shared.drawPlayer(screen, layout);
+			}
 		}
 		if (turning) {
 			const nextCtx = this.turn.next(this.canvas.width, this.canvas.height);
@@ -202,8 +261,33 @@ export class RenderPipeline {
 				this.ctx.restore();
 			}
 		}
+		if (worldShift && worldShift.kind !== 'rebirth' && shiftTo) {
+			const toCtx = this.shift.to(this.canvas.width, this.canvas.height);
+			toCtx.setTransform(pr, 0, 0, pr, 0, 0);
+			toCtx.globalAlpha = 1;
+			toCtx.globalCompositeOperation = 'source-over';
+			shiftTo.view.preview({
+				ctx: toCtx,
+				width: this.width,
+				height: this.height,
+				pixelRatio: pr,
+				dt,
+				paused: flow.paused,
+				season: shiftTo.season
+			});
+			this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
+			const enter = worldShift.kind === 'enter';
+			this.shift.compose(this.ctx, this.width, this.height, pr, {
+				kind: worldShift.kind,
+				progress: flow.phaseProgress,
+				originX: enter ? layout.offsetX + worldShift.x * layout.tileSize : this.width / 2,
+				originY: enter ? layout.offsetY + worldShift.y * layout.tileSize : this.height / 2,
+				accent: shiftTo.accent,
+				time: this.timeValue
+			});
+		}
 		if (this.debugView && this.debugFlags) {
-			const front = death ? this.decay.debugFront : turning ? this.turn.debugFront : null;
+			const front = dying ? this.decay.debugFront : turning ? this.turn.debugFront : null;
 			this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
 			this.debugView.draw(this.ctx, layout, this.level, this.debugFlags, front);
 		}
@@ -218,6 +302,29 @@ export class RenderPipeline {
 	destroy(): void {
 		this.unsubscribeCues();
 		this.canvas.remove();
+	}
+
+	/**
+	 * The world the arcade shift opens onto: the arcade's first screen going in, the next
+	 * level's world (a season or the hell) coming out. Null when no renderer can show it.
+	 */
+	private shiftDestination(
+		kind: 'enter' | 'leave'
+	): { view: WorldPreview; season: SeasonData; accent: number } | null {
+		if (kind === 'enter') {
+			return { view: this.arcadeRenderer, season: secretSeason(), accent: EGG_LIGHT };
+		}
+		const next = this.level.peekNextLevel();
+		const view = this.previewFor(next);
+		return view ? { view, season: next.season, accent: this.turnStyle(next).light } : null;
+	}
+
+	/** Where the hero starts in `next` (cached: the maze is parsed once per level). */
+	private spawnOf(next: NextLevel): GridPoint {
+		if (this.nextSpawn?.level !== next.level) {
+			this.nextSpawn = { level: next.level, spawn: new GridModel(next.season.grid).playerSpawn };
+		}
+		return this.nextSpawn.spawn;
 	}
 
 	/** The renderer that can show the next level's world, or null (then no turn). */

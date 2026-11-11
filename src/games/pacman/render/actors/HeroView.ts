@@ -2,8 +2,8 @@
 // everywhere she plays. It turns the player's position, heading and speed, the energizer (her
 // overdrive) and its last seconds, the death and the respawn shield into the hero's state, and
 // the game's cues into acting (a glow at the lips per dot, a real bite for fruit, the egg and
-// ghosts). In the hell both heroes wear armor (`armor`, over the body): the berserk is the
-// awoken look, the BFG charge swells the body. The arcade draws its own sprites.
+// ghosts). In the hell both heroes carry the BFG charge's light (`chargeLight`, over the body):
+// the berserk is the awoken look, the BFG charge swells the body. The arcade draws its own sprites.
 import type { PlayerService } from '../../logic/actors/PlayerService';
 import type { PacmanAudioCue } from '../../core/Events';
 import type { GridLayout } from '../maze/GridView';
@@ -31,8 +31,8 @@ const AFTER_TUNNEL = 0.6;
 export class HeroView {
 	constructor(
 		private readonly hero: Hero,
-		/** What this hero wears in the hell. */
-		private readonly armor: OverPainter | null = null
+		/** The light painted over the body in the hell (the BFG charge). */
+		private readonly chargeLight: OverPainter | null = null
 	) {}
 
 	private lastTime = -1;
@@ -107,7 +107,7 @@ export class HeroView {
 		this.afterTunnel = Math.max(0, this.afterTunnel - dt);
 		this.hero.setBall(!options.dying && (Boolean(options.padAhead) || this.afterTunnel > 0));
 		this.hero.setSink(options.padSink ?? 0);
-		this.hero.setOver(options.armor ? this.armor : null);
+		this.hero.setOver(options.chargeLight ? this.chargeLight : null);
 		this.hero.setCharge(options.dying ? 0 : options.charge);
 		this.hero.setRadius(S * RADIUS);
 		this.hero.update(dt, {

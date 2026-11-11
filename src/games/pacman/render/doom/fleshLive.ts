@@ -7,6 +7,12 @@ import type { FleshBake } from './fleshBake';
 import { FRAME, SCENE_TILE } from './fleshBake';
 import { context, makeCanvas, veinAt } from './fleshNoise';
 
+/**
+ * How much of the beat's height the light shows, 0..1: the rhythm is the beat's, the peak is
+ * lower (the owner found the glow too hot at the top of the beat). The resting glow is unchanged.
+ */
+const PEAK = 0.4;
+
 /** The heartbeat, 0..~1.2: a strong beat and a weaker one after it, 2.5 s apart. */
 export function heartbeat(t: number): number {
 	const ph = (t * 0.4) % 1;
@@ -47,7 +53,7 @@ export class FleshLive {
 			return;
 		}
 		const b = this.bake;
-		const beat = heartbeat(t);
+		const beat = heartbeat(t) * PEAK;
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';
 		ctx.globalAlpha = k * (0.55 + 0.45 * Math.min(1, beat + 0.2));
@@ -67,7 +73,7 @@ export class FleshLive {
 		view: { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
 	): void {
 		const b = this.bake;
-		const beat = heartbeat(t);
+		const beat = heartbeat(t) * PEAK;
 		const T = SCENE_TILE;
 		ctx.save();
 		ctx.globalAlpha = 1;
