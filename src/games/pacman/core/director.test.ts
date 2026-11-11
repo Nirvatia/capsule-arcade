@@ -239,6 +239,45 @@ describe('game flow', () => {
 		expect(level.peekNextLevel().level).toBe(7);
 	});
 
+	it('goes into the arcade behind the arcade shift, with no fade, and starts it in place', () => {
+		const { director, level } = setup();
+		startToReady(director);
+		director.showPlaying();
+		director.shiftWorld('enter', () => level.enterSecretLevel());
+		expect(director.stateName).toBe('world-shift');
+		expect(director.worldShift?.kind).toBe('enter');
+		run(director, FLOW.worldShift.enter - 0.1);
+		expect(level.secretMode).toBe(false);
+		run(director, 0.2);
+		expect(director.transitioning).toBe(false);
+		expect(director.stateName).toBe('ready');
+		expect(level.secretMode).toBe(true);
+		expect(director.worldShift).toBeNull();
+	});
+
+	it('leaves the arcade behind the arcade shift when every try is lost', () => {
+		const { director, level } = setup();
+		startToReady(director);
+		director.showPlaying();
+		director.shiftWorld('enter', () => level.enterSecretLevel());
+		run(director, FLOW.worldShift.enter + 0.05);
+		run(director, FLOW.readyShort + 0.05);
+		expect(director.stateName).toBe('playing');
+		for (let i = 0; i < 3 && director.stateName !== 'world-shift'; i += 1) {
+			director.debugKillPlayer();
+			run(director, FLOW.arcade.death.fold + FLOW.arcade.death.pause + 0.05);
+			if (director.stateName === 'ready') {
+				run(director, FLOW.readyShort + 0.05);
+			}
+		}
+		expect(director.stateName).toBe('world-shift');
+		expect(director.worldShift?.kind).toBe('leave');
+		run(director, FLOW.worldShift.leave + 0.05);
+		expect(director.transitioning).toBe(false);
+		expect(director.stateName).toBe('ready');
+		expect(level.secretMode).toBe(false);
+	});
+
 	it('returns to the menu from pause and logs a disallowed transition', () => {
 		const { director } = setup();
 		startToReady(director);

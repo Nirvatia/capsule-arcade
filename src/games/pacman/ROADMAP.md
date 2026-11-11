@@ -735,8 +735,7 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   fail on the old behaviour). Not done: the same for the arcade seams (the Easter egg into the
   arcade, the arcade back to the main game, game over to the menu), which still use the screen
   fade; the no-WebGL fallback veil shows no next world.
-- The arcade shift, the pass and its prototype (tenth chat; wiring into the flow waits for the
-  owner's approval of the look). The owner picked one look for each way: **in**, the Easter egg
+- The arcade shift, the pass, its prototype and the flow (tenth chat; the owner approved the look). The owner picked one look for each way: **in**, the Easter egg
   flashes, the world breaks into a mosaic of growing blocks with fewer colours and dims to black,
   and the CRT switches on (a bright line, then it opens upward, the tube's overdrive fading);
   **out**, the CRT switches off (the picture squashes to a line, the line to a dot, the dot
@@ -745,7 +744,18 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   `ArcadeShift`, per frame `from()` and `to()` then `compose()`; 2.6 s in, 2.2 s out), and
   `ArcadeLevelRenderer.preview` (the arcade's first screen, no actors) so the arcade can be a
   destination. Prototype `shift` (`node prototypes/pacman/build.mjs shift`: a time slider, both
-  ways, four seasons). Tests: `arcadeShift.test.ts` (the clock). Left to do after approval: a
-  `world-shift` state in `Director` (from `playing` on the egg, from `level-clear` and `death` on
-  the way out), the pipeline rendering `from` and `to`, and the arcade renderer drawing a bare
+  ways, four seasons). Tests: `arcadeShift.test.ts` (the clock). Wired in: a `world-shift` state
+  (`core/states/WorldShiftState`, `Director.shiftWorld`, `FLOW.worldShift`) is entered from `playing`
+  when the egg is taken, and from `death` (every arcade try lost) and `level-clear` (the last round)
+  on the way out; the game is frozen while it runs and at the end `route` builds the level and a
+  short READY opens it in place, with no fade. `RenderPipeline` draws the frozen level into
+  `from` and the destination into `to` (the arcade's first screen going in, the next level's
+  world coming out, the same preview the season turn uses), the arcade renderer draws a bare
+  board while it runs, and the HUD is hidden during it. The dev panel's Secret button (in play)
+  now shows the real way in. Checked in the real game at 1280x720 (dev panel: Secret, then Die
+  three times): the summer world pixelates, the line opens, the arcade is on, READY; then the CRT
+  switches off and the autumn world of level 2 unfolds from the dot, READY; no console errors.
+  Tests: `director.test.ts` (in, and out after the last try). Not checked: the hell as the
+  destination, the way out after the last round (the same call as after the last try), pause in
+  the middle of a shift, a low-end GPU; without WebGL2 the shift cuts through black.
   board while it runs.

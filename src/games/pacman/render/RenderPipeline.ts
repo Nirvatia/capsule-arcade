@@ -9,12 +9,15 @@ import { MeadowLevelRenderer } from './seasons/meadow/MeadowLevelRenderer';
 import { meadowThemeFor } from './seasons/meadow/meadowThemes';
 import { EMBER_PALETTE, ICE_PALETTE, LevelDecay } from './transitions/decay/LevelDecay';
 import type { LevelRenderer, RenderFrame, WorldPreview } from './RenderFrame';
+import { ArcadeShift } from './transitions/arcadeShift/ArcadeShift';
 import { SeasonTurn } from './transitions/seasonTurn/SeasonTurn';
 import type { SeasonTurnRequest } from './transitions/seasonTurn/SeasonTurn';
 import { glowTexture } from './common/textures';
 import { FLOW } from '../config/flowConfig';
 import type { GridMatrix } from '../config/gridConfig';
 import type { NextLevel } from '../logic/level/LevelLoader';
+import { secretSeason } from '../logic/level/SeasonCatalog';
+import type { SeasonData } from '../logic/level/SeasonCatalog';
 import { GridModel } from '../logic/maze/GridModel';
 import type { GridPoint } from '../logic/maze/GridModel';
 import type { DecayPalette } from './transitions/decay/DecayPass';
@@ -25,6 +28,9 @@ import type { DebugRenderFlags } from './debug/DebugOverlayView';
 
 /** Seconds over which the hero fades out at the end of the season turn's lights. */
 const HERO_FADE = 0.3;
+
+/** The flash and ring of the way into the arcade: the Easter egg's pink. */
+const EGG_LIGHT = 0xffd6ec;
 
 /** Light of the season turn into a season; into a boss world it takes the boss palette. */
 const SEASON_LIGHT = { light: 0xffe3a0, gap: 0xfff4d6 };
@@ -48,6 +54,7 @@ export class RenderPipeline {
 	private readonly doomRenderer: DoomLevelRenderer;
 	private readonly decay = new LevelDecay();
 	private readonly turn = new SeasonTurn();
+	private readonly shift = new ArcadeShift();
 	private debugFlags: DebugRenderFlags | null = null;
 	private debugView: DebugOverlayView | null = null;
 	private readonly canvas: HTMLCanvasElement;
@@ -139,12 +146,17 @@ export class RenderPipeline {
 				? this.level.peekNextLevel()
 				: null;
 		const defeatView = defeat ? this.previewFor(defeat) : null;
+		// the way into the arcade and out of it: the frozen level, and the world it opens onto
+		const worldShift = flow.state === 'world-shift' ? this.director.worldShift : null;
+		const shiftTo = worldShift ? this.shiftDestination(worldShift.kind) : null;
 		const shake = death && !flow.paused ? this.decay.shake(flow.elapsed) : { x: 0, y: 0 };
 		const target = death
 			? this.decay.begin(this.canvas.width, this.canvas.height)
 			: turning
 				? this.turn.old(this.canvas.width, this.canvas.height)
-				: this.ctx;
+				: worldShift && shiftTo
+					? this.shift.from(this.canvas.width, this.canvas.height)
+					: this.ctx;
 		target.setTransform(pr, 0, 0, pr, pr * shake.x, pr * shake.y);
 		target.globalAlpha = 1;
 		target.globalCompositeOperation = 'source-over';
@@ -236,6 +248,31 @@ export class RenderPipeline {
 				this.ctx.restore();
 			}
 		}
+		if (worldShift && shiftTo) {
+			const toCtx = this.shift.to(this.canvas.width, this.canvas.height);
+			toCtx.setTransform(pr, 0, 0, pr, 0, 0);
+			toCtx.globalAlpha = 1;
+			toCtx.globalCompositeOperation = 'source-over';
+			shiftTo.view.preview({
+				ctx: toCtx,
+				width: this.width,
+				height: this.height,
+				pixelRatio: pr,
+				dt,
+				paused: flow.paused,
+				season: shiftTo.season
+			});
+			this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
+			const enter = worldShift.kind === 'enter';
+			this.shift.compose(this.ctx, this.width, this.height, pr, {
+				kind: worldShift.kind,
+				progress: flow.phaseProgress,
+				originX: enter ? layout.offsetX + worldShift.x * layout.tileSize : this.width / 2,
+				originY: enter ? layout.offsetY + worldShift.y * layout.tileSize : this.height / 2,
+				accent: shiftTo.accent,
+				time: this.timeValue
+			});
+		}
 		if (this.debugView && this.debugFlags) {
 			const front = death ? this.decay.debugFront : turning ? this.turn.debugFront : null;
 			this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
@@ -252,6 +289,21 @@ export class RenderPipeline {
 	destroy(): void {
 		this.unsubscribeCues();
 		this.canvas.remove();
+	}
+
+	/**
+	 * The world the arcade shift opens onto: the arcade's first screen going in, the next
+	 * level's world (a season or the hell) coming out. Null when no renderer can show it.
+	 */
+	private shiftDestination(
+		kind: 'enter' | 'leave'
+	): { view: WorldPreview; season: SeasonData; accent: number } | null {
+		if (kind === 'enter') {
+			return { view: this.arcadeRenderer, season: secretSeason(), accent: EGG_LIGHT };
+		}
+		const next = this.level.peekNextLevel();
+		const view = this.previewFor(next);
+		return view ? { view, season: next.season, accent: this.turnStyle(next).light } : null;
 	}
 
 	/** Where the hero starts in `next` (cached: the maze is parsed once per level). */

@@ -11,7 +11,8 @@
 <MuteButton />
 
 {#if $hudFrame}
-	{#if $hudFrame.state !== 'menu'}
+	<!-- the arcade shift hides the HUD: either one would belong to the world it is leaving -->
+	{#if $hudFrame.state !== 'menu' && $hudFrame.state !== 'world-shift'}
 		{#if $hudFrame.world === 'secret'}
 			<ArcadeHud snap={$hudFrame} />
 		{:else}

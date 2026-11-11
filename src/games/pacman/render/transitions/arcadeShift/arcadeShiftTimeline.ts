@@ -4,13 +4,12 @@
  * dot of light unfolding into the next world). A pure function of the progress 0..1, so the
  * shader and the tests read the same numbers.
  */
+import { FLOW } from '../../../config/flowConfig';
+
 export type ShiftKind = 'enter' | 'leave';
 
 /** Seconds each shift takes. */
-export const SHIFT_DURATION: Readonly<Record<ShiftKind, number>> = {
-	enter: 2.6,
-	leave: 2.2
-};
+export const SHIFT_DURATION: Readonly<Record<ShiftKind, number>> = FLOW.worldShift;
 
 /** Mosaic block sizes, css px at an 800 px short side, and the colour levels at each step. */
 export const MOSAIC_BLOCKS = [1, 2, 3, 5, 8, 13, 21] as const;

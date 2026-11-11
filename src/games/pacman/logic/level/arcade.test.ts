@@ -69,7 +69,7 @@ describe('arcade (secret level)', () => {
 			director.showPlaying();
 		}
 		director.debugKillPlayer();
-		run(director, ARCADE_DEATH + FADE + 0.1);
+		run(director, ARCADE_DEATH + FLOW.worldShift.leave + 0.1);
 		// back to the main game's next level: no game over, lives and score kept
 		expect(level.secretMode).toBe(false);
 		expect(level.level).toBe(4);
@@ -102,7 +102,7 @@ describe('arcade (secret level)', () => {
 		run(director, 0.05);
 		// the last round pays the round bonus and the final bonus on top of the dots
 		expect(level.score - before).toBeGreaterThanOrEqual(ARCADE.roundBonus + ARCADE.finalBonus);
-		run(director, FLOW.arcade.flash + FADE + 0.1);
+		run(director, FLOW.arcade.flash + FLOW.worldShift.leave + 0.1);
 		expect(level.secretMode).toBe(false);
 		expect(level.level).toBe(4);
 	});

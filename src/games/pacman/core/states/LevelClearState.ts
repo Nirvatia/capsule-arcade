@@ -18,7 +18,7 @@ export interface LevelClearSnapshot {
  * pipeline's season turn). At the end the next level starts in place: the new world is
  * already on screen, so there is no fade. In the arcade the maze flashes instead (and the
  * intermission plays after round 2); the next round starts in place, while leaving the
- * arcade after the last round fades back to the main game.
+ * arcade after the last round goes through the arcade shift back to the main game.
  */
 export class LevelClearState implements GameState {
 	readonly name: PacmanStateName = 'level-clear';
@@ -72,7 +72,7 @@ export class LevelClearState implements GameState {
 		}
 		this.resolved = true;
 		if (ctx.level.arcadeFinalRound) {
-			ctx.director.changeLevel(() => ctx.level.advanceLevel());
+			ctx.director.shiftWorld('leave', () => ctx.level.advanceLevel());
 			return;
 		}
 		ctx.director.startLevelInPlace(() => ctx.level.advanceLevel());

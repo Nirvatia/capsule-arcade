@@ -1,7 +1,7 @@
 import type { GhostKind } from '../logic/actors/GhostModel';
 
 export type PacmanStateName =
-	'menu' | 'ready' | 'playing' | 'paused' | 'death' | 'level-clear' | 'game-over';
+	'menu' | 'ready' | 'playing' | 'paused' | 'death' | 'level-clear' | 'world-shift' | 'game-over';
 
 export type PacmanGameResult = 'none' | 'win' | 'lose';
 

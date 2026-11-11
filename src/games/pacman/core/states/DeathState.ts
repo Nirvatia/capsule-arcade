@@ -65,7 +65,7 @@ export class DeathState implements GameState {
 		if (ctx.level.secretMode) {
 			// the arcade's own tries: the last one returns to the main game, no penalty
 			if (combat.arcadeLost) {
-				ctx.director.changeLevel(() => ctx.level.leaveArcade());
+				ctx.director.shiftWorld('leave', () => ctx.level.leaveArcade());
 				return;
 			}
 			ctx.level.prepareAfterDeath();

@@ -15,6 +15,8 @@ import type { DeathSnapshot } from './states/DeathState';
 import { LevelClearState } from './states/LevelClearState';
 import type { LevelClearSnapshot } from './states/LevelClearState';
 import { GameOverState } from './states/GameOverState';
+import { WorldShiftState } from './states/WorldShiftState';
+import type { WorldShiftKind, WorldShiftSnapshot } from './states/WorldShiftState';
 import { debugLog } from '../logic/debug/debugLog';
 
 export type { GameState, GameStateContext } from './flow/GameState';
@@ -26,9 +28,10 @@ export type { GameState, GameStateContext } from './flow/GameState';
 const TRANSITIONS: Readonly<Record<PacmanStateName, readonly PacmanStateName[]>> = {
 	menu: ['ready'],
 	ready: ['playing', 'menu'],
-	playing: ['death', 'level-clear', 'game-over', 'ready'],
-	death: ['ready', 'game-over'],
-	'level-clear': ['ready'],
+	playing: ['death', 'level-clear', 'world-shift', 'game-over', 'ready'],
+	death: ['ready', 'world-shift', 'game-over'],
+	'level-clear': ['ready', 'world-shift'],
+	'world-shift': ['ready'],
 	'game-over': ['ready', 'menu'],
 	paused: ['menu']
 };
@@ -112,6 +115,12 @@ export class Director {
 	get levelClear(): LevelClearSnapshot | null {
 		const state = this.activeState;
 		return state instanceof LevelClearState ? state.levelClear : null;
+	}
+
+	/** The arcade shift on screen (its kind and where it starts), or null. */
+	get worldShift(): WorldShiftSnapshot | null {
+		const state = this.activeState;
+		return state instanceof WorldShiftState ? state.shift : null;
 	}
 
 	update(dt: number): void {
@@ -202,6 +211,14 @@ export class Director {
 		this.setState(new LevelClearState());
 	}
 
+	/**
+	 * Leaves the level for another world behind the arcade shift; `route` builds the next level
+	 * at the end, when the new world is already on screen.
+	 */
+	shiftWorld(kind: WorldShiftKind, route: () => void): void {
+		this.setState(new WorldShiftState(kind, route));
+	}
+
 	showGameOver(): void {
 		this.setState(new GameOverState());
 	}
@@ -277,6 +294,11 @@ export class Director {
 
 	debugEnterSecret(): void {
 		if (this.fadeValue) {
+			return;
+		}
+		if (this.current.name === 'playing') {
+			// the dev panel's Secret button shows the real way in, as the Easter egg does
+			this.shiftWorld('enter', () => this.context.level.debugEnterSecret());
 			return;
 		}
 		this.context.level.debugEnterSecret();

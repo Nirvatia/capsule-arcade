@@ -66,9 +66,11 @@ export class ArcadeLevelRenderer implements LevelRenderer, WorldPreview {
 			const combat = level.combat;
 			const dying = flow.state === 'death';
 			const clearing = flow.state === 'level-clear';
+			// leaving the arcade: the bare board, the shift takes it from here
+			const leaving = flow.state === 'world-shift';
 			const death = dying ? frame.director.death : null;
 			let pac: ArcadeScene['pac'] = null;
-			if (player) {
+			if (player && !leaving) {
 				const p = death ?? player.position;
 				this.trackTravel(p);
 				if (player.facing) {
@@ -77,7 +79,7 @@ export class ArcadeLevelRenderer implements LevelRenderer, WorldPreview {
 				pac = { x: p.x, y: p.y, dir: this.lastDir, travel: this.travel };
 			}
 			const scared = combat?.isPowerActive ? combat.powerTimer : 0;
-			const ghosts = dying || clearing ? [] : this.ghosts(frame, scared);
+			const ghosts = dying || clearing || leaving ? [] : this.ghosts(frame, scared);
 			this.trackPopups(frame, dt);
 			const fruit = level.fruit;
 			const fruitKind = fruit?.active ?? null;
@@ -93,7 +95,7 @@ export class ArcadeLevelRenderer implements LevelRenderer, WorldPreview {
 				pac,
 				death: dying ? (flow.phase === 'fold' ? flow.phaseProgress : 1) : null,
 				ghosts,
-				fruit: fruit && fruitKind ? { kind: fruitKind, ...fruit.position } : null,
+				fruit: fruit && fruitKind && !leaving ? { kind: fruitKind, ...fruit.position } : null,
 				popups: this.popups,
 				flash: clearing && Math.floor((flow.elapsed / 0.25) % 2) === 1,
 				frozen: flow.state === 'ready' || frame.paused
