@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>SIMON 1C · NEO ARCADE</title>
+	<title>SIMON 1C · Capsule Arcade</title>
 </svelte:head>
 
 <SimonPage />

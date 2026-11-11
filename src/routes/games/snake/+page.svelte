@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>SNAKE · NEO ARCADE</title>
+	<title>SNAKE · Capsule Arcade</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link
