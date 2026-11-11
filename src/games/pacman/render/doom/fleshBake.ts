@@ -55,7 +55,8 @@ const PAL = {
  * The wall material, the owner's pick of the plates (a metal-doom maze set into the flesh):
  * charred iron blocks, one to a tile, neutral and lighter than the red floor so that the maze
  * parts from the ground in grey too, each with a bevel, a dark seam and four rivets, the island
- * edged by a dark outline with a thin hot line that pulses with the heart. No height: the bevel
+ * edged by a dark outline with a thin hot line that pulses with the heart. A little rust (stains in
+ * the corners, streaks from the rivets) and blood (spatters in patches) tie them to the flesh. No height: the bevel
  * is drawn inside the tile, so the corridors keep their full width. The floor stays dark and
  * close to the flesh outside, a shadow lies at the foot of every wall, and the ground outside is
  * not dimmed any further (a darker surround would make the maze hang in the air).
@@ -468,18 +469,6 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 				if (k === 'lair') {
 					a.fillStyle = mixHex('#4a0e14', '#5e1519', ra());
 					a.fillRect(X, Y, T, T);
-				} else {
-					// a path worn lighter along the middle of the corridor
-					const horiz = !isWall(c - 1, rr) && !isWall(c + 1, rr);
-					const vert = !isWall(c, rr - 1) && !isWall(c, rr + 1);
-					a.fillStyle = 'rgba(60,18,20,.35)';
-					if (horiz && !vert) {
-						a.fillRect(X, Y + T * 0.3, T, T * 0.4);
-					} else if (vert && !horiz) {
-						a.fillRect(X + T * 0.3, Y, T * 0.4, T);
-					} else {
-						a.fillRect(X + T * 0.2, Y + T * 0.2, T * 0.6, T * 0.6);
-					}
 				}
 			}
 		}
@@ -654,6 +643,30 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 					bg.addColorStop(1, `rgba(${col},0)`);
 					tp.fillStyle = bg;
 					tp.fillRect(cx - T * 1.3, cy - T * 1.3, T * 2.6, T * 2.6);
+				}
+			}
+		}
+		{
+			const rr2 = rng(77);
+			for (let rr = 0; rr < rows; rr += 1) {
+				for (let c = 0; c < cols; c += 1) {
+					if (isWall(c, rr)) {
+						paintRust(tp, tx(c), ty(rr), rr2);
+					}
+				}
+			}
+			// blood gathers in patches: a noise decides where, so it is not sprinkled evenly
+			for (let rr = 0; rr < rows; rr += 1) {
+				for (let c = 0; c < cols; c += 1) {
+					if (!isWall(c, rr)) {
+						continue;
+					}
+					const cx = tx(c) + T / 2;
+					const cy = ty(rr) + T / 2;
+					const patch = fbm(cx / 110 + 9, cy / 110 + 4);
+					if (rr2() < (patch > 0.52 ? 0.2 : 0.035)) {
+						paintSplat(tp, cx + (rr2() - 0.5) * T, cy + (rr2() - 0.5) * T, 3.2 + rr2() * 3.2, rr2);
+					}
 				}
 			}
 		}
@@ -861,6 +874,75 @@ function sidePockets(S: GridMatrix, cols: number, rows: number): Array<readonly 
 		}
 	}
 	return out;
+}
+
+/** Rust on one plate: a stain in a corner and a streak running down from a rivet or two. */
+function paintRust(tp: CanvasRenderingContext2D, X: number, Y: number, rw: Rng): void {
+	const T = SCENE_TILE;
+	if (rw() < 0.42) {
+		const cx = X + (rw() < 0.5 ? 3 : T - 3);
+		const cy = Y + (rw() < 0.5 ? 3 : T - 3);
+		const r = 9 + rw() * 9;
+		const g = tp.createRadialGradient(cx, cy, 0, cx, cy, r);
+		g.addColorStop(0, 'rgba(150,66,28,.42)');
+		g.addColorStop(0.55, 'rgba(120,48,22,.2)');
+		g.addColorStop(1, 'rgba(120,48,22,0)');
+		tp.fillStyle = g;
+		tp.fillRect(cx - r, cy - r, r * 2, r * 2);
+	}
+	for (const [dx, dy] of [
+		[6, 6],
+		[T - 6, 6],
+		[6, T - 6],
+		[T - 6, T - 6]
+	]) {
+		if (rw() > 0.22) {
+			continue;
+		}
+		const len = 7 + rw() * 12;
+		const g = tp.createLinearGradient(0, Y + dy, 0, Y + dy + len);
+		g.addColorStop(0, 'rgba(140,60,24,.55)');
+		g.addColorStop(1, 'rgba(140,60,24,0)');
+		tp.fillStyle = g;
+		tp.fillRect(X + dx - 1.2, Y + dy + 1, 2.4, len);
+	}
+}
+
+/** A blood spatter: a blot, satellite drops, a wet glint and sometimes a drip. */
+function paintSplat(
+	tp: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	size: number,
+	rw: Rng
+): void {
+	tp.fillStyle = 'rgba(96,8,12,.85)';
+	for (let i = 0; i < 6; i += 1) {
+		const a = rw() * 6.28;
+		const d = rw() * size * 0.5;
+		tp.beginPath();
+		tp.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, size * (0.35 + rw() * 0.4), 0, 6.3);
+		tp.fill();
+	}
+	for (let i = 0; i < 6; i += 1) {
+		const a = rw() * 6.28;
+		const d = size * (1 + rw() * 1.6);
+		tp.beginPath();
+		tp.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, 0.7 + rw() * 1.6, 0, 6.3);
+		tp.fill();
+	}
+	tp.fillStyle = 'rgba(255,120,110,.28)';
+	tp.beginPath();
+	tp.ellipse(x - size * 0.2, y - size * 0.25, size * 0.28, size * 0.14, -0.5, 0, 6.3);
+	tp.fill();
+	if (rw() < 0.55) {
+		const len = 8 + rw() * 18;
+		tp.fillStyle = 'rgba(96,8,12,.85)';
+		tp.fillRect(x - 1.1, y, 2.2, len);
+		tp.beginPath();
+		tp.arc(x, y + len, 1.9, 0, 6.3);
+		tp.fill();
+	}
 }
 
 /** One wall tile as a plate: a random tone, a bevel inside the tile, a seam, four rivets. */

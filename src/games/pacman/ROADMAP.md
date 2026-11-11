@@ -47,7 +47,7 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    `PacmanAudioPlayer`, `ArcadeSynth`'s master gain).
 2. **Music track support** (postponed: the owner is still working out how to generate the
    music). A looped file (ogg/mp3 from `static/`) per world, under the same volume. The
-   seasons' music is optional; the hell's track is part II, step 1.5.
+   seasons' music is optional; the hell's track is part II, step 1.8.
 3. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). Today
    a season is a palette and a few props on one meadow. The owner wants a whole scene per
    season, in the maze and in the background, not a recolour:
@@ -56,51 +56,58 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    2. **Winter: New Year.** A fir tree, baubles, garlands, snow on the walls, lights.
    3. **Spring and summer** get the same treatment afterwards (their themes to be decided with
       the owner).
-   4. **The hell** scene is reworked after the rest (part II, step 1.7).
+   4. **The hell** scene is reworked after the rest (part II, step 1.10).
       Rules that still hold: the walls and the corridors keep their full width, nothing hangs in
       the air in the maze, the decor sits on a surface and moves little, and every important
       thing reads at the size of one tile.
 
 ## Part II. Boss levels
 
-1. **The hell: the second round of polish and what is left** (Opus for a look, Sonnet for the
-   steps). The hell is in the game (the flesh world, the cord maze, the heroes, Blinky and the
-   imps, the weapons, the attacks, the light). The look's rules, kept from the owner's rounds:
-   one flesh with no void; walls are dark flesh islands edged by a glowing cord (no height, no
-   face, no extrusion); no bright bone or anything that jumps forward; few bold details on a
-   surface; a slow heartbeat (about 2.5 s) and a calm background; the teleport is a vertical
-   rift (a round opening reads as an orifice and was rejected); the night stays `cord`; the
-   heroes are the season heroes plus the BFG charge. Start from the `hell` prototype
-   (`node prototypes/pacman/build.mjs hell`: "Бой" runs the real fight, the attack buttons force
-   an attack, "Бессмертие" keeps the hero alive, "Фаза 1-3" jump to a phase; query `?ms`,
-   `?zerk`, `?chg`) and the `mood` prototype. The owner's list, in this order: 0. **The walls are charred iron plates** (the owner's pick from a comparison of four looks,
-   now in the game: one block to a tile, bevel, rivets, a hot edge; the surround is not dimmed,
-   because a darker surround made the maze hang in the air). The owner is trying them: they look
-   foreign next to the blood scene but give the metal-doom spirit. Possible ties to the flesh,
-   only if the owner asks: blood spatter and rust on the plates, flesh creeping over a seam,
-   a warmer plate tone. Everything below (teleports, attacks, Blinky) is tuned against these
-   walls and the dark floor.
-   1. **A full redesign of the teleports.** The rifts sink into the red: a hero running for one
-      cannot find it. The new look must stand out from the maze and the background at tile
-      size (a hue the hell does not otherwise use; the exit's pale light is taken), keep the "no
+1. **The hell: the polish and what is left** (Opus for a look, Sonnet for the steps). The hell is
+   in the game: the flesh world, the maze of charred iron plates (with a little blood and rust),
+   the heroes, Blinky and the imps, the weapons, the attacks, the light. The look's rules, kept
+   from the owner's rounds: one flesh world with no void; the maze is built of blocks (the owner:
+   walls are best as blocks, living matter does not suit a maze) with no height, face or
+   extrusion, so the corridors keep their full width; the surround is not dimmed (a darker
+   surround makes the maze hang in the air); no bright bone or anything that jumps forward; few
+   bold details on a surface; a slow heartbeat (about 2.5 s) and a calm background; the teleport
+   is a vertical rift (a round opening reads as an orifice and was rejected); the night stays
+   `cord`; the heroes are the season heroes plus the BFG charge. Start from the `hell`
+   prototype (`node prototypes/pacman/build.mjs hell`: "Бой" runs the real fight, the attack
+   buttons force an attack, "Бессмертие" keeps the hero alive, "Фаза 1-3" jump to a phase; query
+   `?ms`, `?zerk`, `?chg`) and the `mood` prototype. The owner's list, in the order proposed (each
+   is tuned against the plates and the dark floor):
+   1. **The lair's gate does not open when the boss leaves.** Cause: the hell bakes the gate into
+      the walls (`fleshBake.paintGate`, static bars); the seasons' gate is live
+      (`MeadowWorld.setLairGate`, opened by `MeadowLevelRenderer.updateGhostGate`). Make the
+      hell's gate live in `DoomWorld` (the bars slide aside while the boss or an imp is at the
+      gate) and test the opening rule.
+   2. **A full redesign of the teleports.** The rifts sink into the red: a hero running for one
+      cannot find it. The new look must stand out from the maze and the background at tile size
+      (a hue the hell does not otherwise use; the exit's pale light is taken), keep the "no
       round opening" rule, and show where it leads (the other pad). The teleport fog
       (`DoomWorld.teleportFog`) and the hero's rolling ball at the pad go with it. A comparison
       page first.
-   2. **Readability of the boss's attacks.** The rift's seam and burst, the cross, the eruption,
-      the seals, the void cells, the corrupted tiles and the pull's cords merge with the maze
-      in the same reds. Danger must read at a glance against the cord maze and the dark floor,
-      and a telegraph (it will hurt) must differ from a live hazard (it hurts now). Ideas: a
-      pale or white-hot core with a dark outline, a hue shift for live hazards, hatching or a
-      moving edge for telegraphs, a floor tint under the threatened area. Test in grayscale
-      too. A comparison page with every attack at once.
-   3. **Blinky and the imps get lost** on the red world. Options for a comparison page: a pale
-      rim light or a thin pale outer outline, a faint halo in the boss's own colour, a shift
-      away from red (blackened iron with hot features), brighter eyes, a small shadow disc on
-      the floor. The imps keep the arcade colours.
-   4. **The storm's redesign** is open: ask the owner before touching it.
-   5. **The hell's music track** (the owner brings it: generated or a free licence).
-   6. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
-   7. **The hell's scene** reworked together with the seasons' scenes (part I, step 3.4).
+   3. **The boss's attacks: one mock-up with every attack finished.** The rift, the cross, the
+      eruption, the seals, the void cells, the pull's cords and above all the slowing tiles (the
+      corrupted tiles were recoloured last time, not redesigned) merge with the maze and with
+      each other. Danger must read at a glance against the plates and the dark floor, and a
+      telegraph (it will hurt) must differ from a live hazard (it hurts now). Ideas: a pale or
+      white-hot core with a dark outline, a hue shift for live hazards, hatching or a moving edge
+      for telegraphs, a floor tint under the threatened area, a slowing tile that looks like what
+      it is (tar, ice, chains) and not like a damage tile. Test in grayscale too.
+   4. **The boss looks too complex in the later phases.** Phase 3 is clumsy: too many details,
+      glow and horns. Simplify each phase to one silhouette change and one colour change, keep
+      the shape readable at one tile; the imps keep the arcade colours. A comparison page of the
+      three phases against the plates (he is red on a grey-and-red maze).
+   5. **The berserk icon is lost** in the HUD. A mock-up of three new variants.
+   6. **The boss's HP bar is bad: redo that part of the HUD completely**
+      (`ui/hud/season/BossHud.svelte`: the HP bar with its phase marks, the player's HP, weapon,
+      berserk and BFG charge). A mock-up first, with the berserk icon of the step above in it.
+   7. **The storm's redesign** is open: ask the owner before touching it.
+   8. **The hell's music track** (the owner brings it: generated or a free licence).
+   9. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
+   10. **The hell's scene** reworked together with the seasons' scenes (part I, step 3.4).
 2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it is
    the only boss. The selection arrives with the second boss: a `BossCatalog` (id, world, maze,
    renderer, design page), a seeded pick per boss level (no immediate repeat), the same for
