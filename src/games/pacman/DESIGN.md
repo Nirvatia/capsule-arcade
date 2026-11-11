@@ -207,10 +207,12 @@ chiptune sound (`config/arcadeConfig.ts`).
   owner dropped it). The sound switch is a knob of the same stuff at the bottom left, in every
   world. On a tall or squarish screen the same things are smaller and in two bands, one above the maze
   and one below it (top: score board and record tag, level board with banner, lives; bottom:
-  the food trail, the dial, the pause knob, and the sound knob at the left). The hell and (own
-  HUD) the arcade keep the older ones until their turn: one compact bar at the top centre (score and high score, level and world, lives, power
-  timer or weapon, dot progress); on boss levels a boss box below it (name, phase, HP with phase
-  marks, the player's HP, weapon, berserk, BFG charge, the reward hint). The arcade has its own
+  the food trail, the dial, the pause knob, and the sound knob at the left). The boss levels have their own, in bone, flesh and ember (the same skeleton plus the boss's):
+  above the maze the boss's health bar in a bone frame, three phase compartments that drain from
+  the right (the reward hint hangs there once he falls); the hero's hearts on a bone rail, apart
+  from the lives counter; a dial with the weapon in hand whose ring is the BFG's charge or the
+  berserk running down; the numerals glow like embers and the hearts beat at the hell's pulse.
+  The arcade has its own
   arcade HUD (1UP, high score, round, tries, the rounds' fruit).
 
 ## 11. Audio

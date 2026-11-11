@@ -5,15 +5,17 @@
 	import { muted } from '../audio/audioSettings';
 	import { t } from './i18n';
 	import { hudFrame } from './hud/hudFrame';
-	import { SEASON_THEMES, isSeasonKey } from './hud/season/seasonThemes';
+	import { HELL_THEME, SEASON_THEMES, isSeasonKey } from './hud/season/seasonThemes';
 	import { hudLayoutFor } from '../config/hudLayout';
 
 	let innerWidth = $state(1280);
 	let innerHeight = $state(720);
 	const label = $derived($muted ? $t('unmute') : $t('mute'));
-	// the other worlds (the hell, the arcade, the menu) use the autumn's dark wood
+	// the hell has its bone; the other worlds (the arcade, the menu) use the autumn's dark wood
 	const theme = $derived(
-		SEASON_THEMES[$hudFrame && isSeasonKey($hudFrame.world) ? $hudFrame.world : 'autumn']
+		$hudFrame?.world === 'hell'
+			? HELL_THEME
+			: SEASON_THEMES[$hudFrame && isSeasonKey($hudFrame.world) ? $hudFrame.world : 'autumn']
 	);
 	const layout = $derived(hudLayoutFor(innerWidth, innerHeight));
 	// stacked, the knob stands in the bottom band's row with the dial and the pause knob

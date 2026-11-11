@@ -234,7 +234,7 @@ one poorly. The whole interface is code-drawn (CSS / SVG / Canvas), no raster as
    margins (the fruit row was dropped by the owner), and in two bands on a taller screen. Left:
    the hell's HUD (with the boss's own interface, a design to come).
 2. ~~**A skin per season.**~~ Done with the skeleton: the four materials.
-3. **A skin per boss level.** Each boss world has its own interface (the hell's boss box:
+3. **A skin per boss level.** (The hell's is done, see Done, "Part III, 3".) Each boss world has its own interface (the hell's boss box:
    name, phase, HP with phase marks, the player's HP, weapon, berserk, BFG charge, the
    reward hint), on the same skeleton. Added as each boss lands; the hell's comes first.
 4. **The screens**: menu, pause and READY in the same family.
@@ -819,3 +819,21 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   portrait, a phone with a notch (the safe-area insets are only applied to the sound knob), a
   landscape phone (the side HUD at about 0.55), the death banner, which now crosses the dial in
   the stacked layout. Tests: `hudLayout.test.ts` and the bottom-band case in `boardScale.test.ts`.
+- Part III, 3: the hell's interface (tenth chat). Its own HUD for boss levels, in the same
+  skeleton as the season one but in bone, flesh and ember, and with the boss's things: above the
+  maze the boss's health bar in a bone frame (three phase compartments draining from the right,
+  trailing light, a hotter fill in the last phase; the reward hint hangs there after he falls);
+  at the sides (or in two bands on a tall screen) the score board and the record tag, the level
+  board with a skull and the banner, the lives counter, the hero's hearts on a bone rail (the
+  health on this level, apart from the lives) and a dial whose ring is the BFG's charge or the
+  berserk running down, with the weapon in it (BFG, barrel, gauntlet). Numerals glow like embers,
+  the full hearts beat at the hell's 2.5 s pulse. Code: `ui/hud/season/BossHud.svelte`, `hellArt`,
+  `HELL_THEME` in `seasonThemes` (the boards got a bone rim and veins),
+  `config/hudLayout.bossHudLayoutFor` (the boss bar takes 72 units above the maze, 56 above the
+  stacked band), and `DoomWorld` places the board with it instead of the old 96 px band. The old
+  bar `GameHud.svelte` is deleted (nothing used it any more). The sound knob is bone in the hell.
+  Checked in the real game at 1280x720 and 400x800 (a full bar, hearts lost, berserk, BFG, the
+  boss killed: the reward banner), no console errors; losing the fight on the way also showed the
+  black hole into the next season. Not checked: the BFG's charge while it charges, 1920x1080, a
+  boss with the echo in phase 3, the barrel in the dial. Tests: the boss layout cases in
+  `hudLayout.test.ts`.

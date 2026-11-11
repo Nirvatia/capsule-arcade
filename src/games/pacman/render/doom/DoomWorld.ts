@@ -2,6 +2,7 @@
 // `fleshLive`) and the screen-space post effects (mist, ash dust, embers storm, hellish night
 // with lights).
 import { boardPlacement } from '../common/boardScale';
+import { bossHudLayoutFor } from '../../config/hudLayout';
 import type { GridMatrix } from '../../config/gridConfig';
 import { isTeleportToken } from '../../config/gridConfig';
 import type { GridLayout } from '../maze/GridView';
@@ -248,7 +249,8 @@ export class DoomWorld {
 		this.vw = vw;
 		this.vh = vh;
 		this.dpr = dpr;
-		const board = boardPlacement(vw, vh, this.C, this.R, T);
+		const hud = bossHudLayoutFor(vw, vh);
+		const board = boardPlacement(vw, vh, this.C, this.R, T, hud.top, hud.bottom);
 		this.sc = board.scale;
 		this.wx = board.x;
 		this.wy = board.y;

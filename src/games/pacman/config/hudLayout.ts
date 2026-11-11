@@ -32,6 +32,10 @@ export const HUD_STACK_BAND = 176;
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
+/** The boss's bar above the maze: 72 units in a side layout, 56 above the stacked band. */
+export const HUD_BOSS_BAR_SIDE = 72;
+export const HUD_BOSS_BAR_STACK = 56;
+
 export function hudLayoutFor(width: number, height: number): HudLayout {
 	if (!(width > 0) || !(height > 0)) {
 		return { mode: 'side', scale: 1, top: 0, bottom: 0 };
@@ -45,4 +49,14 @@ export function hudLayoutFor(width: number, height: number): HudLayout {
 	}
 	const scale = clamp(Math.min(width / HUD_STACK_WIDTH, height / HUD_STACK_HEIGHT), 0.6, 1.6);
 	return { mode: 'stack', scale, top: HUD_STACK_BAND * scale, bottom: HUD_STACK_BAND * scale };
+}
+
+/**
+ * The same, on a boss level: the boss's health bar takes a band above the maze besides what
+ * the season HUD takes.
+ */
+export function bossHudLayoutFor(width: number, height: number): HudLayout {
+	const base = hudLayoutFor(width, height);
+	const bar = base.mode === 'side' ? HUD_BOSS_BAR_SIDE : HUD_BOSS_BAR_STACK;
+	return { ...base, top: base.top + bar * base.scale };
 }

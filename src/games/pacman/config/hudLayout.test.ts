@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { HUD_STACK_BAND, hudLayoutFor } from './hudLayout';
+import {
+	HUD_BOSS_BAR_SIDE,
+	HUD_BOSS_BAR_STACK,
+	HUD_STACK_BAND,
+	bossHudLayoutFor,
+	hudLayoutFor
+} from './hudLayout';
 
 describe('hudLayoutFor', () => {
 	it('puts the HUD in the margins of a landscape screen', () => {
@@ -54,5 +60,25 @@ describe('hudLayoutFor', () => {
 	it('survives a bad size', () => {
 		expect(hudLayoutFor(0, 0)).toEqual({ mode: 'side', scale: 1, top: 0, bottom: 0 });
 		expect(hudLayoutFor(Number.NaN, 100).mode).toBe('side');
+	});
+});
+
+describe('bossHudLayoutFor', () => {
+	it('adds the boss bar to the top band', () => {
+		const side = bossHudLayoutFor(1280, 720);
+		expect(side.mode).toBe('side');
+		expect(side.top).toBeCloseTo(HUD_BOSS_BAR_SIDE * side.scale, 8);
+		expect(side.bottom).toBe(0);
+		const stack = bossHudLayoutFor(400, 800);
+		expect(stack.mode).toBe('stack');
+		expect(stack.top).toBeCloseTo((HUD_STACK_BAND + HUD_BOSS_BAR_STACK) * stack.scale, 8);
+		expect(stack.bottom).toBeCloseTo(HUD_STACK_BAND * stack.scale, 8);
+	});
+
+	it('keeps the season layout otherwise', () => {
+		const a = hudLayoutFor(1600, 900);
+		const b = bossHudLayoutFor(1600, 900);
+		expect(b.mode).toBe(a.mode);
+		expect(b.scale).toBe(a.scale);
 	});
 });

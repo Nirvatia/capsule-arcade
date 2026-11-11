@@ -78,6 +78,14 @@ function material(
 ): string {
 	const q = mul(seed + 7);
 	let s = '';
+	if (t.key === 'hell') {
+		for (let v = 0; v < 4; v += 1) {
+			const vx = x + 18 + q() * (w - 36);
+			const vy = y + 6 + q() * (h - 12);
+			s += `<path d="M${vx} ${vy} q18 ${q() * 16 - 8} 36 ${q() * 20 - 10} t34 ${q() * 12 - 6}" fill="none" stroke="#c0282a" stroke-width="2" opacity=".6"/>`;
+		}
+		return s;
+	}
 	if (t.key === 'winter') {
 		for (let i = 0; i < 3; i += 1) {
 			const fx = x + 30 + q() * (w - 80);
@@ -128,6 +136,9 @@ export function boardArt(
 			}
 		}
 	}
+	if (t.edge) {
+		s += `<path d="${d}" fill="none" stroke="${t.ink}" stroke-width="13" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${t.edge}" stroke-width="8" stroke-linejoin="round"/>`;
+	}
 	s += `<path d="${d}" fill="${t.mid}"/>`;
 	s += `<clipPath id="${cid}"><path d="${d}"/></clipPath><g clip-path="url(#${cid})">`;
 	s += `<ellipse cx="${x + w * 0.3}" cy="${y + h * 0.12}" rx="${w * 0.62}" ry="${h * 0.4}" fill="${t.light}" opacity=".85"/>`;
@@ -136,8 +147,10 @@ export function boardArt(
 	s += '</g>';
 	s += `<path d="${d}" fill="none" stroke="${t.ink}" stroke-width="4.5" stroke-linejoin="round"/>`;
 	s += `<path d="M${x + 14} ${y + 7} H${x + w * 0.55}" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".5"/>`;
-	for (const nx of [x + 12, x + w - 12]) {
-		s += `<circle cx="${nx}" cy="${y + 13}" r="3.2" fill="${t.ink}" opacity=".75"/>`;
+	if (!t.edge) {
+		for (const nx of [x + 12, x + w - 12]) {
+			s += `<circle cx="${nx}" cy="${y + 13}" r="3.2" fill="${t.ink}" opacity=".75"/>`;
+		}
 	}
 	return s;
 }
@@ -269,6 +282,8 @@ export const EMBLEM_ART: Record<SeasonTheme['emblem'], string> = {
 		}
 		return `<circle r="29" fill="#4a7aa8" opacity=".55"/>${r}<circle r="5" fill="#fff"/>`;
 	})(),
+	skull:
+		'<path d="M-20 -4 C-24 -26 24 -26 20 -4 C20 4 14 8 12 12 V22 H-12 V12 C-14 8 -20 4 -20 -4Z" fill="#e8d9bd" stroke="#16060a" stroke-width="3.4" stroke-linejoin="round"/><ellipse cx="-8" cy="-2" rx="5" ry="6" fill="#16060a"/><ellipse cx="8" cy="-2" rx="5" ry="6" fill="#16060a"/><path d="M-4 8 H4 M-5 22 V14 M0 22 V14 M5 22 V14" stroke="#16060a" stroke-width="2.4" stroke-linecap="round"/><ellipse cx="-8" cy="-2" rx="2" ry="2.4" fill="#ff5a2a"/><ellipse cx="8" cy="-2" rx="2" ry="2.4" fill="#ff5a2a"/>',
 	flower: (() => {
 		let p = '';
 		for (let i = 0; i < 5; i += 1) {
