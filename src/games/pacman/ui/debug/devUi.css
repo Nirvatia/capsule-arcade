@@ -1,0 +1,513 @@
+/*
+ * The dev panels' look (the owner's mock-up): one grid of "label, controls", one control height,
+ * a segmented control for one-of-many, a switch for on/off, a stepper for a number. Everything is
+ * in em from the window's font size, which grows with the screen (set on `.dev-win`).
+ */
+.dev-win {
+	--dev-ink: #e3ebff;
+	--dev-dim: #8d9bbd;
+	--dev-faint: #5b6a8d;
+	--dev-win: rgba(8, 12, 22, 0.94);
+	--dev-head: #0d1527;
+	--dev-line: #223152;
+	--dev-line2: #3b4f7c;
+	--dev-btn: #101a30;
+	--dev-hover: #16233f;
+	--dev-field: #080d19;
+	--dev-accent: #56d9ff;
+	--dev-on: #79ff6f;
+	--dev-danger: #ff7a7a;
+	--dev-warn: #ffb454;
+	position: fixed;
+	z-index: 60;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	font:
+		clamp(12px, 0.55vw + 5px, 16px) / 1.35 ui-monospace,
+		'JetBrains Mono',
+		Menlo,
+		Consolas,
+		monospace;
+	color: var(--dev-ink);
+	background: var(--dev-win);
+	border: 1px solid var(--dev-line2);
+	border-radius: 0.6em;
+	box-shadow: 0 0.8em 2.4em rgba(0, 0, 0, 0.55);
+	max-height: calc(100vh - 16px);
+	backdrop-filter: blur(4px);
+}
+.dev-win * {
+	box-sizing: border-box;
+}
+.dev-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.6em;
+	padding: 0.6em 0.8em;
+	background: var(--dev-head);
+	border-bottom: 1px solid var(--dev-line);
+	cursor: grab;
+	user-select: none;
+	touch-action: none;
+}
+.dev-head b {
+	font-weight: 700;
+	font-size: 0.92em;
+	letter-spacing: 0.08em;
+	color: var(--dev-accent);
+	text-transform: uppercase;
+}
+.dev-head button {
+	border: 0;
+	background: none;
+	color: var(--dev-faint);
+	font: inherit;
+	cursor: pointer;
+	padding: 0 0.3em;
+}
+.dev-body {
+	overflow: auto;
+	padding: 0.8em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.8em;
+}
+.dev-body > * {
+	flex: none;
+}
+
+/* groups */
+.dev-group {
+	border: 1px solid var(--dev-line);
+	border-radius: 0.5em;
+	overflow: hidden;
+}
+.dev-gh {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	border: 0;
+	background: var(--dev-head);
+	color: var(--dev-on);
+	font: inherit;
+	font-weight: 700;
+	font-size: 0.85em;
+	letter-spacing: 0.14em;
+	text-align: left;
+	padding: 0.65em 0.8em;
+	cursor: pointer;
+}
+.dev-gh .chev {
+	display: inline-block;
+	width: 0.8em;
+	color: var(--dev-faint);
+}
+.dev-gh .sum {
+	margin-left: auto;
+	color: var(--dev-faint);
+	letter-spacing: 0;
+	font-weight: 400;
+}
+.dev-gb {
+	display: grid;
+	gap: 0.65em;
+	padding: 0.8em;
+}
+
+/* rows */
+.dev-row {
+	display: grid;
+	grid-template-columns: 4.9em 1fr;
+	align-items: center;
+	gap: 0.65em;
+}
+.dev-lab {
+	color: var(--dev-dim);
+	font-size: 0.92em;
+}
+.dev-ctl {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.45em;
+	min-width: 0;
+}
+
+/* controls: one height, one border, one hover */
+.dev-btn,
+.dev-seg button,
+.dev-step button,
+.dev-chip {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.45em;
+	height: 2.15em;
+	padding: 0 0.85em;
+	font: inherit;
+	color: var(--dev-ink);
+	background: var(--dev-btn);
+	border: 1px solid var(--dev-line2);
+	border-radius: 0.4em;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.dev-btn:hover,
+.dev-seg button:hover,
+.dev-step button:hover,
+.dev-chip:hover {
+	background: var(--dev-hover);
+	border-color: var(--dev-accent);
+	color: var(--dev-accent);
+}
+.dev-gh:focus-visible,
+.dev-btn:focus-visible,
+.dev-seg button:focus-visible,
+.dev-step button:focus-visible,
+.dev-chip:focus-visible,
+.dev-switch:focus-visible,
+.dev-win input:focus-visible {
+	outline: 2px solid var(--dev-accent);
+	outline-offset: 1px;
+}
+.dev-btn.on,
+.dev-chip.on {
+	background: rgba(121, 255, 111, 0.14);
+	border-color: var(--dev-on);
+	color: var(--dev-on);
+}
+.dev-btn.primary {
+	border-color: var(--dev-accent);
+	color: var(--dev-accent);
+}
+.dev-btn.danger {
+	color: var(--dev-danger);
+	border-color: #6b3340;
+}
+.dev-btn.danger:hover {
+	background: #2a1119;
+	border-color: var(--dev-danger);
+	color: var(--dev-danger);
+}
+.dev-btn kbd {
+	font: inherit;
+	font-size: 0.85em;
+	color: var(--dev-faint);
+}
+.dev-seg {
+	display: inline-flex;
+}
+.dev-seg button {
+	position: relative;
+	border-radius: 0;
+	margin-left: -1px;
+	padding: 0 0.6em;
+}
+.dev-seg button:first-child {
+	border-radius: 0.4em 0 0 0.4em;
+	margin-left: 0;
+}
+.dev-seg button:last-child {
+	border-radius: 0 0.4em 0.4em 0;
+}
+.dev-seg button.on {
+	z-index: 1;
+	background: rgba(121, 255, 111, 0.14);
+	border-color: var(--dev-on);
+	color: var(--dev-on);
+}
+.dev-step {
+	display: inline-flex;
+	align-items: center;
+}
+.dev-step button {
+	width: 2.3em;
+	padding: 0;
+	border-radius: 0.4em 0 0 0.4em;
+}
+.dev-step button:last-child {
+	border-radius: 0 0.4em 0.4em 0;
+	margin-left: -1px;
+}
+.dev-step output {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 3.6em;
+	height: 2.15em;
+	background: var(--dev-field);
+	border: 1px solid var(--dev-line2);
+	border-left: 0;
+	border-right: 0;
+	font-variant-numeric: tabular-nums;
+}
+.dev-win input[type='number'],
+.dev-win input[type='search'] {
+	height: 2.15em;
+	padding: 0 0.6em;
+	font: inherit;
+	color: var(--dev-ink);
+	background: var(--dev-field);
+	border: 1px solid var(--dev-line2);
+	border-radius: 0.4em;
+	font-variant-numeric: tabular-nums;
+}
+.dev-win input[type='number'] {
+	width: 4.4em;
+}
+.dev-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.45em;
+	min-width: 0;
+}
+.dev-chip {
+	height: 2em;
+	padding: 0 0.7em;
+	font-size: 0.92em;
+}
+.dev-switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.6em;
+	padding: 0.15em 0;
+	border: 0;
+	background: none;
+	color: var(--dev-ink);
+	font: inherit;
+	cursor: pointer;
+}
+.dev-switch .track {
+	position: relative;
+	width: 2.5em;
+	height: 1.35em;
+	border-radius: 999px;
+	background: #17223c;
+	border: 1px solid var(--dev-line2);
+}
+.dev-switch .track::after {
+	content: '';
+	position: absolute;
+	left: 2px;
+	top: 50%;
+	width: calc(1.35em - 8px);
+	height: calc(1.35em - 8px);
+	transform: translateY(-50%);
+	border-radius: 50%;
+	background: var(--dev-dim);
+}
+.dev-switch[aria-checked='true'] .track {
+	background: rgba(121, 255, 111, 0.2);
+	border-color: var(--dev-on);
+}
+.dev-switch[aria-checked='true'] .track::after {
+	left: calc(100% - 1.35em + 6px);
+	background: var(--dev-on);
+}
+.dev-switches {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.65em 1em;
+}
+
+/* the status card */
+.dev-status {
+	display: grid;
+	gap: 0.45em;
+	padding: 0.7em 0.8em;
+	border: 1px solid var(--dev-line);
+	border-radius: 0.5em;
+	background: rgba(16, 26, 48, 0.55);
+}
+.dev-status .l1 {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 0.6em;
+}
+.dev-status .fps {
+	font-weight: 700;
+	font-size: 1.4em;
+	font-variant-numeric: tabular-nums;
+}
+.dev-status .fps small {
+	font-weight: 400;
+	font-size: 0.65em;
+	color: var(--dev-dim);
+}
+.dev-status .st {
+	font-weight: 600;
+	font-size: 0.92em;
+	color: var(--dev-accent);
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+.dev-status .l2 {
+	color: var(--dev-dim);
+	font-size: 0.92em;
+}
+.dev-status .l2 b {
+	color: var(--dev-ink);
+	font-weight: 600;
+}
+.dev-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.45em;
+}
+.dev-badge {
+	padding: 0.1em 0.55em;
+	font-size: 0.85em;
+	font-weight: 600;
+	color: var(--dev-dim);
+	border: 1px solid var(--dev-line2);
+	border-radius: 999px;
+}
+.dev-badge.hot {
+	color: var(--dev-on);
+	border-color: var(--dev-on);
+}
+.dev-badge.warn {
+	color: var(--dev-warn);
+	border-color: var(--dev-warn);
+}
+
+/* the boss */
+.dev-hp {
+	display: grid;
+	gap: 0.3em;
+}
+.dev-hp .bar {
+	display: flex;
+	gap: 2px;
+}
+.dev-hp .bar span {
+	flex: 1;
+	height: 0.6em;
+	border-radius: 0.3em;
+	background: #17223c;
+	overflow: hidden;
+}
+.dev-hp .bar i {
+	display: block;
+	height: 100%;
+	background: linear-gradient(#ff8a3d, #c8331a);
+}
+.dev-hp .meta {
+	display: flex;
+	justify-content: space-between;
+	font-size: 0.92em;
+	color: var(--dev-dim);
+}
+.dev-hp .meta b {
+	color: var(--dev-ink);
+	font-weight: 600;
+}
+
+/* the log */
+.dev-watch {
+	display: grid;
+	gap: 0.35em;
+}
+.dev-watch .w {
+	display: grid;
+	grid-template-columns: 9em 1fr 4.2em;
+	align-items: center;
+	gap: 0.6em;
+	font-size: 0.92em;
+	color: var(--dev-dim);
+}
+.dev-watch .w.idle {
+	opacity: 0.5;
+}
+.dev-watch .w span:first-child {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.dev-watch .w .t {
+	height: 0.4em;
+	border-radius: 0.2em;
+	background: #17223c;
+	overflow: hidden;
+}
+.dev-watch .w .t i {
+	display: block;
+	height: 100%;
+	background: var(--dev-accent);
+}
+.dev-watch .w output {
+	text-align: right;
+	color: var(--dev-ink);
+	font-variant-numeric: tabular-nums;
+}
+.dev-chans {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.45em;
+}
+.dev-chans button {
+	height: 1.9em;
+	padding: 0 0.7em;
+	font: inherit;
+	font-size: 0.85em;
+	font-weight: 600;
+	color: var(--c);
+	background: color-mix(in srgb, var(--c) 14%, transparent);
+	border: 1px solid var(--c);
+	border-radius: 999px;
+	cursor: pointer;
+}
+.dev-chans button.off {
+	opacity: 0.4;
+	background: transparent;
+}
+.dev-filter {
+	display: flex;
+	gap: 0.45em;
+}
+.dev-filter input {
+	flex: 1;
+	min-width: 0;
+}
+.dev-lines {
+	height: 16em;
+	overflow: auto;
+	padding: 0.45em 0.6em;
+	display: grid;
+	align-content: start;
+	gap: 2px;
+	font-size: 0.92em;
+	background: #060a14;
+	border: 1px solid var(--dev-line);
+	border-radius: 0.5em;
+}
+.dev-lines .line {
+	display: grid;
+	grid-template-columns: 3.8em 4.8em 1fr auto;
+	gap: 0.6em;
+}
+.dev-lines .t {
+	color: var(--dev-faint);
+	font-variant-numeric: tabular-nums;
+}
+.dev-lines .c {
+	font-weight: 600;
+}
+.dev-lines .x {
+	overflow-wrap: anywhere;
+}
+.dev-lines .n {
+	color: #fff;
+}
+.dev-lines .empty,
+.dev-foot {
+	color: var(--dev-faint);
+}
+.dev-foot {
+	text-align: right;
+	font-size: 0.85em;
+}

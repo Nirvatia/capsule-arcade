@@ -75,10 +75,8 @@ polish is the next work (see "Next chat" in part II). Part III (the interface) f
       Done: the mute button (top-left, a gold 48 px button; on a narrow screen at the left edge, mid-height, `ui/MuteButton.svelte`; `audio/audioSettings`
       keeps the choice, `PacmanAudioPlayer` mutes the samples and `ArcadeSynth` its master
       gain). Left: the volume slider, and a key (`M` is taken: it switches the hero).
-   2. _(Postponed by the owner.)_ **Dev panel rework** (`ui/debug/*`): readable at 1440p (text and controls scale with
-      the screen), buttons grouped in collapsible sections by topic instead of one block,
-      the most used actions first; a control for the maze cycle (force a maze, show the
-      cycle).
+   2. ~~**Dev panel rework**~~ Done (see Done, "Part I, 4.2"); the maze-cycle control was left out at
+      the owner's word (nothing beyond the layout).
    3. _(Postponed: the owner is still working out how to generate the music.)_ **Music track support**: a looped file (ogg/mp3 from `static/`) per world, under the
       same volume. The seasons' music is optional; the hell's track is part II, step 1.8.
 
@@ -772,3 +770,18 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   rewritten: a later game no longer always fades). Not done: pause -> menu and READY -> menu
   still fade, as does a dev jump; the menu still shows whatever world the run ended on, which the
   interface rework (part III) decides.
+- Part I, 4.2: the dev panel's layout (tenth chat). The owner wanted the same buttons in a proper
+  layout, nothing added. A chat mock-up (an artifact, season and hell views) was approved as it
+  stood, then ported to `ui/debug/` with no change to `DebugController`: `devUi.css` (the look: a
+  "label, controls" grid, one control height, `dev-seg` for one-of-many, `dev-switch` for on/off,
+  `dev-step` for a number, chips for the long lists; everything in em from the window's font size,
+  which grows with the screen: 12 to 16 px), `DevWindow` (the width is in em now; the panel opens
+  below the mute button), `DevGroup` (an optional summary when folded), `PacmanDebugPanel` (a status
+  card on top with FPS, state, level, lives, score and the GOD / FROZEN / PAUSED badges; groups
+  ВРЕМЯ, УРОВЕНЬ, ИГРОК, БОСС in the hell, СПАВН, ОТРИСОВКА; the boss's health as three bars between
+  its phase thresholds) and `DevLogWindow` (the watch rows with a bar for percentages, the channels
+  as chips, the same grid). Two small changes of meaning, both visible in the mock-up: the hero is a
+  two-way segment that shows who plays (it was a bare Profile button), and the lives show their
+  number between -1 and +1. Checked in the real game at 1920x1080 and 1280x720, in a season and in
+  the hell, with the speed, God mode and Freeze controls; no console errors. Not checked: 1440p and
+  a phone, and nothing automatic (the panel is a dev overlay, with no tests).

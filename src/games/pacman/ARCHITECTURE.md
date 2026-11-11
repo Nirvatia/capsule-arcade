@@ -150,9 +150,10 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
 
 ## Debug tools (dev build only)
 
-- Dev panels: `` ` `` or the DEV button; `F8` steps one frame. Panel groups: FLOW, LEVEL,
-  PLAYER, BOSS, SPAWNS, RENDER (grid, headings, hitboxes, decay / turn fronts); the log
-  window shows live timers and the `debug:log` stream.
+- Dev panels: `` ` `` or the DEV button; `F8` steps one frame. Panel groups (`ui/debug/`, the
+  look is `devUi.css`): a status card, then ВРЕМЯ, УРОВЕНЬ, ИГРОК, БОСС (the hell), СПАВН,
+  ОТРИСОВКА (grid, headings, hitboxes, decay / turn fronts); the log window shows live timers
+  and the `debug:log` stream. The text grows with the screen (12 to 16 px).
 - `window.__pacman = { level, director, render }` for the console and Playwright.
   Directions are upper case: `level.setDesiredDirection('LEFT')`. `director.startGame()`
   fades for 0.8 s before READY; wait for it before `showPlaying()` / `debug*()` (both are

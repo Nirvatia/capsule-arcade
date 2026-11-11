@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack, type Snippet } from 'svelte';
 	import { loadDev, saveDev } from './devStorage';
+	import './devUi.css';
 
 	/** A floating dev window: drag it by its title, fold it to the title bar. */
 	let {
@@ -8,13 +9,14 @@
 		title,
 		x = 8,
 		y = 48,
-		width = 230,
+		width = 30,
 		children
 	}: {
 		id: string;
 		title: string;
 		x?: number;
 		y?: number;
+		/** In em of the window's own font size, which grows with the screen. */
 		width?: number;
 		children: Snippet;
 	} = $props();
@@ -65,8 +67,9 @@
 	});
 </script>
 
-<section class="win" style:left="{left}px" style:top="{top}px" style:width="{width}px">
-	<header
+<section class="dev-win" style:left="{left}px" style:top="{top}px" style:width="{width}em">
+	<div
+		class="dev-head"
 		role="group"
 		aria-label={title}
 		onpointerdown={down}
@@ -74,54 +77,12 @@
 		onpointerup={up}
 		onpointercancel={up}
 	>
-		<span>{title}</span>
+		<b>{title}</b>
 		<button type="button" tabindex={-1} onclick={fold} aria-label={folded ? 'Unfold' : 'Fold'}>
 			{folded ? '▸' : '▾'}
 		</button>
-	</header>
+	</div>
 	{#if !folded}
-		<div class="body">{@render children()}</div>
+		<div class="dev-body">{@render children()}</div>
 	{/if}
 </section>
-
-<style>
-	.win {
-		position: fixed;
-		z-index: 60;
-		font-family: monospace;
-		font-size: 11px;
-		color: #e8efff;
-		border: 1px solid #3b4f7c;
-		background: rgba(3, 5, 9, 0.92);
-		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
-		max-height: calc(100vh - 16px);
-		display: flex;
-		flex-direction: column;
-	}
-	header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 6px;
-		padding: 4px 6px;
-		background: #0b1322;
-		color: #56d9ff;
-		cursor: grab;
-		user-select: none;
-		touch-action: none;
-	}
-	header button {
-		border: 0;
-		background: none;
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-		padding: 0 2px;
-	}
-	.body {
-		overflow: auto;
-		padding: 6px;
-		display: grid;
-		gap: 6px;
-	}
-</style>
