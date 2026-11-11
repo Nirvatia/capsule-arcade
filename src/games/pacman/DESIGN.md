@@ -254,19 +254,19 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 
 ### Art status
 
-| Element                                                         | State                                                                                   |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Seasons (world, food, weather, night), season turn, death decay | final; death is a black hole (part I, 6.2); the seams between worlds are not done (6.3) |
-| Blinky lord of hell, imps                                       | final: cel-shaded like the heroes (part II, 1.2)                                        |
-| Hell world (the flesh hell)                                     | final: the accepted scene is in the game (part II, 1.7a); weather and light follow      |
-| Hell weapons                                                    | final (part II, 1.3)                                                                    |
-| Arcade                                                          | final (keeps its own pixel HUD)                                                         |
-| HUD and screens                                                 | final; to be replaced (part III)                                                        |
-| Fruit, heart                                                    | final (inside the tile, calm glow)                                                      |
-| Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                    |
-| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                          |
-| Pac-Man                                                         | final; the same in the hell, plus the BFG charge's light                                |
-| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; the same in the hell                  |
-| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                                           |
-| Echo clone                                                      | to redo (part I, 5.3)                                                                   |
-| Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                               |
+| Element                                                         | State                                                                                      |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Seasons (world, food, weather, night), season turn, death decay | final; death is a black hole (part I, 6.2); a lost boss fight unfolds the next world (6.3) |
+| Blinky lord of hell, imps                                       | final: cel-shaded like the heroes (part II, 1.2)                                           |
+| Hell world (the flesh hell)                                     | final: the accepted scene is in the game (part II, 1.7a); weather and light follow         |
+| Hell weapons                                                    | final (part II, 1.3)                                                                       |
+| Arcade                                                          | final (keeps its own pixel HUD)                                                            |
+| HUD and screens                                                 | final; to be replaced (part III)                                                           |
+| Fruit, heart                                                    | final (inside the tile, calm glow)                                                         |
+| Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                       |
+| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                             |
+| Pac-Man                                                         | final; the same in the hell, plus the BFG charge's light                                   |
+| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; the same in the hell                     |
+| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                                              |
+| Echo clone                                                      | to redo (part I, 5.3)                                                                      |
+| Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                                  |

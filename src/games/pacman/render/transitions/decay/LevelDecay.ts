@@ -46,6 +46,11 @@ export interface DecayRequest {
 	/** Seconds since the death state started. */
 	readonly elapsed: number;
 	readonly palette: DecayPalette;
+	/**
+	 * When the reborn world is another level (a lost boss fight): its maze and its respawn tile.
+	 * The picture comes from `beginNext()`'s context; the colour returns along its corridors.
+	 */
+	readonly next?: { readonly grid: GridMatrix; readonly spawnX: number; readonly spawnY: number };
 }
 
 /**
@@ -65,6 +70,8 @@ export class LevelDecay {
 	private pass: DecayPass | null | undefined;
 	private scene: HTMLCanvasElement | null = null;
 	private sceneCtx: CanvasRenderingContext2D | null = null;
+	private nextScene: HTMLCanvasElement | null = null;
+	private nextCtx: CanvasRenderingContext2D | null = null;
 	private fieldKey = '';
 	private death: DecayField | null = null;
 	private respawn: DecayField | null = null;
@@ -92,6 +99,19 @@ export class LevelDecay {
 			this.scene.height = pixelHeight;
 		}
 		return this.sceneCtx;
+	}
+
+	/** Offscreen context the next level's world is rendered into (`DecayRequest.next`). */
+	beginNext(pixelWidth: number, pixelHeight: number): CanvasRenderingContext2D {
+		if (!this.nextScene || !this.nextCtx) {
+			this.nextScene = makeCanvas(pixelWidth, pixelHeight);
+			this.nextCtx = canvasContext(this.nextScene);
+		}
+		if (this.nextScene.width !== pixelWidth || this.nextScene.height !== pixelHeight) {
+			this.nextScene.width = pixelWidth;
+			this.nextScene.height = pixelHeight;
+		}
+		return this.nextCtx;
 	}
 
 	/**
@@ -137,7 +157,10 @@ export class LevelDecay {
 			const ts = layout.tileSize;
 			const ox = layout.offsetX + shake.x;
 			const oy = layout.offsetY + shake.y;
-			this.pass.render(scene, Math.round(width * ratio), Math.round(height * ratio), {
+			const next = request.next && this.nextScene ? this.nextScene : null;
+			const spawnX = request.next ? request.next.spawnX : request.spawnX;
+			const spawnY = request.next ? request.next.spawnY : request.spawnY;
+			this.pass.render(scene, next, Math.round(width * ratio), Math.round(height * ratio), {
 				width,
 				height,
 				originX: ox,
@@ -150,17 +173,12 @@ export class LevelDecay {
 				time,
 				epicX: request.deathX,
 				epicY: request.deathY,
-				spawnX: request.spawnX + 0.5,
-				spawnY: request.spawnY + 0.5,
+				spawnX: spawnX + 0.5,
+				spawnY: spawnY + 0.5,
 				collapse: fronts.collapse,
 				bloom: fronts.bloom,
 				reachDeath: farCorner(ox + request.deathX * ts, oy + request.deathY * ts, width, height),
-				reachSpawn: farCorner(
-					ox + (request.spawnX + 0.5) * ts,
-					oy + (request.spawnY + 0.5) * ts,
-					width,
-					height
-				),
+				reachSpawn: farCorner(ox + (spawnX + 0.5) * ts, oy + (spawnY + 0.5) * ts, width, height),
 				phase: fronts.phase,
 				flash: fronts.flash,
 				palette: request.palette
@@ -183,12 +201,17 @@ export class LevelDecay {
 	private prepareFields(request: DecayRequest): void {
 		const dx = Math.floor(request.deathX);
 		const dy = Math.floor(request.deathY);
-		const key = `${dx},${dy}:${request.spawnX},${request.spawnY}`;
+		const spawn = request.next ?? request;
+		const key = `${dx},${dy}:${spawn.spawnX},${spawn.spawnY}:${request.next ? 'next' : ''}`;
 		if (key === this.fieldKey && this.death && this.respawn && this.death.cols > 0) {
 			return;
 		}
 		this.death = computeDecayField(request.grid, dx, dy);
-		this.respawn = computeDecayField(request.grid, request.spawnX, request.spawnY);
+		this.respawn = computeDecayField(
+			request.next ? request.next.grid : request.grid,
+			spawn.spawnX,
+			spawn.spawnY
+		);
 		this.fieldKey = key;
 		this.viewKey = '';
 		if (this.pass) {

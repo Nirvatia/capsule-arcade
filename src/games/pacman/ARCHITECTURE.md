@@ -110,7 +110,7 @@ menu ──(fade, not on the session's 1st game)──▶ ready(intro 5 s, jingl
                   ▲   skip: Enter                │  │          └─ no lives ─▶ game-over
                   │                              │  └─▶ level-clear (season turn) ─▶ ready(short)
 game-over ─fade───┘  (input locked 1 s)          └─ Easter egg ──fade──▶ arcade ready(short)
-hell: losing the fight (abyss) ──fade──▶ next level, ready(short)
+hell: losing the fight (abyss) ──black hole unfolds the next world, no fade──▶ next level, ready(short)
 boss level: boss dies → heart + exit → taking either ends the level (level-clear)
 arcade: death ─▶ ready(short) | last try ─fade─▶ main game; level-clear: flash
       (+ intermission after round 2) ─▶ next round in place | after round 3 ─fade─▶ home

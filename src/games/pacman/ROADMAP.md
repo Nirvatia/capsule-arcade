@@ -35,8 +35,8 @@ a suggestion.
 
 The plan has three parts, done in this order: **I** the main game (four seasons), **II** the boss
 levels, **III** the interface. The depth and post-processing pass comes last of all (see Later).
-Part I is done except the postponed items of step 4 (sound and tools: only the mute button is in)
-and step 6.3 (the death transition's seams between worlds). Part II is in step 1, the hell: its
+Part I is done except the postponed items of step 4 (sound and tools: only the mute button is in).
+Part II is in step 1, the hell: its
 world, maze, heroes, boss, weapons, attacks and light are in the game; the owner's second round of
 polish is the next work (see "Next chat" in part II). Part III (the interface) follows it.
 
@@ -118,13 +118,11 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
       (`decayTimeline`).
    2. ~~**The look**~~ Done (see Done, "Part I, 6.2"): drain and rebirth, the collapse is a
       black hole (the owner's pick from a chat mock-up). In every world's death.
-   3. **Postponed to the hell's art pass (part II, step 1, the port):** the next frame. The pass still samples one scene, so the rebirth shows the
-      same level again: right for a death, not for the hell's lost fight (it still ends in the
-      fade to the next level) or a boss → season seam. For those the pass needs the next
-      level as a second texture, like `SeasonTurn`; boss levels of part II then take it by
-      adding their `style`.
-   4. ~~Tests~~ for the fronts, the clock and the geometry are in `decay.test.ts`; none yet for
-      a `from` / `to` pair (there is no such pair yet).
+   3. ~~**The next frame.**~~ Done (see Done, "Part I, 6.3"): the pass takes the next level as a
+      second texture; losing the hell's fight now unfolds the next world. Boss levels of part II
+      take it by adding their `style`.
+   4. ~~Tests~~ for the fronts, the clock and the geometry are in `decay.test.ts`; the flow of a
+      lost boss fight is in `director.test.ts`.
 
 ## Part II. Boss levels
 
@@ -172,8 +170,8 @@ style)`. Any pair works the same way: a death on a season level (`to` is the sam
         token becomes `DB`).
      7. ~~**The port**~~ Done: the flesh world (`fleshBake`, `fleshLive`), the cord walls, the heroes
         (the season heroes plus the BFG charge's light; the doom-fighter armor was dropped), Blinky
-        and the imps, the weapons and pickups, the attacks. The world's death seams (part I, 6.3)
-        are still open.
+        and the imps, the weapons and pickups, the attacks. The world's death seam (part I, 6.3)
+        is closed.
      8. **The hell's music track** (the owner brings it: generated or a free licence).
      9. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
 
@@ -721,3 +719,19 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   comparison page (Blinky and the imps on the red) is deleted unchosen; the options were a pale
   rim, a halo, blackened iron, bright eyes, a floor shadow and a combination (git history, commit
   `39791b5`).
+- Part I, 6.3: the lost boss fight unfolds the next world (tenth chat). The death pass
+  (`DecayPass`, `decayShader`) has a second texture, `uNext`: with `DecayRequest.next` (the next
+  level's maze and respawn tile) the rebirth phase unfolds that picture, and its colour returns
+  along the next maze's corridors from its spawn tile (`LevelDecay.beginNext`); without it the
+  pass is as before. `RenderPipeline` renders the next level (`previewFor`, the same preview the
+  season turn uses) while a death with `combat.hellDefeat` plays, and stops drawing the hero once
+  the hole has closed (the next world has none until its READY). `DeathState` then starts the next
+  level in place (`startLevelInPlace`) instead of fading to black. Before: the hole unfolded the
+  hell again and a black fade cut to the next level. Other pairs (a season death, the season turn
+  into and out of a boss level) were already right. Checked in the real game (dev panel: Hell,
+  Die; frames every half second): the hell drains, falls into the hole, and the summer meadow of
+  level 6 unfolds out of it, READY follows with no black frame; no console errors. The HUD still
+  shows the hell's boss box and "3 lives left" until READY. Test: `director.test.ts` (checked to
+  fail on the old behaviour). Not done: the same for the arcade seams (the Easter egg into the
+  arcade, the arcade back to the main game, game over to the menu), which still use the screen
+  fade; the no-WebGL fallback veil shows no next world.

@@ -13,7 +13,10 @@ import { SeasonTurn } from './transitions/seasonTurn/SeasonTurn';
 import type { SeasonTurnRequest } from './transitions/seasonTurn/SeasonTurn';
 import { glowTexture } from './common/textures';
 import { FLOW } from '../config/flowConfig';
+import type { GridMatrix } from '../config/gridConfig';
 import type { NextLevel } from '../logic/level/LevelLoader';
+import { GridModel } from '../logic/maze/GridModel';
+import type { GridPoint } from '../logic/maze/GridModel';
 import type { DecayPalette } from './transitions/decay/DecayPass';
 import { DebugOverlayView } from './debug/DebugOverlayView';
 import type { DebugRenderFlags } from './debug/DebugOverlayView';
@@ -54,6 +57,8 @@ export class RenderPipeline {
 	private pixelRatio = 1;
 	private lastRenderTime = 0;
 	private timeValue = 0;
+	/** The next level's respawn tile for the death transition into it (a lost boss fight). */
+	private nextSpawn: { level: number; spawn: GridPoint } | null = null;
 
 	constructor(
 		container: HTMLElement,
@@ -128,6 +133,12 @@ export class RenderPipeline {
 		const next = clear ? this.level.peekNextLevel() : null;
 		const nextView = next ? this.previewFor(next) : null;
 		const turning = clear && next && nextView;
+		// losing a boss fight ends the level, not the run: the black hole unfolds the next world
+		const defeat =
+			death && this.level.hellMode && this.level.combat?.hellDefeat
+				? this.level.peekNextLevel()
+				: null;
+		const defeatView = defeat ? this.previewFor(defeat) : null;
 		const shake = death && !flow.paused ? this.decay.shake(flow.elapsed) : { x: 0, y: 0 };
 		const target = death
 			? this.decay.begin(this.canvas.width, this.canvas.height)
@@ -159,6 +170,25 @@ export class RenderPipeline {
 		const screen: RenderFrame = { ...frame, ctx: this.ctx };
 		this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
 		if (death) {
+			let next: { grid: GridMatrix; spawnX: number; spawnY: number } | undefined;
+			if (defeat && defeatView) {
+				const nextCtx = this.decay.beginNext(this.canvas.width, this.canvas.height);
+				nextCtx.setTransform(pr, 0, 0, pr, 0, 0);
+				nextCtx.globalAlpha = 1;
+				nextCtx.globalCompositeOperation = 'source-over';
+				defeatView.preview({
+					ctx: nextCtx,
+					width: this.width,
+					height: this.height,
+					pixelRatio: pr,
+					dt,
+					paused: flow.paused,
+					season: defeat.season
+				});
+				this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
+				const spawn = this.spawnOf(defeat);
+				next = { grid: defeat.season.grid, spawnX: spawn.x, spawnY: spawn.y };
+			}
 			this.decay.compose(this.ctx, this.width, this.height, pr, layout, shake, this.timeValue, {
 				grid: season.grid,
 				deathX: death.x,
@@ -166,9 +196,13 @@ export class RenderPipeline {
 				spawnX: grid.playerSpawn.x,
 				spawnY: grid.playerSpawn.y,
 				elapsed: flow.elapsed,
-				palette: this.decayPalette()
+				palette: this.decayPalette(),
+				next
 			});
-			this.shared.drawPlayer(screen, layout);
+			// the next world has no hero until its READY: he is gone once the hole has closed
+			if (!next || flow.elapsed < FLOW.death.shatter + FLOW.death.void) {
+				this.shared.drawPlayer(screen, layout);
+			}
 		}
 		if (turning) {
 			const nextCtx = this.turn.next(this.canvas.width, this.canvas.height);
@@ -218,6 +252,14 @@ export class RenderPipeline {
 	destroy(): void {
 		this.unsubscribeCues();
 		this.canvas.remove();
+	}
+
+	/** Where the hero starts in `next` (cached: the maze is parsed once per level). */
+	private spawnOf(next: NextLevel): GridPoint {
+		if (this.nextSpawn?.level !== next.level) {
+			this.nextSpawn = { level: next.level, spawn: new GridModel(next.season.grid).playerSpawn };
+		}
+		return this.nextSpawn.spawn;
 	}
 
 	/** The renderer that can show the next level's world, or null (then no turn). */

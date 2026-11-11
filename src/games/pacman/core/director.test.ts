@@ -219,6 +219,26 @@ describe('game flow', () => {
 		expect(director.flow.phase).toBe('intro');
 	});
 
+	it('moves on to the next level in place, with no fade, after a lost boss fight', () => {
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { director, level } = setup();
+		startToReady(director);
+		director.debugEnterHell();
+		run(director, FLOW.readyShort + 0.05);
+		director.showPlaying();
+		expect(level.hellMode).toBe(true);
+		director.debugKillPlayer();
+		expect(level.ensure().combat.hellDefeat).toBe(true);
+		run(director, DEATH - 0.1);
+		expect(director.stateName).toBe('death');
+		run(director, 0.2);
+		// the next world was already on screen when the hole unfolded: no black fade in between
+		expect(director.transitioning).toBe(false);
+		expect(director.stateName).toBe('ready');
+		expect(level.hellMode).toBe(false);
+		expect(level.peekNextLevel().level).toBe(7);
+	});
+
 	it('returns to the menu from pause and logs a disallowed transition', () => {
 		const { director } = setup();
 		startToReady(director);

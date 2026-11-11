@@ -48,6 +48,7 @@ export interface DecayUniforms {
 
 const UNIFORMS = [
 	'uScene',
+	'uNext',
 	'uDist',
 	'uSizePx',
 	'uScenePx',
@@ -65,6 +66,7 @@ const UNIFORMS = [
 	'uReach',
 	'uPhase',
 	'uFlash',
+	'uUseNext',
 	'uDeep',
 	'uMid',
 	'uWisp',
@@ -77,6 +79,7 @@ type UniformName = (typeof UNIFORMS)[number];
 
 const SCENE_UNIT = 0;
 const FIELD_UNIT = 1;
+const NEXT_UNIT = 2;
 
 /**
  * The death shader on a `GlPass`: uploads the rendered world layer as a texture each frame
@@ -94,6 +97,7 @@ export class DecayPass {
 		this.pass = pass;
 		pass.addTexture(SCENE_UNIT, 'uScene', 'linear');
 		pass.addTexture(FIELD_UNIT, 'uDist', 'nearest');
+		pass.addTexture(NEXT_UNIT, 'uNext', 'linear');
 	}
 
 	get canvas(): HTMLCanvasElement {
@@ -125,9 +129,13 @@ export class DecayPass {
 		this.distMax = [maxDeath, maxRespawn];
 	}
 
-	/** Renders the decayed `scene` at `pixelWidth`×`pixelHeight` into `canvas`. */
+	/**
+	 * Renders the decayed `scene` at `pixelWidth`×`pixelHeight` into `canvas`. With `next` the
+	 * reborn world is that picture (the next level), else `scene` again.
+	 */
 	render(
 		scene: HTMLCanvasElement,
+		next: HTMLCanvasElement | null,
 		pixelWidth: number,
 		pixelHeight: number,
 		u: DecayUniforms
@@ -136,6 +144,10 @@ export class DecayPass {
 		const gl = pass.gl;
 		const l = (name: UniformName) => pass.uniform(name);
 		pass.uploadCanvas(SCENE_UNIT, scene);
+		if (next) {
+			pass.uploadCanvas(NEXT_UNIT, next);
+		}
+		gl.uniform1f(l('uUseNext'), next ? 1 : 0);
 		gl.uniform2f(l('uSizePx'), pixelWidth, pixelHeight);
 		gl.uniform2f(l('uScenePx'), u.width, u.height);
 		gl.uniform4f(l('uWorld'), u.originX, u.originY, u.worldScale, u.tileWorld);

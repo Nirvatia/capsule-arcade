@@ -13,12 +13,14 @@ import { DECAY_OUTSIDE_RATE } from './decayField';
  * 3. Flash: the singularity flares and a shock wave goes out; the void is a dark gradient
  *    with a few stars.
  * 4. Rebirth: the same fold run backwards round the respawn point shows the next picture
- *    (the level again), grey at first; its colour returns in a wave along the corridors
+ *    (the level again, or the next level's world when `uUseNext` is on: losing a boss
+ *    fight), grey at first; its colour returns in a wave along the corridors
  *    from the respawn point (the geodesic respawn field).
  */
 export const DECAY_FRAGMENT = `#version 300 es
 precision highp float;
 uniform sampler2D uScene;
+uniform sampler2D uNext;   // the next level's world, for the rebirth when uUseNext is on
 uniform sampler2D uDist;
 uniform vec2 uSizePx;
 uniform vec2 uScenePx;
@@ -36,6 +38,7 @@ uniform vec2 uCollapse;   // collapse of the dying world, bloom of the reborn on
 uniform vec2 uReach;      // radius that holds the whole picture round each point, css px
 uniform float uPhase;     // 0 dying world, 1 void, 2 reborn world
 uniform float uFlash;
+uniform float uUseNext;   // 1: the reborn world is uNext, 0: uScene
 uniform vec3 uDeep;       // void
 uniform vec3 uMid;
 uniform vec3 uWisp;       // arms of light
@@ -94,7 +97,10 @@ vec3 voidBg(vec2 css, vec2 c) {
 }
 // The world squeezed into a disc round c: k = 0 intact, k -> 1 swallowed. Returns the
 // picture (rgb) and its coverage (a); Rd is the disc's radius in short-side units.
-vec4 worldAt(vec2 css, vec2 c, float k, float reach, out float Rd) {
+vec4 sceneAt(bool useNext, vec2 uv) {
+  return useNext ? texture(uNext, uv) : texture(uScene, uv);
+}
+vec4 worldAt(vec2 css, vec2 c, float k, float reach, bool useNext, out float Rd) {
   float kk = clamp(k, 0.0, 0.998);
   float sigma = pow(1.0 - kk, 1.6);
   Rd = mix(reach / U, DISC, smoothstep(0.0, 0.3, kk)) * sigma;
@@ -106,9 +112,9 @@ vec4 worldAt(vec2 css, vec2 c, float k, float reach, out float Rd) {
   vec2 d2 = vec2(cs * d.x - sn * d.y, sn * d.x + cs * d.y) / sigma;
   float ab = 0.012 * kk;
   vec3 col;
-  col.r = texture(uScene, (c + d2 * (1.0 + ab) * U) / uScenePx).r;
-  col.g = texture(uScene, (c + d2 * U) / uScenePx).g;
-  col.b = texture(uScene, (c + d2 * (1.0 - ab) * U) / uScenePx).b;
+  col.r = sceneAt(useNext, (c + d2 * (1.0 + ab) * U) / uScenePx).r;
+  col.g = sceneAt(useNext, (c + d2 * U) / uScenePx).g;
+  col.b = sceneAt(useNext, (c + d2 * (1.0 - ab) * U) / uScenePx).b;
   vec2 src = c + d2 * U;
   float inside = step(0.0, src.x) * step(src.x, uScenePx.x) * step(0.0, src.y) * step(src.y, uScenePx.y);
   float m = (1.0 - smoothstep(0.96, 1.0, rho)) * inside;
@@ -139,7 +145,7 @@ void main() {
   float Rd;
   vec3 col;
   if (uPhase < 0.5) {
-    vec4 w = worldAt(css, cE, uCollapse.x, uReach.x, Rd);
+    vec4 w = worldAt(css, cE, uCollapse.x, uReach.x, false, Rd);
     float drained = uFront > -50.0 ? smoothstep(uFront, uFront - DB, f.x) : 0.0;
     vec3 wc = desat(w.rgb, drained) * (1.0 - 0.25 * drained);
     wc += uRim * exp(-sq((f.x - uFront) / 0.9)) * (uFront > -50.0 ? 1.0 : 0.0) * 0.6 * (1.0 - uCollapse.x);
@@ -148,7 +154,7 @@ void main() {
   } else if (uPhase < 1.5) {
     col = voidBg(css, cE);
   } else {
-    vec4 w = worldAt(css, cS, uCollapse.y, uReach.y, Rd);
+    vec4 w = worldAt(css, cS, uCollapse.y, uReach.y, uUseNext > 0.5, Rd);
     float colored = uRebuild > -50.0 ? smoothstep(uRebuild, uRebuild - CB, f.y) : 0.0;
     vec3 wc = desat(w.rgb, 1.0 - colored) * (1.0 - 0.25 * (1.0 - colored));
     float fg = uRebuild > -50.0 ? exp(-sq((f.y - uRebuild) / 0.9)) : 0.0;
