@@ -703,3 +703,21 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   (lair peak/rest 1.36 -> 1.13). If it is too flat, raise `PEAK`; at 0.6 the lair peaked at 76.3.
   Checked: `hell` prototype without console errors. The night's pulse (`MoodStyle.beat` in
   `DoomWorld`) also reads `heartbeat` and is not scaled; `cord` has it at 0.1.
+- Screen size, the tunnel pad and the fruit's edge (tenth chat, the owner's list; the owner put the
+  hell's second round (items 1, 2, 4 above) aside and went on to part III). The board:
+  `render/common/boardScale.boardPlacement` replaces the `0.75 * min(...)` of `MeadowWorld` and
+  `DoomWorld`. The old scale gave the walls ~69 % of the height at best (650 px on a 1080p browser
+  window), and page zoom changes the container and the css px in step, so it never helped. Now the
+  walls (the board without its empty border) take 85 % of the height (`BOARD_HEIGHT_SHARE`), at most
+  92 % of the width, and sit centred below a 96 px band that the HUD covers (`BOARD_TOP_RESERVE`);
+  on a short window (620 px high) the band wins and the walls take 84 %. Checked in the game at
+  1920x950, 1280x620 and 420x800 (the HUD clears the walls at each; the hell's boss box, which
+  makes the HUD taller, was not looked at). Tests: `boardScale.test.ts`. The tunnel pad's radius
+  is 10 % smaller (`PAD_RADIUS` 10.8 -> 9.72; the hell's rifts are unchanged). The fruit looked
+  sharp because the 250 px texture was shrunk to a 30-50 px tile in one `drawImage`, which a
+  bilinear sample cannot do cleanly past 2x; `collectibleSprite` now keeps the texture halved
+  down to 16 px (`mipChain`) and draws from the mip that is shrunk by 1x to 2x (`mipLevel`,
+  tested). Before and after, 32 px tile: the edges are smooth, the look is the owner's. The `ghosts`
+  comparison page (Blinky and the imps on the red) is deleted unchosen; the options were a pale
+  rim, a halo, blackened iron, bright eyes, a floor shadow and a combination (git history, commit
+  `39791b5`).

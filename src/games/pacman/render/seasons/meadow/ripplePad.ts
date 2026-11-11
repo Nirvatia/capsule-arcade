@@ -5,7 +5,7 @@ import { hexChannels } from '../../common/textures';
 type Ctx = CanvasRenderingContext2D;
 
 /** The pad's radius in world units (a tile is ~25). */
-export const PAD_RADIUS = 10.8;
+export const PAD_RADIUS = 9.72;
 
 const TAU = Math.PI * 2;
 

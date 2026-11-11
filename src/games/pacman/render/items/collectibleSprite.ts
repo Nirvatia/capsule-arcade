@@ -53,6 +53,8 @@ export interface Bounds {
 
 interface Baked {
 	readonly sprite: HTMLCanvasElement;
+	/** The sprite halved again and again (`mips[k]` is `size / 2^k` across, `mips[0]` the sprite). */
+	readonly mips: readonly HTMLCanvasElement[];
 	/** The object without its soft edge: pixels at least half opaque. */
 	readonly bounds: Bounds;
 	/** Object px → screen px per tile px: the object fits the extent, the glow the tile. */
@@ -204,6 +206,40 @@ function fitFor(art: CollectibleArt, bounds: Bounds, glow: Bounds): number {
 	return far > 0 ? Math.min(object, COLLECTIBLE_REACH / far) : object;
 }
 
+/** The smallest mip is this many px across. */
+const MIN_MIP = 16;
+
+/**
+ * The sprite and its halvings. One `drawImage` shrinks cleanly by at most 2x (a bilinear sample
+ * of four texels); the texture is 250 px and a tile on screen 30 to 50, so drawing it at once
+ * skips most texels and the edges come out jagged and sharp. Each halving is an even box filter.
+ */
+function mipChain(sprite: HTMLCanvasElement): HTMLCanvasElement[] {
+	const chain = [sprite];
+	let size = sprite.width;
+	while (size / 2 >= MIN_MIP) {
+		size = Math.round(size / 2);
+		const c = makeCanvas(size, size);
+		const cx = c.getContext('2d');
+		if (!cx) {
+			break;
+		}
+		cx.imageSmoothingEnabled = true;
+		cx.imageSmoothingQuality = 'high';
+		cx.drawImage(chain[chain.length - 1], 0, 0, size, size);
+		chain.push(c);
+	}
+	return chain;
+}
+
+/** The mip to draw at texture-to-screen scale `scale`: the one that is shrunk by 1x to 2x. */
+export function mipLevel(scale: number, levels: number): number {
+	if (!(scale > 0) || scale >= 1) {
+		return 0;
+	}
+	return Math.max(0, Math.min(levels - 1, Math.floor(Math.log2(1 / scale))));
+}
+
 function bake(art: CollectibleArt): Baked | null {
 	if (typeof document === 'undefined') {
 		return null;
@@ -230,7 +266,7 @@ function bake(art: CollectibleArt): Baked | null {
 	if (art.extraBounds) {
 		glow = union(glow, art.extraBounds);
 	}
-	return { sprite, bounds, fit: fitFor(art, bounds, glow), blooms };
+	return { sprite, mips: mipChain(sprite), bounds, fit: fitFor(art, bounds, glow), blooms };
 }
 
 /** Pre-paints the textures (they are otherwise painted on first draw). */
@@ -270,7 +306,12 @@ export function drawCollectible(
 	ctx.scale(f * motion.scale, f * motion.scale);
 	const alpha = ctx.globalAlpha;
 	ctx.globalAlpha = alpha * motion.alpha;
-	ctx.drawImage(baked.sprite, -half, -half);
+	// the object from the mip that is shrunk by at most 2x, not from the full texture
+	const level = mipLevel(f * motion.scale, baked.mips.length);
+	const mip = baked.mips[level];
+	ctx.imageSmoothingEnabled = true;
+	ctx.imageSmoothingQuality = 'high';
+	ctx.drawImage(mip, -half, -half, art.size, art.size);
 	ctx.globalCompositeOperation = 'lighter';
 	art.blooms.forEach((bloom, i) => {
 		const layer = baked.blooms[i];
