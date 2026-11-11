@@ -31,6 +31,15 @@ describe('boardPlacement', () => {
 		expect(top + (25 * T * p.scale) / 2).toBeCloseTo(450, 5);
 	});
 
+	it('leaves a band at the bottom as well, and centres the walls between the two', () => {
+		const p = boardPlacement(400, 800, 25, 27, T, 176, 176);
+		const top = p.y + T * p.scale;
+		const bottom = top + 25 * T * p.scale;
+		expect(top).toBeGreaterThanOrEqual(176);
+		expect(bottom).toBeLessThanOrEqual(800 - 176 + 1e-9);
+		expect(top - 176).toBeCloseTo(800 - 176 - bottom, 5);
+	});
+
 	it('is limited by the width on a narrow screen', () => {
 		const p = boardPlacement(400, 1200, 25, 27, T);
 		expect(23 * T * p.scale).toBeCloseTo(BOARD_WIDTH_SHARE * 400, 5);

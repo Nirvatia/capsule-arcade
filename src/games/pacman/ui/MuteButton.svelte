@@ -6,18 +6,22 @@
 	import { t } from './i18n';
 	import { hudFrame } from './hud/hudFrame';
 	import { SEASON_THEMES, isSeasonKey } from './hud/season/seasonThemes';
-	import { hudScaleFor } from '../config/hudLayout';
+	import { hudLayoutFor } from '../config/hudLayout';
 
+	let innerWidth = $state(1280);
 	let innerHeight = $state(720);
 	const label = $derived($muted ? $t('unmute') : $t('mute'));
 	// the other worlds (the hell, the arcade, the menu) use the autumn's dark wood
 	const theme = $derived(
 		SEASON_THEMES[$hudFrame && isSeasonKey($hudFrame.world) ? $hudFrame.world : 'autumn']
 	);
-	const size = $derived(Math.round(54 * hudScaleFor(innerHeight)));
+	const layout = $derived(hudLayoutFor(innerWidth, innerHeight));
+	// stacked, the knob stands in the bottom band's row with the dial and the pause knob
+	const size = $derived(Math.round((layout.mode === 'stack' ? 46 : 54) * layout.scale));
+	const gap = $derived(Math.round(14 * layout.scale));
 </script>
 
-<svelte:window bind:innerHeight />
+<svelte:window bind:innerWidth bind:innerHeight />
 
 <button
 	type="button"
@@ -25,6 +29,8 @@
 	class:off={$muted}
 	style:width="{size}px"
 	style:height="{size}px"
+	style:left="max({gap}px, env(safe-area-inset-left, 0px))"
+	style:bottom="max({gap}px, env(safe-area-inset-bottom, 0px))"
 	aria-pressed={$muted}
 	aria-label={label}
 	title={label}

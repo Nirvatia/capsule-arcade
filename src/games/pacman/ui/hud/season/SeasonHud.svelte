@@ -6,11 +6,11 @@
 <script lang="ts">
 	import type { HudSnapshot } from '../hudSnapshot';
 	import { t } from '../../i18n';
-	import { hudScaleFor } from '../../../config/hudLayout';
+	import { clamp01, fmt } from './seasonFormat';
 	import {
 		DIAL,
 		ENERGIZER_ART,
-		RING_LENGTH,
+		ringLength,
 		boardArt,
 		bannerArt,
 		dialArt,
@@ -23,11 +23,10 @@
 	import { SEASON_THEMES } from './seasonThemes';
 	import type { SeasonKey } from './seasonThemes';
 
-	let { snap, onpause }: { snap: HudSnapshot; onpause: () => void } = $props();
+	let { snap, scale, onpause }: { snap: HudSnapshot; scale: number; onpause: () => void } =
+		$props();
 
-	let innerHeight = $state(720);
 	const theme = $derived(SEASON_THEMES[snap.world as SeasonKey]);
-	const scale = $derived(hudScaleFor(innerHeight));
 
 	/** The shapes that do not change while a world lasts. */
 	const art = $derived({
@@ -43,9 +42,8 @@
 		knob: knobArt(theme)
 	});
 
+	const RING = ringLength();
 	const PELLETS = 14;
-	const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-	const fmt = (n: number) => Math.max(0, Math.floor(n)).toLocaleString('en-US').replace(/,/g, ' ');
 	const eaten = $derived(Math.round(clamp01(snap.dots) * PELLETS));
 	const trail = $derived(trailArt(theme, eaten, PELLETS));
 	const ratio = $derived(
@@ -61,7 +59,6 @@
 <!-- The {@html} below is the HUD's own static art (`seasonArt`, built from constants): no text of
 	the player or the network ever goes into it, so the XSS rule does not apply. -->
 <!-- eslint-disable svelte/no-at-html-tags -->
-<svelte:window bind:innerHeight />
 
 <div
 	class="shud"
@@ -153,8 +150,8 @@
 				stroke={theme.ring}
 				stroke-width="6"
 				stroke-linecap="round"
-				stroke-dasharray={RING_LENGTH}
-				stroke-dashoffset={RING_LENGTH * (1 - ratio)}
+				stroke-dasharray={RING}
+				stroke-dashoffset={RING * (1 - ratio)}
 				transform="rotate(-90 {DIAL.cx} {DIAL.cy})"
 			/>
 			<g class:idle={!snap.timer} transform="translate({DIAL.cx} {DIAL.cy - 2}) scale(.5)">

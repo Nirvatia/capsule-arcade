@@ -205,8 +205,10 @@ chiptune sound (`config/arcadeConfig.ts`).
   seconds inside; the night, at three quarters of the dots, dims the whole HUD with the world), and
   a pause knob in the corner. The boards sway, the hero and the energizer bob. No fruit row (the
   owner dropped it). The sound switch is a knob of the same stuff at the bottom left, in every
-  world. A narrower screen, the hell and (own HUD) the arcade keep the older ones until their
-  turn: one compact bar at the top centre (score and high score, level and world, lives, power
+  world. On a tall or squarish screen the same things are smaller and in two bands, one above the maze
+  and one below it (top: score board and record tag, level board with banner, lives; bottom:
+  the food trail, the dial, the pause knob, and the sound knob at the left). The hell and (own
+  HUD) the arcade keep the older ones until their turn: one compact bar at the top centre (score and high score, level and world, lives, power
   timer or weapon, dot progress); on boss levels a boss box below it (name, phase, HP with phase
   marks, the player's HP, weapon, berserk, BFG charge, the reward hint). The arcade has its own
   arcade HUD (1UP, high score, round, tries, the rounds' fruit).

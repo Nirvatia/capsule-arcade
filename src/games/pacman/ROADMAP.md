@@ -231,8 +231,8 @@ one poorly. The whole interface is code-drawn (CSS / SVG / Canvas), no raster as
 
 1. ~~**One skeleton.**~~ Done for the season worlds on landscape screens (see Done, "Part III, 1-2"):
    score and high score, level and world, lives, power timer, food trail, pause, in the side
-   margins (the fruit row was dropped by the owner). Left: the hell's HUD (with the boss's own
-   interface, a design to come), the narrow vertical layout.
+   margins (the fruit row was dropped by the owner), and in two bands on a taller screen. Left:
+   the hell's HUD (with the boss's own interface, a design to come).
 2. ~~**A skin per season.**~~ Done with the skeleton: the four materials.
 3. **A skin per boss level.** Each boss world has its own interface (the hell's boss box:
    name, phase, HP with phase marks, the player's HP, weapon, berserk, BFG charge, the
@@ -805,3 +805,17 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   summer, autumn and winter, with the mute click, the Energizer timer and the pause knob; no
   console errors. Not checked: spring in play, a phone, 21:9, a very long score. Tests:
   `hudLayout.test.ts` and the placement cases in `boardScale.test.ts` (no test for the markup).
+- Part III, 1-2, tall and squarish screens (tenth chat). From an aspect of 1.25 up the side HUD
+  stands in the margins, its scale now also limited by the margins (a 4:3 screen gets it at about
+  0.84); below that the same things are smaller and in two bands, one above the maze and one below
+  it (`SeasonHudStack`, a 400 x 800 design scaled by `min(width / 400, height / 800)`): the score
+  board with the record tag and the level board with its banner and the lives at the top; the food
+  trail, the dial in the middle and the pause knob at the bottom, with the sound knob at the left.
+  `config/hudLayout.hudLayoutFor` gives the mode, the scale and the two bands; `boardPlacement`
+  takes a bottom band too, so the maze sits centred between them (`MeadowWorld`); the board
+  constants moved to `config/boardConfig`. The old bar now serves only the hell. The art functions
+  take their geometry (banner, trail, dial). Checked in the real game at 400x800, 360x640,
+  768x1024 and 1024x768 (summer, winter, spring), no console errors. Not checked: autumn in
+  portrait, a phone with a notch (the safe-area insets are only applied to the sound knob), a
+  landscape phone (the side HUD at about 0.55), the death banner, which now crosses the dial in
+  the stacked layout. Tests: `hudLayout.test.ts` and the bottom-band case in `boardScale.test.ts`.

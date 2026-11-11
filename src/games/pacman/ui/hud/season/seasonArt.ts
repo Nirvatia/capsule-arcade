@@ -143,27 +143,51 @@ export function boardArt(
 }
 
 /** Two ropes from the score board's lower edge down to the record tag. */
-export function ropesArt(t: SeasonTheme): string {
-	const d = 'M74 132 L82 160 M192 132 L184 160';
+export function ropesArt(t: SeasonTheme, d = 'M74 132 L82 160 M192 132 L184 160'): string {
 	return `<path d="${d}" stroke="${t.rope}" stroke-width="3.4" stroke-linecap="round"/><path d="${d}" stroke="${t.ink}" stroke-width="1.2" opacity=".6"/>`;
 }
 
-/** The cloth banner hung under the level board. */
-export function bannerArt(t: SeasonTheme): string {
-	let s = `<path d="M1084 132 L1090 148 M1210 132 L1204 148" stroke="${t.rope}" stroke-width="3.2" stroke-linecap="round"/>`;
-	s += `<path d="M1076 146 H1218 L1210 160 L1218 174 H1076 L1084 160Z" fill="${t.cloth}" stroke="${t.ink}" stroke-width="3.4" stroke-linejoin="round"/>`;
-	s += `<path d="M1076 146 H1218 L1214 152 H1080Z" fill="#fff" opacity=".25"/><path d="M1076 168 H1218 V174 H1076Z" fill="${t.clothShade}" opacity=".8"/>`;
+export interface BannerBox {
+	readonly x: number;
+	readonly y: number;
+	readonly w: number;
+	readonly h: number;
+}
+
+/** The cloth banner hung under the level board, on two short ropes. */
+export function bannerArt(
+	t: SeasonTheme,
+	b: BannerBox = { x: 1076, y: 146, w: 142, h: 28 }
+): string {
+	const { x, y, w, h } = b;
+	const nx = Math.min(8, w * 0.06);
+	let s = `<path d="M${x + 8} ${y - 14} L${x + 14} ${y + 2} M${x + w - 8} ${y - 14} L${x + w - 14} ${y + 2}" stroke="${t.rope}" stroke-width="3.2" stroke-linecap="round"/>`;
+	s += `<path d="M${x} ${y} H${x + w} L${x + w - nx} ${y + h / 2} L${x + w} ${y + h} H${x} L${x + nx} ${y + h / 2}Z" fill="${t.cloth}" stroke="${t.ink}" stroke-width="3.4" stroke-linejoin="round"/>`;
+	s += `<path d="M${x} ${y} H${x + w} L${x + w - 4} ${y + 6} H${x + 4}Z" fill="#fff" opacity=".25"/><path d="M${x} ${y + h - 6} H${x + w} V${y + h} H${x}Z" fill="${t.clothShade}" opacity=".8"/>`;
 	return s;
 }
 
+export interface TrailBox {
+	readonly x0: number;
+	readonly x1: number;
+	readonly y: number;
+	/** How far the trail wanders up and down. */
+	readonly amp: number;
+}
+
 /** The eaten and the uneaten pellets of the food trail; `eaten` of `n` are holes. */
-export function trailArt(t: SeasonTheme, eaten: number, n = 14): string {
-	const py = 308;
-	let s = `<path d="M1056 ${py} Q1100 ${py - 14} 1150 ${py} T1244 ${py}" fill="none" stroke="${t.ink}" stroke-width="10" stroke-linecap="round" opacity=".35"/>`;
+export function trailArt(
+	t: SeasonTheme,
+	eaten: number,
+	n = 14,
+	g: TrailBox = { x0: 1056, x1: 1244, y: 308, amp: 8 }
+): string {
+	const mid = (g.x0 + g.x1) / 2;
+	let s = `<path d="M${g.x0} ${g.y} Q${(g.x0 + mid) / 2} ${g.y - g.amp * 1.75} ${mid} ${g.y} T${g.x1} ${g.y}" fill="none" stroke="${t.ink}" stroke-width="10" stroke-linecap="round" opacity=".35"/>`;
 	for (let i = 0; i < n; i += 1) {
 		const u = i / (n - 1);
-		const x = 1056 + 188 * u;
-		const y = py - 8 * Math.sin(u * Math.PI * 2);
+		const x = g.x0 + (g.x1 - g.x0) * u;
+		const y = g.y - g.amp * Math.sin(u * Math.PI * 2);
 		if (i < eaten) {
 			s += `<circle cx="${x}" cy="${y}" r="4.6" fill="#241a10" opacity=".45"/>`;
 		} else {
@@ -174,11 +198,17 @@ export function trailArt(t: SeasonTheme, eaten: number, n = 14): string {
 }
 
 /** The dial the energizer sits in: a stone ring in the ground with a dark well. */
-export const DIAL = { cx: 1196, cy: 410, r: 34 } as const;
+export interface Dial {
+	readonly cx: number;
+	readonly cy: number;
+	readonly r: number;
+}
 
-export function dialArt(t: SeasonTheme): string {
-	const { cx, cy, r } = DIAL;
-	let s = shadow(cx + 4, cy + 48, 54, 8, 0.3);
+export const DIAL: Dial = { cx: 1196, cy: 410, r: 34 };
+
+export function dialArt(t: SeasonTheme, d: Dial = DIAL): string {
+	const { cx, cy, r } = d;
+	let s = shadow(cx + 4, cy + r + 14, r + 20, 8, 0.3);
 	s += `<circle cx="${cx}" cy="${cy}" r="${r + 11}" fill="${t.shade}" stroke="${t.ink}" stroke-width="4"/><circle cx="${cx}" cy="${cy}" r="${r + 5}" fill="${t.mid}"/>`;
 	s += `<path d="M${cx - r - 3} ${cy - 12} A${r + 3} ${r + 3} 0 0 1 ${cx + 12} ${cy - r - 3}" fill="none" stroke="${t.light}" stroke-width="5" stroke-linecap="round" opacity=".8"/>`;
 	s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#10140f" opacity=".72" stroke="${t.ink}" stroke-width="2.6"/>`;
@@ -186,8 +216,10 @@ export function dialArt(t: SeasonTheme): string {
 	return s;
 }
 
-/** The circumference of the timer ring. */
-export const RING_LENGTH = 2 * Math.PI * (DIAL.r - 5);
+/** The circumference of the timer ring of a dial. */
+export function ringLength(d: Dial = DIAL): number {
+	return 2 * Math.PI * (d.r - 5);
+}
 
 /** The pause knob, drawn at the origin. */
 export function knobArt(t: SeasonTheme): string {
