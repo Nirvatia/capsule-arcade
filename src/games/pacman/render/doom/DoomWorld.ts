@@ -165,6 +165,13 @@ export class DoomWorld {
 	private stormT = 0;
 	private nightV = 0;
 	private nightT = 0;
+	/** How far the lair's gate is open, 0 (shut) .. 1. */
+	private gateOpen = 0;
+
+	setGateOpen(open: number): void {
+		this.gateOpen = open;
+	}
+
 	/** The flesh scene: baked the first time the world is drawn (it takes a moment). */
 	private scene: FleshLive | null = null;
 	private styleId: MoodStyleId = 'cord';
@@ -318,6 +325,7 @@ export class DoomWorld {
 	/** The flesh scene: ground, maze, walls and what moves in them. Leaves the context untransformed. */
 	drawWorld(ctx: CanvasRenderingContext2D): void {
 		this.scene ??= new FleshLive(bakeFlesh(this.S));
+		this.scene.setGate(this.gateOpen);
 		ctx.save();
 		ctx.globalAlpha = 1;
 		ctx.globalCompositeOperation = 'source-over';

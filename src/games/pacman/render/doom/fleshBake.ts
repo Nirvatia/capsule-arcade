@@ -10,6 +10,8 @@
 // here: the blood in the veins, the pools' ripples, the cysts, the heartbeat glow (`fleshLive`).
 import type { GridMatrix } from '../../config/gridConfig';
 import { isTeleportToken } from '../../config/gridConfig';
+import type { Gate } from './fleshGate';
+import { gateOf } from './fleshGate';
 import type { Rng, Vein } from './fleshNoise';
 import {
 	blur,
@@ -139,6 +141,8 @@ export interface FleshBake {
 	readonly pads: readonly Pad[];
 	/** The lair's centre, scene units. */
 	readonly lair: { readonly x: number; readonly y: number };
+	/** The lair's gate, drawn live (`FleshLive`), or null. */
+	readonly gate: Gate | null;
 	/** Scene units per tile row and column. */
 	readonly cols: number;
 	readonly rows: number;
@@ -700,7 +704,6 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 			w.drawImage(clipTo(tint(ring(4), st.outline), wallM), LX, LY);
 			ex.drawImage(clipTo(tint(ring(1.8), `rgba(${st.cord},.9)`), wallM), LX, LY);
 		}
-		paintGate(S, w, ex, cols, rows);
 	}
 	const glowCv = blur(emis.cv, 3, true);
 
@@ -835,6 +838,7 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 		rifts,
 		pads,
 		lair: { x: MX + (cols * T) / 2, y: MY + (rows * T) / 2 },
+		gate: gateOf(S, MX, MY, T),
 		cols,
 		rows
 	};
@@ -1097,53 +1101,6 @@ function paintSkull(
 	ex.arc(cx + 4, cy, 1.5, 0, 7);
 	ex.fill();
 	ex.globalAlpha = 1;
-}
-
-/** The lair's gate: bone bars over a burning slit, across the lair's exit tiles. */
-function paintGate(
-	S: GridMatrix,
-	w: CanvasRenderingContext2D,
-	ex: CanvasRenderingContext2D,
-	cols: number,
-	rows: number
-): void {
-	let c0 = cols;
-	let c1 = -1;
-	let r0 = rows;
-	for (let r = 0; r < rows; r += 1) {
-		for (let c = 0; c < cols; c += 1) {
-			if (S[r][c] === 'LE') {
-				c0 = Math.min(c0, c);
-				c1 = Math.max(c1, c);
-				r0 = Math.min(r0, r);
-			}
-		}
-	}
-	if (c1 < 0) {
-		return;
-	}
-	const T = SCENE_TILE;
-	const gx0 = tx(c0);
-	const gy0 = ty(r0) + 5;
-	const gw = (c1 - c0 + 1) * T;
-	const gh = T - 10;
-	w.fillStyle = '#12030a';
-	w.fillRect(gx0 - 1, gy0 - 1, gw + 2, gh + 2);
-	ex.fillStyle = PAL.glow;
-	ex.globalAlpha = 0.75;
-	ex.fillRect(gx0 + 2, gy0 + 2, gw - 4, gh - 4);
-	ex.globalAlpha = 1;
-	for (let yy = 0; yy < 3; yy += 1) {
-		const by = gy0 + 1 + yy * 7;
-		w.fillStyle = '#12030a';
-		w.fillRect(gx0, by - 1, gw, 6);
-		w.fillStyle = PAL.boneDark;
-		w.fillRect(gx0 + 1, by, gw - 2, 4);
-		w.fillStyle = PAL.bone;
-		w.fillRect(gx0 + 1, by, gw - 2, 2);
-		w.fillStyle = 'rgba(255,246,224,.6)';
-		w.fillRect(gx0 + 3, by, gw - 6, 1);
-	}
 }
 
 /** The outline of a tall torn seam: ragged jaws that close towards both ends. */

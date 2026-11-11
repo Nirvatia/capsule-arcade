@@ -5,6 +5,7 @@
 // units, so the caller maps the scene onto the screen first.
 import type { FleshBake } from './fleshBake';
 import { FRAME, SCENE_TILE } from './fleshBake';
+import { paintGateBars, paintGateGlow } from './fleshGate';
 import { context, makeCanvas, veinAt } from './fleshNoise';
 
 /**
@@ -42,7 +43,14 @@ const GLOW = '255,74,50';
 const HOT = '255,176,106';
 
 export class FleshLive {
+	/** How far the lair gate is open, 0 (shut) .. 1 (slid into its posts). */
+	private gateOpen = 0;
+
 	constructor(private readonly bake: FleshBake) {}
+
+	setGate(open: number): void {
+		this.gateOpen = Number.isFinite(open) ? Math.max(0, Math.min(1, open)) : 0;
+	}
 
 	/**
 	 * Draws the wounds' and the cord's own light again, on top of the night: what glows by itself
@@ -58,6 +66,9 @@ export class FleshLive {
 		ctx.globalCompositeOperation = 'lighter';
 		ctx.globalAlpha = k * (0.55 + 0.45 * Math.min(1, beat + 0.2));
 		ctx.drawImage(b.emis, b.local.x, b.local.y);
+		if (b.gate) {
+			paintGateGlow(ctx, b.gate, this.gateOpen);
+		}
 		ctx.globalAlpha = k * (0.4 + 0.4 * Math.min(1, beat));
 		ctx.drawImage(b.glow, b.local.x, b.local.y);
 		ctx.restore();
@@ -134,11 +145,19 @@ export class FleshLive {
 
 		// the maze: corridors, rifts, walls
 		ctx.drawImage(b.maze, b.local.x, b.local.y);
+		if (b.gate) {
+			paintGateBars(ctx, b.gate, this.gateOpen);
+		}
 
 		// the wounds and the lair's heart glow with the beat
 		ctx.globalCompositeOperation = 'lighter';
 		ctx.globalAlpha = 0.55 + 0.45 * Math.min(1, beat + 0.2);
 		ctx.drawImage(b.emis, b.local.x, b.local.y);
+		if (b.gate) {
+			ctx.save();
+			paintGateGlow(ctx, b.gate, this.gateOpen);
+			ctx.restore();
+		}
 		ctx.globalAlpha = 0.4 + 0.4 * Math.min(1, beat);
 		ctx.drawImage(b.glow, b.local.x, b.local.y);
 		const lr = T * (3.2 + 0.7 * beat);

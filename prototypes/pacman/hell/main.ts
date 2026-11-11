@@ -17,6 +17,7 @@ import type { DoomAttackKind } from '../../../src/games/pacman/logic/doom/DoomAt
 import type { DoomDirection } from '../../../src/games/pacman/logic/doom/DoomGraph';
 import type { DoomStateName, DoomShape } from '../../../src/games/pacman/logic/doom/DoomBossModel';
 import type { DoomMinionKind } from '../../../src/games/pacman/logic/doom/DoomMinions';
+import { easeGate, gateTiles, gateWanted } from '../../../src/games/pacman/render/doom/doomGate';
 import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
 import type { DoomLight } from '../../../src/games/pacman/render/doom/DoomWorld';
 import { DoomCombatView } from '../../../src/games/pacman/render/doom/DoomCombatView';
@@ -297,9 +298,22 @@ function stepFight(f: Fight, dt: number): void {
 	}
 }
 
+let gateNow = 0;
+let gateTilesNow: ReturnType<typeof gateTiles> | null = null;
+
 function drawFight(f: Fight, dt: number, time: number): void {
 	const { boss, doom, grid, player } = f;
 	world.setMood(boss.phase >= 2, boss.phase >= 3);
+	{
+		// the lair's gate: the same rule as the game's `DoomLevelRenderer`
+		gateTilesNow ??= gateTiles(grid);
+		const actors = [
+			...(boss.introProgress >= 1 ? [boss.position] : []),
+			...boss.minionList.map((m) => ({ x: m.tile.x + 0.5, y: m.tile.y + 0.5 }))
+		];
+		gateNow = easeGate(gateNow, gateWanted(gateTilesNow, actors), dt);
+		world.setGateOpen(gateNow);
+	}
 	for (const event of doom.consumeFx()) {
 		fx.spawn(event);
 	}

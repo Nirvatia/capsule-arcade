@@ -9,6 +9,8 @@ import type { BossSnapshot } from './HellBlinkyView';
 import { DoomWorld } from './DoomWorld';
 import type { DoomLight } from './DoomWorld';
 import { pickupSprite } from './DoomSprites';
+import { easeGate, gateTiles, gateWanted } from './doomGate';
+import type { Point } from './doomGate';
 import type { SharedLayers } from '../SharedLayers';
 import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../RenderFrame';
 import type { GridMatrix } from '../../config/gridConfig';
@@ -31,6 +33,9 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 	/** The hell world shown by the season turn before the hell level exists. */
 	private previewWorld: { grid: GridMatrix; world: DoomWorld } | null = null;
 	private lastPlayerPos: { x: number; y: number } | null = null;
+	/** How far the lair's gate is open (the boss, his echo and the imps open it). */
+	private gate = 0;
+	private gateOf: { grid: GridService; tiles: Point[] } | null = null;
 
 	constructor(shared: SharedLayers) {
 		this.shared = shared;
@@ -47,6 +52,8 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		world.update(dt);
 		const layout = world.layout;
 		const fighting = Boolean(boss && doom && !boss.defeated);
+		this.updateGate(grid, fighting ? boss : null, dt);
+		world.setGateOpen(this.gate);
 
 		if (doom) {
 			for (const event of doom.consumeFx()) {
@@ -132,6 +139,28 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			this.worldGrid = frame.grid;
 		}
 		return this.world;
+	}
+
+	/** Opens the lair's gate for the boss (once he has materialised), his echo and the imps. */
+	private updateGate(grid: GridService | null, boss: DoomBossService | null, dt: number): void {
+		const actors: Point[] = [];
+		if (grid && boss) {
+			if (this.gateOf?.grid !== grid) {
+				this.gateOf = { grid, tiles: gateTiles(grid) };
+			}
+			if (boss.introProgress >= 1) {
+				actors.push(boss.position);
+			}
+			const echo = boss.echoPosition();
+			if (echo) {
+				actors.push(echo);
+			}
+			for (const imp of boss.minionList) {
+				actors.push({ x: imp.tile.x + 0.5, y: imp.tile.y + 0.5 });
+			}
+		}
+		const wanted = this.gateOf ? gateWanted(this.gateOf.tiles, actors) : 0;
+		this.gate = easeGate(this.gate, wanted, dt);
 	}
 
 	/** The hell world before the fight: no boss, no actors, calm (phase 1 mood). */
