@@ -80,7 +80,7 @@ export class DeathState implements GameState {
 		}
 		if (combat.lives > 0) {
 			ctx.level.prepareAfterDeath();
-			ctx.director.showReady('short');
+			ctx.director.showReady('short', true);
 			return;
 		}
 		ctx.director.showGameOver();

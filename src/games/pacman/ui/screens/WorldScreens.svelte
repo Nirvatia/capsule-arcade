@@ -36,34 +36,38 @@
 	);
 	const ms = $derived(snap.profile === 'ms-pacman');
 	const record = $derived(snap.score > 0 && snap.score >= snap.highScore);
-	const screen = $derived<'pause' | 'menu' | 'ready' | 'death' | 'over' | null>(
+	const screen = $derived<'pause' | 'menu' | 'ready' | 'over' | null>(
 		snap.paused
 			? 'pause'
 			: snap.state === 'menu'
 				? 'menu'
 				: snap.state === 'ready'
 					? 'ready'
-					: snap.state === 'death'
-						? 'death'
-						: snap.state === 'game-over'
-							? 'over'
-							: null
+					: snap.state === 'game-over'
+						? 'over'
+						: null
 	);
 
 	const SIZE = {
 		menu: { w: 520, h: 612 },
 		ready: { w: 540, h: 356 },
 		pause: { w: 460, h: 408 },
-		death: { w: 320, h: 104 },
 		over: { w: 480, h: 552 }
 	} as const;
-	const VEIL = { menu: 0.4, ready: 0.18, pause: 0.5, death: 0, over: 0.55 } as const;
+	const VEIL = { menu: 0.4, ready: 0.18, pause: 0.5, over: 0.55 } as const;
+
+	/** After a death the READY screen is taller: the lives left sit under it, once the
+	    transition is over (the black hole is never covered by a banner). */
+	const RETRY_LIFT = 27;
+	const READY_RETRY = { w: 540, h: 356 + 2 * RETRY_LIFT } as const;
+	const retry = $derived(screen === 'ready' && snap.afterDeath && snap.lives > 0);
+	const dims = $derived(screen ? (retry ? READY_RETRY : SIZE[screen]) : null);
 
 	const portrait = $derived(innerWidth / innerHeight < 1.25);
 	/** How large the screen is drawn: as the window allows, not beyond a cap. */
 	const k = $derived.by(() => {
-		if (!screen) return 1;
-		const { w, h } = SIZE[screen];
+		if (!screen || !dims) return 1;
+		const { w, h } = dims;
 		const cap = screen === 'ready' ? 1.5 : 2.2;
 		return Math.min((innerWidth * (portrait ? 0.94 : 0.8)) / w, (innerHeight * 0.9) / h, cap);
 	});
@@ -103,6 +107,24 @@
 
 {#snippet ropes(l1: number, r1: number, y1: number, l2: number, r2: number, y2: number)}
 	{@html ropesArt(theme, { left: l1, right: r1, y: y1 }, { left: l2, right: r2, y: y2 })}
+{/snippet}
+
+{#snippet livesChip(x: number, y: number)}
+	<!-- the board of the old death banner (320 x 104 art, board at 20,8), drawn at 0.65 -->
+	<g transform="translate({x - 160 * 0.65} {y - 8 * 0.65}) scale(.65)">
+		<g class="sway" style:--rot="-.8deg">
+			{@html boardArt(theme, 'scr-death', 20, 8, 280, 62, { seed: 5, drop: 14 })}
+		</g>
+		<g transform="translate({lives === 1 ? 54 : 56} 40) scale(.85)">{@html heroArt(ms)}</g>
+		{#if lives === 1}
+			<text class="num red" x="188" y="56" font-size="34" text-anchor="middle"
+				>{$t('lastLife').toUpperCase()}</text
+			>
+		{:else}
+			<text class="num" x="112" y="58" font-size="38" text-anchor="middle">{lives}</text>
+			<text class="lab" x="134" y="54" font-size="15">{$t('livesLeft').toUpperCase()}</text>
+		{/if}
+	</g>
 {/snippet}
 
 {#snippet defs()}
@@ -185,13 +207,12 @@
 	style:--num-ink={theme.numInk}
 >
 	{#if screen}
-		{@const dims = SIZE[screen]}
 		<div class="veil" style:background="rgba(6,8,14,{VEIL[screen]})"></div>
 		<svg
 			class="screen"
-			viewBox="0 0 {dims.w} {dims.h}"
-			width={dims.w * k}
-			height={dims.h * k}
+			viewBox="0 0 {dims?.w} {dims?.h}"
+			width={(dims?.w ?? 0) * k}
+			height={(dims?.h ?? 0) * k}
 			aria-label={screen}
 		>
 			{@render defs()}
@@ -271,23 +292,30 @@
 					<text class="chalk" x="92" y={536 + i * 30} font-size="22">{line}</text>
 				{/each}
 			{:else if screen === 'ready'}
-				<g class="sway" style:--rot="0deg">
-					{@html bannerSpanArt(theme, 30, 56, 480, 110)}
-					<text class="num" x="270" y="140" font-size="90" text-anchor="middle">{$t('ready')}</text>
+				<g transform="translate(0 {retry ? RETRY_LIFT : 0})">
+					<g class="sway" style:--rot="0deg">
+						{@html bannerSpanArt(theme, 30, 56, 480, 110)}
+						<text class="num" x="270" y="140" font-size="90" text-anchor="middle"
+							>{$t('ready')}</text
+						>
+					</g>
+					{@render ropes(200, 340, 176, 206, 334, 204)}
+					<g class="sway hang b" style:--rot=".8deg">
+						{@html boardArt(theme, 'scr-where', 150, 204, 240, 50, {
+							seed: 11,
+							posts: false,
+							r: 11,
+							j: 3
+						})}
+						<text class="lab" x="270" y="236" font-size="16" text-anchor="middle"
+							>{$t('level')} {snap.level} · {worldName}</text
+						>
+					</g>
+					{@html trailArt(theme, eaten, 24, { x0: 60, x1: 430, y: 300, amp: 6 })}
 				</g>
-				{@render ropes(200, 340, 176, 206, 334, 204)}
-				<g class="sway hang b" style:--rot=".8deg">
-					{@html boardArt(theme, 'scr-where', 150, 204, 240, 50, {
-						seed: 11,
-						posts: false,
-						r: 11,
-						j: 3
-					})}
-					<text class="lab" x="270" y="236" font-size="16" text-anchor="middle"
-						>{$t('level')} {snap.level} · {worldName}</text
-					>
-				</g>
-				{@html trailArt(theme, eaten, 24, { x0: 60, x1: 430, y: 300, amp: 6 })}
+				{#if retry}
+					{@render livesChip(270, 352)}
+				{/if}
 			{:else if screen === 'pause'}
 				<g class="sway" style:--rot="-1deg">
 					{@html boardArt(theme, 'scr-paused', 30, 16, 400, 100, { seed: 5, drop: 36 })}
@@ -336,23 +364,6 @@
 					'hang b'
 				)}
 				{@render knob(408, 362, langLabel, 18, $t('language'), toggleLang)}
-			{:else if screen === 'death'}
-				<g class="sway" style:--rot="-.8deg">
-					{@html boardArt(theme, 'scr-death', 20, 8, 280, 62, { seed: 5, drop: 14 })}
-				</g>
-				<g transform="translate({lives === 1 ? 54 : 56} 40) scale(.85)">{@html heroArt(ms)}</g>
-				{#if lives <= 0}
-					<text class="num red" x="188" y="56" font-size="30" text-anchor="middle"
-						>{$t('gameOver')}</text
-					>
-				{:else if lives === 1}
-					<text class="num red" x="188" y="56" font-size="34" text-anchor="middle"
-						>{$t('lastLife').toUpperCase()}</text
-					>
-				{:else}
-					<text class="num" x="112" y="58" font-size="38" text-anchor="middle">{lives}</text>
-					<text class="lab" x="134" y="54" font-size="15">{$t('livesLeft').toUpperCase()}</text>
-				{/if}
 			{:else}
 				<g style="filter:grayscale(.5) brightness(.82)">
 					<g class="sway" style:--rot="-1deg">

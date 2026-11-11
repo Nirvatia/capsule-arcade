@@ -11,10 +11,13 @@ export class ReadyState implements GameState {
 	readonly name: PacmanStateName = 'ready';
 	readonly pausable = true;
 	readonly kind: ReadyKind;
+	/** This READY follows a death: the screen then shows the lives left. */
+	readonly afterDeath: boolean;
 	private readonly clock: StateClock<ReadyKind>;
 
-	constructor(kind: ReadyKind) {
+	constructor(kind: ReadyKind, afterDeath = false) {
 		this.kind = kind;
+		this.afterDeath = afterDeath;
 		this.clock = new StateClock([
 			{ name: kind, duration: kind === 'intro' ? FLOW.readyIntro : FLOW.readyShort }
 		]);

@@ -182,6 +182,28 @@ describe('game flow', () => {
 		expect(cues).not.toContain('intro');
 	});
 
+	it('marks the READY after a death, not the intro nor the one after a level change', () => {
+		const { director } = setup();
+		startToReady(director);
+		expect(director.readyAfterDeath).toBe(false);
+		director.showPlaying();
+		director.debugKillPlayer();
+		run(director, DEATH - 0.5);
+		// the black hole is still running: nothing to show yet
+		expect(director.stateName).toBe('death');
+		expect(director.readyAfterDeath).toBe(false);
+		run(director, 0.55);
+		expect(director.stateName).toBe('ready');
+		expect(director.readyAfterDeath).toBe(true);
+		run(director, FLOW.readyShort + 0.05);
+		expect(director.stateName).toBe('playing');
+		expect(director.readyAfterDeath).toBe(false);
+		director.debugCompleteLevel();
+		run(director, FLOW.levelClear.lights + FLOW.levelClear.turn + FLOW.levelClear.settle + 0.1);
+		expect(director.stateName).toBe('ready');
+		expect(director.readyAfterDeath).toBe(false);
+	});
+
 	it('turns the season, then starts the next level in place without a fade', () => {
 		const { director, level, cues } = setup();
 		startToReady(director);

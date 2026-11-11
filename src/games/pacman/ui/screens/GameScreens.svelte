@@ -1,4 +1,4 @@
-<!-- Menu, ready, pause, death and game over, over the game. Buttons never keep focus, so the
+<!-- Menu, ready, pause and game over, over the game. Buttons never keep focus, so the
 	arrows keep steering. On the secret level the titles take the arcade look. -->
 <script lang="ts">
 	import type { HudSnapshot } from '../hud/hudSnapshot';
@@ -87,18 +87,6 @@
 					><i style:width="{snap.duration > 0 ? (snap.remaining / snap.duration) * 100 : 0}%"
 					></i></span
 				>
-			{/if}
-		</div>
-	{:else if snap.state === 'death' && !arcade}
-		<div class="banner">
-			{#if snap.lives > 0}
-				{#if snap.lives === 1}
-					{$t('lastLife')}
-				{:else}
-					<b class="count">{snap.lives}</b> {$t('livesLeft')}
-				{/if}
-			{:else}
-				{$t('gameOver')}
 			{/if}
 		</div>
 	{:else if snap.state === 'game-over'}
@@ -286,23 +274,6 @@
 		display: block;
 		height: 100%;
 		background: var(--accent);
-	}
-	.banner {
-		align-self: end;
-		margin-bottom: 64px;
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 8px 20px;
-		background: rgba(8, 9, 12, 0.82);
-		border-radius: 6px;
-		font-size: 13px;
-		font-weight: 700;
-		letter-spacing: 2px;
-	}
-	.banner .count {
-		font-size: 20px;
-		color: var(--accent);
 	}
 	/* the original game's titles: yellow READY!, red GAME OVER, blocky letters */
 	.arcade .ready .title,

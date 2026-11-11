@@ -215,8 +215,14 @@ export class Director {
 		}
 	}
 
-	showReady(kind: ReadyKind): void {
-		this.setState(new ReadyState(kind));
+	showReady(kind: ReadyKind, afterDeath = false): void {
+		this.setState(new ReadyState(kind, afterDeath));
+	}
+
+	/** The READY on screen follows a death (it shows the lives left). */
+	get readyAfterDeath(): boolean {
+		const state = this.activeState;
+		return state instanceof ReadyState && state.afterDeath;
 	}
 
 	showDeath(): void {

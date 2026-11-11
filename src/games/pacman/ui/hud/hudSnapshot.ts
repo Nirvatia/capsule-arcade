@@ -42,6 +42,8 @@ export interface HudSnapshot {
 	/** Screen fade cover, 0 (clear) to 1 (black). */
 	readonly fade: number;
 	readonly phase: string;
+	/** READY after a death: the screen shows the lives left. */
+	readonly afterDeath: boolean;
 	readonly remaining: number;
 	readonly duration: number;
 	readonly profile: PacmanProfile;
@@ -124,6 +126,7 @@ export function buildHudSnapshot(
 		paused: flow.paused,
 		fade: flow.fade,
 		phase: flow.phase,
+		afterDeath: director.readyAfterDeath,
 		remaining: flow.remaining,
 		duration: flow.duration,
 		profile: level.profile,

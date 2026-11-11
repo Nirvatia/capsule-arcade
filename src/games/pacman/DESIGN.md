@@ -190,6 +190,8 @@ chiptune sound (`config/arcadeConfig.ts`).
   2 s after a death or a level change) → play. The session's first game starts at once
   (the menu already shows level 1); later games go through a fade.
   READY is not skippable: it always runs its countdown, and no screen has a Skip button.
+  The lives left ("2 LIVES LEFT", "LAST LIFE") are shown as a small board under READY after a
+  death, never during the death's black hole, so the transition is not covered.
 - The maze's walls (the board without its empty border) take 80 % of the screen's height
   (`BOARD_HEIGHT_SHARE`), at most 92 % of the width, below the HUD band.
 - Buttons on the screens (the hero coins, Start, the language and sound knobs) lift a little on
