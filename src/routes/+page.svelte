@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import Topbar from '$shared/ui/Topbar.svelte';
 	import GameIcon from '$shared/ui/GameIcon.svelte';
+	import CapsuleMark from '$shared/ui/CapsuleMark.svelte';
+	import { gameText, locale, t } from '$shared/i18n/i18n.svelte';
 	import PavilionBackdrop from '$shared/ui/pavilion/PavilionBackdrop.svelte';
 	import CapsuleMachine from '$shared/ui/pavilion/CapsuleMachine.svelte';
 	import { menuSound } from '$shared/ui/pavilion/menuSound';
@@ -21,7 +23,7 @@
 			.slice(0, 3)
 	);
 
-	const fmt = (n: number) => (n > 0 ? n.toLocaleString('ru-RU') : 'нет рекорда');
+	const fmt = (n: number) => (n > 0 ? n.toLocaleString(locale()) : t('home.noRecord'));
 
 	function showToast(text: string) {
 		toast = { id: toast.id + 1, text };
@@ -50,39 +52,37 @@
 </script>
 
 <svelte:head>
-	<title>Павильон досуга · NEO ARCADE</title>
+	<title>{t('home.title')}</title>
 </svelte:head>
 
 <div class="pavilion">
-	<Topbar place="Павильон досуга" hall="Зал 5" {sound} onSoundToggle={toggleSound} />
+	<Topbar
+		place={t('top.place')}
+		hall={t('top.hall')}
+		aboutHref="/about"
+		{sound}
+		onSoundToggle={toggleSound}
+	/>
 
 	<div class="world">
 		<PavilionBackdrop />
 
 		<main class="scene">
 			<aside class="poster" aria-hidden="true">
-				<svg viewBox="0 0 150 150">
-					<circle cx="75" cy="75" r="70" fill="#ff3a1d" />
-					<g fill="none" stroke="#efe9d6" stroke-width="5">
-						<ellipse cx="75" cy="75" rx="58" ry="22" />
-						<ellipse cx="75" cy="75" rx="58" ry="22" transform="rotate(60 75 75)" />
-						<ellipse cx="75" cy="75" rx="58" ry="22" transform="rotate(120 75 75)" />
-					</g>
-					<circle cx="75" cy="75" r="11" fill="#efe9d6" />
-				</svg>
-				<b>Отдых — это тоже труд</b>
-				<span>Досуг коллектива</span>
+				<CapsuleMark tile />
+				<b>{t('home.posterTitle')}</b>
+				<span>{t('home.posterTag')}</span>
 			</aside>
 
 			<CapsuleMachine {games} {records} onToast={showToast} />
 
-			<aside class="honor" aria-label="Доска почёта">
-				<h2>Доска почёта</h2>
+			<aside class="honor" aria-label={t('home.honor')}>
+				<h2>{t('home.honor')}</h2>
 				<ol>
 					{#each honor as { game, record } (game.id)}
 						<li style:--p1={game.light} style:--p2={game.deep}>
 							<span class="medal"><GameIcon name={game.icon} /></span>
-							<b>{game.title}</b>
+							<b>{gameText(game.id, 'title')}</b>
 							<span>{fmt(record)}</span>
 						</li>
 					{/each}
@@ -157,10 +157,11 @@
 		box-shadow: 0 14px 26px rgba(0, 0, 0, 0.55);
 	}
 
-	.poster svg {
+	.poster :global(svg) {
 		width: 100%;
 		display: block;
 		margin-bottom: 8px;
+		border-radius: 12px;
 	}
 
 	.poster b {

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$shared/i18n/i18n.svelte';
+
 	const RAYS = Array.from({ length: 18 }, (_, k) => k * 20);
 	const PYLONS = [
 		{ x: 200, y: 620 },
@@ -76,7 +78,7 @@
 				font-weight="700"
 				font-size="14"
 				letter-spacing="2"
-				fill="#ff3a1d">ДОСУГ — ДЕЛО КОЛЛЕКТИВА</text
+				fill="#ff3a1d">{t('home.banner')}</text
 			>
 			<path d="M-86 -10L-118 -36H-98L-76 -8ZM-86 10L-118 36H-98L-76 8Z" fill="#ff3a1d" />
 			<ellipse rx="100" ry="28" fill="#e6ddc4" />

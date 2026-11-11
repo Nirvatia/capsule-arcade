@@ -2,6 +2,8 @@
 	import { tick } from 'svelte';
 	import { resolve } from '$app/paths';
 	import GameIcon from '$shared/ui/GameIcon.svelte';
+	import CapsuleMark from '$shared/ui/CapsuleMark.svelte';
+	import { gameText, t } from '$shared/i18n/i18n.svelte';
 	import { isPlayable, type GameConfig } from '$shared/config/games';
 	import { menuSound } from './menuSound';
 
@@ -98,9 +100,9 @@
 
 	function tagFor(game: GameConfig): string {
 		if (game.status === 'dev') {
-			return `Сборка ${game.progress ?? 0}%`;
+			return t('machine.build', { n: game.progress ?? 0 });
 		}
-		return game.status === 'soon' ? 'Скоро' : game.genre;
+		return game.status === 'soon' ? t('machine.soon') : gameText(game.id, 'genre');
 	}
 
 	function digits(game: GameConfig): string[] {
@@ -161,7 +163,7 @@
 
 		if (!isPlayable(game)) {
 			menuSound.tick();
-			onToast(`Капсула «${game.title}» ещё в пути. Загляните позже.`);
+			onToast(t('machine.onItsWay', { title: gameText(game.id, 'title') }));
 			return;
 		}
 
@@ -211,21 +213,14 @@
 </script>
 
 <div class="unit" {@attach fitToViewport}>
-	<section class="machine" aria-label="Автомат с капсулами">
+	<section class="machine" aria-label={t('machine.label')}>
 		<i class="tube l"></i><i class="tube r"></i>
 
 		<div class="sign">
-			<div class="logo">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-					<ellipse cx="12" cy="12" rx="10" ry="4" />
-					<ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
-					<ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)" />
-					<circle cx="12" cy="12" r="2" fill="currentColor" />
-				</svg>
-			</div>
+			<CapsuleMark tile class="logo" />
 			<div>
-				<h1>Досуг</h1>
-				<small>Автомат капсул · модель ДЦ-5</small>
+				<h1>Capsule<br />Arcade</h1>
+				<small>{t('machine.model')}</small>
 			</div>
 			<div class="lamps"><i></i><i></i><i></i></div>
 		</div>
@@ -247,7 +242,10 @@
 								style:--dx="{shift(i)}px"
 								data-i={i}
 								aria-pressed={selected === i}
-								aria-label="Капсула {pad(i + 1)}: {game.title}"
+								aria-label={t('machine.capsuleAria', {
+									n: pad(i + 1),
+									title: gameText(game.id, 'title')
+								})}
 								onpointerenter={() => hover(i)}
 								onpointerleave={() => hovered === i && hover(null)}
 								onfocus={() => hover(i)}
@@ -271,23 +269,25 @@
 				{#key shown}<div class="scan"></div>{/key}
 				{#if shownGame && shown !== null}
 					<div class="p-head">
-						<span>Капсула {pad(shown + 1)}</span><span class="tag">{tagFor(shownGame)}</span>
+						<span>{t('machine.capsule', { n: pad(shown + 1) })}</span><span class="tag"
+							>{tagFor(shownGame)}</span
+						>
 					</div>
 					<div class="p-title">
 						<GameIcon name={shownGame.icon} class="p-ico" />
-						<div class="p-name">{shownGame.title}</div>
+						<div class="p-name">{gameText(shownGame.id, 'title')}</div>
 					</div>
-					<div class="p-desc">{shownGame.description}</div>
+					<div class="p-desc">{gameText(shownGame.id, 'description')}</div>
 					<div class="p-grid">
 						<div>
-							<small>Сложность</small>
+							<small>{t('machine.difficulty')}</small>
 							<div class="pips">
 								{#each [1, 2, 3, 4, 5] as x (x)}<i class:on={x <= shownGame.difficulty}></i>{/each}
 							</div>
 						</div>
-						<div><small>Игроков</small><b>{shownGame.players}</b></div>
+						<div><small>{t('machine.players')}</small><b>{shownGame.players}</b></div>
 						<div class="wide">
-							<small>Рекорд</small>
+							<small>{t('machine.record')}</small>
 							<div class="digits">
 								{#each digits(shownGame) as c, k (k)}<i>{c}</i>{/each}
 							</div>
@@ -295,9 +295,9 @@
 					</div>
 				{:else}
 					<div class="idle">
-						<b>Выберите капсулу</b>
-						<span>В куполе капсул: {games.length}</span>
-						<span>Полимер в норме</span>
+						<b>{t('machine.pick')}</b>
+						<span>{t('machine.inDome', { n: games.length })}</span>
+						<span>{t('machine.polymerOk')}</span>
 					</div>
 				{/if}
 			</div>
@@ -316,7 +316,7 @@
 						transform="rotate(-90 50 50)"
 					/>
 					<path d="M71 79A34 34 0 0 0 84 62" fill="none" stroke="#ff3a1d" stroke-width="5" />
-					<text x="50" y="72" text-anchor="middle">ПОЛИМЕР</text>
+					<text x="50" y="72" text-anchor="middle">{t('machine.polymer')}</text>
 				</svg>
 				<div class="needle" style:transform="rotate({needle}deg)">
 					<div class="tremble">
@@ -327,15 +327,15 @@
 			</div>
 
 			<ol class="steps">
-				<li>Выбери</li>
-				<li>Выдай</li>
-				<li>Играй</li>
+				<li>{t('machine.step1')}</li>
+				<li>{t('machine.step2')}</li>
+				<li>{t('machine.step3')}</li>
 			</ol>
 
 			<button
 				class="go"
 				disabled={selected === null}
-				aria-label="Выдать капсулу"
+				aria-label={t('machine.dispenseAria')}
 				onclick={dispense}
 			>
 				<svg
@@ -349,13 +349,13 @@
 					<circle cx="12" cy="12" r="3" />
 					<path d="M12 9V3M12 3h4M12 15v6M12 21H8" />
 				</svg>
-				Выдать
+				{t('machine.dispense')}
 			</button>
-			<div class="note">Жать до щелчка!</div>
+			<div class="note">{t('machine.note')}</div>
 		</div>
 
-		<div class="tray" class:full={trayFull}>
-			<span class="tray-empty">Лоток пуст</span>
+		<div class="tray" class:full={trayFull} data-label={t('machine.output')}>
+			<span class="tray-empty">{t('machine.trayEmpty')}</span>
 			<div
 				class="tc"
 				class:open={trayOpen}
@@ -367,25 +367,27 @@
 				<i class="t"></i><i class="b"></i>
 			</div>
 			<div class="tray-info">
-				<div class="k">Выдано: капсула {trayIndex === null ? '' : pad(trayIndex + 1)}</div>
-				<div class="gn">{trayGame?.title ?? ''}</div>
-				<a class="launch" href={resolve(trayGame?.route ?? '/')}>Запустить ▶</a>
+				<div class="k">
+					{t('machine.issued', { n: trayIndex === null ? '' : pad(trayIndex + 1) })}
+				</div>
+				<div class="gn">{trayGame ? gameText(trayGame.id, 'title') : ''}</div>
+				<a class="launch" href={resolve(trayGame?.route ?? '/')}>{t('machine.launch')}</a>
 			</div>
 		</div>
 		<div class="feet"><i></i><i></i></div>
 	</section>
 
 	{#if pages > 1}
-		<nav class="batch" aria-label="Партии">
+		<nav class="batch" aria-label={t('machine.batches')}>
 			<button
 				disabled={page === 1}
-				aria-label="Предыдущая партия"
+				aria-label={t('machine.prevBatch')}
 				onclick={() => turnPage(page - 1)}>&lsaquo;</button
 			>
-			Партия {page} из {pages}
+			{t('machine.batch', { page, pages })}
 			<button
 				disabled={page === pages}
-				aria-label="Следующая партия"
+				aria-label={t('machine.nextBatch')}
 				onclick={() => turnPage(page + 1)}>&rsaquo;</button
 			>
 		</nav>
@@ -520,28 +522,15 @@
 			0 0 30px rgba(255, 200, 140, 0.25);
 	}
 
-	.logo {
+	.sign :global(.logo) {
 		flex: none;
-		width: 54px;
-		height: 54px;
-		border-radius: 50%;
-		display: grid;
-		place-items: center;
-		background: radial-gradient(circle at 35% 28%, #ff8a6e, var(--pv-red) 55%, #a81808);
-		box-shadow:
-			0 0 0 3px #fff,
-			0 0 0 5px var(--pv-teal),
-			0 0 18px rgba(255, 58, 29, 0.6);
-	}
-
-	.logo svg {
-		width: 36px;
-		height: 36px;
-		color: #fff;
+		width: 62px;
+		height: 62px;
+		filter: drop-shadow(0 3px 6px rgba(14, 74, 79, 0.35));
 	}
 
 	.sign h1 {
-		font: 900 clamp(28px, 7.4vw, 46px) / 0.95 var(--f-head);
+		font: 900 clamp(24px, 6.2vw, 36px) / 0.98 var(--f-head);
 		letter-spacing: -0.03em;
 		color: var(--pv-red);
 		text-transform: uppercase;
@@ -1155,7 +1144,7 @@
 	}
 
 	.tray::before {
-		content: 'Выдача';
+		content: attr(data-label);
 		position: absolute;
 		top: 7px;
 		left: 50%;
@@ -1363,14 +1352,9 @@
 			gap: 10px;
 		}
 
-		.logo {
-			width: 44px;
-			height: 44px;
-		}
-
-		.logo svg {
-			width: 30px;
-			height: 30px;
+		.sign :global(.logo) {
+			width: 48px;
+			height: 48px;
 		}
 
 		.dome {

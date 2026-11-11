@@ -4,12 +4,13 @@
 	import { resolve } from '$app/paths';
 	import Topbar from '$shared/ui/Topbar.svelte';
 	import PavilionBackdrop from '$shared/ui/pavilion/PavilionBackdrop.svelte';
+	import { t } from '$shared/i18n/i18n.svelte';
 
 	const status = $derived(page.status || 404);
 	const missing = $derived(status === 404);
 	const digits = $derived(String(status).split(''));
 	const message = $derived(
-		missing ? 'Нет в куполе' : (page.error?.message ?? 'Неизвестная неисправность')
+		missing ? t('error.missingMessage') : (page.error?.message ?? t('error.unknownFault'))
 	);
 
 	function goHome() {
@@ -27,11 +28,11 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <svelte:head>
-	<title>{missing ? 'Капсула не найдена' : 'Авария в павильоне'} · NEO ARCADE</title>
+	<title>{missing ? t('error.missingTitle') : t('error.faultTitle')} · Capsule Arcade</title>
 </svelte:head>
 
 <div class="pavilion">
-	<Topbar place="Павильон досуга" hall="Ошибка {status}" backHref="/" />
+	<Topbar place={t('top.place')} hall={t('top.error', { status })} backHref="/" />
 
 	<div class="world">
 		<PavilionBackdrop />
@@ -42,9 +43,9 @@
 				<section class="plate">
 					<i class="bolt tl"></i><i class="bolt tr"></i><i class="bolt bl"></i><i class="bolt br"
 					></i>
-					<p class="kicker">Объявление администрации</p>
+					<p class="kicker">{t('error.kicker')}</p>
 
-					<div class="code" aria-label="Код {status}">
+					<div class="code" aria-label="{t('error.code')} {status}">
 						{#each digits as d, k (k)}
 							{#if missing && k === 1}
 								<span class="capsule" aria-hidden="true"
@@ -56,17 +57,15 @@
 						{/each}
 					</div>
 
-					<h1>{missing ? 'Капсула не найдена' : 'Авария в павильоне'}</h1>
+					<h1>{missing ? t('error.missingTitle') : t('error.faultTitle')}</h1>
 					<p class="lead">
-						{missing
-							? 'Такой капсулы в автомате нет. Возможно, её уже выдали другому товарищу.'
-							: 'В контуре полимера произошёл сбой. Дежурный инженер уже выехал.'}
+						{missing ? t('error.missingLead') : t('error.faultLead')}
 					</p>
 
 					<div class="screen">
-						<div class="row"><small>Адрес</small><b>{page.url.pathname}</b></div>
-						<div class="row"><small>Код</small><b>{status}</b></div>
-						<div class="row"><small>Сообщение</small><b>{message}</b></div>
+						<div class="row"><small>{t('error.address')}</small><b>{page.url.pathname}</b></div>
+						<div class="row"><small>{t('error.code')}</small><b>{status}</b></div>
+						<div class="row"><small>{t('error.message')}</small><b>{message}</b></div>
 					</div>
 
 					<button type="button" class="home" onclick={goHome}>
@@ -81,11 +80,11 @@
 						>
 							<path d="M19 12H6M11 6l-6 6 6 6" />
 						</svg>
-						В павильон
+						{t('error.home')}
 					</button>
-					<p class="hint">Enter или Esc — вернуться к автомату</p>
+					<p class="hint">{t('error.hint')}</p>
 
-					<div class="note">{missing ? 'Ушла на техобслуживание!' : 'Не трогать рубильник!'}</div>
+					<div class="note">{missing ? t('error.noteMissing') : t('error.noteFault')}</div>
 				</section>
 			</div>
 		</main>

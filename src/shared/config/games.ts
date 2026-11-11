@@ -3,11 +3,9 @@ import { getSavedScore } from '../utils/scoreStore';
 
 export type GameIconName = 'snake' | 'maze' | 'blocks' | 'simon';
 
+// Titles, descriptions and genres are texts: they live in `$shared/i18n` (`game.<id>.*`).
 export interface GameConfig {
 	id: string;
-	title: string;
-	description: string;
-	genre: string;
 	difficulty: number;
 	players: string;
 	icon: GameIconName;
@@ -21,9 +19,6 @@ export interface GameConfig {
 export const games: GameConfig[] = [
 	{
 		id: 'snake',
-		title: 'Змейка',
-		description: 'Расти и не врезайся в себя.',
-		genre: 'Аркада',
 		difficulty: 2,
 		players: '1',
 		icon: 'snake',
@@ -34,9 +29,6 @@ export const games: GameConfig[] = [
 	},
 	{
 		id: 'pacman',
-		title: 'Пакман',
-		description: 'Съешь всё в лабиринте и не попадись.',
-		genre: 'Лабиринт',
 		difficulty: 3,
 		players: '1',
 		icon: 'maze',
@@ -47,9 +39,6 @@ export const games: GameConfig[] = [
 	},
 	{
 		id: 'tetris',
-		title: 'Тетрис',
-		description: 'Собирай фигуры в сплошные линии.',
-		genre: 'Головоломка',
 		difficulty: 3,
 		players: '1',
 		icon: 'blocks',
@@ -60,9 +49,6 @@ export const games: GameConfig[] = [
 	},
 	{
 		id: 'simon',
-		title: 'Саймон 1С',
-		description: 'Повтори последовательность и закрой квартал.',
-		genre: 'Память',
 		difficulty: 2,
 		players: '1',
 		icon: 'simon',

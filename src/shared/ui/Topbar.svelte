@@ -1,21 +1,23 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import type { Pathname } from '$app/types';
+	import { LANGS, i18n, setLang, t } from '$shared/i18n/i18n.svelte';
 
 	interface Props {
 		place: string;
 		hall?: string;
 		backHref?: Pathname;
+		aboutHref?: Pathname;
 		sound?: boolean;
 		onSoundToggle?: () => void;
 	}
 
-	let { place, hall, backHref, sound = false, onSoundToggle }: Props = $props();
+	let { place, hall, backHref, aboutHref, sound = false, onSoundToggle }: Props = $props();
 </script>
 
 <header class="topbar">
 	{#if backHref}
-		<a class="pill back" href={resolve(backHref)} aria-label="Назад">
+		<a class="pill back" href={resolve(backHref)} aria-label={t('top.back')}>
 			<span class="knob">
 				<svg
 					viewBox="0 0 24 24"
@@ -28,7 +30,22 @@
 					<path d="M19 12H6M11 6l-6 6 6 6" />
 				</svg>
 			</span>
-			<b>Назад</b>
+			<b>{t('top.back')}</b>
+		</a>
+	{:else if aboutHref}
+		<a class="pill back about" href={resolve(aboutHref)}>
+			<span class="knob">
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="3.2"
+					stroke-linecap="round"
+				>
+					<path d="M12 11v6M12 7v.5" />
+				</svg>
+			</span>
+			<b>{t('top.about')}</b>
 		</a>
 	{/if}
 
@@ -37,11 +54,26 @@
 		{#if hall}<small>{hall}</small>{/if}
 	</div>
 
-	{#if onSoundToggle}
-		<button class="pill snd" aria-pressed={sound} aria-label="Звук" onclick={onSoundToggle}>
-			<b>Звук</b><span class="sw"><i></i></span>
-		</button>
-	{/if}
+	<div class="tools">
+		<div class="lang" role="group" aria-label={t('top.language')}>
+			{#each LANGS as l (l.id)}
+				<button type="button" aria-pressed={i18n.lang === l.id} onclick={() => setLang(l.id)}>
+					{l.label}
+				</button>
+			{/each}
+		</div>
+
+		{#if onSoundToggle}
+			<button
+				class="pill snd"
+				aria-pressed={sound}
+				aria-label={t('top.sound')}
+				onclick={onSoundToggle}
+			>
+				<b>{t('top.sound')}</b><span class="sw"><i></i></span>
+			</button>
+		{/if}
+	</div>
 </header>
 
 <style>
@@ -135,6 +167,7 @@
 	}
 
 	b {
+		white-space: nowrap;
 		font: 700 14px var(--f-head);
 		text-transform: uppercase;
 		letter-spacing: 0.02em;
@@ -174,9 +207,46 @@
 		color: #5b8b8a;
 	}
 
-	.snd {
+	.tools {
 		grid-column: 3;
 		justify-self: end;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.lang {
+		display: flex;
+		gap: 2px;
+		padding: 3px;
+		border-radius: 20px;
+		background: #0c2326;
+		box-shadow:
+			0 0 0 2px var(--pv-teal),
+			inset 0 3px 6px #000;
+	}
+
+	.lang button {
+		all: unset;
+		cursor: pointer;
+		padding: 7px 11px;
+		border-radius: 17px;
+		font: 700 12px var(--f-hud);
+		letter-spacing: 0.1em;
+		color: #9fc3c0;
+	}
+
+	.lang button[aria-pressed='true'] {
+		background: var(--pv-redgloss);
+		color: #fff;
+	}
+
+	.lang button:focus-visible {
+		outline: 2px solid var(--pv-red);
+		outline-offset: 2px;
+	}
+
+	.snd {
 		padding: 0 5px 0 16px;
 	}
 
@@ -219,6 +289,33 @@
 	@media (max-width: 640px) {
 		.topbar {
 			padding: 0 10px;
+			gap: 8px;
+		}
+
+		.tools {
+			gap: 6px;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.snd {
+			padding: 0 5px;
+		}
+
+		.snd b {
+			display: none;
+		}
+
+		.about {
+			padding-right: 12px;
+		}
+
+		.about b {
+			font-size: 12px;
+		}
+
+		.lang button {
+			padding: 7px 8px;
 		}
 	}
 
