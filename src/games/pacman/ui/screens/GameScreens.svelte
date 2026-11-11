@@ -88,11 +88,6 @@
 					></i></span
 				>
 			{/if}
-			{#if snap.phase === 'intro'}
-				<button type="button" tabindex={-1} class="ghost small" onclick={act(actions.confirm)}
-					>{$t('skip')} ⏎</button
-				>
-			{/if}
 		</div>
 	{:else if snap.state === 'death' && !arcade}
 		<div class="banner">
@@ -247,9 +242,6 @@
 		background: none;
 		font-size: 11px;
 		color: rgba(244, 241, 234, 0.6);
-	}
-	button.small {
-		padding: 6px 12px;
 	}
 	.help {
 		margin: 0;

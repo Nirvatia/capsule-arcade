@@ -168,7 +168,7 @@ export class Director {
 		this.fadeTo(start);
 	}
 
-	/** Ends READY early (skip) or on its own timer. */
+	/** Ends READY: called by its own timer (there is no skip) and by the tests. */
 	showPlaying(): void {
 		if (!this.fadeValue && this.current.name === 'ready') {
 			this.setState(new PlayingState());

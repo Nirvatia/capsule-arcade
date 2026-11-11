@@ -116,7 +116,7 @@ describe('game flow', () => {
 		expect(director.stateName).toBe('menu');
 	});
 
-	it('skips READY on confirm', () => {
+	it('moves from READY to playing when showPlaying is called', () => {
 		const { director } = setup();
 		startToReady(director);
 		director.showPlaying();

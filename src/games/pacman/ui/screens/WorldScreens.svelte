@@ -136,8 +136,11 @@
 		onclick={act(onclick)}
 		onkeydown={noop}
 	>
-		{@html knobFaceArt(theme)}
-		<text class="num" y={size * 0.36} font-size={size} text-anchor="middle">{label}</text>
+		<circle r="32" fill="transparent" />
+		<g class="lift">
+			{@html knobFaceArt(theme)}
+			<text class="num" y={size * 0.36} font-size={size} text-anchor="middle">{label}</text>
+		</g>
 	</g>
 {/snippet}
 
@@ -163,11 +166,14 @@
 		onclick={act(onclick)}
 		onkeydown={noop}
 	>
-		<g class="sway {cls}" style:--rot="{seed % 2 ? 0.4 : -0.4}deg">
-			{@html plankArt(theme, id, x, y, w, h, { primary, seed })}
-			<text class="num" x={x + w / 2} y={y + h * 0.68} font-size={size} text-anchor="middle"
-				>{label}</text
-			>
+		<rect x={x - 8} y={y - 8} width={w + 16} height={h + 16} fill="transparent" />
+		<g class="lift">
+			<g class="sway {cls}" style:--rot="{seed % 2 ? 0.4 : -0.4}deg">
+				{@html plankArt(theme, id, x, y, w, h, { primary, seed })}
+				<text class="num" x={x + w / 2} y={y + h * 0.68} font-size={size} text-anchor="middle"
+					>{label}</text
+				>
+			</g>
 		</g>
 	</g>
 {/snippet}
@@ -239,7 +245,7 @@
 						onkeydown={noop}
 					>
 						<circle r="44" fill="transparent" />
-						{@html coinArt(theme, isMs, sel)}
+						<g class="lift">{@html coinArt(theme, isMs, sel)}</g>
 					</g>
 					<text class="lab" x={isMs ? 315 : 205} y="380" font-size="11" text-anchor="middle"
 						>{isMs ? 'MS. PAC-MAN' : 'PAC-MAN'}</text
@@ -282,10 +288,6 @@
 					>
 				</g>
 				{@html trailArt(theme, eaten, 24, { x0: 60, x1: 430, y: 300, amp: 6 })}
-				{#if snap.phase === 'intro'}
-					{@render knob(488, 300, '⏎', 22, $t('skip'), actions.confirm)}
-					<text class="lab" x="488" y="346" font-size="10" text-anchor="middle">{$t('skip')}</text>
-				{/if}
 			{:else if screen === 'pause'}
 				<g class="sway" style:--rot="-1deg">
 					{@html boardArt(theme, 'scr-paused', 30, 16, 400, 100, { seed: 5, drop: 36 })}
@@ -405,12 +407,14 @@
 					onclick={act(actions.profile)}
 					onkeydown={noop}
 				>
-					<g class="sway hang" style:--rot="-.4deg">
-						{@html plankArt(theme, 'scr-swap', 100, 394, 280, 58, { seed: 8 })}
-						<g transform="translate(138 423) scale(.7)">{@html heroArt(!ms)}</g>
-						<text class="num" x="262" y="434" font-size="26" text-anchor="middle"
-							>{ms ? 'PAC-MAN' : 'MS. PAC-MAN'}</text
-						>
+					<g class="lift">
+						<g class="sway hang" style:--rot="-.4deg">
+							{@html plankArt(theme, 'scr-swap', 100, 394, 280, 58, { seed: 8 })}
+							<g transform="translate(138 423) scale(.7)">{@html heroArt(!ms)}</g>
+							<text class="num" x="262" y="434" font-size="26" text-anchor="middle"
+								>{ms ? 'PAC-MAN' : 'MS. PAC-MAN'}</text
+							>
+						</g>
 					</g>
 				</g>
 				{@render ropes(140, 340, 452, 140, 340, 474)}
@@ -506,30 +510,34 @@
 			transform: rotate(calc(var(--rot, 0deg) + 0.6deg));
 		}
 	}
+	/* The hit target itself never moves: it carries the position (a `transform` attribute) and
+	   the pointer, and a CSS transform on it would replace that attribute and, as the art slid
+	   out from under the cursor, make the hover flicker. The art inside (`.lift`) moves. */
 	.hit,
 	.coin {
 		pointer-events: all;
 		cursor: pointer;
+	}
+	.lift {
 		transition:
 			transform 0.12s ease,
 			filter 0.12s ease;
 		transform-box: fill-box;
 		transform-origin: 50% 50%;
 	}
-	.hit:hover,
-	.coin:hover {
+	.hit:hover > .lift,
+	.coin:hover > .lift {
 		transform: translateY(-3px);
 		filter: brightness(1.1);
 	}
-	.hit:active {
+	.hit:active > .lift {
 		transform: translateY(1px) scale(0.98);
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.sway {
 			animation: none;
 		}
-		.hit,
-		.coin {
+		.lift {
 			transition: none;
 		}
 	}

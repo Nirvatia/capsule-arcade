@@ -7,6 +7,7 @@ import { InputController } from './InputController';
 import { RenderPipeline } from '../render/RenderPipeline';
 import { LevelLoader } from '../logic/level/LevelLoader';
 import { PacmanAudioPlayer } from '../audio/PacmanAudioPlayer';
+import { muted } from '../audio/audioSettings';
 import { hudFrame, screenActions } from '../ui/hud/hudFrame';
 import { buildHudSnapshot } from '../ui/hud/hudSnapshot';
 import { getSavedScore, saveScore } from '../../../shared/utils/scoreStore';
@@ -83,9 +84,7 @@ export class GameMain implements GameModule {
 					director.togglePause();
 					return;
 				}
-				if (director.stateName === 'ready') {
-					director.showPlaying();
-				}
+				// READY runs its own countdown: Enter does not skip it
 			},
 			fire: () => {
 				if (director.stateName === 'playing') {
@@ -119,6 +118,7 @@ export class GameMain implements GameModule {
 					level.toggleProfile();
 				}
 			},
+			mute: () => muted.toggle(),
 			...(import.meta.env.DEV
 				? { debugToggle: () => toggleDebugVisible(), debugStep: () => time.step() }
 				: {})

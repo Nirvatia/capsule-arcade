@@ -45,10 +45,6 @@ export function plankArt(
 	o: PlankOptions = {}
 ): string {
 	let s = '';
-	if (o.primary) {
-		s += `<rect x="${x - 6}" y="${y - 6}" width="${w + 12}" height="${h + 12}" rx="${h / 2.4}" fill="none" stroke="${t.ring}" stroke-width="3" opacity=".85"/>`;
-		s += `<rect x="${x - 6}" y="${y - 6}" width="${w + 12}" height="${h + 12}" rx="${h / 2.4}" fill="none" stroke="${t.ring}" stroke-width="9" opacity=".18"/>`;
-	}
 	s += boardArt(t, id, x, y, w, h, {
 		seed: o.seed ?? 4,
 		posts: false,

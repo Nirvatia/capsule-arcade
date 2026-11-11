@@ -56,7 +56,7 @@ render/
   transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
   actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
   common/          textures, GlPass (every WebGL2 pass), boardScale (where the maze goes on the
-                   screen: 85 % of the height, below the HUD band), colour, maths, seeded random,
+                   screen: 80 % of the height, below the HUD band), colour, maths, seeded random,
                    worldDecor (the decor layout and stream shared by every world)
 audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), ArcadeSynth
 ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the HUD of the
@@ -125,7 +125,7 @@ arcade: death ─▶ ready(short) | last try ─world-shift (leave)─▶ main g
 
 Fades remain for the pause and READY → menu, a dev jump to a level and a dev start-at level.
 
-pause (Space/P, Esc in play): ready, playing, death, level-clear — freezes and resumes the
+pause (Space/P): ready, playing, death, level-clear — freezes and resumes the
 same state; tab hidden / window blur auto-pauses; requests during a fade apply after it.
 
 ```

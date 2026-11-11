@@ -84,25 +84,29 @@
 		border: 0;
 		background: none;
 		cursor: pointer;
-		transition:
-			transform 0.12s ease,
-			filter 0.12s ease;
 	}
+	/* the button stays put under the cursor; only its art moves, or the hover would flicker */
 	.mute svg {
 		display: block;
 		width: 100%;
 		height: 100%;
 		overflow: visible;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease;
 	}
-	.mute:hover {
+	.mute:hover svg {
 		transform: translateY(-2px) rotate(-3deg);
 		filter: brightness(1.1);
 	}
-	.mute.off {
+	.mute.off svg {
 		filter: saturate(0.7);
 	}
+	.mute.off:hover svg {
+		filter: saturate(0.7) brightness(1.1);
+	}
 	@media (prefers-reduced-motion: reduce) {
-		.mute {
+		.mute svg {
 			transition: none;
 		}
 	}

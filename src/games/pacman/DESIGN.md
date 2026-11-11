@@ -14,14 +14,16 @@ size of one tile.
 
 ## 2. Players and controls
 
-- Two profiles, picked in the menu or with `M`: **Pac-Man** and **Ms. Pac-Man**. They
+- Two profiles, picked in the menu or with `H`: **Pac-Man** and **Ms. Pac-Man**. They
   differ in their energizer power (§4) and in which worlds they see (only Pac-Man goes to
   the hell, §7).
 - Arrows or `WASD` steer. A key may be pressed early (the turn is taken at the next
   junction) or up to 0.15 tile late; a reversal turns round on the spot; a held key keeps
   steering through pauses, deaths and fades.
-- `Enter` confirms (start, skip the intro READY), `F` / `Shift` fires a hell weapon,
-  `Space` / `P` pauses, `Esc` pauses in play and backs out of screens.
+- `Enter` confirms (start, resume); READY cannot be skipped. `F` / `Shift` fires a hell weapon,
+  `Space` / `P` pauses, `M` mutes and unmutes the sound, `H` switches the hero in the menu and
+  on the game-over screen. `Esc` does nothing: leaving a game goes through the pause screen's
+  Menu button.
 - English by default, Russian switchable (remembered).
 
 ## 3. The run
@@ -187,6 +189,12 @@ chiptune sound (`config/arcadeConfig.ts`).
 - Menu (profile, high score, language) → READY (5 s with a jingle on a new game,
   2 s after a death or a level change) → play. The session's first game starts at once
   (the menu already shows level 1); later games go through a fade.
+  READY is not skippable: it always runs its countdown, and no screen has a Skip button.
+- The maze's walls (the board without its empty border) take 80 % of the screen's height
+  (`BOARD_HEIGHT_SHARE`), at most 92 % of the width, below the HUD band.
+- Buttons on the screens (the hero coins, Start, the language and sound knobs) lift a little on
+  hover; the target under the cursor itself never moves, so the hover cannot flicker. The main
+  button (Start, Resume) has no glow or extra frame.
 - Pause from READY, play, death and level clear; it resumes the same moment. A hidden tab
   or a lost window focus pauses on its own.
 - Death, a black hole (4 s): the colour drains along the corridors from the death point, the
@@ -255,7 +263,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   heading chevron. A red body sinks into the red flesh, so the ink line, the eyes and the rim
   light carry him.
 - **The hell's heroes (final, as they are)**: the season heroes (the owner's decision: they stay as they are, no hell mark, no armor) plus one thing the hell adds, the BFG charge: the body swells and the mouth gapes, a green ring closes in on it, a glow lights the throat, white-hot at the end; the release is a recoil and a flash. The berserk is the awoken look (his ki flames, her glowing bow). The rolling ball at the rifts is the heroes' own.
-- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, next chat).
+- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.4).
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze is drawn as an outline, "the cord":
   islands of dark flesh with a quiet texture, each edged by a dark cord with a thin hot line that
@@ -268,20 +276,36 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 
 ### Art status
 
-| Element                                                         | State                                                                                      |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Seasons (world, food, weather, night), season turn, death decay | final; death is a black hole (part I, 6.2); a lost boss fight unfolds the next world (6.3) |
-| Blinky lord of hell, imps                                       | final: cel-shaded like the heroes (part II, 1.2)                                           |
-| Hell world (the flesh hell)                                     | final: the accepted scene is in the game (part II, 1.7a); weather and light follow         |
-| Hell weapons                                                    | final (part II, 1.3)                                                                       |
-| Arcade                                                          | final (keeps its own pixel HUD)                                                            |
-| HUD                                                             | season worlds: final (side HUD, part III 1-2); the hell, narrow screens, arcade: to come   |
-| Screens                                                         | seasons and the hell: final (part III 4-5); the arcade keeps its cards                     |
-| Fruit, heart                                                    | final (inside the tile, calm glow)                                                         |
-| Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                       |
-| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                             |
-| Pac-Man                                                         | final; the same in the hell, plus the BFG charge's light                                   |
-| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; the same in the hell                     |
-| Season ghosts                                                   | missing: one generic look today (part I, 5.2)                                              |
-| Echo clone                                                      | to redo (part I, 5.3)                                                                      |
-| Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                                  |
+| Element                                                         | State                                                                                     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Seasons (world, food, weather, night), season turn, death decay | final as palettes; a full scene per season (Halloween, New Year) is to come (ROADMAP I.3) |
+| Blinky lord of hell, imps                                       | final: cel-shaded like the heroes (part II, 1.2)                                          |
+| Hell world (the flesh hell)                                     | final: the accepted scene is in the game (part II, 1.7a); weather and light follow        |
+| Hell weapons                                                    | final (part II, 1.3)                                                                      |
+| Arcade                                                          | final (keeps its own pixel HUD)                                                           |
+| HUD                                                             | season worlds: final (side HUD, part III 1-2); the hell, narrow screens, arcade: to come  |
+| Screens                                                         | seasons and the hell: final (part III 4-5); the arcade keeps its cards                    |
+| Fruit, heart                                                    | final (inside the tile, calm glow)                                                        |
+| Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                      |
+| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                            |
+| Pac-Man                                                         | final; the same in the hell, plus the BFG charge's light                                  |
+| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; the same in the hell                    |
+| Season ghosts                                                   | final: a tulip bud, a turtle, a hedgehog, a bunny (one painter, a shape per season)       |
+| Echo clone                                                      | final: a blue mini hero (the owner kept the look)                                         |
+| Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                                 |
+
+## 13. Boss worlds to come (ideas, not designed)
+
+Each new boss level is still Pac-Man in a maze, but with its own boss, mechanic and way to play;
+the hell is combat, so the others must not be. The order proposed (`ROADMAP.md`, part II, step 3):
+
+- **TRON**: the hero's light trail becomes a wall for a few seconds, the boss rides a light cycle
+  that cuts the maze. A spatial puzzle on a neon grid.
+- **An Alien Isolation style stalker**: darkness, a flashlight cone, one hunter that cannot be
+  killed, a motion tracker, the vents as tunnels. Stealth.
+- **Sharkboy and Lavagirl**: a tide of water and lava floods the tiles in waves, sharks patrol the
+  water. Terrain, a playful tone, clear of the hell's reds.
+- **A Bomberman style world**: blasts along the maze's lines. To be thought through.
+
+Zombies were rejected (a horde with weapons is the hell again). Each world gets a one-page design
+the owner approves before code.

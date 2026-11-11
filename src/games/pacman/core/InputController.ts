@@ -7,6 +7,8 @@ export interface InputHandlers {
 	pause?: () => void;
 	menu?: () => void;
 	profile?: () => void;
+	/** `M`: sound on / off. */
+	mute?: () => void;
 	/** Dev hotkeys: `` ` `` shows the dev panels, F8 steps one frame. */
 	debugToggle?: () => void;
 	debugStep?: () => void;
@@ -143,13 +145,13 @@ export class InputController {
 				event.preventDefault();
 				this.pressPause();
 				break;
-			case 'Escape':
+			case 'KeyH':
 				event.preventDefault();
-				this.pressMenu();
+				this.pressProfile();
 				break;
 			case 'KeyM':
 				event.preventDefault();
-				this.pressProfile();
+				this.handlers.mute?.();
 				break;
 			case 'Backquote':
 				if (this.handlers.debugToggle) {

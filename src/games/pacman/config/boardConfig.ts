@@ -1,5 +1,5 @@
 /** The share of the screen's height the maze's walls take (the empty border not counted). */
-export const BOARD_HEIGHT_SHARE = 0.85;
+export const BOARD_HEIGHT_SHARE = 0.8;
 
 /** The share of the screen's width the maze's walls may take, so a narrow screen is not overfilled. */
 export const BOARD_WIDTH_SHARE = 0.92;
