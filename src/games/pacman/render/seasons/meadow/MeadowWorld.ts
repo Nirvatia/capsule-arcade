@@ -2,7 +2,8 @@
 // portal swirls, stream glints, chimney smoke) and the screen-space atmosphere (mist, sun
 // rays, drifting particles, weather, night with lamp and cabin lights). The season's theme
 // supplies every colour, sprite and particle behaviour.
-import { boardPlacement } from '../../common/boardScale';
+import { BOARD_TOP_RESERVE, boardPlacement } from '../../common/boardScale';
+import { hudModeFor } from '../../../config/hudLayout';
 import type { GridMatrix } from '../../../config/gridConfig';
 import { isTeleportToken } from '../../../config/gridConfig';
 import type { GridLayout } from '../../maze/GridView';
@@ -210,7 +211,14 @@ export class MeadowWorld {
 		this.vw = vw;
 		this.vh = vh;
 		this.dpr = dpr;
-		const board = boardPlacement(vw, vh, this.C, this.R, T);
+		const board = boardPlacement(
+			vw,
+			vh,
+			this.C,
+			this.R,
+			T,
+			hudModeFor(vw, vh) === 'side' ? 0 : BOARD_TOP_RESERVE
+		);
 		this.sc = board.scale;
 		this.wx = board.x;
 		this.wy = board.y;

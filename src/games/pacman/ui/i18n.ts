@@ -50,7 +50,9 @@ const EN = {
 	highScore: 'HIGH SCORE',
 	round: 'ROUND',
 	mute: 'Mute',
-	unmute: 'Unmute'
+	unmute: 'Unmute',
+	pause: 'Pause',
+	food: 'FOOD'
 } as const;
 
 export type I18nKey = keyof typeof EN;
@@ -101,7 +103,9 @@ const RU: Record<I18nKey, string> = {
 	highScore: 'HIGH SCORE',
 	round: 'РАУНД',
 	mute: 'Выключить звук',
-	unmute: 'Включить звук'
+	unmute: 'Включить звук',
+	pause: 'Пауза',
+	food: 'ЕДА'
 };
 
 function initial(): Lang {

@@ -23,7 +23,7 @@ export interface BoardPlacement {
  * Every maze has an empty border of one tile on each side (`validateMaze`), so the walls cover
  * `cols - 2` × `rows - 2` tiles. They take `BOARD_HEIGHT_SHARE` of the height, less if the
  * width or the HUD band at the top does not leave that much, and sit centred in the space
- * below the band. Page zoom changes the screen's size in css px and the scale with it, so the
+ * below the band (`topReserve`, 0 when the HUD stands in the side margins). Page zoom changes the screen's size in css px and the scale with it, so the
  * share stays the same at any zoom.
  */
 export function boardPlacement(
@@ -31,16 +31,17 @@ export function boardPlacement(
 	vh: number,
 	cols: number,
 	rows: number,
-	tile: number
+	tile: number,
+	topReserve: number = BOARD_TOP_RESERVE
 ): BoardPlacement {
 	const wallsH = (rows - 2) * tile;
 	const wallsW = (cols - 2) * tile;
 	const scale = Math.min(
 		(BOARD_HEIGHT_SHARE * vh) / wallsH,
-		(vh - BOARD_TOP_RESERVE - MIN_GAP) / wallsH,
+		(vh - topReserve - (topReserve > 0 ? MIN_GAP : 0)) / wallsH,
 		(BOARD_WIDTH_SHARE * vw) / wallsW
 	);
-	const wallsTop = BOARD_TOP_RESERVE + (vh - BOARD_TOP_RESERVE - wallsH * scale) / 2;
+	const wallsTop = topReserve + (vh - topReserve - wallsH * scale) / 2;
 	return {
 		scale,
 		x: vw / 2 - (cols * tile * scale) / 2,

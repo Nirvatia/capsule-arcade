@@ -59,8 +59,10 @@ render/
                    screen: 85 % of the height, below the HUD band), colour, maths, seeded random,
                    worldDecor (the decor layout and stream shared by every world)
 audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), ArcadeSynth
-ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (GameHud, ArcadeHud,
-             hudSnapshot, hudFrame), screens/, debug/ (dev panel and log), i18n
+ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the side HUD of the
+             four season worlds, `SeasonHud` over `seasonArt` and `seasonThemes`; GameHud, the bar
+             of the hell and of narrow screens; ArcadeHud; hudSnapshot, hudFrame), screens/,
+             debug/ (dev panel and log), MuteButton (a knob, bottom left), i18n
 ```
 
 ## Rules of thumb

@@ -1,12 +1,29 @@
-<!-- Everything the player sees over the canvas: the HUD (the arcade one on the secret level),
-	the screens, and the screen fade on top of both. -->
+<!-- Everything the player sees over the canvas: the HUD (the season worlds' own one on a
+	landscape screen, else the bar; the arcade one on the secret level), the screens, and the
+	screen fade on top of both. -->
 <script lang="ts">
 	import { hudFrame, screenActions } from './hud/hudFrame';
 	import GameHud from './hud/GameHud.svelte';
 	import ArcadeHud from './hud/ArcadeHud.svelte';
+	import SeasonHud from './hud/season/SeasonHud.svelte';
+	import { isSeasonKey } from './hud/season/seasonThemes';
 	import GameScreens from './screens/GameScreens.svelte';
 	import MuteButton from './MuteButton.svelte';
+	import { hudModeFor } from '../config/hudLayout';
+
+	let innerWidth = $state(1280);
+	let innerHeight = $state(720);
+	const mode = $derived(hudModeFor(innerWidth, innerHeight));
 </script>
+
+<svelte:window bind:innerWidth bind:innerHeight />
+
+<svelte:head>
+	<link
+		rel="stylesheet"
+		href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@500;600&display=swap"
+	/>
+</svelte:head>
 
 <MuteButton />
 
@@ -15,6 +32,8 @@
 	{#if $hudFrame.state !== 'menu' && $hudFrame.state !== 'world-shift'}
 		{#if $hudFrame.world === 'secret'}
 			<ArcadeHud snap={$hudFrame} />
+		{:else if isSeasonKey($hudFrame.world) && mode === 'side'}
+			<SeasonHud snap={$hudFrame} onpause={() => $screenActions?.pause()} />
 		{:else}
 			<GameHud snap={$hudFrame} />
 		{/if}

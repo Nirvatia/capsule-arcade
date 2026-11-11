@@ -229,11 +229,11 @@ in-game look, built from mock-ups the owner brings (made in a generator or found
 reference), not designed in the chat: Claude implements a given picture well and designs
 one poorly. The whole interface is code-drawn (CSS / SVG / Canvas), no raster assets.
 
-1. **One skeleton.** The same layout and slots in every world: score and high score,
-   level and world, lives, fruit row, power timer or weapon, dot progress, pause. Built
-   once, on the `HudSnapshot` that exists.
-2. **A skin per season.** The skeleton stays; the palette and small details follow the
-   season (a few small things, not a new layout).
+1. ~~**One skeleton.**~~ Done for the season worlds on landscape screens (see Done, "Part III, 1-2"):
+   score and high score, level and world, lives, power timer, food trail, pause, in the side
+   margins (the fruit row was dropped by the owner). Left: the hell's HUD (with the boss's own
+   interface, a design to come), the narrow vertical layout.
+2. ~~**A skin per season.**~~ Done with the skeleton: the four materials.
 3. **A skin per boss level.** Each boss world has its own interface (the hell's boss box:
    name, phase, HP with phase marks, the player's HP, weapon, berserk, BFG charge, the
    reward hint), on the same skeleton. Added as each boss lands; the hell's comes first.
@@ -785,3 +785,23 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   number between -1 and +1. Checked in the real game at 1920x1080 and 1280x720, in a season and in
   the hell, with the speed, God mode and Freeze controls; no console errors. Not checked: 1440p and
   a phone, and nothing automatic (the panel is a dev overlay, with no tests).
+- Part III, 1-2: the side HUD of the season worlds, and the mute knob (tenth chat). The owner
+  asked for an interface that reads as part of the world, not as plates, and got there in two
+  rounds of chat mock-ups (an artifact over real frames of the four seasons; the hell was left
+  out, its interface comes with the boss levels): things in the margins at both sides of the
+  maze, made of each world's stuff. Code: `ui/hud/season/` (`seasonThemes`: the four materials,
+  `seasonArt`: the shapes as SVG markup, `SeasonHud.svelte`: the component with the live numbers,
+  the pellet trail, the timer ring, the night dimming at 0.75 of the dots, the pause knob, a
+  screen-reader line), `config/hudLayout` (`hudModeFor`: side from an aspect of 1.5 up, else the
+  old bar; `hudScaleFor`: the art is drawn for 720 px high and scales with the screen height),
+  `PacmanUi` (picks the HUD), and `MuteButton` (a knob of the same stuff at the bottom left, the
+  colours of the world on screen). `boardPlacement` takes the band at the top as a parameter:
+  `MeadowWorld` passes 0 when the HUD stands in the margins, so the maze is centred on 85 % of
+  the height; the hell and the narrow layout keep the 96 px band. The fonts (Lilita One for
+  numbers, Fredoka for labels) are linked from `PacmanUi`. Two small changes of meaning:
+  the food is a percentage (the snapshot carries a ratio), and the pause knob is new (Space and
+  P still work). The dev panel's DEV button moved to the bottom right to leave the pause knob
+  alone. Checked in the real game at 1920x1080, 1600x900, 1280x720 and 1024x768 (the bar), in
+  summer, autumn and winter, with the mute click, the Energizer timer and the pause knob; no
+  console errors. Not checked: spring in play, a phone, 21:9, a very long score. Tests:
+  `hudLayout.test.ts` and the placement cases in `boardScale.test.ts` (no test for the markup).

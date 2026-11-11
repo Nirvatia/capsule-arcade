@@ -196,10 +196,20 @@ chiptune sound (`config/arcadeConfig.ts`).
   their own palette). Pac-Man's own death plays on top. The arcade has its own pixel death.
 - Game over: score, new record, play again (input locked for 1 s so a held key does not
   restart at once).
-- HUD: one compact box at the top centre (score and high score, level and world, lives,
-  power timer or weapon, dot progress); on boss levels a boss box below it (name, phase, HP
-  with phase marks, the player's HP, weapon, berserk, BFG charge, the reward hint). The
-  arcade has its own arcade HUD (1UP, high score, round, tries, the rounds' fruit).
+- HUD on the season levels (landscape screens, aspect 1.5 and up): things that stand in the
+  world, in the margins at both sides of the maze, in the world's own material (wood, ice, bark
+  and cloth; the owner's mock-up). Left: a score board on two stakes and a record tag hung under
+  it. Right: a level board with the world's emblem, a cloth banner with its name, a lives
+  counter (the hero and a painted number), a trail of the season's pellets for the food left
+  (eaten ones are holes), a dial with the season's energizer and a ring that runs down (the
+  seconds inside; the night, at three quarters of the dots, dims the whole HUD with the world), and
+  a pause knob in the corner. The boards sway, the hero and the energizer bob. No fruit row (the
+  owner dropped it). The sound switch is a knob of the same stuff at the bottom left, in every
+  world. A narrower screen, the hell and (own HUD) the arcade keep the older ones until their
+  turn: one compact bar at the top centre (score and high score, level and world, lives, power
+  timer or weapon, dot progress); on boss levels a boss box below it (name, phase, HP with phase
+  marks, the player's HP, weapon, berserk, BFG charge, the reward hint). The arcade has its own
+  arcade HUD (1UP, high score, round, tries, the rounds' fruit).
 
 ## 11. Audio
 
@@ -261,7 +271,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 | Hell world (the flesh hell)                                     | final: the accepted scene is in the game (part II, 1.7a); weather and light follow         |
 | Hell weapons                                                    | final (part II, 1.3)                                                                       |
 | Arcade                                                          | final (keeps its own pixel HUD)                                                            |
-| HUD and screens                                                 | final; to be replaced (part III)                                                           |
+| HUD                                                             | season worlds: final (side HUD, part III 1-2); the hell, narrow screens, arcade: to come   |
+| Screens                                                         | final; to be replaced (part III)                                                           |
 | Fruit, heart                                                    | final (inside the tile, calm glow)                                                         |
 | Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                       |
 | Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                             |

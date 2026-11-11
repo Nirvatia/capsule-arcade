@@ -478,7 +478,7 @@
 <style>
 	.dev-toggle {
 		position: fixed;
-		top: 8px;
+		bottom: 8px;
 		right: 8px;
 		z-index: 61;
 		border: 1px solid #3b4f7c;

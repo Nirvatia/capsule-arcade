@@ -24,6 +24,13 @@ describe('boardPlacement', () => {
 		expect(top + 25 * T * p.scale).toBeLessThanOrEqual(vh);
 	});
 
+	it('centres the walls on the whole height when the HUD stands in the side margins', () => {
+		const p = boardPlacement(1600, 900, 25, 27, T, 0);
+		expect(25 * T * p.scale).toBeCloseTo(BOARD_HEIGHT_SHARE * 900, 5);
+		const top = p.y + T * p.scale;
+		expect(top + (25 * T * p.scale) / 2).toBeCloseTo(450, 5);
+	});
+
 	it('is limited by the width on a narrow screen', () => {
 		const p = boardPlacement(400, 1200, 25, 27, T);
 		expect(23 * T * p.scale).toBeCloseTo(BOARD_WIDTH_SHARE * 400, 5);
