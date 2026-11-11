@@ -1,7 +1,7 @@
 import type { GridMatrix } from '../../config/gridConfig';
 import { SCORE_TABLE } from '../../config/scoreConfig';
 import type { GhostKind } from '../../logic/actors/GhostModel';
-import type { LevelRenderer, RenderFrame } from '../RenderFrame';
+import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../RenderFrame';
 import type { GridLayout } from '../maze/GridView';
 import { ArcadeView } from './ArcadeView';
 import type { ArcadeGhostLook, ArcadeScene } from './ArcadeView';
@@ -29,7 +29,7 @@ interface Popup {
  * the CRT pass (`ArcadeScreen`). Death, the maze flash and the intermission are drawn here
  * from the flow phases; the pipeline's level decay and season turn stay out of it.
  */
-export class ArcadeLevelRenderer implements LevelRenderer {
+export class ArcadeLevelRenderer implements LevelRenderer, WorldPreview {
 	private readonly screen = new ArcadeScreen();
 	private view: ArcadeView | null = null;
 	private viewGrid: GridMatrix | null = null;
@@ -107,6 +107,43 @@ export class ArcadeLevelRenderer implements LevelRenderer {
 			layout.offsetY,
 			S * grid.width,
 			S * grid.height,
+			frame.pixelRatio
+		);
+		return layout;
+	}
+
+	/**
+	 * The arcade's first screen, untouched: the maze full of food, no actors, the board as the
+	 * CRT shows it. The way into the arcade (`ArcadeShift`) lands on it.
+	 */
+	preview(frame: PreviewFrame): GridLayout {
+		const { ctx, width, height, season } = frame;
+		const view = this.viewFor(season.grid);
+		const layout = this.layout(view, width, height);
+		view.draw({
+			time: 0,
+			food: (x, y) => {
+				const token = season.grid[y]?.[x];
+				return token === 'DT' ? 'dot' : token === 'EU' ? 'energizer' : null;
+			},
+			pac: null,
+			death: null,
+			ghosts: [],
+			fruit: null,
+			popups: [],
+			flash: false,
+			frozen: true
+		});
+		ctx.fillStyle = '#000';
+		ctx.fillRect(0, 0, width, height);
+		const S = layout.tileSize;
+		this.screen.present(
+			ctx,
+			view.canvas,
+			layout.offsetX,
+			layout.offsetY,
+			S * (view.canvas.width / ARCADE_TILE),
+			S * (view.canvas.height / ARCADE_TILE),
 			frame.pixelRatio
 		);
 		return layout;

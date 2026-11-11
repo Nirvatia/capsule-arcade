@@ -53,6 +53,7 @@ render/
                    (the shockwave, flashes, sparks, pop-ups, edge pulse), fxTypes
   transitions/decay/       the death black hole: field (Dijkstra), timeline (pure clock), WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
+  transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
   actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
   common/          textures, GlPass (every WebGL2 pass), boardScale (where the maze goes on the
                    screen: 85 % of the height, below the HUD band), colour, maths, seeded random,

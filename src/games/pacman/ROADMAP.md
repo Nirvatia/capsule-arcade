@@ -735,3 +735,17 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   fail on the old behaviour). Not done: the same for the arcade seams (the Easter egg into the
   arcade, the arcade back to the main game, game over to the menu), which still use the screen
   fade; the no-WebGL fallback veil shows no next world.
+- The arcade shift, the pass and its prototype (tenth chat; wiring into the flow waits for the
+  owner's approval of the look). The owner picked one look for each way: **in**, the Easter egg
+  flashes, the world breaks into a mosaic of growing blocks with fewer colours and dims to black,
+  and the CRT switches on (a bright line, then it opens upward, the tube's overdrive fading);
+  **out**, the CRT switches off (the picture squashes to a line, the line to a dot, the dot
+  glows on and fades) and the next world unfolds out of the dot in a ring of light. Code:
+  `render/transitions/arcadeShift/` (`arcadeShiftTimeline`, a pure clock; `arcadeShiftShader`;
+  `ArcadeShift`, per frame `from()` and `to()` then `compose()`; 2.6 s in, 2.2 s out), and
+  `ArcadeLevelRenderer.preview` (the arcade's first screen, no actors) so the arcade can be a
+  destination. Prototype `shift` (`node prototypes/pacman/build.mjs shift`: a time slider, both
+  ways, four seasons). Tests: `arcadeShift.test.ts` (the clock). Left to do after approval: a
+  `world-shift` state in `Director` (from `playing` on the egg, from `level-clear` and `death` on
+  the way out), the pipeline rendering `from` and `to`, and the arcade renderer drawing a bare
+  board while it runs.
