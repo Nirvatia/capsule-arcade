@@ -73,7 +73,13 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    heroes are the season heroes plus the BFG charge. Start from the `hell` prototype
    (`node prototypes/pacman/build.mjs hell`: "Бой" runs the real fight, the attack buttons force
    an attack, "Бессмертие" keeps the hero alive, "Фаза 1-3" jump to a phase; query `?ms`,
-   `?zerk`, `?chg`) and the `mood` prototype. The owner's list, in this order:
+   `?zerk`, `?chg`) and the `mood` prototype. The owner's list, in this order: 0. **The walls are charred iron plates** (the owner's pick from a comparison of four looks,
+   now in the game: one block to a tile, bevel, rivets, a hot edge; the surround is not dimmed,
+   because a darker surround made the maze hang in the air). The owner is trying them: they look
+   foreign next to the blood scene but give the metal-doom spirit. Possible ties to the flesh,
+   only if the owner asks: blood spatter and rust on the plates, flesh creeping over a seam,
+   a warmer plate tone. Everything below (teleports, attacks, Blinky) is tuned against these
+   walls and the dark floor.
    1. **A full redesign of the teleports.** The rifts sink into the red: a hero running for one
       cannot find it. The new look must stand out from the maze and the background at tile
       size (a hue the hell does not otherwise use; the exit's pale light is taken), keep the "no

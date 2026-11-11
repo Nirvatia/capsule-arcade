@@ -2,8 +2,8 @@
 // `prototypes/pacman/art/hell-flesh-scene.html`, ported from its canvas code). The world is one
 // flesh with no void: a ground of fibres, pores, veins, half-buried ribs and pools of blood; the
 // maze is cut into it, its corridors the same flesh a little darker and wetter; its walls are
-// flat muscle ridges with a dark outline, an inner light and shade edge and a ragged flesh band at
-// their foot, no height; the tunnels are vertical rifts of torn flesh.
+// charred iron plates, one block to a tile, with a dark outline, a bevel, rivets and a hot edge, no
+// height; the tunnels are vertical rifts of torn flesh.
 //
 // Everything is painted in the scene's own units (a tile is 32, the maze's top-left corner is at
 // (MX, MY)) and `FleshWorld` draws the result scaled to the game's world. Only what moves is not
@@ -52,28 +52,41 @@ const PAL = {
 } as const;
 
 /**
- * The wall material, the owner's "cord": islands of dark flesh with a fine quiet texture, each
- * edged by a glowing cord (the classic mazes' outline, in the hell's own matter). The maze must
- * stand out from the background without the walls floating over a pit, so the corridor floor
- * stays close to the walls in tone, a shadow lies at the foot of every wall, the tone wanders
- * over a big island and the ground outside the maze recedes.
+ * The wall material, the owner's pick of the plates (a metal-doom maze set into the flesh):
+ * charred iron blocks, one to a tile, neutral and lighter than the red floor so that the maze
+ * parts from the ground in grey too, each with a bevel, a dark seam and four rivets, the island
+ * edged by a dark outline with a thin hot line that pulses with the heart. No height: the bevel
+ * is drawn inside the tile, so the corridors keep their full width. The floor stays dark and
+ * close to the flesh outside, a shadow lies at the foot of every wall, and the ground outside is
+ * not dimmed any further (a darker surround would make the maze hang in the air).
  */
 const WALL = {
-	grad: ['#34161a', '#2c1215', '#220d10'],
-	rim: 'rgba(255,120,90,.3)',
-	shade: 'rgba(8,1,3,.7)',
+	grad: ['#5a4f52', '#4d4346', '#40373a'],
+	rim: 'rgba(255,214,180,.34)',
+	shade: 'rgba(6,2,3,.75)',
 	/** Rim light offset in px. */
 	lip: 2,
-	/** The cord's hot line (rgb). */
-	cord: '255,96,64',
+	/** The hot line round every island (rgb). */
+	cord: '255,120,60',
+	/** The dark outline round every island. */
+	outline: 'rgba(14,8,10,.97)',
 	/** Darkening of the corridor floor over the bare flesh. */
-	floorShade: 0.3,
+	floorShade: 0.62,
 	/** Opacity of the shadow the walls cast on the floor. */
 	ao: 0.5,
 	/** Darkening of the ground outside the maze. */
 	bgDim: 0.3,
 	/** Strength of the large-scale light and dark patches on the walls. */
-	mottle: 0.35
+	mottle: 0.12
+} as const;
+
+/** The plates: each wall tile is one block. */
+const PLATE = {
+	/** Random light or dark variation between blocks. */
+	vary: 0.07,
+	hi: 'rgba(255,236,214,.2)',
+	lo: 'rgba(0,0,0,.42)',
+	seam: 'rgba(8,3,4,.62)'
 } as const;
 
 type Kind = 'none' | 'wall' | 'floor' | 'lair' | 'tele';
@@ -621,7 +634,7 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 						? `rgba(255,200,180,${0.03 + v * 0.04})`
 						: `rgba(30,6,10,${0.03 + (v - 0.5) * 0.06})`;
 				tp.fillRect(X3 - 1, Y3 - 1, T + 2, T + 2);
-				paintQuiet(tp, X3, Y3, rw);
+				paintPlate(tp, X3, Y3, rw);
 			}
 		}
 		// the tone wanders over a big island: soft light and dark patches, continuous over tiles
@@ -671,7 +684,7 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 				}
 				return c2;
 			};
-			w.drawImage(clipTo(tint(ring(4), 'rgba(58,10,14,.95)'), wallM), LX, LY);
+			w.drawImage(clipTo(tint(ring(4), st.outline), wallM), LX, LY);
 			ex.drawImage(clipTo(tint(ring(1.8), `rgba(${st.cord},.9)`), wallM), LX, LY);
 		}
 		paintGate(S, w, ex, cols, rows);
@@ -850,25 +863,39 @@ function sidePockets(S: GridMatrix, cols: number, rows: number): Array<readonly 
 	return out;
 }
 
-/** A quiet tile: faint fibres on the flow of the ground and a few pores, nothing that shouts. */
-function paintQuiet(tp: CanvasRenderingContext2D, X3: number, Y3: number, rw: Rng): void {
+/** One wall tile as a plate: a random tone, a bevel inside the tile, a seam, four rivets. */
+function paintPlate(tp: CanvasRenderingContext2D, X: number, Y: number, rw: Rng): void {
 	const T = SCENE_TILE;
-	tp.save();
-	tp.lineCap = 'round';
-	fibres(tp, 16, rw, X3 - 4, Y3 - 4, T + 8, T + 8, 'rgba(14,3,8,.16)', 'rgba(190,90,80,.1)');
-	for (let i = 0; i < 4; i += 1) {
-		const px = X3 + 3 + rw() * (T - 6);
-		const py = Y3 + 3 + rw() * (T - 6);
-		tp.fillStyle = 'rgba(0,0,0,.22)';
+	const v = rw();
+	tp.fillStyle =
+		v < 0.5
+			? `rgba(255,255,255,${PLATE.vary * v * 2})`
+			: `rgba(0,0,0,${PLATE.vary * (v - 0.5) * 2})`;
+	tp.fillRect(X, Y, T, T);
+	tp.fillStyle = PLATE.hi;
+	tp.fillRect(X + 1, Y + 1, T - 2, 2);
+	tp.fillRect(X + 1, Y + 1, 2, T - 2);
+	tp.fillStyle = PLATE.lo;
+	tp.fillRect(X + 1, Y + T - 3, T - 2, 2);
+	tp.fillRect(X + T - 3, Y + 1, 2, T - 2);
+	tp.strokeStyle = PLATE.seam;
+	tp.lineWidth = 1.6;
+	tp.strokeRect(X + 0.8, Y + 0.8, T - 1.6, T - 1.6);
+	for (const [dx, dy] of [
+		[6, 6],
+		[T - 6, 6],
+		[6, T - 6],
+		[T - 6, T - 6]
+	]) {
+		tp.fillStyle = 'rgba(0,0,0,.55)';
 		tp.beginPath();
-		tp.arc(px + 0.8, py + 1, 1.8 + rw() * 2, 0, 7);
+		tp.arc(X + dx + 0.6, Y + dy + 0.8, 2.1, 0, 6.3);
 		tp.fill();
-		tp.fillStyle = 'rgba(210,120,110,.12)';
+		tp.fillStyle = 'rgba(255,230,200,.45)';
 		tp.beginPath();
-		tp.arc(px - 0.6, py - 0.8, 1.4 + rw() * 1.6, 0, 7);
+		tp.arc(X + dx - 0.4, Y + dy - 0.5, 1.1, 0, 6.3);
 		tp.fill();
 	}
-	tp.restore();
 }
 
 /** A swelling: lumpy, dark rim, veined, with a wet gloss. */

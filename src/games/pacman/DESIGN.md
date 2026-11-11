@@ -267,11 +267,12 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - **The hell's heroes (final, as they are)**: the season heroes (the owner's decision: they stay as they are, no hell mark, no armor) plus one thing the hell adds, the BFG charge: the body swells and the mouth gapes, a green ring closes in on it, a glow lights the throat, white-hot at the end; the release is a recoil and a flash. The berserk is the awoken look (his ki flames, her glowing bow). The rolling ball at the rifts is the heroes' own.
 - **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.4).
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
-  world, no void and nothing hanging in the air; the maze is drawn as an outline, "the cord":
-  islands of dark flesh with a quiet texture, each edged by a dark cord with a thin hot line that
-  pulses with the heart, never given height or a face, so the corridors keep their full width;
-  the corridor floor is the same flesh as the outside, a little darker, and the ground outside the
-  maze is dimmed, so the maze parts from the background. Ribs half buried, veins, cysts and pools of blood around; a slow heartbeat
+  world, no void and nothing hanging in the air; the maze is built of charred iron plates (the owner's pick, "metal doom"): one block to a tile,
+  neutral and lighter than the red floor so the maze parts from the ground in grey too, each with a
+  bevel, a seam and four rivets, every island edged by a dark outline with a thin hot line that
+  pulses with the heart. No height or face (the bevel is inside the tile), so the corridors keep
+  their full width; the corridor floor is a dark flesh, and the ground outside the maze is not
+  dimmed further (a darker surround makes the maze hang in the air). Ribs half buried, veins, cysts and pools of blood around; a slow heartbeat
   light; few, bold details on a surface, nothing hanging; a calm background. The teleport is a
   vertical rift of torn flesh around a seam of light. The boss is redone to
   read on it (`ROADMAP.md`, part II, step 1).
