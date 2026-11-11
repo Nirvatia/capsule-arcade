@@ -62,7 +62,8 @@ audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), Arca
 ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the HUD of the
              four season worlds, `SeasonHud` in the side margins and `SeasonHudStack` in two bands
              on a taller screen, over `seasonArt` and `seasonThemes`; `BossHud`, the boss levels' one, over
-             `hellArt`; ArcadeHud; hudSnapshot, hudFrame), screens/,
+             `hellArt`; ArcadeHud; hudSnapshot, hudFrame), screens/ (`WorldScreens` over `screenArt` for the
+             seasons and the hell; `GameScreens`, the older cards, for the arcade),
              debug/ (dev panel and log), MuteButton (a knob, bottom left), i18n
 ```
 

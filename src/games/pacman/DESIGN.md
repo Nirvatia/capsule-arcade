@@ -276,7 +276,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 | Hell weapons                                                    | final (part II, 1.3)                                                                       |
 | Arcade                                                          | final (keeps its own pixel HUD)                                                            |
 | HUD                                                             | season worlds: final (side HUD, part III 1-2); the hell, narrow screens, arcade: to come   |
-| Screens                                                         | final; to be replaced (part III)                                                           |
+| Screens                                                         | seasons and the hell: final (part III 4-5); the arcade keeps its cards                     |
 | Fruit, heart                                                    | final (inside the tile, calm glow)                                                         |
 | Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                       |
 | Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                             |

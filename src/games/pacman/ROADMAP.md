@@ -237,9 +237,9 @@ one poorly. The whole interface is code-drawn (CSS / SVG / Canvas), no raster as
 3. **A skin per boss level.** (The hell's is done, see Done, "Part III, 3".) Each boss world has its own interface (the hell's boss box:
    name, phase, HP with phase marks, the player's HP, weapon, berserk, BFG charge, the
    reward hint), on the same skeleton. Added as each boss lands; the hell's comes first.
-4. **The screens**: menu, pause and READY in the same family.
-5. **A full game-over screen**: the final score, the best score, level reached, fruit
-   collected, restart and menu.
+4. ~~**The screens**~~ Done (see Done, "Part III, 4-5"): menu, pause and READY in the same family.
+5. ~~**A full game-over screen**~~ Done with them: the score, the record, play again, the other
+   hero, menu. (Not the level reached and the fruit collected: the owner kept what it had.)
 6. The arcade (secret level) keeps its own pixel HUD.
 
 ## Later
@@ -837,3 +837,19 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   black hole into the next season. Not checked: the BFG's charge while it charges, 1920x1080, a
   boss with the echo in phase 3, the barrel in the dial. Tests: the boss layout cases in
   `hudLayout.test.ts`.
+- Part III, 4-5: the screens (tenth chat). The owner approved the mock-up (an artifact over real
+  frames, landscape and portrait) as it stood. `ui/screens/WorldScreens.svelte`, over
+  `screenArt.ts`, draws menu, READY, pause, the death banner and game over for the seasons and the
+  hell in the world's own material: a signboard on stakes, plank buttons hung under it on ropes (the
+  main one in a ring of light), a chalk board with the keys, hero coins on a log (the chosen one
+  lifted), a READY banner between two posts with the countdown as a trail of pellets and a skip
+  knob, a cracked grey sign for game over with a gold ribbon for a new record, round knobs for the
+  language. The planks are buttons that never keep the focus; Enter, Space and Esc work as before.
+  `PacmanUi` picks it; the secret level keeps `GameScreens`. The screen is drawn as large as the
+  window allows (0.8 of the width on a landscape screen, 0.94 on a tall one, READY at most 1.5x).
+  The prototype `screens` (`node prototypes/pacman/build.mjs screens`, the frames are injected by
+  the publishing step) is the mock-up's source. Checked in the real game at 1280x720 and 400x800:
+  the menu (the hero chosen on the coin), READY, pause, resume by the plank, the death banner, game
+  over; no console errors. Not checked: the hell's screens, a landscape phone, a screen reader, the
+  language knob in Russian, Caveat's own face (the page loads it; offline a system cursive stands in).
+  The old `GameScreens` stays only for the arcade; its card styles for the other worlds are dead.

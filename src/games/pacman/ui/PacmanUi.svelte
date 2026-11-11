@@ -9,6 +9,7 @@
 	import BossHud from './hud/season/BossHud.svelte';
 	import { isSeasonKey } from './hud/season/seasonThemes';
 	import GameScreens from './screens/GameScreens.svelte';
+	import WorldScreens from './screens/WorldScreens.svelte';
 	import MuteButton from './MuteButton.svelte';
 	import { bossHudLayoutFor, hudLayoutFor } from '../config/hudLayout';
 
@@ -23,7 +24,7 @@
 <svelte:head>
 	<link
 		rel="stylesheet"
-		href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@500;600&display=swap"
+		href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@500;600&family=Caveat:wght@600&display=swap"
 	/>
 </svelte:head>
 
@@ -52,7 +53,11 @@
 		{/if}
 	{/if}
 	{#if $screenActions}
-		<GameScreens snap={$hudFrame} actions={$screenActions} />
+		{#if $hudFrame.world === 'secret'}
+			<GameScreens snap={$hudFrame} actions={$screenActions} />
+		{:else}
+			<WorldScreens snap={$hudFrame} actions={$screenActions} />
+		{/if}
 	{/if}
 	{#if $hudFrame.fade > 0}
 		<div class="fade" style:opacity={$hudFrame.fade}></div>
