@@ -112,22 +112,31 @@
 	}
 
 	.world {
+		/* Distance from the machine's feet to the bottom of the world; the backdrop's
+		   floor line is placed here (see PavilionBackdrop). The feet hang 26px below
+		   the machine's box, so the scene's bottom padding is this plus 26px. */
+		--feet: 56px;
 		position: relative;
 		isolation: isolate;
 		overflow: hidden;
 		min-height: calc(100dvh - 64px);
+		display: flex;
+		flex-direction: column;
 	}
 
 	.scene {
 		position: relative;
 		z-index: 1;
+		width: 100%;
+		flex: 1;
 		max-width: 1400px;
 		margin: 0 auto;
-		padding: 40px 20px 110px;
+		padding: 40px 20px calc(var(--feet) + 26px);
 		display: grid;
 		grid-template-columns: 1fr minmax(0, 560px) 1fr;
 		gap: 40px;
 		align-items: start;
+		align-content: end;
 	}
 
 	.poster,
@@ -302,7 +311,7 @@
 
 	@media (max-width: 640px) {
 		.scene {
-			padding: 22px 10px 100px;
+			padding: 22px 10px calc(var(--feet) + 26px);
 		}
 	}
 
@@ -311,7 +320,7 @@
 			max-width: 1640px;
 			grid-template-columns: minmax(0, 1012px);
 			justify-content: center;
-			padding: 20px 20px 48px;
+			padding: 20px 20px calc(var(--feet) + 26px);
 		}
 
 		.poster,

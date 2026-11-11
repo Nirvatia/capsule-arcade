@@ -188,6 +188,7 @@
 		overflow: hidden;
 		pointer-events: none;
 		container-type: size;
+		background: #0a3034;
 	}
 
 	.backdrop::after {
@@ -209,7 +210,10 @@
 		--u: calc(100cqw / 1600);
 		position: absolute;
 		left: 50%;
-		bottom: 0;
+		/* The floor line sits 50 of 900 units above the bottom of the picture (y = 850).
+		   The page says how far above the bottom of the world the feet of its main object
+		   stand (--feet), and the picture is moved so the floor passes through them. */
+		bottom: calc(var(--feet, 46px) - 50 * max(100cqw, 100cqh * 16 / 9) / 1600);
 		width: max(100cqw, 100cqh * 16 / 9);
 		aspect-ratio: 16 / 9;
 		translate: -50% 0;
