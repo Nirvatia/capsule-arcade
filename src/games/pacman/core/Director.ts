@@ -26,13 +26,13 @@ export type { GameState, GameStateContext } from './flow/GameState';
  * instead of replacing it. Debug shortcuts bypass the table.
  */
 const TRANSITIONS: Readonly<Record<PacmanStateName, readonly PacmanStateName[]>> = {
-	menu: ['ready'],
+	menu: ['ready', 'world-shift'],
 	ready: ['playing', 'menu'],
 	playing: ['death', 'level-clear', 'world-shift', 'game-over', 'ready'],
 	death: ['ready', 'world-shift', 'game-over'],
 	'level-clear': ['ready', 'world-shift'],
 	'world-shift': ['ready'],
-	'game-over': ['ready', 'menu'],
+	'game-over': ['ready', 'menu', 'world-shift'],
 	paused: ['menu']
 };
 
@@ -143,8 +143,9 @@ export class Director {
 		if (this.current.name !== 'menu' && this.current.name !== 'game-over') {
 			return;
 		}
+		const level = this.context.level;
 		const start = (): void => {
-			this.context.level.startNewGame();
+			level.startNewGame();
 			this.setState(new ReadyState('intro'));
 		};
 		// the menu already shows level 1's world: the session's first game starts without a fade
@@ -154,6 +155,16 @@ export class Director {
 			return;
 		}
 		this.playedOnce = true;
+		// a run lost on level 1 stands on the first world already
+		if (level.level === 1 && !level.secretMode && !level.hellMode) {
+			start();
+			return;
+		}
+		// from any other world the death's black hole unfolds the first level
+		if (level.peekNewGame()) {
+			this.shiftWorld('rebirth', () => level.startNewGame());
+			return;
+		}
 		this.fadeTo(start);
 	}
 
@@ -194,7 +205,12 @@ export class Director {
 			return;
 		}
 		const from = this.current.name;
-		if (from === 'paused' || from === 'ready' || from === 'game-over') {
+		if (from === 'game-over') {
+			// the menu is the same overlay over the same world: nothing to fade between
+			this.setState(new MenuState());
+			return;
+		}
+		if (from === 'paused' || from === 'ready') {
 			this.fadeTo(() => this.setState(new MenuState()));
 		}
 	}
@@ -230,6 +246,12 @@ export class Director {
 	startLevelInPlace(route: () => void): void {
 		route();
 		this.setState(new ReadyState('short'));
+	}
+
+	/** Starts a new run in place, when its first world is already on screen (after a rebirth). */
+	startGameInPlace(route: () => void): void {
+		route();
+		this.setState(new ReadyState('intro'));
 	}
 
 	/**

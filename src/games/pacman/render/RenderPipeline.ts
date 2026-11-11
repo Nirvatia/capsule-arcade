@@ -29,6 +29,9 @@ import type { DebugRenderFlags } from './debug/DebugOverlayView';
 /** Seconds over which the hero fades out at the end of the season turn's lights. */
 const HERO_FADE = 0.3;
 
+/** Seconds of the death's black hole, which a rebirth plays faster. */
+const DEATH_TOTAL = FLOW.death.shatter + FLOW.death.void + FLOW.death.rebuild;
+
 /** The flash and ring of the way into the arcade: the Easter egg's pink. */
 const EGG_LIGHT = 0xffd6ec;
 
@@ -136,21 +139,31 @@ export class RenderPipeline {
 		// the arcade draws its own death and level clear: no decay, no season turn
 		const arcade = this.level.secretMode;
 		const death = flow.state === 'death' && !arcade ? this.director.death : null;
+		// the way into the arcade and out of it, and a new run: the frozen level, and the world it opens onto
+		const worldShift = flow.state === 'world-shift' ? this.director.worldShift : null;
+		const rebirth = worldShift?.kind === 'rebirth' ? worldShift : null;
+		// the death's black hole: a death, or the end of a run (the same hole, faster)
+		const dying = death ?? rebirth;
+		const decayClock = rebirth
+			? flow.elapsed * (DEATH_TOTAL / FLOW.worldShift.rebirth)
+			: flow.elapsed;
 		const clear = flow.state === 'level-clear' && !arcade ? this.director.levelClear : null;
 		const next = clear ? this.level.peekNextLevel() : null;
 		const nextView = next ? this.previewFor(next) : null;
 		const turning = clear && next && nextView;
-		// losing a boss fight ends the level, not the run: the black hole unfolds the next world
+		// the black hole unfolds another world: the next level after a lost boss fight (it ends the
+		// level, not the run), the first level of a new run after a game over
 		const defeat =
 			death && this.level.hellMode && this.level.combat?.hellDefeat
 				? this.level.peekNextLevel()
-				: null;
+				: rebirth
+					? this.level.peekNewGame()
+					: null;
 		const defeatView = defeat ? this.previewFor(defeat) : null;
-		// the way into the arcade and out of it: the frozen level, and the world it opens onto
-		const worldShift = flow.state === 'world-shift' ? this.director.worldShift : null;
-		const shiftTo = worldShift ? this.shiftDestination(worldShift.kind) : null;
+		const shiftTo =
+			worldShift && worldShift.kind !== 'rebirth' ? this.shiftDestination(worldShift.kind) : null;
 		const shake = death && !flow.paused ? this.decay.shake(flow.elapsed) : { x: 0, y: 0 };
-		const target = death
+		const target = dying
 			? this.decay.begin(this.canvas.width, this.canvas.height)
 			: turning
 				? this.turn.old(this.canvas.width, this.canvas.height)
@@ -181,7 +194,7 @@ export class RenderPipeline {
 		const layout = this.rendererFor().render(frame);
 		const screen: RenderFrame = { ...frame, ctx: this.ctx };
 		this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
-		if (death) {
+		if (dying) {
 			let next: { grid: GridMatrix; spawnX: number; spawnY: number } | undefined;
 			if (defeat && defeatView) {
 				const nextCtx = this.decay.beginNext(this.canvas.width, this.canvas.height);
@@ -203,16 +216,16 @@ export class RenderPipeline {
 			}
 			this.decay.compose(this.ctx, this.width, this.height, pr, layout, shake, this.timeValue, {
 				grid: season.grid,
-				deathX: death.x,
-				deathY: death.y,
+				deathX: dying.x,
+				deathY: dying.y,
 				spawnX: grid.playerSpawn.x,
 				spawnY: grid.playerSpawn.y,
-				elapsed: flow.elapsed,
+				elapsed: decayClock,
 				palette: this.decayPalette(),
 				next
 			});
 			// the next world has no hero until its READY: he is gone once the hole has closed
-			if (!next || flow.elapsed < FLOW.death.shatter + FLOW.death.void) {
+			if (death && (!next || flow.elapsed < FLOW.death.shatter + FLOW.death.void)) {
 				this.shared.drawPlayer(screen, layout);
 			}
 		}
@@ -248,7 +261,7 @@ export class RenderPipeline {
 				this.ctx.restore();
 			}
 		}
-		if (worldShift && shiftTo) {
+		if (worldShift && worldShift.kind !== 'rebirth' && shiftTo) {
 			const toCtx = this.shift.to(this.canvas.width, this.canvas.height);
 			toCtx.setTransform(pr, 0, 0, pr, 0, 0);
 			toCtx.globalAlpha = 1;
@@ -274,7 +287,7 @@ export class RenderPipeline {
 			});
 		}
 		if (this.debugView && this.debugFlags) {
-			const front = death ? this.decay.debugFront : turning ? this.turn.debugFront : null;
+			const front = dying ? this.decay.debugFront : turning ? this.turn.debugFront : null;
 			this.ctx.setTransform(pr, 0, 0, pr, 0, 0);
 			this.debugView.draw(this.ctx, layout, this.level, this.debugFlags, front);
 		}

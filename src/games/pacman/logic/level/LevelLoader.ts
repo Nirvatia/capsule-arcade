@@ -396,6 +396,14 @@ export class LevelLoader {
 	}
 
 	/**
+	 * The first level of a new run, as `startNewGame()` would build it, or null when the dev
+	 * panel starts it elsewhere (the maze order is drawn only then, so no picture is certain).
+	 */
+	peekNewGame(): NextLevel | null {
+		return this.pendingStartLevelValue === 1 ? { level: 1, ...this.worldOf(1, false) } : null;
+	}
+
+	/**
 	 * Which world a level number is: the hell every HELL_LEVEL_INTERVAL (for both heroes),
 	 * else a season.
 	 */

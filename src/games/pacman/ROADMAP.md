@@ -759,3 +759,16 @@ check`, `npm test` (210), ESLint and Prettier on the changed files, the `hero` p
   destination, the way out after the last round (the same call as after the last try), pause in
   the middle of a shift, a low-end GPU; without WebGL2 the shift cuts through black.
   board while it runs.
+- Game over and the menu (tenth chat; the owner: the menu is the same overlay as the rest, so the
+  death's own transition will do, and the whole interface is to be redone anyway). Game over ->
+  menu has no transition now: the same overlay over the same world, so no fade. Starting a new run
+  from game over or the menu: on level 1 at once (the first world is already on screen); from any
+  other world the death's black hole unfolds level 1 (`world-shift`, kind `rebirth`,
+  `FLOW.worldShift.rebirth` 2.5 s: the death's clock run 1.6x faster, `RenderPipeline`'s `dying`),
+  then the intro READY opens it in place; a dev "start at" level keeps the old fade
+  (`LevelLoader.peekNewGame` is null then). Checked in the real game (dev panel: autumn, Die
+  three times, Enter on game over): the autumn world drains, falls into the hole, the summer world
+  of level 1 unfolds, READY; no console errors. Tests: `director.test.ts` (four, three of them
+  rewritten: a later game no longer always fades). Not done: pause -> menu and READY -> menu
+  still fade, as does a dev jump; the menu still shows whatever world the run ended on, which the
+  interface rework (part III) decides.

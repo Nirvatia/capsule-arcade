@@ -60,27 +60,60 @@ describe('game flow', () => {
 		expect(director.stateName).toBe('playing');
 	});
 
-	it('starts every later game behind a fade', () => {
+	it('starts a later game at once when the world on screen is the first one', () => {
 		const { director } = setup();
 		backAtMenu(director);
 		director.startGame();
-		expect(director.transitioning).toBe(true);
-		expect(director.stateName).toBe('menu');
-		run(director, FLOW.screenFade / 2);
-		expect(director.flow.fade).toBeGreaterThan(0);
-		run(director, FADE);
 		expect(director.transitioning).toBe(false);
 		expect(director.stateName).toBe('ready');
+		expect(director.flow.phase).toBe('intro');
+	});
+
+	it("starts a new run from another world behind the death's black hole, with no fade", () => {
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { director, level } = setup();
+		startToReady(director);
+		level.debugGotoLevel(3);
+		director.showPlaying();
+		level.ensure().combat.setLives(1);
+		director.debugKillPlayer();
+		run(director, DEATH + 0.05);
+		expect(director.stateName).toBe('game-over');
+		run(director, FLOW.gameOverInputLock);
+		director.startGame();
+		expect(director.transitioning).toBe(false);
+		expect(director.stateName).toBe('world-shift');
+		expect(director.worldShift?.kind).toBe('rebirth');
+		run(director, FLOW.worldShift.rebirth - 0.1);
+		expect(level.level).toBe(3);
+		run(director, 0.2);
+		expect(director.stateName).toBe('ready');
+		expect(director.flow.phase).toBe('intro');
+		expect(level.level).toBe(1);
+	});
+
+	it('goes from game over to the menu with no fade: the same overlay on the same world', () => {
+		const { director, level } = setup();
+		startToReady(director);
+		director.showPlaying();
+		level.ensure().combat.setLives(1);
+		director.debugKillPlayer();
+		run(director, DEATH + 0.05);
+		run(director, FLOW.gameOverInputLock);
+		director.returnToMenu();
+		expect(director.transitioning).toBe(false);
+		expect(director.stateName).toBe('menu');
 	});
 
 	it('ignores input while a fade runs', () => {
 		const { director } = setup();
-		backAtMenu(director);
-		director.startGame();
+		startToReady(director);
 		director.returnToMenu();
+		expect(director.transitioning).toBe(true);
+		director.startGame();
 		director.showPlaying();
 		run(director, FADE + 0.01);
-		expect(director.stateName).toBe('ready');
+		expect(director.stateName).toBe('menu');
 	});
 
 	it('skips READY on confirm', () => {
@@ -183,12 +216,13 @@ describe('game flow', () => {
 	});
 
 	it('defers an auto-pause requested during a fade until the fade ends', () => {
-		const { director } = setup();
-		backAtMenu(director);
-		director.startGame();
+		const { director, level } = setup();
+		startToReady(director);
+		director.showPlaying();
+		director.changeLevel(() => level.debugGotoLevel(2));
 		run(director, 0.1);
 		director.autoPause();
-		expect(director.stateName).toBe('menu');
+		expect(director.stateName).toBe('playing');
 		run(director, FADE);
 		expect(director.stateName).toBe('paused');
 		expect(director.flow.state).toBe('ready');
@@ -213,8 +247,8 @@ describe('game flow', () => {
 		expect(director.transitioning).toBe(false);
 		run(director, FLOW.gameOverInputLock);
 		director.startGame();
-		expect(director.transitioning).toBe(true);
-		run(director, FADE + 0.01);
+		// lost on level 1: the first world is on screen already, the run starts at once
+		expect(director.transitioning).toBe(false);
 		expect(director.stateName).toBe('ready');
 		expect(director.flow.phase).toBe('intro');
 	});

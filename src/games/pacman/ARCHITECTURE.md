@@ -107,16 +107,23 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (GameHud, Arc
 ## Game flow
 
 ```
-menu ──(fade, not on the session's 1st game)──▶ ready(intro 5 s, jingle) ──▶ playing ──▶ death ──▶ ready(short 2 s)
+menu ──(no fade on the first world)──▶ ready(intro 5 s, jingle) ──▶ playing ──▶ death ──▶ ready(short 2 s)
                   ▲   skip: Enter                │  │          └─ no lives ─▶ game-over
                   │                              │  └─▶ level-clear (season turn) ─▶ ready(short)
-game-over ─fade───┘  (input locked 1 s)          └─ Easter egg ──fade──▶ arcade ready(short)
+game-over ─no fade (same overlay, same world)┘   └─ Easter egg ─▶ world-shift (enter) ─▶ arcade ready(short)
+game-over / menu ─▶ start: on level 1 at once; from another world world-shift (rebirth: the
+      death's black hole unfolds level 1) ─▶ ready(intro); a dev start-at level keeps the fade
 hell: losing the fight (abyss) ──black hole unfolds the next world, no fade──▶ next level, ready(short)
 boss level: boss dies → heart + exit → taking either ends the level (level-clear)
-arcade: death ─▶ ready(short) | last try ─fade─▶ main game; level-clear: flash
-      (+ intermission after round 2) ─▶ next round in place | after round 3 ─fade─▶ home
+arcade: death ─▶ ready(short) | last try ─world-shift (leave)─▶ main game; level-clear: flash
+      (+ intermission after round 2) ─▶ next round in place | after round 3 ─world-shift (leave)─▶ home
+```
+
+Fades remain for the pause and READY → menu, a dev jump to a level and a dev start-at level.
+
 pause (Space/P, Esc in play): ready, playing, death, level-clear — freezes and resumes the
 same state; tab hidden / window blur auto-pauses; requests during a fade apply after it.
+
 ```
 
 Phases (`config/flowConfig.ts`): death `shatter` (drain, fall into the hole) → `void` (flash,
@@ -210,3 +217,4 @@ the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arca
 `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
 `MsPacmanHero`, `heroCharge`); `winter-decay.html` is an older standalone page.
+```

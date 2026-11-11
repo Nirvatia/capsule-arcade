@@ -41,9 +41,10 @@ export const FLOW = {
 	/**
 	 * The arcade shift (the world to the arcade and back; `render/transitions/arcadeShift`):
 	 * `enter` breaks the world into pixels and switches the CRT on, `leave` switches it off and
-	 * unfolds the next world from a dot. The level changes at the end, behind a full picture.
+	 * unfolds the next world from a dot; `rebirth` is the death's black hole, faster, from a game
+	 * over into the first level of a new run. The level changes at the end, behind a full picture.
 	 */
-	worldShift: { enter: 2.6, leave: 2.2 },
+	worldShift: { enter: 2.6, leave: 2.2, rebirth: 2.5 },
 	/** Screen fade between menu and game and between levels: each half, out then in. */
 	screenFade: 0.4,
 	/** Game over ignores confirm/menu this long, so a held key does not restart at once. */

@@ -4,10 +4,13 @@ import type { FlowTiming } from '../flow/StateClock';
 import type { PacmanStateName } from '../Events';
 import { FLOW } from '../../config/flowConfig';
 
-/** The way into the arcade (`enter`) or out of it (`leave`). */
-export type WorldShiftKind = 'enter' | 'leave';
+/**
+ * The way into the arcade (`enter`) or out of it (`leave`), or the end of a run into the
+ * first level of the next one (`rebirth`, the death's black hole).
+ */
+export type WorldShiftKind = 'enter' | 'leave' | 'rebirth';
 
-/** Where the shift starts, tile-centre coordinates: the Easter egg (the hero stands on it). */
+/** Where the shift starts, tile-centre coordinates: the Easter egg, or where the hero fell. */
 export interface WorldShiftSnapshot {
 	readonly kind: WorldShiftKind;
 	readonly x: number;
@@ -17,8 +20,8 @@ export interface WorldShiftSnapshot {
 /**
  * The level is left for another world behind the arcade shift (drawn by the pipeline's
  * `ArcadeShift`): the egg into the arcade, the arcade back to the main game. The game is
- * frozen while it runs; at the end `route` builds the next level and a short READY opens it
- * in place, since the new world is already on screen.
+ * frozen while it runs; at the end `route` builds the next level and a READY opens it in
+ * place (the intro one for a new run), since the new world is already on screen.
  */
 export class WorldShiftState implements GameState {
 	readonly name: PacmanStateName = 'world-shift';
@@ -53,6 +56,10 @@ export class WorldShiftState implements GameState {
 			return;
 		}
 		this.resolved = true;
+		if (this.kind === 'rebirth') {
+			ctx.director.startGameInPlace(this.route);
+			return;
+		}
 		ctx.director.startLevelInPlace(this.route);
 	}
 
