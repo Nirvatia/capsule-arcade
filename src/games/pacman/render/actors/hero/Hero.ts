@@ -59,7 +59,17 @@ export interface HeroState {
 	readonly dying?: boolean;
 	/** The world he is in: its colour touches his rim light, trail and particles. */
 	readonly season?: HeroSeason;
+	/** How much of the energizer is left, 0..1 (the `gauge` trail shows it). */
+	readonly powerLeft?: number;
 }
+
+/**
+ * The trail's variant (the owner's brief: the season's particles as today, never wider than the
+ * hero, the trail a gauge of his power). `now`: today's free-flying particles; `line`: a narrow
+ * band straight behind him, sparse at rest and dense and hot when powered; `gauge`: the same
+ * band whose length is the energizer left; `pulse`: tight clumps shed on every bite.
+ */
+export type TrailVariant = 'now' | 'line' | 'gauge' | 'pulse';
 
 export interface Palette {
 	readonly light: RGB;
@@ -281,6 +291,8 @@ export interface Particle {
 	len?: number;
 	ang?: number;
 	lane?: number;
+	/** A narrow-band particle: it neither flutters nor rises much. */
+	tight?: boolean;
 }
 
 interface Burst {
@@ -342,12 +354,13 @@ export abstract class Hero {
 	private embers: Particle[] = [];
 	private bursts: Burst[] = [];
 	private seed = 11;
-	/** Sheds the season's particles (and fire) as it runs; off when another trail is drawn. */
-	private shedTrail = true;
+	private trailVariant: TrailVariant = 'now';
+	private powerLeft = 0;
+	/** A bite closed this frame (the `pulse` trail sheds then). */
+	private bitClosed = false;
 
-	/** Turns the shed particle trail on or off (the trail candidates draw their own). */
-	setShedTrail(on: boolean): void {
-		this.shedTrail = on;
+	setTrailVariant(variant: TrailVariant): void {
+		this.trailVariant = variant;
 	}
 
 	setRadius(r: number): void {
@@ -526,6 +539,7 @@ export abstract class Hero {
 			// the bite closes at 0.75 of the cycle: a little punch, felt more than seen
 			if (before < 0.75 && after >= 0.75) {
 				this.size.velocity -= 0.5;
+				this.bitClosed = true;
 			}
 		} else if (this.snap < 0 && this.bite < 0 && this.time > this.nextSnap) {
 			this.snap = 0;
@@ -554,7 +568,10 @@ export abstract class Hero {
 		// the trail: a stream of the season's own particles shed along his path (they flutter,
 		// tumble and sparkle where they were dropped, so a turn bends the trail), and drops of
 		// fire while he is powered
-		if (this.shedTrail && step < r * 3 && step > r * 0.01) {
+		this.powerLeft = s.powerLeft ?? (s.power ? (s.ending ? 0.25 : 1) : 0);
+		if (this.trailVariant !== 'now' && step < r * 3 && step > r * 0.01) {
+			this.shedBand(dx / step, dy / step, step);
+		} else if (step < r * 3 && step > r * 0.01) {
 			const hot = this.power > 0.5;
 			const ux = dx / step;
 			const uy = dy / step;
@@ -572,7 +589,63 @@ export abstract class Hero {
 				}
 			}
 		}
+		this.bitClosed = false;
 		this.tick(dt);
+	}
+
+	/** The narrow trails (`line`, `gauge`, `pulse`): never wider than the hero. */
+	private shedBand(ux: number, uy: number, step: number): void {
+		const r = this.r;
+		const hot = this.power > 0.5;
+		const left = hot ? Math.max(0, Math.min(1, this.powerLeft)) : 0;
+		const v = this.trailVariant;
+		// the gauge: the band's length is the energizer left; at rest a short wisp
+		const life = v === 'gauge' ? (hot ? 0.2 + 0.85 * left : 0.3) : hot ? 0.75 : 0.55;
+		if (v === 'pulse') {
+			if (this.bitClosed) {
+				const n = this.ballOn ? 3 : hot ? 6 : 2;
+				for (let i = 0; i < n; i++) this.spawnTight(ux, uy, hot || this.ballOn, life, i * 0.14);
+				if (hot) this.spawnFlame(ux, uy, true);
+			}
+			return;
+		}
+		this.stormDist += step;
+		const gap = r * (this.ballOn ? 0.14 : hot ? 0.11 : 0.42);
+		while (this.stormDist >= gap) {
+			this.stormDist -= gap;
+			this.spawnTight(ux, uy, hot || this.ballOn, life, 0);
+		}
+		if (hot && (v !== 'gauge' || left > 0.15)) {
+			this.flameDist += step;
+			while (this.flameDist >= r * 0.6) {
+				this.flameDist -= r * 0.6;
+				this.spawnFlame(ux, uy, true);
+			}
+		}
+	}
+
+	/** A particle of the narrow band: straight behind him, within his width. */
+	private spawnTight(ux: number, uy: number, hot: boolean, life: number, back: number): void {
+		const kind = this.particleFor?.('trail') ?? 'ember';
+		if (kind === 'none') return;
+		const r = this.r;
+		const lateral = (this.random() - 0.5) * 0.6 * r;
+		const kick = (0.5 + this.random() * 0.7) * r;
+		const l = life * (0.8 + this.random() * 0.4);
+		this.embers.push({
+			kind,
+			x: this.x - ux * r * (0.75 + back) - uy * lateral,
+			y: this.y - uy * r * (0.75 + back) + ux * lateral,
+			vx: -ux * kick,
+			vy: -uy * kick,
+			life: l,
+			max: l,
+			size: r * (0.07 + this.random() * 0.04) * (this.sizeFor?.(kind) ?? 1) * (hot ? 1.3 : 1),
+			hot,
+			spin: (this.random() - 0.5) * 6,
+			ang: Math.atan2(uy, ux),
+			tight: true
+		});
 	}
 
 	/** Embers drift up and fade; bursts run their course. */
@@ -592,7 +665,7 @@ export abstract class Hero {
 			}
 			const drag = Math.pow(0.9, dt * 60);
 			e.vx *= drag;
-			e.vy = e.vy * drag - r * (this.liftFor?.(e.kind) ?? 0.8) * dt;
+			e.vy = e.vy * drag - r * (this.liftFor?.(e.kind) ?? 0.8) * (e.tight ? 0.25 : 1) * dt;
 		}
 		this.embers = this.embers.filter((e) => e.life > 0);
 		for (const b of this.bursts) b.t += dt;
@@ -625,9 +698,9 @@ export abstract class Hero {
 	}
 
 	/** A drop of fire off his back while powered: a pointed teardrop streaming backwards. */
-	private spawnFlame(ux: number, uy: number): void {
+	private spawnFlame(ux: number, uy: number, narrow = false): void {
 		const r = this.r;
-		const spread = (this.random() - 0.5) * 1.0 * r;
+		const spread = (this.random() - 0.5) * (narrow ? 0.4 : 1.0) * r;
 		const life = 0.24 + this.random() * 0.1;
 		this.embers.push({
 			kind: 'flame',
@@ -637,10 +710,10 @@ export abstract class Hero {
 			vy: -uy * r * 1.4,
 			life,
 			max: life,
-			size: r * (0.3 + this.random() * 0.16),
+			size: r * (narrow ? 0.2 + this.random() * 0.1 : 0.3 + this.random() * 0.16),
 			hot: true,
 			spin: 0,
-			len: r * (0.85 + this.random() * 0.4),
+			len: r * (narrow ? 0.6 + this.random() * 0.25 : 0.85 + this.random() * 0.4),
 			ang: Math.atan2(uy, ux)
 		});
 	}

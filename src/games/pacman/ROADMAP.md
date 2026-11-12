@@ -61,9 +61,13 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
       the air in the maze, the decor sits on a surface and moves little, and every important
       thing reads at the size of one tile.
 
-4. **The heroes' looks and trail** (the owner's list). The trail is on hold: the owner rejected
-   all three candidates of the `trails` prototype (`heroTrails`: a jet stream, a ragged flame,
-   a shockwave); delete them when the trail is taken up again. Prototype first: Ms.
+4. **The heroes' looks and trail** (the owner's list). The trail: the owner rejected the wide
+   candidates (a jet, a flame, a wave: wider than a tile, bulky, a snake's tail) and asked for
+   variations of today's season particles, never wider than the hero, that gauge his power. In
+   the `trails` prototype (`Hero.setTrailVariant`): `line` (a narrow band, sparse at rest, dense
+   and hot when powered), `gauge` (the band's length is the energizer left; `HeroState.powerLeft`,
+   still to be fed by `HeroView` from `CombatService.powerTimer`), `pulse` (clumps on every
+   bite). The owner picks one; then it becomes the default and the others are deleted. Prototype first: Ms.
    Pac-Man looks clumsy (try the eye, the bow's seat and the proportions one at a time; keep
    the bow), Pac-Man gets a minimal eye (a dot under a frowning brow), no tongue for either.
 

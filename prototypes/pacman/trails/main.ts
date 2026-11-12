@@ -1,12 +1,13 @@
-// Prototype: three candidates for a stronger hero trail against today's one, side by side on
-// the real season world (grid_01), the hero running a loop round a block so every trail has to
-// turn. Buttons: Pac-Man / Ms. Pac-Man, the four seasons, the energizer, quarter speed.
-// Query: ?season=autumn&ms&power&capture (capture: window.__advance(seconds) steps 1/60 s).
+// Prototype: variations of today's hero trail (the season's particles, never wider than the
+// hero, a gauge of his power) side by side with it on the real season world (grid_01), the hero
+// running a loop round a block so every trail has to turn. Buttons: Pac-Man / Ms. Pac-Man, the
+// four seasons, the energizer (6 s, the trail shows what is left), quarter speed.
+// Query: ?season=autumn&ms&power&left=0.3&capture (capture: window.__advance(seconds) steps 1/60 s;
+// `power` holds the energizer, `left` its share left).
 import type { Hero } from '../../../src/games/pacman/render/actors/hero/Hero';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
-import { HeroTrail, TRAIL_STYLES } from '../../../src/games/pacman/render/actors/hero/heroTrails';
-import type { TrailStyle } from '../../../src/games/pacman/render/actors/hero/heroTrails';
+import type { TrailVariant } from '../../../src/games/pacman/render/actors/hero/Hero';
 import { GRID_01 } from '../../../src/games/pacman/config/mazes';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
@@ -32,11 +33,12 @@ const LOOP: ReadonlyArray<readonly [number, number]> = [
 	[6, 8],
 	[2, 8]
 ];
-const NAMES: Record<TrailStyle | 'now', string> = {
-	now: 'Сейчас (частицы сезона)',
-	jet: 'A. Струя',
-	flame: 'B. Пламя',
-	wave: 'C. Ударная волна'
+const VARIANTS: readonly TrailVariant[] = ['now', 'line', 'gauge', 'pulse'];
+const NAMES: Record<TrailVariant, string> = {
+	now: 'Сейчас',
+	line: 'A. Узкая лента',
+	gauge: 'B. Шкала силы',
+	pulse: 'C. Пульс'
 };
 
 let ms = q.has('ms');
@@ -50,21 +52,21 @@ let vw = 0;
 let vh = 0;
 let slow = false;
 let powerTimer = q.has('power') ? 1e9 : 0;
+const heldLeft = q.has('left') ? Number(q.get('left')) : null;
 let dist = 0;
 
 interface Panel {
-	readonly style: TrailStyle | 'now';
+	readonly style: TrailVariant;
 	hero: Hero;
-	trail: HeroTrail | null;
 }
 const panels: Panel[] = [];
 
 function makePanels(): void {
 	panels.length = 0;
-	for (const style of ['now', ...TRAIL_STYLES] as const) {
+	for (const style of VARIANTS) {
 		const hero = ms ? new MsPacmanHero() : new PacmanHero();
-		hero.setShedTrail(style === 'now');
-		panels.push({ style, hero, trail: style === 'now' ? null : new HeroTrail(style) });
+		hero.setTrailVariant(style);
+		panels.push({ style, hero });
 	}
 }
 
@@ -108,7 +110,6 @@ function buildWorld(): void {
 	}
 	for (const p of panels) {
 		p.hero.reset();
-		p.trail?.reset();
 	}
 }
 
@@ -145,6 +146,8 @@ function frame(realDt: number): void {
 	const dt = realDt * (slow ? 0.25 : 1);
 	powerTimer = Math.max(0, powerTimer - dt);
 	const power = powerTimer > 0;
+	const powerLeft = heldLeft ?? Math.min(1, powerTimer / POWER_TIME);
+	const ending = power && powerLeft < 0.27;
 	dist += dt * SPEED;
 	const L = world.layout;
 	const S = L.tileSize;
@@ -178,16 +181,13 @@ function frame(realDt: number): void {
 		const state = {
 			x: L.offsetX + at.x * S,
 			y: L.offsetY + at.y * S,
-			r: S * RADIUS,
 			angle: at.angle,
 			moving: true,
 			power,
 			season
 		};
 		p.hero.setRadius(S * RADIUS);
-		p.hero.update(dt, { ...state, ending: false, dying: false });
-		p.trail?.update(dt, state);
-		p.trail?.draw(ctx);
+		p.hero.update(dt, { ...state, ending, dying: false, powerLeft });
 		p.hero.draw(ctx);
 		ctx.restore();
 		ctx.fillStyle = 'rgba(0,0,0,.55)';
