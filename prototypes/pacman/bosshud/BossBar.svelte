@@ -26,7 +26,6 @@
 	} = $props();
 
 	const compact = $derived(w < 500);
-	const k = $derived(compact ? 0.72 : 1);
 	const x0 = 26;
 	const bw = $derived(w - 2 * x0);
 	const bh = $derived(compact ? 18 : 28);

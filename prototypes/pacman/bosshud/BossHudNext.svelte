@@ -28,7 +28,7 @@
 	} from '../../../src/games/pacman/ui/hud/season/seasonArt';
 	import type { Dial } from './seasonArt';
 	import { HELL_THEME } from '../../../src/games/pacman/ui/hud/season/seasonThemes';
-	import { WEAPON_ART, bossFrameArt, bossSlots, heartArt, railArt } from '../../../src/games/pacman/ui/hud/season/hellArt';
+	import { WEAPON_ART, bossFrameArt, heartArt, railArt } from '../../../src/games/pacman/ui/hud/season/hellArt';
 
 	import BossBar from './BossBar.svelte';
 	import { BERSERK_ART, BERSERK_RING } from './berserkArt';
@@ -55,17 +55,6 @@
 	const ms = $derived(snap.profile === 'ms-pacman');
 	const lives = $derived(Math.max(0, snap.lives));
 
-	/** The boss's bar in three phase segments, left = the last to go; each 0..1. */
-	const segments = $derived.by(() => {
-		if (!boss) return [0, 0, 0];
-		const edges = [1, ...boss.marks, 0].map((m) => m * boss.hpMax);
-		const out: number[] = [];
-		for (let i = 0; i < edges.length - 1; i++) {
-			out.push(clamp01((boss.hp - edges[i + 1]) / (edges[i] - edges[i + 1])));
-		}
-		return out.reverse();
-	});
-
 	/** The weapon's ring: the BFG's charge filling, or the berserk running down (10 s at most). */
 	const ring = $derived.by(() => {
 		if (!boss) return { ratio: 0, color: '#ff9a4a' };
@@ -88,7 +77,6 @@
 	const hearts = $derived(
 		boss ? Array.from({ length: boss.playerHpMax }, (_, i) => i < boss.playerHp) : []
 	);
-	const enraged = $derived(Boolean(boss && boss.phase >= 3));
 	const reward = $derived(Boolean(boss && boss.defeated && boss.rewardOffered));
 
 	const FRAME = {
@@ -96,7 +84,6 @@
 		stack: { x: 16, y: 26, w: 368, h: 14 }
 	};
 	const box = $derived(FRAME[mode]);
-	const slots = $derived(bossSlots(box.x, box.w, 3, 6));
 
 	/** The dial: round and a little bigger beside the maze, where the food trail is not needed. */
 	const SIDE_DIAL: Dial = { cx: 121, cy: 330, r: 40 };
