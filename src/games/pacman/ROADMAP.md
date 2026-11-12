@@ -47,7 +47,7 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    `PacmanAudioPlayer`, `ArcadeSynth`'s master gain).
 2. **Music track support** (postponed: the owner is still working out how to generate the
    music). A looped file (ogg/mp3 from `static/`) per world, under the same volume. The
-   seasons' music is optional; the hell's track is part II, step 1.4.
+   seasons' music is optional; the hell's track is part II, step 1.3.
 3. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). Today
    a season is a palette and a few props on one meadow. The owner wants a whole scene per
    season, in the maze and in the background, not a recolour:
@@ -56,7 +56,7 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    2. **Winter: New Year.** A fir tree, baubles, garlands, snow on the walls, lights.
    3. **Spring and summer** get the same treatment afterwards (their themes to be decided with
       the owner).
-   4. **The hell** scene is reworked after the rest (part II, step 1.6).
+   4. **The hell** scene is reworked after the rest (part II, step 1.5).
       Rules that still hold: the walls and the corridors keep their full width, nothing hangs in
       the air in the maze, the decor sits on a surface and moves little, and every important
       thing reads at the size of one tile.
@@ -77,11 +77,7 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    buttons force an attack, "Бессмертие" keeps the hero alive, "Фаза 1-3" jump to a phase; query
    `?ms`, `?zerk`, `?chg`) and the `mood` prototype. The owner's list, in the agreed order (each
    is tuned against the plates and the dark floor):
-   1. **The boss looks too complex in the later phases.** Phase 3 is clumsy: too many details,
-      glow and horns. Simplify each phase to one silhouette change and one colour change, keep
-      the shape readable at one tile; the imps keep the arcade colours. A comparison page of the
-      three phases against the plates (he is red on a grey-and-red maze).
-   2. **The boss's attacks: one mock-up with every attack finished.** The rift, the cross, the
+   1. **The boss's attacks: one mock-up with every attack finished.** The rift, the cross, the
       eruption, the seals, the void cells, the pull's cords and above all the slowing tiles (the
       corrupted tiles were recoloured last time, not redesigned) merge with the maze and with
       each other. Danger must read at a glance against the plates and the dark floor, and a
@@ -89,10 +85,10 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
       white-hot core with a dark outline, a hue shift for live hazards, hatching or a moving edge
       for telegraphs, a floor tint under the threatened area, a slowing tile that looks like what
       it is (tar, ice, chains) and not like a damage tile. Test in grayscale too.
-   3. **The storm's redesign** is open: ask the owner before touching it.
-   4. **The hell's music track** (the owner brings it: generated or a free licence).
-   5. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
-   6. **The hell's scene** reworked together with the seasons' scenes (part I, step 3.4).
+   2. **The storm's redesign** is open: ask the owner before touching it.
+   3. **The hell's music track** (the owner brings it: generated or a free licence).
+   4. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
+   5. **The hell's scene** reworked together with the seasons' scenes (part I, step 3.4).
 2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it is
    the only boss. The selection arrives with the second boss: a `BossCatalog` (id, world, maze,
    renderer, design page), a seeded pick per boss level (no immediate repeat), the same for

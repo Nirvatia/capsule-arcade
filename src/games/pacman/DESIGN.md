@@ -262,13 +262,14 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   are orange.
 - **Blinky and the imps (in the game)**: the arcade ghost silhouette, cel-shaded like the
   heroes (hard tone bands, a thick ink line, a rim light), bone horns, ink brows over yellow eyes.
-  Phase 1 a red overseer with a stitched belly; phase 2 charred and cracked by lava, longer
-  glowing horns, the belly split open on his ribs; phase 3 white-hot, a second pair of horns, a
-  skirt of flames; the echo is violet. The imps keep Pinky's, Inky's and Clyde's colours and the
-  heading chevron. A red body sinks into the red flesh, so the ink line, the eyes and the rim
-  light carry him.
+  One body colour, the arcade red, in every phase (the other colours are the imps': Pinky's,
+  Inky's and Clyde's, kept with their heading chevron). The phases differ by iron, the maze's own:
+  phase 1 short bone horns; phase 2 an iron helm; phase 3 the helm, cheek plates and long iron
+  horns. No wound, cracks, second pair of horns, glow or flames: each phase adds one thing, so the
+  shape stays readable at one tile. The echo is violet. A red body sinks into the red flesh, so the
+  ink line, the eyes and the rim light carry him.
 - **The hell's heroes (final, as they are)**: the season heroes (the owner's decision: they stay as they are, no hell mark, no armor) plus one thing the hell adds, the BFG charge: the body swells and the mouth gapes, a green ring closes in on it, a glow lights the throat, white-hot at the end; the release is a recoil and a flash. The berserk is the awoken look (his ki flames, her glowing bow). The rolling ball at the rifts is the heroes' own.
-- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.3).
+- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.2).
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze is built of charred iron plates (the owner's pick, "metal doom"): one block to a tile,
   neutral and lighter than the red floor so the maze parts from the ground in grey too, each with a
