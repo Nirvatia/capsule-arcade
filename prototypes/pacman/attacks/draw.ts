@@ -6,7 +6,7 @@
 //  - block (void cells, locked seals): a dark iron shutter with braces, rivets and a dim sigil,
 //    a temporary wall that does no harm.
 //  - slow (the corrupted tiles): black tar, glossy, with bubbles; nothing burns.
-//  - pull: an iron chain from the boss to the hero with a hook.
+//  - seals: the known ring and pentagram, outlined and lit so they read (the pull keeps its look).
 // Everything is drawn in screen pixels, `s` the tile size, `x, y` a tile's top-left corner.
 type Ctx = CanvasRenderingContext2D;
 export interface Tile {
@@ -191,6 +191,10 @@ export function block(ctx: Ctx, x: number, y: number, s: number, t: number, fade
 /** Tar: black glossy pools that merge across neighbouring tiles, with a sheen and bubbles. */
 export function tar(ctx: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number): void {
 	ctx.save();
+	// the pool never leaves its tiles
+	ctx.beginPath();
+	for (const q of tiles) ctx.rect(ox + q.c * s, oy + q.r * s, s, s);
+	ctx.clip();
 	const blob = (tile: Tile, grow: number): void => {
 		const cx = ox + (tile.c + 0.5) * s;
 		const cy = oy + (tile.r + 0.5) * s;
@@ -198,7 +202,7 @@ export function tar(ctx: Ctx, tiles: readonly Tile[], ox: number, oy: number, s:
 		const n = 16;
 		for (let i = 0; i <= n; i += 1) {
 			const a = (i / n) * Math.PI * 2;
-			const r = s * (0.56 + 0.07 * (noise(tile.c * 3 + i, tile.r * 5) - 0.5)) + grow;
+			const r = s * (0.5 + 0.06 * (noise(tile.c * 3 + i, tile.r * 5) - 0.5)) + grow;
 			const x = cx + Math.cos(a) * r;
 			const y = cy + Math.sin(a) * r;
 			if (i) ctx.lineTo(x, y);
@@ -217,7 +221,7 @@ export function tar(ctx: Ctx, tiles: readonly Tile[], ox: number, oy: number, s:
 			if (has(q.c, q.r + 1)) ctx.fillRect(x - s * 0.34 - grow, y, s * 0.68 + grow * 2, s);
 		}
 	};
-	const rim = Math.max(1.2, s * 0.05);
+	const rim = Math.max(1, s * 0.035);
 	ctx.fillStyle = 'rgba(80,50,70,.7)';
 	for (const tile of tiles) {
 		blob(tile, rim);
@@ -258,55 +262,108 @@ export function tar(ctx: Ctx, tiles: readonly Tile[], ox: number, oy: number, s:
 	ctx.restore();
 }
 
-/** The pull: an iron chain from the boss to the hero, links sliding towards the boss, a hook. */
-export function chain(
-	ctx: Ctx,
-	a: { x: number; y: number },
-	b: { x: number; y: number },
-	s: number,
-	t: number
-): void {
-	const len = Math.hypot(b.x - a.x, b.y - a.y);
-	const ux = (b.x - a.x) / len;
-	const uy = (b.y - a.y) / len;
-	const link = s * 0.42;
-	const n = Math.floor(len / link);
-	const slide = ((t * 0.9) % 1) * link;
+/**
+ * The seal's glyph, as before a ring and a pentagram that turn, but outlined in ink and lit pale
+ * on a dark disc, so it parts from the red floor. `p` 0..1: how far the warning has come (the ring
+ * closes, the pentagram is drawn stroke by stroke); 1 for a locked seal.
+ */
+export function sigil(ctx: Ctx, cx: number, cy: number, r: number, t: number, p: number, fade = 1): void {
 	ctx.save();
-	for (let i = 0; i < n; i += 1) {
-		const d = i * link + (link - slide) - link * 0.5;
-		if (d < s * 0.3 || d > len - s * 0.25) continue;
-		const sag = Math.sin((d / len) * Math.PI) * s * 0.1;
-		const x = a.x + ux * d - uy * sag;
-		const y = a.y + uy * d + ux * sag;
-		ctx.save();
-		ctx.translate(x, y);
-		ctx.rotate(Math.atan2(uy, ux) + (i % 2 ? Math.PI / 2 : 0));
-		ctx.fillStyle = i % 2 ? '#5a5054' : '#8a7f84';
-		ctx.strokeStyle = INK;
-		ctx.lineWidth = Math.max(1.4, s * 0.07);
-		ctx.beginPath();
-		ctx.ellipse(0, 0, link * 0.55, link * (i % 2 ? 0.2 : 0.3), 0, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.stroke();
-		ctx.fillStyle = 'rgba(255,240,225,.5)';
-		ctx.beginPath();
-		ctx.ellipse(-link * 0.15, -link * 0.08, link * 0.16, link * 0.05, 0, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.restore();
-	}
-	// the hook at the hero's end
-	ctx.translate(b.x - ux * s * 0.28, b.y - uy * s * 0.28);
-	ctx.rotate(Math.atan2(uy, ux));
-	ctx.strokeStyle = INK;
-	ctx.lineWidth = Math.max(2.4, s * 0.14);
-	ctx.lineCap = 'round';
+	ctx.globalAlpha = fade;
+	ctx.translate(cx, cy);
+	ctx.fillStyle = `rgba(14,4,8,${0.55 + 0.35 * p})`;
 	ctx.beginPath();
-	ctx.moveTo(-s * 0.1, 0);
-	ctx.quadraticCurveTo(s * 0.25, 0, s * 0.18, s * 0.2);
-	ctx.stroke();
-	ctx.strokeStyle = '#cfc4c9';
-	ctx.lineWidth = Math.max(1.2, s * 0.07);
-	ctx.stroke();
+	ctx.arc(0, 0, r * 1.08, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.rotate(t * 0.8);
+	ctx.lineCap = 'round';
+	ctx.lineJoin = 'round';
+	const locked = p >= 1;
+	const ring = (): void => {
+		ctx.beginPath();
+		ctx.arc(0, 0, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, p));
+		ctx.stroke();
+	};
+	ctx.strokeStyle = INK;
+	ctx.lineWidth = Math.max(2, r * 0.26);
+	ring();
+	ctx.strokeStyle = locked ? '#ff4a3a' : '#ffc84a';
+	ctx.lineWidth = Math.max(1.2, r * 0.13);
+	ring();
+	// ticks on the ring
+	ctx.strokeStyle = locked ? '#ff7a6a' : '#ffe08a';
+	ctx.lineWidth = Math.max(1, r * 0.07);
+	for (let i = 0; i < 10; i += 1) {
+		if (i / 10 > p) break;
+		const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+		ctx.beginPath();
+		ctx.moveTo(Math.cos(a) * r * 1.2, Math.sin(a) * r * 1.2);
+		ctx.lineTo(Math.cos(a) * r * 1.38, Math.sin(a) * r * 1.38);
+		ctx.stroke();
+	}
+	// the pentagram, one stroke after another as the warning comes
+	const star: Array<[number, number]> = [];
+	for (let i = 0; i <= 5; i += 1) {
+		const a = -Math.PI / 2 + (i * 4 * Math.PI) / 5;
+		star.push([Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.9]);
+	}
+	const strokes = locked ? 5 : p * 5;
+	if (!locked) {
+		// the whole star dimly first, so the warning reads as a seal from the start
+		ctx.globalAlpha = fade * 0.3;
+		ctx.strokeStyle = '#ffe08a';
+		ctx.lineWidth = Math.max(1, r * 0.06);
+		ctx.beginPath();
+		star.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])));
+		ctx.stroke();
+		ctx.globalAlpha = fade;
+	}
+	const draw = (): void => {
+		ctx.beginPath();
+		ctx.moveTo(star[0][0], star[0][1]);
+		for (let i = 1; i <= 5; i += 1) {
+			const f = Math.max(0, Math.min(1, strokes - (i - 1)));
+			if (f <= 0) break;
+			ctx.lineTo(
+				star[i - 1][0] + (star[i][0] - star[i - 1][0]) * f,
+				star[i - 1][1] + (star[i][1] - star[i - 1][1]) * f
+			);
+		}
+		ctx.stroke();
+	};
+	ctx.strokeStyle = INK;
+	ctx.lineWidth = Math.max(2, r * 0.22);
+	draw();
+	ctx.strokeStyle = locked ? '#ffe0d8' : '#fff0c0';
+	ctx.lineWidth = Math.max(1.2, r * 0.1);
+	draw();
 	ctx.restore();
+}
+
+/** A seal about to burn: the tile darkens, the glyph is drawn and the ring closes. */
+export function sealWarn(ctx: Ctx, x: number, y: number, s: number, p: number, t: number): void {
+	const flicker = p > 0.8 ? 0.65 + 0.35 * Math.sin(t * 40) : 1;
+	ctx.save();
+	ctx.fillStyle = `rgba(20,4,8,${0.35 + 0.35 * p})`;
+	ctx.fillRect(x + 1, y + 1, s - 2, s - 2);
+	ctx.strokeStyle = `rgba(255,200,70,${0.75 * flicker})`;
+	ctx.lineWidth = Math.max(1.2, s * 0.05);
+	ctx.setLineDash([s * 0.18, s * 0.12]);
+	ctx.lineDashOffset = -t * s * 0.5;
+	ctx.strokeRect(x + 1.5, y + 1.5, s - 3, s - 3);
+	ctx.restore();
+	sigil(ctx, x + s / 2, y + s / 2, s * 0.3, t, p, flicker);
+}
+
+/** A locked seal: a dark plate with the whole glyph lit. */
+export function sealLocked(ctx: Ctx, x: number, y: number, s: number, t: number, fade = 1): void {
+	ctx.save();
+	ctx.globalAlpha = fade;
+	ctx.fillStyle = '#10050a';
+	ctx.fillRect(x, y, s, s);
+	ctx.strokeStyle = 'rgba(255,74,58,.55)';
+	ctx.lineWidth = Math.max(1.2, s * 0.05);
+	ctx.strokeRect(x + s * 0.06, y + s * 0.06, s * 0.88, s * 0.88);
+	ctx.restore();
+	sigil(ctx, x + s / 2, y + s / 2, s * 0.32, t, 1, fade);
 }

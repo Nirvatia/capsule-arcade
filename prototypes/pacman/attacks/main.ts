@@ -4,7 +4,7 @@
 // everything at once. Deleted once the owner has chosen.
 import { GRID_DOOM } from '../../../src/games/pacman/config/mazes';
 import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
-import { block, chain, eruption, lane, tar, warnTile } from './draw';
+import { block, eruption, lane, sealLocked, sealWarn, tar } from './draw';
 import type { Tile } from './draw';
 
 const W = 1280;
@@ -203,17 +203,27 @@ const PANELS: readonly Panel[] = [
 	},
 	{
 		title: 'Печать: перекрёстки горят',
-		note: 'Предупреждение как у урона: на этих перекрёстках стоять нельзя.',
+		note: 'Знакомая печать: кольцо замыкается, пентаграмма дорисовывается штрих за штрихом; с обводкой и светлыми линиями. Стоять на этих перекрёстках нельзя.',
 		at: mid(sealTiles),
 		tiles: 8,
 		paint: (c, t) => {
-			for (const q of sealTiles) warnTile(c, ox + q.c * s, oy + q.r * s, s, warnP(t), t);
+			for (const q of sealTiles) sealWarn(c, ox + q.c * s, oy + q.r * s, s, warnP(t), t);
 			hero(c, centre);
 		}
 	},
 	{
-		title: 'Печать, пустота: клетка заперта',
-		note: 'Железный затвор с дымной печатью: временная стена, вреда не наносит. Один вид для запертой печати и клетки пустоты.',
+		title: 'Печать: заперта',
+		note: 'Тёмная плита и целая печать, светлые линии и красное кольцо. Временная стена, вреда не наносит.',
+		at: mid(sealTiles),
+		tiles: 8,
+		paint: (c, t) => {
+			for (const q of sealTiles) sealLocked(c, ox + q.c * s, oy + q.r * s, s, t);
+			hero(c, centre);
+		}
+	},
+	{
+		title: 'Пустота: клетка заперта',
+		note: 'Железный затвор, чтобы не путать с печатью: оставленная боссом клетка.',
 		at: mid(blockTiles),
 		tiles: 8,
 		paint: (c, t) => {
@@ -229,17 +239,6 @@ const PANELS: readonly Panel[] = [
 		paint: (c, t) => {
 			tar(c, tarTiles, ox, oy, s, t);
 			hero(c, tarTiles[2] ?? run[0]);
-		}
-	},
-	{
-		title: 'Притяжение: цепь',
-		note: 'Железная цепь от босса к герою, звенья ползут к боссу; крюк на конце.',
-		at: mid(run),
-		tiles: 9,
-		paint: (c, t) => {
-			bossDot(c, run[0]);
-			chain(c, px(run[0]), px(run[5]), s, t);
-			hero(c, run[5]);
 		}
 	}
 ];
@@ -285,7 +284,8 @@ function paintOverview(t: number): void {
 	lane(ctx, run, ox, oy, s, false, warnP(t), t);
 	lane(ctx, crossTiles, ox, oy, s, true, liveK(t), t);
 	eruption(ctx, discTiles, eruptAt, ox, oy, s, false, warnP(t), t);
-	for (const q of sealTiles) warnTile(ctx, ox + q.c * s, oy + q.r * s, s, warnP(t), t);
+	for (const q of sealTiles.slice(0, 2)) sealWarn(ctx, ox + q.c * s, oy + q.r * s, s, warnP(t), t);
+	for (const q of sealTiles.slice(2)) sealLocked(ctx, ox + q.c * s, oy + q.r * s, s, t);
 	for (const q of blockTiles) block(ctx, ox + q.c * s, oy + q.r * s, s, t);
 	tar(ctx, tarTiles, ox, oy, s, t);
 	bossDot(ctx, crossAt);
