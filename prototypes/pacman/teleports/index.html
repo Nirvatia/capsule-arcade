@@ -1,0 +1,44 @@
+<title>Телепорты ада</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<style>
+  :root { --bg:#0b0507; --fg:#f0dcd4; --mut:#b79a92; --line:#3a1c20; --chip:#241014; --chipOn:#a3241a; color-scheme: dark; }
+  html,body { margin:0; background:var(--bg); color:var(--fg); }
+  body { font:15px/1.5 "Inter","Segoe UI",system-ui,sans-serif; padding-block:20px 40px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+  main { max-width:1240px; margin:0 auto; display:grid; gap:16px; }
+  h1 { margin:0; font:700 24px/1.2 "Space Grotesk","Inter",system-ui,sans-serif; text-wrap:balance; }
+  h2 { margin:0; font:700 18px/1.2 "Space Grotesk","Inter",system-ui,sans-serif; }
+  p { margin:0; color:var(--mut); max-width:76ch; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; }
+  button { font:600 13px "Inter",system-ui,sans-serif; color:var(--fg); background:var(--chip); border:1px solid var(--line); border-radius:6px; padding:8px 12px; cursor:pointer; }
+  button[aria-pressed="true"] { background:var(--chipOn); border-color:var(--chipOn); color:#fff; }
+  button:focus-visible { outline:2px solid #ffb06a; outline-offset:2px; }
+  canvas { width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:4px; background:#0a0204; }
+  #panels { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:14px; }
+  figure { margin:0; display:grid; gap:6px; min-width:0; }
+  figcaption { font:600 13px "Space Grotesk","Inter",system-ui,sans-serif; letter-spacing:.04em; }
+  body.gray canvas { filter:grayscale(1); }
+  .notes { display:grid; gap:4px; font-size:13px; color:var(--mut); max-width:80ch; }
+  .notes b { color:var(--fg); font-weight:600; }
+</style>
+<main>
+  <h1>Телепорты ада: три разных решения</h1>
+  <p>Это не три цвета одного разрыва, а три разные вещи с разным силуэтом и разным движением. Всё анимировано, в масштабе игры, на настоящем лабиринте. Герой и точки это заглушки. Телепорты стоят на обоих концах туннеля; фишки-стрелки текут от коридора внутрь и показывают, куда ведёт проход.</p>
+  <div class="bar">
+    <button data-choice="now" type="button" aria-pressed="false">Сейчас</button>
+    <button data-choice="gate" type="button" aria-pressed="true">1 · Врата</button>
+    <button data-choice="sigil" type="button" aria-pressed="false">2 · Печать</button>
+    <button data-choice="tesla" type="button" aria-pressed="false">3 · Тесла</button>
+    <button id="gray" type="button" aria-pressed="false">Градации серого</button>
+    <button id="actors" type="button" aria-pressed="true">Герой и точки</button>
+  </div>
+  <canvas id="overview" aria-label="Лабиринт ада с телепортами"></canvas>
+  <h2>Левый телепорт крупно</h2>
+  <div id="panels"></div>
+  <div class="notes">
+    <span><b>Сейчас.</b> Оранжево-красный разрыв сливается с красным лабиринтом и фоном (кадр без анимации).</span>
+    <span><b>1.</b> Железная рама из тех же плит, что стены, с бирюзовым полем и бегущими полосами. Спокойный, прямоугольный, читается как дверь.</span>
+    <span><b>2.</b> Фиолетовая печать на полу с вращающимися кольцами и столбом света вверх. Круглая и высокая, самая заметная издалека.</span>
+    <span><b>3.</b> Два столба в стенах и молния между ними через весь тайл. Узкая, мигает, самая резкая по движению.</span>
+  </div>
+</main>
+<script>/*SCRIPT*/</script>
