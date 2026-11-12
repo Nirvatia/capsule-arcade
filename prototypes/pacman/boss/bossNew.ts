@@ -12,6 +12,8 @@ import {
 } from '../../../src/games/pacman/render/doom/hellGhost';
 
 export type Direction = 'horns' | 'colour' | 'iron';
+/** The colour of phase II in the 'colour' direction (black was rejected: it sinks into the floor). */
+export type Phase2 = 'black' | 'orange' | 'magenta' | 'blue';
 
 interface Look extends CelTones {
 	readonly rim: string;
@@ -26,6 +28,45 @@ const IRON: readonly [string, string] = ['#7d7378', '#2b2427'];
 const RED = { light: '#f4604e', mid: '#d0261f', shade: '#7a0c14' };
 const DEEP = { light: '#d8402e', mid: '#a01418', shade: '#4a060c' };
 
+const PHASE2: Record<Phase2, Look> = {
+	black: {
+		light: '#4a2a2c',
+		mid: '#2a1517',
+		shade: '#120708',
+		rim: '#ff8a3a',
+		horn: { length: 0.5, curl: 0.1, bone: ['#8a7a68', '#3a3028'], ember: null },
+		eye: '#ff9a3a',
+		plate: 0
+	},
+	orange: {
+		light: '#ffc65a',
+		mid: '#f08a24',
+		shade: '#b0400c',
+		rim: '#fff0c0',
+		horn: { length: 0.5, curl: 0.1, bone: BONE, ember: null },
+		eye: '#ffffff',
+		plate: 0
+	},
+	magenta: {
+		light: '#ff7ac8',
+		mid: '#d02a8a',
+		shade: '#6a0c4a',
+		rim: '#ffd0ec',
+		horn: { length: 0.5, curl: 0.1, bone: BONE, ember: null },
+		eye: '#ffe27a',
+		plate: 0
+	},
+	blue: {
+		light: '#9ad8ff',
+		mid: '#3a8ae0',
+		shade: '#143a80',
+		rim: '#e0f4ff',
+		horn: { length: 0.5, curl: 0.1, bone: BONE, ember: null },
+		eye: '#ffffff',
+		plate: 0
+	}
+};
+
 const LOOKS: Record<Direction, readonly Look[]> = {
 	// the horns grow; the eyes heat up
 	horns: [
@@ -36,15 +77,7 @@ const LOOKS: Record<Direction, readonly Look[]> = {
 	// the shape stays; the colour heats: red, charred with a hot contour, white-hot
 	colour: [
 		{ ...RED, rim: '#ffc9a8', horn: { length: 0.5, curl: 0.1, bone: BONE, ember: null }, eye: '#ffe27a', plate: 0 },
-		{
-			light: '#4a2a2c',
-			mid: '#2a1517',
-			shade: '#120708',
-			rim: '#ff8a3a',
-			horn: { length: 0.5, curl: 0.1, bone: ['#8a7a68', '#3a3028'], ember: null },
-			eye: '#ff9a3a',
-			plate: 0
-		},
+		PHASE2.black,
 		{
 			light: '#fff4c0',
 			mid: '#ffa22c',
@@ -112,9 +145,10 @@ export function drawBoss(
 	S: number,
 	phase: 1 | 2 | 3,
 	dir: Direction,
-	time: number
+	time: number,
+	p2: Phase2 = 'black'
 ): void {
-	const look = LOOKS[dir][phase - 1];
+	const look = dir === 'colour' && phase === 2 ? PHASE2[p2] : LOOKS[dir][phase - 1];
 	const R = S * 0.5;
 	const bob = Math.sin(time * 3.2) * R * 0.03;
 	const shape: GhostShape = {
@@ -147,7 +181,7 @@ export function drawBoss(
 	if (look.plate) plates(ctx, shape, look.plate);
 	ctx.restore();
 	celOutline(ctx, shape, time, look.rim);
-	if (dir === 'colour' && phase === 2) {
+	if (dir === 'colour' && phase === 2 && p2 === 'black') {
 		// the contour glows: one hot line round the whole body
 		ghostPath(ctx, 0, 0, shape, time);
 		ctx.strokeStyle = 'rgba(255,140,50,.95)';
