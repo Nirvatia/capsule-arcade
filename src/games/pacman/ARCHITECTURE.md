@@ -232,5 +232,5 @@ the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arca
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`, `heroCharge`); `winter-decay.html` is an older standalone page.
+`MsPacmanHero`, `heroCharge`), `trails` (three candidates for a stronger hero trail, `render/actors/hero/heroTrails`, against today's one on the real season world, the hero looping round a block; `?capture` for frame series); `winter-decay.html` is an older standalone page.
 ```

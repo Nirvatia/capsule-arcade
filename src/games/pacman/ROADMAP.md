@@ -61,6 +61,13 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
       the air in the maze, the decor sits on a surface and moves little, and every important
       thing reads at the size of one tile.
 
+4. **The heroes' looks and trail** (the owner's list). The trail: three candidates are in the
+   `trails` prototype (`heroTrails`: a jet stream, a ragged flame with sparks, a shockwave with
+   afterimages and shards on turns); the owner picks one, then it replaces the shed particles
+   (`Hero.setShedTrail`) and the unpicked styles are deleted. Then, prototype first: Ms.
+   Pac-Man looks clumsy (try the eye, the bow's seat and the proportions one at a time; keep
+   the bow), Pac-Man gets a minimal eye (a dot under a frowning brow), no tongue for either.
+
 ## Part II. Boss levels
 
 1. **The hell: the polish and what is left** (Opus for a look, Sonnet for the steps). The hell is

@@ -342,6 +342,13 @@ export abstract class Hero {
 	private embers: Particle[] = [];
 	private bursts: Burst[] = [];
 	private seed = 11;
+	/** Sheds the season's particles (and fire) as it runs; off when another trail is drawn. */
+	private shedTrail = true;
+
+	/** Turns the shed particle trail on or off (the trail candidates draw their own). */
+	setShedTrail(on: boolean): void {
+		this.shedTrail = on;
+	}
 
 	setRadius(r: number): void {
 		this.r = r;
@@ -547,7 +554,7 @@ export abstract class Hero {
 		// the trail: a stream of the season's own particles shed along his path (they flutter,
 		// tumble and sparkle where they were dropped, so a turn bends the trail), and drops of
 		// fire while he is powered
-		if (step < r * 3 && step > r * 0.01) {
+		if (this.shedTrail && step < r * 3 && step > r * 0.01) {
 			const hot = this.power > 0.5;
 			const ux = dx / step;
 			const uy = dy / step;
