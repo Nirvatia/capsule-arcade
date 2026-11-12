@@ -333,8 +333,9 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 Each new boss level is still Pac-Man in a maze, but with its own boss, mechanic and way to play;
 the hell is combat, so the others must not be. The order proposed (`ROADMAP.md`, part II, step 3):
 
-- **TRON**: the hero's light trail becomes a wall for a few seconds, the boss rides a light cycle
-  that cuts the maze. A spatial puzzle on a neon grid.
+- **TRON** (the grid world): its one-page design is `TRON.md` (a draft for the owner's approval),
+  its look the `grid` prototype. A light-cycle duel in a maze, no weapons, no HP: any light wall
+  derezzes at a touch, and the boss is beaten only by making it crash.
 - **An Alien Isolation style stalker**: darkness, a flashlight cone, one hunter that cannot be
   killed, a motion tracker, the vents as tunnels. Stealth.
 - **Sharkboy and Lavagirl**: a tide of water and lava floods the tiles in waves, sharks patrol the

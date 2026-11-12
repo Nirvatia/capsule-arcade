@@ -93,7 +93,9 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    it differs from the others) that the owner approves before code; mechanics on placeholder
    art first, then the art, all in code. Its interface is part III. The candidates, in the order
    proposed (each differs from the others in what the player does: the hell is combat):
-   1. **TRON, a neon grid** (the maze is `grid_tron`, no tunnels). The hero leaves a light
+   1. **TRON, a neon grid** (the maze is `grid_tron`, no tunnels). Started: the one-page design
+      `TRON.md` and the look's prototype `grid` (three light setups, flat or tilted view, the
+      dive in, the HUD's boot) wait for the owner. The hero leaves a light
       trail that becomes a wall for a few seconds; the boss rides a light cycle that cuts the
       maze; the ghosts derez. A spatial puzzle. The best fit for movement on rails.
    2. **An Alien Isolation style stalker.** Darkness, a flashlight cone, one hunter that cannot
