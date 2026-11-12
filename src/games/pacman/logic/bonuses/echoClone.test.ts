@@ -29,6 +29,37 @@ function values(...list: number[]): () => number {
 	return () => list[Math.min(i++, list.length - 1)] as number;
 }
 
+/** Steps by path between two tiles the hero can walk, tunnels not counted. */
+function pathSteps(
+	grid: { isPlayerWalkable(x: number, y: number): boolean },
+	from: { x: number; y: number },
+	to: { x: number; y: number }
+): number {
+	const seen = new Set([`${from.x},${from.y}`]);
+	let frontier = [from];
+	for (let d = 0; frontier.length > 0; d += 1) {
+		if (frontier.some((t) => t.x === to.x && t.y === to.y)) return d;
+		const next: Array<{ x: number; y: number }> = [];
+		for (const t of frontier) {
+			for (const [dx, dy] of [
+				[1, 0],
+				[-1, 0],
+				[0, 1],
+				[0, -1]
+			]) {
+				const n = { x: t.x + dx, y: t.y + dy };
+				const k = `${n.x},${n.y}`;
+				if (!seen.has(k) && grid.isPlayerWalkable(n.x, n.y)) {
+					seen.add(k);
+					next.push(n);
+				}
+			}
+		}
+		frontier = next;
+	}
+	return Infinity;
+}
+
 function setup(random: () => number, level = 1) {
 	const events = new EventBus<PacmanEventMap>();
 	const fx: PacmanFx[] = [];
@@ -106,6 +137,21 @@ describe('the echo token', () => {
 		expect(echo.phase).toBe('token');
 		const at = echo.tokenPosition!;
 		expect(session.grid.tileAt(Math.floor(at.x), Math.floor(at.y))).toBe('DT');
+	});
+
+	it('never lies near the hero: at least its steps away by path', () => {
+		for (let seed = 1; seed <= 40; seed += 1) {
+			const { echo, eatDots, run, session, hero } = setup(values(0, 0));
+			eatDots(Math.floor(session.grid.dotCount * (0.35 + (seed % 7) * 0.05)));
+			// the hero stands on the very tile the token would have picked without him
+			const locator = new SpawnLocator(session.grid, session.progress);
+			const naive = locator.findSafeTile(session.progress.collectedDots)!;
+			run(0.2, hero(naive.x, naive.y));
+			expect(echo.phase).toBe('token');
+			const at = echo.tokenPosition!;
+			const tile = { x: Math.floor(at.x), y: Math.floor(at.y) };
+			expect(pathSteps(session.grid, naive, tile)).toBeGreaterThanOrEqual(ECHO.minSteps);
+		}
 	});
 
 	it('is gone after its seconds, for good', () => {

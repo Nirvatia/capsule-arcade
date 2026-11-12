@@ -4,6 +4,8 @@ export const ECHO = {
 	chance: 0.35,
 	/** The token appears once this share of the dots is eaten: a random point in the window. */
 	window: [0.3, 0.7],
+	/** The token lies at least this many steps (by path) from the hero, never under his feet. */
+	minSteps: 8,
 	/** Seconds the token waits to be taken. */
 	tokenSeconds: 8,
 	/** How many clones come out, and how long the riot lasts (seconds): both picked at random. */

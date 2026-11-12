@@ -61,12 +61,19 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
       the air in the maze, the decor sits on a surface and moves little, and every important
       thing reads at the size of one tile.
 
-4. **The heroes' looks and trail** (the owner's list). The trail: three candidates are in the
-   `trails` prototype (`heroTrails`: a jet stream, a ragged flame with sparks, a shockwave with
-   afterimages and shards on turns); the owner picks one, then it replaces the shed particles
-   (`Hero.setShedTrail`) and the unpicked styles are deleted. Then, prototype first: Ms.
+4. **The heroes' looks and trail** (the owner's list). The trail is on hold: the owner rejected
+   all three candidates of the `trails` prototype (`heroTrails`: a jet stream, a ragged flame,
+   a shockwave); delete them when the trail is taken up again. Prototype first: Ms.
    Pac-Man looks clumsy (try the eye, the bow's seat and the proportions one at a time; keep
    the bow), Pac-Man gets a minimal eye (a dot under a frowning brow), no tongue for either.
+
+5. **The owner's list of fixes** (Sonnet). Done: the echo token never appears near the hero;
+   the clones are echo wisps, a quarter smaller (in review, `echo` prototype). Left: in the
+   hell, the lair's gate in the walls' iron and opened only by who leaves or enters the lair
+   (not by the boss running past); a calmer heartbeat pulse; the heart placed far from the
+   player, not where the boss fell; an exit that reads as an exit; food eaten when the hero's
+   centre is within 0.3 of a tile of it (today only on reaching the tile's centre, so a turn
+   back just before a dot leaves it).
 
 ## Part II. Boss levels
 

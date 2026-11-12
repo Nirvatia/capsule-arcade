@@ -201,7 +201,10 @@ export class EchoCloneService {
 				this.progress.collectionRatio >= this.threshold &&
 				this.progress.remainingDots > 0
 			) {
-				const tile = this.locator.findSafeTile(this.progress.collectedDots);
+				const tile = this.locator.findSafeTile(this.progress.collectedDots, [], {
+					from: player.tile,
+					min: ECHO.minSteps
+				});
 				if (tile) {
 					this.placeToken(tile);
 				}
