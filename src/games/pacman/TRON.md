@@ -1,5 +1,8 @@
 # The grid world — one-page design (draft for the owner's approval)
 
+The look's second attempt is in the `grid` prototype, drawn by the game's own modules
+(`render/grid/*`, `logic/grid/LightWall`); the owner liked the light-outline Pac-Man of the first.
+
 The second boss world (`ROADMAP.md`, part II, step 3.1), in the language of the TRON films: the
 language, not a copy. The names, the boss and the ship are our own. The maze is `grid_tron`
 (long corridors, nested loops, no tunnels).
@@ -37,6 +40,12 @@ HP, only trajectories. Every death is the player's own reading of the map.
 4. **Surfaces are glossy:** the floor reflects the walls and the trails.
 5. **A trail is a wall, not a track:** a rigid ribbon with a bright top edge that stands, then
    derezzes.
+6. **No bevels, no chamfers, no rounded corners** (the owner: the mark of AI work): sharp right
+   angles and exact joints only. Circles belong to the heroes and to the identity disc (the
+   overclock, the boss's ring in the HUD), nowhere else.
+7. **One line width per class** (walls, trails, HUD), continuous, never broken at a joint.
+8. **The background is a designed structure, not noise:** one far grid plane under the arena,
+   its lines carrying slow pulses of data, all at one rhythm.
 
 Scale and speed in a view from above: the arena is a platform of dark glass over an abyss; far
 below a city of light drifts slowly (parallax) and a grid fades into haze; pulses run along the

@@ -4,22 +4,29 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>Pac-Man · Grid</title>
-    <!-- Prototype: the look of the grid world (the TRON-language boss level) on the real grid_tron.
-         Built from the sources: `node prototypes/pacman/build.mjs grid`; open as a file. -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" />
+    <!-- Prototype: the grid world's look (TRON.md) from the game's own modules, the hero steered with
+         the arrows. Built from the sources: `node prototypes/pacman/build.mjs grid`; open as a file. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" />
     <style>
       :root{color-scheme:dark}
-      html,body{height:100%;margin:0;overflow:hidden;background:#000104;color:#e8fdff}
-      #stage{position:fixed;inset:0;transform-origin:50% 62%}
-      #view,#hud{position:fixed;inset:0;display:block}
-      #hud{pointer-events:none}
-      #ctl{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:calc(100vw - 32px);max-width:900px}
-      .bt{cursor:pointer;padding:7px 14px;border:1px solid rgba(63,224,255,.55);background:rgba(2,10,16,.85);color:#bff4ff;font:600 12px Orbitron,"Arial Narrow",sans-serif;letter-spacing:.06em;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
-      .bt[aria-pressed="true"]{background:rgba(63,224,255,.22);color:#fff;border-color:#bff4ff}
+      html,body{height:100%;margin:0;overflow:hidden;background:#000105;color:#e8fdff}
+      #stage{position:fixed;inset:0;perspective:1400px;perspective-origin:50% 30%}
+      #plane{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s ease}
+      #abyss,#world{position:absolute;inset:0;display:block}
+      #abyss{transition:transform .6s ease}
+      body.tilt #plane{transform:rotateX(24deg) translateY(-3%)}
+      body.tilt #abyss{transform:translateZ(-900px) scale(1.75)}
+      #hud{position:fixed;inset:0;display:block;pointer-events:none}
+      #ctl{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;display:flex;flex-wrap:wrap;justify-content:center;gap:0;width:max-content;max-width:calc(100vw - 32px);border:1px solid rgba(143,202,242,.45)}
+      .bt{cursor:pointer;padding:9px 16px;border:0;border-right:1px solid rgba(143,202,242,.3);background:#000105;color:#8fcaf2;font:10px Michroma,"Arial Narrow",sans-serif;letter-spacing:.12em;text-transform:uppercase}
+      .bt:last-child{border-right:0}
+      .bt[aria-pressed="true"]{color:#000;background:#8fcaf2}
+      .hint{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:62px;font:9px Michroma,sans-serif;letter-spacing:.12em;color:rgba(143,202,242,.6)}
+      @media (prefers-reduced-motion:reduce){#plane,#abyss{transition:none}}
     </style>
   </head>
   <body>
-    <div id="stage"><canvas id="view"></canvas></div>
+    <div id="stage"><div id="plane"><canvas id="abyss"></canvas><canvas id="world"></canvas></div></div>
     <canvas id="hud"></canvas>
     <div id="ctl">
       <button class="bt" data-light="a"></button>
@@ -29,6 +36,7 @@
       <button class="bt" id="who">Pac-Man</button>
       <button class="bt" id="dive">Заход</button>
     </div>
+    <div class="hint">СТРЕЛКИ / WASD</div>
     <script>
 /*SCRIPT*/
     </script>

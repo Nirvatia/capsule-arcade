@@ -1,759 +1,422 @@
-// Prototype: the look of the grid world (the TRON-language boss level, `src/games/pacman/TRON.md`)
-// on the real `grid_tron`, before any of its mechanics exist. Darkness first, light only on
-// edges; the glow in three layers (a burnt core, a narrow halo, a wide one) made by drawing every
-// emissive thing into its own layer and blurring it down and back up; a platform of dark glass
-// over an abyss with a city of light drifting far below; walls as dark monoliths with lit edges;
-// the hero as a light outline that leaves a wall, the boss's orange cycle cutting the maze with its
-// own; programs (ghosts) as orange wireframes; a HUD of thin lines that boots. Autopilot only:
-// nobody crashes yet. Buttons: three light setups, flat or tilted camera, the hero, the dive in.
-// Query: ?light=b&tilt&ms&capture (capture: window.__advance(seconds)).
+// Prototype: the grid world's look (`src/games/pacman/TRON.md`), second attempt, built from the
+// game's own modules (`render/grid/*`, `logic/grid/LightWall`). The hero is the real player logic
+// on `grid_tron`, steered with the arrows; the boss's cycle and the programs drive themselves (no
+// crashes yet: the mechanics come next). Buttons: three light setups, flat or tilted camera (the
+// abyss sits deeper than the arena), the hero, the dive in. Query: ?light=b&tilt&ms&capture
+// (capture: window.__advance(seconds), window.__key(direction)).
 import { GRID_TRON } from '../../../src/games/pacman/config/mazes/grid_tron';
+import { EventBus } from '../../../src/games/pacman/engine/EventBus';
+import type { PacmanEventMap } from '../../../src/games/pacman/core/Events';
+import { GridModel } from '../../../src/games/pacman/logic/maze/GridModel';
+import { GridService } from '../../../src/games/pacman/logic/maze/GridService';
+import { LevelProgress } from '../../../src/games/pacman/logic/level/LevelProgress';
+import { ScoreModel } from '../../../src/games/pacman/logic/level/ScoreModel';
+import { PlayerService } from '../../../src/games/pacman/logic/actors/PlayerService';
+import type { PlayerDirection } from '../../../src/games/pacman/logic/actors/PlayerModel';
+import { LightWall, cutHead } from '../../../src/games/pacman/logic/grid/LightWall';
+import type { WallPoint } from '../../../src/games/pacman/logic/grid/LightWall';
+import { bakeArena } from '../../../src/games/pacman/render/grid/gridArena';
+import type { ArenaBake } from '../../../src/games/pacman/render/grid/gridArena';
+import { GLOW_SETUPS, GlowChain } from '../../../src/games/pacman/render/grid/gridGlow';
+import { GridAbyss } from '../../../src/games/pacman/render/grid/gridAbyss';
+import {
+	drawBit,
+	drawCycle,
+	drawHero,
+	drawOverclock,
+	drawProgram
+} from '../../../src/games/pacman/render/grid/gridActors';
+import { Derez, drawLightWall } from '../../../src/games/pacman/render/grid/gridTrail';
+import { ENEMY, HERO, WORLD } from '../../../src/games/pacman/render/grid/gridPalette';
 
-type Light = 'a' | 'b' | 'c';
-interface LightSetup {
-	readonly name: string;
-	/** The crisp emissive layer, the narrow halo (1/4 res), the wide halo (1/16 res). */
-	readonly core: number;
-	readonly narrow: number;
-	readonly wide: number;
-	/** The floor's reflection of the light. */
-	readonly mirror: number;
-}
-const LIGHTS: Record<Light, LightSetup> = {
-	a: { name: 'Свет A: сдержанный', core: 1, narrow: 0.55, wide: 0.22, mirror: 0.1 },
-	b: { name: 'Свет B: классика', core: 1, narrow: 0.85, wide: 0.45, mirror: 0.16 },
-	c: { name: 'Свет C: пафос', core: 1, narrow: 1.1, wide: 0.85, mirror: 0.24 }
-};
-
-const HERO = { core: '#e8fdff', mid: '#3fe0ff', deep: '#0a6c9a' };
-const ENEMY = { core: '#ffe4cc', mid: '#ff6a1a', deep: '#8a2400' };
-const WORLD = { core: '#f2fbff', mid: '#9fd6ff', dim: 'rgba(120,190,255,0.10)' };
-
+type LightId = 'a' | 'b' | 'c';
 const q = new URLSearchParams(location.search);
-let light: Light = (['a', 'b', 'c'] as const).includes(q.get('light') as Light)
-	? (q.get('light') as Light)
+let light: LightId = (['a', 'b', 'c'] as const).includes(q.get('light') as LightId)
+	? (q.get('light') as LightId)
 	: 'b';
 let tilt = q.has('tilt');
 let ms = q.has('ms');
 const D = Math.min(window.devicePixelRatio || 1, 2);
 
 const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
-const stage = $<HTMLDivElement>('stage');
-const view = $<HTMLCanvasElement>('view');
-const hud = $<HTMLCanvasElement>('hud');
-const ctx = view.getContext('2d') as CanvasRenderingContext2D;
-const hctx = hud.getContext('2d') as CanvasRenderingContext2D;
+const abyssCv = $<HTMLCanvasElement>('abyss');
+const worldCv = $<HTMLCanvasElement>('world');
+const hudCv = $<HTMLCanvasElement>('hud');
+const actx = abyssCv.getContext('2d') as CanvasRenderingContext2D;
+const wctx = worldCv.getContext('2d') as CanvasRenderingContext2D;
+const hctx = hudCv.getContext('2d') as CanvasRenderingContext2D;
 
-function canvas(w: number, h: number): { cv: HTMLCanvasElement; x: CanvasRenderingContext2D } {
-	const cv = document.createElement('canvas');
-	cv.width = Math.max(1, Math.round(w));
-	cv.height = Math.max(1, Math.round(h));
-	return { cv, x: cv.getContext('2d') as CanvasRenderingContext2D };
-}
-
-// ── the maze ─────────────────────────────────────────────────────────────────
 const S = GRID_TRON;
 const ROWS = S.length;
 const COLS = S[0].length;
-const WALK = new Set(['DT', 'EU', 'FT', 'PM']);
-const isWall = (c: number, r: number) => S[r]?.[c] === 'WL';
-const isWalk = (c: number, r: number) => WALK.has(S[r]?.[c] ?? '');
-const isLair = (c: number, r: number) => ['LT', 'BY', 'IY', 'PY', 'CE', 'LE'].includes(S[r]?.[c] ?? '');
+const HUD_TOP = 70;
 
-// ── layout ───────────────────────────────────────────────────────────────────
-let vw = 0;
-let vh = 0;
-let T = 20;
-let ox = 0;
-let oy = 0;
-const HUD_TOP = 64;
+// ── the game's own logic for the hero ──
+let events: EventBus<PacmanEventMap>;
+let grid: GridService;
+let progress: LevelProgress;
+let player: PlayerService;
+const heroWall = new LightWall(5);
+const bossWall = new LightWall(14);
+const heroDerez = new Derez();
+const bossDerez = new Derez();
+const abyss = new GridAbyss();
+const glow = new GlowChain();
+const held: PlayerDirection[] = [];
 
-function layout(): void {
-	vw = window.innerWidth;
-	vh = window.innerHeight;
-	for (const cv of [view, hud]) {
-		cv.width = Math.round(vw * D);
-		cv.height = Math.round(vh * D);
-		cv.style.width = `${vw}px`;
-		cv.style.height = `${vh}px`;
-	}
-	const avail = vh - HUD_TOP - 70;
-	T = Math.floor(Math.min((vw - 32) / COLS, avail / ROWS));
-	ox = Math.round((vw - COLS * T) / 2);
-	oy = Math.round(HUD_TOP + (avail - ROWS * T) / 2);
-	bakeAbyss();
-	bakeArena();
-	applyTilt();
-}
-
-function applyTilt(): void {
-	stage.style.transform = tilt
-		? 'perspective(1500px) rotateX(20deg) scale(0.94) translateY(-2%)'
-		: 'none';
-	$('tilt').setAttribute('aria-pressed', String(tilt));
-	$('tilt').textContent = tilt ? 'Вид: наклон' : 'Вид: сверху';
-}
-
-// ── the abyss: a city of light far below, a grid fading into haze ────────────
-let abyss: HTMLCanvasElement | null = null;
-let city: Array<{ x: number; y: number; w: number; h: number; c: string; a: number }> = [];
-function bakeAbyss(): void {
-	const { cv, x } = canvas(vw * D, vh * D);
-	x.scale(D, D);
-	const g = x.createRadialGradient(vw / 2, vh * 0.55, 0, vw / 2, vh * 0.55, Math.max(vw, vh) * 0.75);
-	g.addColorStop(0, '#04101c');
-	g.addColorStop(0.6, '#01060c');
-	g.addColorStop(1, '#000104');
-	x.fillStyle = g;
-	x.fillRect(0, 0, vw, vh);
-	abyss = cv;
-	let seed = 7;
-	const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
-	city = Array.from({ length: 140 }, () => {
-		const warm = rnd() < 0.18;
-		return {
-			x: rnd() * 1.4 - 0.2,
-			y: rnd() * 1.4 - 0.2,
-			w: 2 + rnd() * 14,
-			h: 1 + rnd() * 3,
-			c: warm ? '255,140,60' : '120,200,255',
-			a: 0.15 + rnd() * 0.35
-		};
-	});
-}
-
-// ── the arena: platform, floor grid, wall monoliths (baked); their lit edges (emissive) ──
-let arena: HTMLCanvasElement | null = null;
-let edges: HTMLCanvasElement | null = null;
-/** How tall the walls stand in the tilted view, tiles. */
-const WALL_H = 0.42;
-function bakeArena(): void {
-	const W = vw * D;
-	const H = vh * D;
-	const a = canvas(W, H);
-	const e = canvas(W, H);
-	a.x.scale(D, D);
-	e.x.scale(D, D);
-	const px = (c: number) => ox + c * T;
-	const py = (r: number) => oy + r * T;
-	// the platform: dark glass, its edge a cold line
-	const m = T * 0.6;
-	a.x.fillStyle = 'rgba(6,12,20,0.94)';
-	a.x.beginPath();
-	a.x.roundRect(px(1) - m, py(1) - m, (COLS - 2) * T + 2 * m, (ROWS - 2) * T + 2 * m, T * 0.4);
-	a.x.fill();
-	e.x.strokeStyle = WORLD.mid;
-	e.x.globalAlpha = 0.55;
-	e.x.lineWidth = Math.max(1, T * 0.05);
-	e.x.beginPath();
-	e.x.roundRect(px(1) - m, py(1) - m, (COLS - 2) * T + 2 * m, (ROWS - 2) * T + 2 * m, T * 0.4);
-	e.x.stroke();
-	e.x.globalAlpha = 1;
-	// the floor's grid: one faint line per tile
-	a.x.strokeStyle = WORLD.dim;
-	a.x.lineWidth = 1;
-	a.x.beginPath();
-	for (let c = 1; c < COLS; c++) {
-		a.x.moveTo(px(c) + 0.5, py(1));
-		a.x.lineTo(px(c) + 0.5, py(ROWS - 1));
-	}
-	for (let r = 1; r < ROWS; r++) {
-		a.x.moveTo(px(1), py(r) + 0.5);
-		a.x.lineTo(px(COLS - 1), py(r) + 0.5);
-	}
-	a.x.stroke();
-	// the lair: a slightly lit pit
-	for (let r = 0; r < ROWS; r++) {
-		for (let c = 0; c < COLS; c++) {
-			if (isLair(c, r)) {
-				a.x.fillStyle = 'rgba(255,106,26,0.06)';
-				a.x.fillRect(px(c), py(r), T, T);
-			}
-		}
-	}
-	// the monoliths: dark blocks; their outline, inset, is the light
-	const inset = T * 0.12;
-	for (let r = 0; r < ROWS; r++) {
-		for (let c = 0; c < COLS; c++) {
-			if (!isWall(c, r)) continue;
-			a.x.fillStyle = '#020407';
-			a.x.fillRect(px(c), py(r), T, T);
-		}
-	}
-	e.x.strokeStyle = WORLD.mid;
-	e.x.lineWidth = Math.max(1, T * 0.04);
-	e.x.lineCap = 'square';
-	e.x.beginPath();
-	for (let r = 0; r < ROWS; r++) {
-		for (let c = 0; c < COLS; c++) {
-			if (!isWall(c, r)) continue;
-			const x0 = px(c);
-			const y0 = py(r);
-			const open = (dc: number, dr: number) => !isWall(c + dc, r + dr) && S[r + dr]?.[c + dc] !== 'ES';
-			// one segment per side that faces the floor, inset into the block
-			const sx0 = open(-1, 0) ? x0 + inset : x0;
-			const sx1 = open(1, 0) ? x0 + T - inset : x0 + T;
-			const sy0 = open(0, -1) ? y0 + inset : y0;
-			const sy1 = open(0, 1) ? y0 + T - inset : y0 + T;
-			if (open(0, -1)) {
-				e.x.moveTo(sx0, y0 + inset);
-				e.x.lineTo(sx1, y0 + inset);
-			}
-			if (open(0, 1)) {
-				e.x.moveTo(sx0, y0 + T - inset);
-				e.x.lineTo(sx1, y0 + T - inset);
-			}
-			if (open(-1, 0)) {
-				e.x.moveTo(x0 + inset, sy0);
-				e.x.lineTo(x0 + inset, sy1);
-			}
-			if (open(1, 0)) {
-				e.x.moveTo(x0 + T - inset, sy0);
-				e.x.lineTo(x0 + T - inset, sy1);
-			}
-		}
-	}
-	e.x.globalAlpha = 0.42;
-	e.x.stroke();
-	e.x.globalAlpha = 1;
-	arena = a.cv;
-	edges = e.cv;
-}
-
-// ── actors on autopilot ──────────────────────────────────────────────────────
+// ── the boss and the programs: tile walkers on autopilot ──
 type Dir = 0 | 1 | 2 | 3;
 const DX = [1, 0, -1, 0];
 const DY = [0, 1, 0, -1];
-interface Actor {
+interface Walker {
 	c: number;
 	r: number;
 	dir: Dir;
 	prog: number;
 	speed: number;
-	trail: Array<{ x: number; y: number; t: number }>;
-	life: number;
 }
-const occupied = new Map<string, number>();
-const key = (c: number, r: number) => `${c},${r}`;
-
-function actor(c: number, r: number, dir: Dir, speed: number, life: number): Actor {
-	return { c, r, dir, prog: 0, speed, trail: [], life };
-}
-let hero = actor(12, 20, 2, 6, 2.6);
-let boss = actor(12, 4, 0, 8.5, 3.4);
-let programs: Actor[] = [];
-let bits = new Set<string>();
-let time = 0;
-let boot = 0;
-let dive = 0;
-let seed = 11;
+let boss: Walker;
+let programs: Walker[] = [];
+let seed = 17;
 const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+const walkable = (c: number, r: number) => grid.isWalkable(c, r) && !['LT', 'BY', 'IY', 'PY', 'CE', 'LE'].includes(S[r]?.[c] ?? '');
 
-function reset(): void {
-	hero = actor(12, 20, 2, 6, 2.6);
-	boss = actor(12, 4, 0, 8.5, 3.4);
-	programs = [actor(4, 13, 3, 4.5, 0), actor(20, 13, 1, 4.5, 0), actor(12, 16, 0, 4.5, 0)];
-	bits = new Set();
-	for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (S[r][c] === 'DT') bits.add(key(c, r));
-	occupied.clear();
-	boot = 0;
-	dive = 0;
+/** Tiles a wall of light covers now (the boss steers clear of them). */
+function wallTiles(): Set<string> {
+	const out = new Set<string>();
+	for (const pts of [heroWall.polyline(), bossWall.polyline()]) {
+		for (let i = 1; i < pts.length; i++) {
+			const a = pts[i - 1];
+			const b = pts[i];
+			const n = Math.ceil(Math.abs(b.x - a.x) + Math.abs(b.y - a.y)) * 2;
+			for (let k = 0; k <= n; k++) {
+				const x = a.x + ((b.x - a.x) * k) / Math.max(1, n);
+				const y = a.y + ((b.y - a.y) * k) / Math.max(1, n);
+				out.add(`${Math.floor(x)},${Math.floor(y)}`);
+			}
+		}
+	}
+	return out;
 }
 
-/** At a tile: keep going if it can, else turn; never back unless boxed in; avoid live walls. */
-function choose(a: Actor, avoid: boolean): void {
-	const options: Dir[] = [];
-	for (const d of [0, 1, 2, 3] as Dir[]) {
-		if (d === ((a.dir + 2) % 4)) continue;
-		const c = a.c + DX[d];
-		const r = a.r + DY[d];
-		if (!isWalk(c, r)) continue;
-		if (avoid && (occupied.get(key(c, r)) ?? 0) > time) continue;
-		options.push(d);
-	}
+function choose(w: Walker, avoid: Set<string> | null): void {
+	const options = ([0, 1, 2, 3] as Dir[]).filter((d) => {
+		if (d === (w.dir + 2) % 4) return false;
+		const c = w.c + DX[d];
+		const r = w.r + DY[d];
+		return walkable(c, r) && !(avoid && avoid.has(`${c},${r}`));
+	});
 	if (options.length === 0) {
-		a.dir = ((a.dir + 2) % 4) as Dir;
+		const any = ([0, 1, 2, 3] as Dir[]).filter((d) => walkable(w.c + DX[d], w.r + DY[d]));
+		w.dir = any.includes(w.dir) ? w.dir : (any[0] ?? w.dir);
 		return;
 	}
-	const straight = options.includes(a.dir);
-	a.dir = straight && rnd() < 0.55 ? a.dir : options[Math.floor(rnd() * options.length)];
+	w.dir = options.includes(w.dir) && rnd() < 0.6 ? w.dir : options[Math.floor(rnd() * options.length)];
 }
 
-function move(a: Actor, dt: number, avoid: boolean): void {
-	a.prog += a.speed * dt;
-	while (a.prog >= 1) {
-		a.prog -= 1;
-		a.c += DX[a.dir];
-		a.r += DY[a.dir];
-		if (a.life > 0) occupied.set(key(a.c, a.r), time + a.life);
-		if (a === hero) bits.delete(key(a.c, a.r));
-		choose(a, avoid);
-		if (!isWalk(a.c + DX[a.dir], a.r + DY[a.dir])) choose(a, false);
+function step(w: Walker, dt: number, avoid: Set<string> | null): void {
+	w.prog += w.speed * dt;
+	while (w.prog >= 1) {
+		w.prog -= 1;
+		w.c += DX[w.dir];
+		w.r += DY[w.dir];
+		choose(w, avoid);
 	}
-	if (a.life > 0) {
-		const p = pos(a);
-		a.trail.push({ x: p.x, y: p.y, t: time });
-		a.trail = a.trail.filter((q) => time - q.t < a.life);
-	}
+	if (!walkable(w.c + DX[w.dir], w.r + DY[w.dir])) choose(w, avoid);
 }
 
-function pos(a: Actor): { x: number; y: number } {
-	const ok = isWalk(a.c + DX[a.dir], a.r + DY[a.dir]);
-	const k = ok ? a.prog : 0;
-	return { x: a.c + 0.5 + DX[a.dir] * k, y: a.r + 0.5 + DY[a.dir] * k };
-}
+const where = (w: Walker): WallPoint => {
+	const k = walkable(w.c + DX[w.dir], w.r + DY[w.dir]) ? w.prog : 0;
+	return { x: w.c + 0.5 + DX[w.dir] * k, y: w.r + 0.5 + DY[w.dir] * k };
+};
 
-// ── drawing ──────────────────────────────────────────────────────────────────
-let em: { cv: HTMLCanvasElement; x: CanvasRenderingContext2D } | null = null;
-let halos: Array<{ cv: HTMLCanvasElement; x: CanvasRenderingContext2D }> = [];
-function layers(): void {
-	const W = vw * D;
-	const H = vh * D;
-	if (!em || em.cv.width !== Math.round(W) || em.cv.height !== Math.round(H)) {
-		em = canvas(W, H);
-		halos = [canvas(W / 4, H / 4), canvas(W / 8, H / 8), canvas(W / 16, H / 16)];
-	}
-}
-
-const X = (tx: number) => ox + tx * T;
-const Y = (ty: number) => oy + ty * T;
-
-/** A light wall along a trail: flat, a bright band; tilted, a ribbon standing up. */
-function wall(x: CanvasRenderingContext2D, a: Actor, col: { core: string; mid: string }): void {
-	// the wall starts at his back, not inside him
-	const head = pos(a);
-	const pts = a.trail.filter((q) => Math.hypot(q.x - head.x, q.y - head.y) > 0.42);
-	if (pts.length < 2) return;
-	const lift = tilt ? WALL_H * T : 0;
-	const fade = (t: number) => Math.min(1, (a.life - (time - t)) / 0.35);
-	x.lineCap = 'round';
-	x.lineJoin = 'round';
-	if (lift > 0) {
-		// the ribbon's face, translucent, then its top edge
-		x.fillStyle = col.mid;
-		for (let i = 1; i < pts.length; i++) {
-			const p0 = pts[i - 1];
-			const p1 = pts[i];
-			x.globalAlpha = 0.28 * fade(p0.t);
-			x.beginPath();
-			x.moveTo(X(p0.x), Y(p0.y));
-			x.lineTo(X(p1.x), Y(p1.y));
-			x.lineTo(X(p1.x), Y(p1.y) - lift);
-			x.lineTo(X(p0.x), Y(p0.y) - lift);
-			x.closePath();
-			x.fill();
-		}
-	}
-	for (const [w, c, al] of [
-		[0.16, col.mid, 0.95],
-		[0.05, col.core, 1]
-	] as const) {
-		x.strokeStyle = c;
-		x.lineWidth = Math.max(1, T * w);
-		for (let i = 1; i < pts.length; i++) {
-			const p0 = pts[i - 1];
-			const p1 = pts[i];
-			// the tail derezzes: it flickers out in the last moments
-			const f = fade(p0.t);
-			if (f < 1 && Math.floor((time + i) * 24) % 3 === 0) continue;
-			x.globalAlpha = al * f;
-			x.beginPath();
-			x.moveTo(X(p0.x), Y(p0.y) - lift);
-			x.lineTo(X(p1.x), Y(p1.y) - lift);
-			x.stroke();
-		}
-	}
-	x.globalAlpha = 1;
-}
-
-/** The hero: a dark disc, its rim and the mouth's cut in light, circuit lines inside. */
-function drawHero(dark: CanvasRenderingContext2D, x: CanvasRenderingContext2D): void {
-	const p = pos(hero);
-	const cx = X(p.x);
-	const cy = Y(p.y) - (tilt ? T * 0.2 : 0);
-	const R = T * 0.42;
-	const ang = (hero.dir * Math.PI) / 2;
-	const open = 0.12 + 0.5 * Math.abs(Math.sin(time * 14));
-	dark.fillStyle = '#01050a';
-	dark.beginPath();
-	dark.moveTo(cx, cy);
-	dark.arc(cx, cy, R, ang + open, ang + Math.PI * 2 - open);
-	dark.closePath();
-	dark.fill();
-	x.lineCap = 'round';
-	x.lineJoin = 'round';
-	x.strokeStyle = HERO.mid;
-	x.lineWidth = Math.max(1.2, T * 0.1);
-	x.beginPath();
-	x.moveTo(cx, cy);
-	x.arc(cx, cy, R, ang + open, ang + Math.PI * 2 - open);
-	x.closePath();
-	x.stroke();
-	x.strokeStyle = HERO.core;
-	x.lineWidth = Math.max(1, T * 0.035);
-	x.stroke();
-	// circuits: an inner arc and two short traces, faint
-	x.globalAlpha = 0.55;
-	x.strokeStyle = HERO.mid;
-	x.lineWidth = Math.max(1, T * 0.03);
-	x.beginPath();
-	x.arc(cx, cy, R * 0.55, ang + open + 0.5, ang + Math.PI * 2 - open - 0.5);
-	x.moveTo(cx + Math.cos(ang + Math.PI) * R * 0.55, cy + Math.sin(ang + Math.PI) * R * 0.55);
-	x.lineTo(cx + Math.cos(ang + Math.PI) * R * 0.85, cy + Math.sin(ang + Math.PI) * R * 0.85);
-	x.stroke();
-	x.globalAlpha = 1;
-	// the eye: a dot of light (her bow: two light triangles)
-	const ex = cx + Math.cos(ang - 1.2) * R * 0.5;
-	const ey = cy + Math.sin(ang - 1.2) * R * 0.5;
-	x.fillStyle = HERO.core;
-	x.beginPath();
-	x.arc(ex, ey, Math.max(1.2, T * 0.05), 0, Math.PI * 2);
-	x.fill();
-	if (ms) {
-		const bx = cx + Math.cos(ang - 2.1) * R * 0.95;
-		const by = cy + Math.sin(ang - 2.1) * R * 0.95;
-		const s = R * 0.42;
-		x.strokeStyle = HERO.core;
-		x.lineWidth = Math.max(1, T * 0.05);
-		x.beginPath();
-		x.moveTo(bx, by);
-		x.lineTo(bx - s, by - s * 0.55);
-		x.lineTo(bx - s, by + s * 0.55);
-		x.closePath();
-		x.moveTo(bx, by);
-		x.lineTo(bx + s, by - s * 0.55);
-		x.lineTo(bx + s, by + s * 0.55);
-		x.closePath();
-		x.stroke();
-	}
-}
-
-/** The boss: an angular cycle, dark, its facets drawn in orange light, a hot headlight. */
-function drawBoss(dark: CanvasRenderingContext2D, x: CanvasRenderingContext2D): void {
-	const p = pos(boss);
-	const cx = X(p.x);
-	const cy = Y(p.y) - (tilt ? T * 0.25 : 0);
-	const ang = (boss.dir * Math.PI) / 2;
-	const L = T * 0.62;
-	const Wd = T * 0.3;
-	const shape: Array<[number, number]> = [
-		[L, 0],
-		[L * 0.55, -Wd],
-		[-L * 0.7, -Wd],
-		[-L, -Wd * 0.45],
-		[-L, Wd * 0.45],
-		[-L * 0.7, Wd],
-		[L * 0.55, Wd]
+function start(): void {
+	events = new EventBus<PacmanEventMap>();
+	grid = new GridService(new GridModel(S));
+	progress = new LevelProgress(grid, new ScoreModel(), events);
+	player = new PlayerService(grid, progress, events);
+	heroWall.reset();
+	bossWall.reset();
+	boss = { c: 12, r: 4, dir: 0, prog: 0, speed: 8 };
+	programs = [
+		{ c: 4, r: 13, dir: 3, prog: 0, speed: 4.2 },
+		{ c: 20, r: 13, dir: 1, prog: 0, speed: 4.2 },
+		{ c: 12, r: 16, dir: 0, prog: 0, speed: 4.2 }
 	];
-	const pt = ([u, v]: [number, number]): [number, number] => [
-		cx + Math.cos(ang) * u - Math.sin(ang) * v,
-		cy + Math.sin(ang) * u + Math.cos(ang) * v
-	];
-	const path = (c: CanvasRenderingContext2D) => {
-		c.beginPath();
-		shape.forEach((s, i) => {
-			const [a, b] = pt(s);
-			if (i === 0) c.moveTo(a, b);
-			else c.lineTo(a, b);
-		});
-		c.closePath();
-	};
-	dark.fillStyle = '#070201';
-	path(dark);
-	dark.fill();
-	x.lineJoin = 'miter';
-	x.strokeStyle = ENEMY.mid;
-	x.lineWidth = Math.max(1.2, T * 0.09);
-	path(x);
-	x.stroke();
-	x.strokeStyle = ENEMY.core;
-	x.lineWidth = Math.max(1, T * 0.03);
-	x.stroke();
-	// the spine and the rider's wedge
-	x.strokeStyle = ENEMY.mid;
-	x.lineWidth = Math.max(1, T * 0.04);
-	x.beginPath();
-	const [s0x, s0y] = pt([-L * 0.6, 0]);
-	const [s1x, s1y] = pt([L * 0.45, 0]);
-	x.moveTo(s0x, s0y);
-	x.lineTo(s1x, s1y);
-	const [r0x, r0y] = pt([-L * 0.1, -Wd * 0.6]);
-	const [r1x, r1y] = pt([L * 0.25, 0]);
-	const [r2x, r2y] = pt([-L * 0.1, Wd * 0.6]);
-	x.moveTo(r0x, r0y);
-	x.lineTo(r1x, r1y);
-	x.lineTo(r2x, r2y);
-	x.stroke();
-	const [hx, hy] = pt([L * 0.9, 0]);
-	x.fillStyle = '#ffffff';
-	x.beginPath();
-	x.arc(hx, hy, Math.max(1.5, T * 0.07), 0, Math.PI * 2);
-	x.fill();
+	dive = 0;
+	boot = 0;
 }
 
-/** A program: an orange wireframe diamond with a cross inside. */
-function drawProgram(a: Actor, x: CanvasRenderingContext2D, dark: CanvasRenderingContext2D): void {
-	const p = pos(a);
-	const cx = X(p.x);
-	const cy = Y(p.y) - (tilt ? T * 0.15 : 0);
-	const s = T * 0.34 * (1 + 0.06 * Math.sin(time * 6 + a.c));
-	dark.fillStyle = '#060201';
-	dark.beginPath();
-	dark.moveTo(cx, cy - s);
-	dark.lineTo(cx + s, cy);
-	dark.lineTo(cx, cy + s);
-	dark.lineTo(cx - s, cy);
-	dark.closePath();
-	dark.fill();
-	x.strokeStyle = ENEMY.mid;
-	x.lineWidth = Math.max(1, T * 0.06);
-	x.beginPath();
-	x.moveTo(cx, cy - s);
-	x.lineTo(cx + s, cy);
-	x.lineTo(cx, cy + s);
-	x.lineTo(cx - s, cy);
-	x.closePath();
-	x.moveTo(cx - s * 0.45, cy);
-	x.lineTo(cx + s * 0.45, cy);
-	x.moveTo(cx, cy - s * 0.45);
-	x.lineTo(cx, cy + s * 0.45);
-	x.stroke();
+// ── layout ──
+let vw = 0;
+let vh = 0;
+let T = 20;
+let ox = 0;
+let oy = 0;
+let arena: ArenaBake | null = null;
+let time = 0;
+let dive = 0;
+let boot = 0;
+
+function layout(): void {
+	vw = window.innerWidth;
+	vh = window.innerHeight;
+	for (const cv of [abyssCv, worldCv, hudCv]) {
+		cv.width = Math.round(vw * D);
+		cv.height = Math.round(vh * D);
+		cv.style.width = `${vw}px`;
+		cv.style.height = `${vh}px`;
+	}
+	const avail = vh - HUD_TOP - 64;
+	T = Math.floor(Math.min((vw - 32) / COLS, avail / ROWS));
+	ox = Math.round((vw - COLS * T) / 2);
+	oy = Math.round(HUD_TOP + (avail - ROWS * T) / 2);
+	arena = bakeArena(S, { T, ox, oy, vw, vh, dpr: D });
+	applyTilt();
 }
+
+function applyTilt(): void {
+	document.body.classList.toggle('tilt', tilt);
+	$('tilt').setAttribute('aria-pressed', String(tilt));
+	$('tilt').textContent = tilt ? 'Вид: наклон' : 'Вид: сверху';
+}
+
+// ── input ──
+const KEYS: Record<string, PlayerDirection> = {
+	ArrowUp: 'UP',
+	KeyW: 'UP',
+	ArrowDown: 'DOWN',
+	KeyS: 'DOWN',
+	ArrowLeft: 'LEFT',
+	KeyA: 'LEFT',
+	ArrowRight: 'RIGHT',
+	KeyD: 'RIGHT'
+};
+window.addEventListener('keydown', (e) => {
+	const d = KEYS[e.code];
+	if (!d) return;
+	e.preventDefault();
+	if (e.repeat) return;
+	held.splice(0, held.length, ...held.filter((x) => x !== d), d);
+	player.setDesiredDirection(d);
+});
+window.addEventListener('keyup', (e) => {
+	const d = KEYS[e.code];
+	if (d) held.splice(0, held.length, ...held.filter((x) => x !== d));
+});
+
+// ── the frame ──
+const ANGLE: Record<string, number> = { RIGHT: 0, DOWN: Math.PI / 2, LEFT: Math.PI, UP: -Math.PI / 2 };
 
 function frame(dt: number): void {
 	time += dt;
-	boot += dt;
 	dive += dt;
-	move(hero, dt, true);
-	move(boss, dt, true);
-	for (const p of programs) move(p, dt, true);
-	layers();
-	if (!em || !abyss || !arena || !edges) return;
+	boot += dt;
+	const last = held[held.length - 1];
+	if (last) player.setDesiredDirection(last);
+	player.update(dt);
+	if (progress.remainingDots <= 0) start();
+	// the hero's wall grows with the bits he has eaten
+	heroWall.setLength(Math.min(16, 5 + progress.collectedDots * 0.06));
+	const hp = player.position;
+	heroWall.advance(hp.x, hp.y);
+	const avoid = wallTiles();
+	step(boss, dt, avoid);
+	bossWall.advance(where(boss).x, where(boss).y);
+	for (const p of programs) step(p, dt, null);
+	abyss.update(dt);
+	heroDerez.update(dt);
+	bossDerez.update(dt);
+
+	// the dive: from high above, then in; the plane below comes nearer slower
+	const k = Math.min(1, dive / 2.4);
+	const e = 1 - Math.pow(1 - k, 3);
+	const zoom = 0.28 + 0.72 * e;
+	actx.setTransform(D, 0, 0, D, 0, 0);
+	abyss.draw(actx, vw, vh, 0.75 + 0.25 * e);
+
 	const W = vw * D;
 	const H = vh * D;
-	const L = LIGHTS[light];
-
-	// the dive: from high above, the arena small over the abyss, then in
-	const k = Math.min(1, dive / 2.2);
-	const e = 1 - Math.pow(1 - k, 3);
-	const zoom = 0.3 + 0.7 * e;
-
-	ctx.setTransform(1, 0, 0, 1, 0, 0);
-	ctx.globalCompositeOperation = 'source-over';
-	ctx.globalAlpha = 1;
-	ctx.drawImage(abyss, 0, 0);
-	// the city of light far below: it drifts, slower than the arena would
-	ctx.setTransform(D, 0, 0, D, 0, 0);
-	ctx.globalCompositeOperation = 'lighter';
-	const drift = time * 6;
-	const cz = 0.5 + 0.5 * zoom;
-	for (const b of city) {
-		const bx = vw / 2 + ((b.x * vw + drift) % (vw * 1.4) - vw / 2 - vw * 0.2) * cz;
-		const by = vh / 2 + (b.y * vh - vh / 2) * cz;
-		ctx.fillStyle = `rgba(${b.c},${b.a * 0.6})`;
-		ctx.fillRect(bx, by, b.w * cz, b.h * cz);
-	}
-	// the deep grid: faint lines, pulses running along them
-	ctx.strokeStyle = 'rgba(80,160,255,0.06)';
-	ctx.lineWidth = 1;
-	const gs = 46 * cz;
-	const gox = (vw / 2) % gs;
-	ctx.beginPath();
-	for (let gx = gox - gs; gx < vw + gs; gx += gs) {
-		ctx.moveTo(gx, 0);
-		ctx.lineTo(gx, vh);
-	}
-	for (let gy = ((vh / 2 + time * 10) % gs) - gs; gy < vh + gs; gy += gs) {
-		ctx.moveTo(0, gy);
-		ctx.lineTo(vw, gy);
-	}
-	ctx.stroke();
-	for (let i = 0; i < 6; i++) {
-		const gx = gox + gs * ((i * 7) % Math.floor(vw / gs));
-		const gy = ((time * 120 + i * 173) % (vh + 200)) - 100;
-		const gr = ctx.createLinearGradient(gx, gy - 60, gx, gy);
-		gr.addColorStop(0, 'rgba(120,200,255,0)');
-		gr.addColorStop(1, 'rgba(160,220,255,0.35)');
-		ctx.strokeStyle = gr;
-		ctx.beginPath();
-		ctx.moveTo(gx, gy - 60);
-		ctx.lineTo(gx, gy);
-		ctx.stroke();
-	}
-	ctx.globalCompositeOperation = 'source-over';
-
-	// the arena, scaled by the dive around the screen's centre
-	const arenaT = (c: CanvasRenderingContext2D, scale: number) => {
-		c.setTransform(scale, 0, 0, scale, 0, 0);
-		c.translate(vw / 2, vh / 2 + 10);
+	if (!arena) return;
+	// the arena's transform: css px, scaled by the dive round the screen's centre
+	const cx = vw / 2;
+	const cy = (vh + HUD_TOP) / 2;
+	const place = (c: CanvasRenderingContext2D) => {
+		c.setTransform(D, 0, 0, D, 0, 0);
+		c.translate(cx, cy);
 		c.scale(zoom, zoom);
-		c.translate(-vw / 2, -vh / 2 - 10);
+		c.translate(-cx, -cy);
 	};
-	arenaT(ctx, D);
-	ctx.drawImage(arena, 0, 0, vw, vh);
+	const px = (p: WallPoint): WallPoint => ({ x: ox + p.x * T, y: oy + p.y * T });
+	const lift = tilt ? T * 0.4 : 0;
 
-	// the emissive layer: edges, bits, walls of light, the actors' light
-	const ex = em.x;
-	ex.setTransform(1, 0, 0, 1, 0, 0);
-	ex.clearRect(0, 0, W, H);
-	arenaT(ex, D);
-	ex.globalAlpha = 1;
-	ex.drawImage(edges, 0, 0, vw, vh);
-	ex.fillStyle = WORLD.core;
-	for (const b of bits) {
-		const [c, r] = b.split(',').map(Number);
-		const s = Math.max(1.5, T * 0.09);
-		ex.globalAlpha = 0.45;
-		ex.fillRect(X(c + 0.5) - s / 2, Y(r + 0.5) - s / 2, s, s);
+	wctx.setTransform(1, 0, 0, 1, 0, 0);
+	wctx.clearRect(0, 0, W, H);
+	place(wctx);
+	wctx.drawImage(arena.dark, 0, 0, vw, vh);
+	const em = glow.begin(W, H);
+	place(em);
+	em.drawImage(arena.light, 0, 0, vw, vh);
+	// bits and overclocks, from the real level progress
+	em.fillStyle = WORLD.core;
+	em.globalAlpha = 0.5;
+	for (let r = 0; r < ROWS; r++) {
+		for (let c = 0; c < COLS; c++) {
+			if (progress.isCollected(c, r)) continue;
+			if (S[r][c] === 'DT') drawBit(em, ox + (c + 0.5) * T, oy + (r + 0.5) * T, T);
+		}
 	}
-	for (const [c, r] of [
-		[2, 2],
-		[22, 2],
-		[2, 24],
-		[22, 24]
-	]) {
-		const s = T * 0.24 * (1 + 0.15 * Math.sin(time * 4));
-		ex.globalAlpha = 1;
-		ex.strokeStyle = HERO.mid;
-		ex.lineWidth = Math.max(1, T * 0.06);
-		ex.beginPath();
-		ex.moveTo(X(c + 0.5), Y(r + 0.5) - s);
-		ex.lineTo(X(c + 0.5) + s, Y(r + 0.5));
-		ex.lineTo(X(c + 0.5), Y(r + 0.5) + s);
-		ex.lineTo(X(c + 0.5) - s, Y(r + 0.5));
-		ex.closePath();
-		ex.stroke();
+	em.globalAlpha = 1;
+	for (let r = 0; r < ROWS; r++) {
+		for (let c = 0; c < COLS; c++) {
+			if (S[r][c] === 'EU' && !progress.isCollected(c, r)) {
+				drawOverclock(em, ox + (c + 0.5) * T, oy + (r + 0.5) * T, T, time);
+			}
+		}
 	}
-	ex.globalAlpha = 1;
-	wall(ex, boss, ENEMY);
-	wall(ex, hero, HERO);
-	for (const p of programs) drawProgram(p, ex, ctx);
-	drawBoss(ctx, ex);
-	drawHero(ctx, ex);
-
-	// the light: halos down the chain, then everything added over the frame
-	const [h1, h2, h3] = halos;
-	for (const h of halos) {
-		h.x.setTransform(1, 0, 0, 1, 0, 0);
-		h.x.globalCompositeOperation = 'copy';
-		h.x.imageSmoothingEnabled = true;
+	// the walls of light: they leave the rider's back
+	const heroLine = cutHead(heroWall.polyline(), 0.42).map(px);
+	const bossLine = cutHead(bossWall.polyline(), 0.62).map(px);
+	drawLightWall(em, bossLine, ENEMY, T, lift);
+	drawLightWall(em, heroLine, HERO, T, lift);
+	const tail = (w: LightWall) => (w.tail ? px(w.tail) : null);
+	heroDerez.shed(tail(heroWall), heroWall.shed, T);
+	bossDerez.shed(tail(bossWall), bossWall.shed, T);
+	heroDerez.draw(em, HERO);
+	bossDerez.draw(em, ENEMY);
+	// the riders and the programs
+	const rise = tilt ? T * 0.22 : 0;
+	for (const p of programs) {
+		const w = px(where(p));
+		drawProgram(wctx, em, w.x, w.y - rise, T, time);
 	}
-	h1.x.drawImage(em.cv, 0, 0, h1.cv.width, h1.cv.height);
-	h2.x.drawImage(h1.cv, 0, 0, h2.cv.width, h2.cv.height);
-	h3.x.drawImage(h2.cv, 0, 0, h3.cv.width, h3.cv.height);
-	ctx.setTransform(1, 0, 0, 1, 0, 0);
-	ctx.globalCompositeOperation = 'lighter';
-	// the floor's mirror: the wide light, shifted down a little
-	ctx.globalAlpha = L.mirror;
-	ctx.drawImage(h2.cv, 0, T * D * 0.35, W, H);
-	ctx.globalAlpha = L.wide;
-	ctx.drawImage(h3.cv, 0, 0, W, H);
-	ctx.drawImage(h3.cv, 0, 0, W, H);
-	ctx.globalAlpha = L.narrow;
-	ctx.drawImage(h1.cv, 0, 0, W, H);
-	ctx.globalAlpha = L.core;
-	ctx.drawImage(em.cv, 0, 0);
-	ctx.globalAlpha = 1;
-	ctx.globalCompositeOperation = 'source-over';
-
+	const b = px(where(boss));
+	drawCycle(wctx, em, b.x, b.y - rise, T, (boss.dir * Math.PI) / 2);
+	const h = px(hp);
+	const moving = Boolean(player.facing);
+	drawHero(
+		wctx,
+		em,
+		h.x,
+		h.y - rise,
+		T,
+		ANGLE[player.facing ?? 'LEFT'],
+		moving ? Math.abs(Math.sin(time * 14)) : 0.3,
+		ms
+	);
+	// the light over everything, the floor mirroring it
+	glow.compose(wctx, GLOW_SETUPS[light], (c) => {
+		place(c);
+		c.clip(arena!.floor);
+		c.setTransform(1, 0, 0, 1, 0, 0);
+	});
 	drawHud();
 }
 
-// ── the HUD: thin lines, cut corners, segmented gauges; it boots line by line ──
+// ── the HUD (prototype only; the game's is Svelte): one hairline across the top, labels sitting
+// on it, the wall's energy as ticks on the line, the boss as an identity disc. It boots: the line
+// draws out from the centre, then the rest lights up. ──
 function drawHud(): void {
 	const x = hctx;
 	x.setTransform(D, 0, 0, D, 0, 0);
 	x.clearRect(0, 0, vw, vh);
-	const b = (from: number) => Math.max(0, Math.min(1, (boot - from) / 0.35));
-	x.lineCap = 'square';
-	x.shadowColor = HERO.mid;
-	x.shadowBlur = 8;
-	const panel = (px: number, py: number, w: number, h: number, k: number, col: string) => {
-		if (k <= 0) return;
-		const c = 10;
-		const len = (w + h) * 2 * k;
-		x.strokeStyle = col;
-		x.lineWidth = 1.5;
-		x.setLineDash([len, 9999]);
+	const b = (from: number, len = 0.4) => Math.max(0, Math.min(1, (boot - from) / len));
+	const y = 44;
+	const font = (size: number) => `${size}px Michroma, "Arial Narrow", sans-serif`;
+	x.lineCap = 'butt';
+	// the hairline
+	const k = b(0.1, 0.6);
+	if (k > 0) {
+		x.strokeStyle = WORLD.mid;
+		x.globalAlpha = 0.7;
+		x.lineWidth = 1;
 		x.beginPath();
-		x.moveTo(px + c, py);
-		x.lineTo(px + w, py);
-		x.lineTo(px + w, py + h - c);
-		x.lineTo(px + w - c, py + h);
-		x.lineTo(px, py + h);
-		x.lineTo(px, py + c);
-		x.closePath();
+		x.moveTo(vw / 2 - (vw / 2 - 24) * k, y + 0.5);
+		x.lineTo(vw / 2 + (vw / 2 - 24) * k, y + 0.5);
 		x.stroke();
-		x.setLineDash([]);
-	};
-	const font = (size: number) => `600 ${size}px Orbitron, "Rajdhani", "Arial Narrow", sans-serif`;
-	// the score, left
-	panel(16, 14, 210, 40, b(0.1), HERO.mid);
-	if (b(0.35) > 0) {
-		x.globalAlpha = b(0.35);
-		x.fillStyle = HERO.core;
-		x.font = font(11);
-		x.fillText('SCORE', 28, 30);
-		x.font = font(18);
-		x.fillText(String(Math.floor(time * 37) * 10).padStart(7, '0'), 92, 42);
 		x.globalAlpha = 1;
 	}
-	// the wall's energy, in the middle: segments
-	const ew = Math.min(320, vw * 0.3);
-	const exx = vw / 2 - ew / 2;
-	panel(exx, 14, ew, 40, b(0.25), HERO.mid);
-	if (b(0.5) > 0) {
-		x.globalAlpha = b(0.5);
+	x.textBaseline = 'alphabetic';
+	// the score, left
+	if (b(0.7) > 0) {
+		x.globalAlpha = b(0.7);
+		x.fillStyle = WORLD.mid;
+		x.font = font(9);
+		x.fillText('SCORE', 24, y - 26);
 		x.fillStyle = HERO.core;
-		x.font = font(10);
-		x.fillText('WALL ENERGY', exx + 12, 28);
-		const n = 16;
-		const filled = Math.round(n * (0.35 + 0.3 * (0.5 + 0.5 * Math.sin(time * 0.6))));
+		x.font = font(16);
+		x.fillText(String(progress.collectedDots * 10).padStart(6, '0'), 24, y - 8);
+		x.globalAlpha = 1;
+	}
+	// the wall's energy: ticks on the line, lit up to its length
+	if (b(0.9) > 0) {
+		const n = 40;
+		const span = Math.min(420, vw * 0.36);
+		const x0 = vw / 2 - span / 2;
+		const lit = Math.round(((heroWall.length - 5) / 11) * n * b(0.9, 0.8));
+		x.fillStyle = WORLD.mid;
+		x.font = font(9);
+		x.globalAlpha = b(0.9);
+		x.fillText('WALL', x0, y - 26);
 		for (let i = 0; i < n; i++) {
-			x.fillStyle = i < filled ? HERO.mid : 'rgba(63,224,255,0.15)';
-			x.fillRect(exx + 12 + i * ((ew - 24) / n), 35, (ew - 24) / n - 3, 9);
+			const on = i <= lit;
+			x.fillStyle = on ? HERO.mid : 'rgba(54,220,255,0.18)';
+			const hgt = on ? 12 : 6;
+			x.fillRect(Math.round(x0 + (i * span) / n), y - hgt, 2, hgt);
 		}
 		x.globalAlpha = 1;
 	}
-	// the boss: a ring of three segments, right
-	x.shadowColor = ENEMY.mid;
-	panel(vw - 226, 14, 210, 40, b(0.4), ENEMY.mid);
-	if (b(0.65) > 0) {
-		x.globalAlpha = b(0.65);
-		x.fillStyle = ENEMY.core;
-		x.font = font(11);
-		x.fillText('CYCLE.EXE', vw - 214, 38);
-		const rx = vw - 46;
-		const ry = 34;
+	// the boss: an identity disc, three segments (one per crash), a ring, a core
+	if (b(1.1) > 0) {
+		const rx = vw - 48;
+		const ry = y - 14;
+		x.globalAlpha = b(1.1);
+		x.fillStyle = ENEMY.mid;
+		x.font = font(9);
+		x.textAlign = 'right';
+		x.fillText('CYCLE', rx - 30, y - 26);
+		x.textAlign = 'left';
+		const seg = b(1.2, 0.6) * 3;
 		for (let i = 0; i < 3; i++) {
-			x.strokeStyle = i < 2 ? ENEMY.mid : 'rgba(255,106,26,0.2)';
-			x.lineWidth = 4;
+			const a0 = -Math.PI / 2 + (i * Math.PI * 2) / 3 + 0.12;
+			const a1 = a0 + ((Math.PI * 2) / 3 - 0.24) * Math.max(0, Math.min(1, seg - i));
+			x.strokeStyle = ENEMY.mid;
+			x.lineWidth = 3;
 			x.beginPath();
-			x.arc(rx, ry, 13, -Math.PI / 2 + i * ((Math.PI * 2) / 3) + 0.15, -Math.PI / 2 + (i + 1) * ((Math.PI * 2) / 3) - 0.15);
+			x.arc(rx, ry, 16, a0, a1);
 			x.stroke();
 		}
+		x.strokeStyle = ENEMY.mid;
+		x.lineWidth = 1;
+		x.beginPath();
+		x.arc(rx, ry, 9, 0, Math.PI * 2);
+		x.stroke();
+		x.fillStyle = ENEMY.core;
+		x.fillRect(rx - 1.5, ry - 1.5, 3, 3);
 		x.globalAlpha = 1;
 	}
-	x.shadowBlur = 0;
 }
 
-// ── controls ─────────────────────────────────────────────────────────────────
+// ── controls ──
 function pressed(): void {
 	for (const b of document.querySelectorAll<HTMLButtonElement>('[data-light]')) {
 		b.setAttribute('aria-pressed', String(b.dataset.light === light));
 	}
 	$('who').textContent = ms ? 'Ms. Pac-Man' : 'Pac-Man';
 }
+for (const b of document.querySelectorAll<HTMLButtonElement>('#ctl button')) {
+	b.tabIndex = -1;
+	b.addEventListener('mousedown', (e) => e.preventDefault());
+}
 for (const b of document.querySelectorAll<HTMLButtonElement>('[data-light]')) {
-	b.textContent = LIGHTS[b.dataset.light as Light].name;
+	b.textContent = GLOW_SETUPS[b.dataset.light as LightId].name;
 	b.addEventListener('click', () => {
-		light = b.dataset.light as Light;
+		light = b.dataset.light as LightId;
 		pressed();
 	});
 }
 $('tilt').addEventListener('click', () => {
 	tilt = !tilt;
-	bakeArena();
 	applyTilt();
 });
 $('who').addEventListener('click', () => {
@@ -765,19 +428,24 @@ $('dive').addEventListener('click', () => {
 	boot = 0;
 });
 
-reset();
+start();
 window.addEventListener('resize', layout);
 layout();
 pressed();
 if (q.has('capture')) {
-	(window as unknown as { __advance: (s: number) => void }).__advance = (seconds: number) => {
+	const w = window as unknown as { __advance: (s: number) => void; __key: (d: PlayerDirection) => void };
+	w.__advance = (seconds: number) => {
 		for (let i = 0; i < Math.round(seconds * 60); i++) frame(1 / 60);
 	};
+	w.__key = (d) => {
+		held.splice(0, held.length, d);
+		player.setDesiredDirection(d);
+	};
 } else {
-	let last = performance.now();
+	let lastT = performance.now();
 	const loop = (now: number) => {
-		frame(Math.min(0.05, Math.max(0, (now - last) / 1000)));
-		last = now;
+		frame(Math.min(0.05, Math.max(0, (now - lastT) / 1000)));
+		lastT = now;
 		requestAnimationFrame(loop);
 	};
 	requestAnimationFrame(loop);

@@ -30,6 +30,8 @@ logic/
              (who touches which ghost, per profile; near misses), HypnosisService
              (Ms. Pac-Man overdrive and hypnosis: feeder / hunter, guides the ghost), LairCodeService
   bonuses/   fruit, Easter egg, echo clone, boss reward
+  grid/      the grid world (TRON.md): LightWall (a rider's wall of light: corners where he
+             turned, a tail cut at a fixed length)
   doom/      the hell: DoomBossService (the boss's state machine), DoomArena (hazards,
              seals, void, pull, corruption, echo, shake), DoomMinionSwarm, DoomAttackPlanner
              (which attack, fair or not), DoomTargeting (tile picks), weapons, pickups
@@ -43,6 +45,9 @@ render/
                    walls in meadowBakeDecor / meadowBakeWalls) + MeadowWorld (live layer) +
                    MeadowLevelRenderer, driven by a MeadowTheme per season
                    (seasons/<season>/<season>Theme.ts)
+  grid/            the grid world's look (TRON.md): gridArena (the platform, the walls' inset light
+                   strips from one outline path), gridGlow (an emissive layer blurred down and added
+                   back as core, narrow and wide halos), gridAbyss, gridActors, gridTrail, gridPalette
   doom/            DoomLevelRenderer, the flesh hell: DoomWorld (camera, mood) over a scene
                    baked once (fleshBake, with fleshNoise) and moved by the heartbeat
                    (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX
@@ -235,5 +240,5 @@ the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arca
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`, `heroCharge`), `grid` (the look of the TRON-language boss world on `grid_tron`, `TRON.md`: a three-layer glow from an emissive layer blurred down and back up, the abyss, wall monoliths with lit edges, the light-outline hero, the boss's cycle, the booting HUD; autopilot only), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale); `winter-decay.html` is an older standalone page.
+`MsPacmanHero`, `heroCharge`), `grid` (the look of the TRON-language boss world on `grid_tron`, `TRON.md`, from `render/grid/*`: the hero is the real player logic steered with the arrows, the boss's cycle and the programs drive themselves; three light setups, a flat or tilted view, the dive in, a booting HUD drawn by the page), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale); `winter-decay.html` is an older standalone page.
 ```
