@@ -68,7 +68,7 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    the bow), Pac-Man gets a minimal eye (a dot under a frowning brow), no tongue for either.
 
 5. **The owner's list of fixes** (Sonnet). Done: the echo token never appears near the hero;
-   the clones are echo wisps, a quarter smaller (in review, `echo` prototype). Left: in the
+   the clones are echo wisps, a quarter smaller (accepted by the owner, `echo` prototype). Left: in the
    hell, the lair's gate in the walls' iron and opened only by who leaves or enters the lair
    (not by the boss running past); a calmer heartbeat pulse; the heart placed far from the
    player, not where the boss fell; an exit that reads as an exit; food eaten when the hero's

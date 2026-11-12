@@ -297,23 +297,23 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 
 ### Art status
 
-| Element                                                         | State                                                                                                           |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Seasons (world, food, weather, night), season turn, death decay | final as palettes; a full scene per season (Halloween, New Year) is to come (ROADMAP I.3)                       |
-| Blinky lord of hell, imps                                       | final: cel-shaded like the heroes (part II, 1.2)                                                                |
-| Hell world (the flesh hell)                                     | final: the accepted scene is in the game (part II, 1.7a); weather and light follow                              |
-| Hell weapons                                                    | final (part II, 1.3)                                                                                            |
-| Arcade                                                          | final (keeps its own pixel HUD)                                                                                 |
-| HUD                                                             | season worlds: final (side HUD, part III 1-2); the hell, narrow screens, arcade: to come                        |
-| Screens                                                         | seasons and the hell: final (part III 4-5); the arcade keeps its cards                                          |
-| Fruit, heart                                                    | final (inside the tile, calm glow)                                                                              |
-| Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                                            |
-| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                                                  |
-| Pac-Man                                                         | final; the same in the hell, plus the BFG charge's light                                                        |
-| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; the same in the hell                                          |
-| Season ghosts                                                   | final: a tulip bud, a turtle, a hedgehog, a bunny (one painter, a shape per season)                             |
-| Echo clone                                                      | in review: echo wisps (an ice disc with a notch, halo, comet tail, threads between neighbours), 0.255 of a tile |
-| Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                                                       |
+| Element                                                         | State                                                                                                       |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Seasons (world, food, weather, night), season turn, death decay | final as palettes; a full scene per season (Halloween, New Year) is to come (ROADMAP I.3)                   |
+| Blinky lord of hell, imps                                       | final: cel-shaded like the heroes (part II, 1.2)                                                            |
+| Hell world (the flesh hell)                                     | final: the accepted scene is in the game (part II, 1.7a); weather and light follow                          |
+| Hell weapons                                                    | final (part II, 1.3)                                                                                        |
+| Arcade                                                          | final (keeps its own pixel HUD)                                                                             |
+| HUD                                                             | season worlds: final (side HUD, part III 1-2); the hell, narrow screens, arcade: to come                    |
+| Screens                                                         | seasons and the hell: final (part III 4-5); the arcade keeps its cards                                      |
+| Fruit, heart                                                    | final (inside the tile, calm glow)                                                                          |
+| Hell pickups (BFG, barrel, berserk, medkit), the exit           | final: the heroes' ink-outlined style (part II, 1.3)                                                        |
+| Easter egg                                                      | final: a painted egg (pink, lilac, mint, blue)                                                              |
+| Pac-Man                                                         | final; the same in the hell, plus the BFG charge's light                                                    |
+| Ms. Pac-Man                                                     | final: the owner's "Maho-shoujo" mock-up in code; the same in the hell                                      |
+| Season ghosts                                                   | final: a tulip bud, a turtle, a hedgehog, a bunny (one painter, a shape per season)                         |
+| Echo clone                                                      | final: echo wisps (an ice disc with a notch, halo, comet tail, threads between neighbours), 0.255 of a tile |
+| Teleporters, ring effects                                       | final: shockwaves (5.4), ripple pad (5.5)                                                                   |
 
 ## 13. Boss worlds to come (ideas, not designed)
 
