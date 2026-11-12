@@ -5,7 +5,7 @@
 // - a cel body baked per light direction, look and season (hard tone bands, a pale zone and a
 //   hard highlight, a bounce light, the season's rim light on the nape) under a key light
 //   fixed in the world; a thin ink line, heavier on the shadow side; the mouth cut in a small
-//   scratch canvas, a painted cavity with a tongue behind it;
+//   scratch canvas, a painted cavity behind it (no tongue: the owner's call);
 // - acting: curved lips with a grin, a fast open and a biting close, breathing and the odd
 //   snap at rest; the body stays round, its size on a spring (a punch on every bite, a
 //   crouch before the burst and an overshoot after it);
@@ -266,8 +266,6 @@ function celDisc(
 export interface MouthInside {
 	readonly mid: RGB;
 	readonly deep: RGB;
-	readonly tongue: RGB;
-	readonly tongueLight: RGB;
 }
 
 /** What each hero brings: looks, jaws, rhythm, the light in the mouth, trail and death. */
@@ -283,7 +281,7 @@ export interface HeroDesign {
 	readonly grinRun: number;
 	/** Chomps per second. */
 	readonly chompRate: number;
-	/** The inside of the mouth, painted: a dark cavity and a tongue. */
+	/** The inside of the mouth, painted: a dark cavity. */
 	readonly inside: MouthInside;
 	/** Where the mouth's hinge sits on the body's axis, body radii (default -0.1). */
 	readonly hinge?: number;
@@ -859,8 +857,7 @@ export abstract class Hero {
 		}
 
 		// inside the mouth, behind the body, seen through the open mouth: a painted cavity
-		// with a tongue
-		this.drawInside(ctx, R, D.inside, mu, md, R * 0.09 * clamp01(m * 2.5), open, insideK);
+		this.drawInside(ctx, R, D.inside, mu, md, R * 0.09 * clamp01(m * 2.5), insideK);
 
 		// the body: ink (one path), then the painted disc with the mouth cut out
 		const A = { x: (D.hinge ?? -0.1) * R, y: 0 };
@@ -1062,7 +1059,7 @@ export abstract class Hero {
 
 	/**
 	 * The mouth's cavity (frame space, under the body): the wedge between the lips, a dark
-	 * red that deepens towards the hinge, and a tongue lying on the lower jaw.
+	 * red that deepens towards the hinge.
 	 */
 	private drawInside(
 		ctx: CanvasRenderingContext2D,
@@ -1071,7 +1068,6 @@ export abstract class Hero {
 		mu: number,
 		md: number,
 		bend: number,
-		open: number,
 		alpha: number
 	): void {
 		if (mu + md < 0.12 || alpha <= 0.01) return;
@@ -1097,19 +1093,6 @@ export abstract class Hero {
 		g.addColorStop(1, css(look.deep));
 		ctx.fillStyle = g;
 		ctx.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
-		// the tongue on the lower jaw
-		const t = md * 0.6;
-		const grow = clamp01(open * 1.5);
-		ctx.translate(A.x + Math.cos(t) * R * 0.42, Math.sin(t) * R * 0.5);
-		ctx.rotate(t);
-		ctx.fillStyle = css(look.tongue);
-		ctx.beginPath();
-		ctx.ellipse(0, 0, R * 0.27 * grow, R * 0.1 * grow, 0, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.fillStyle = css(look.tongueLight, 0.8);
-		ctx.beginPath();
-		ctx.ellipse(R * 0.03, -R * 0.025 * grow, R * 0.15 * grow, R * 0.035 * grow, 0, 0, Math.PI * 2);
-		ctx.fill();
 		ctx.restore();
 	}
 

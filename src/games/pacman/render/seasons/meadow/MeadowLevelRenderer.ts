@@ -99,7 +99,7 @@ export class MeadowLevelRenderer implements LevelRenderer, WorldPreview {
 		world.setLairGate(Math.max(level.egg?.doorOpen ?? 0, this.ghostGate));
 		world.drawWorld(ctx);
 		world.drawMood(ctx);
-		world.drawFood(ctx, (x, y) => progress.isCollected(x, y));
+		world.drawFood(ctx, (x, y) => progress.isCollected(x, y), this.shared.attract(frame));
 		// on level clear only the world: the season turn flips it over, actors stay out
 		if (state !== 'level-clear') {
 			this.fx.drawUnder(ctx, layout);

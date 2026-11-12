@@ -57,21 +57,10 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
       the air in the maze, the decor sits on a surface and moves little, and every important
       thing reads at the size of one tile.
 
-3. **The heroes' design as a whole** (Opus; the owner's question: how a circle seen from
-   above can look modern and feel like it moves through the maze, or whether simplicity is the
-   answer). The answer proposed and taken: keep the silhouette simple (a circle with a mouth
-   reads at a tile), get the motion from animation and from the world answering him. The
-   `feel` prototype plays the real player logic with the arrows, every idea on a switch (all
-   off in the game: `HeroFeel` on `Hero`, `PlayerFeel` on `HeroView`, `attract` for
-   `MeadowWorld.drawFood`): the gaze leads to the asked direction, Pac-Man's minimal eye (a
-   dot under a frowning brow), cutting a corner, the turn's smear, the bump against a wall,
-   a contact shadow, the dots pulled into the mouth, the world kicked up on a turn, the
-   rolling sphere. The owner picks; then the picked ones go on in the game (`GameMain` or the
-   level renderers set the feel; `suck` needs `MeadowLevelRenderer` to pass `attract`; the
-   bump must not fire on a pause) and the rest are deleted. The trail stays as it is: the owner compared wide
-   candidates and narrow variations of it and kept the original. Earlier notes: Ms.
-   Pac-Man looks clumsy (try the eye, the bow's seat and the proportions one at a time; keep
-   the bow), Pac-Man gets a minimal eye (a dot under a frowning brow), no tongue for either.
+3. **Ms. Pac-Man's look** (Opus, prototype first). The heroes' feel is in the game (every idea
+   of the `feel` prototype, `GAME_FEEL`), Pac-Man has his minimal eye, neither has a tongue,
+   the trail stays the original. Left from the owner's notes: Ms. Pac-Man looks clumsy (try
+   the eye, the bow's seat and the proportions one at a time; keep the bow).
 
 ## Part II. Boss levels
 

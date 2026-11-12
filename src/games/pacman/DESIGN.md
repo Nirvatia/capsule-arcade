@@ -244,7 +244,15 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - Organic and alive, not metal: soft bodies, breathing; the heroes stay round (their size
   pulses on a spring, they are never stretched into an ellipse).
 - Effects stay inside the tile (no coronas spilling onto walls).
-- Pac-Man (the owner's "Shonen" mock-up): a cel-shaded gold ball in hard tone bands with a white highlight and the season's rim light on the nape, a thin ink line (heavier in the shadow), no eyes, a wide wedge mouth (about 92° open) with a dark cavity and a tongue. Powered: cream, gold and orange-red bands, ink-outlined ki flames behind, a star on the highlight.
+- Pac-Man (the owner's "Shonen" mock-up): a cel-shaded gold ball in hard tone bands with a white highlight and the season's rim light on the nape, a thin ink line (heavier in the shadow), a minimal eye (a dark dot under a short frowning brow, never under 1.3 px), a wide wedge mouth (about 92° open) with a dark cavity and no tongue. Powered: cream, gold and orange-red bands, ink-outlined ki flames behind, a star on the highlight.
+- How both heroes move (the owner's brief: a circle seen from above that feels like it moves
+  through the maze; the silhouette stays simple, the motion comes from acting and from the world
+  answering): the eye looks where the player has asked to turn before the turn comes; with a turn
+  asked he drifts a little to its side (cutting the corner); the turn itself is a short smear
+  along the new heading and kicks up a few of the world's particles; running into a wall squashes
+  him against it; a soft contact shadow lies to the lower right (the key light is upper left);
+  faint meridians roll back over the body, so it reads as a ball; the dots just ahead lean into
+  the mouth and shrink. No tongue for either hero.
 - Ms. Pac-Man (the owner's "Maho-shoujo" mock-up): his pair, pink and cel-shaded: a big glossy eye with a gradient iris, an ink wing on the lid, a lash and a brow, blush strokes, red lipstick on the ends of the lips, a little fang, and a scarlet polka-dot bow on a spring with a flower on its knot that carries the season (blossom, sun, maple leaf, snowflake). Powered: the bow glows, rose-gold ki flames, a lifted brow, a star in the eye.
 - The heroes' trail is the season's own particles shed along the path (petals, sparks, leaves, snowflakes; Ms. Pac-Man's twinkles; fire when powered): never lines, ribbons or puffs (they read as sticks, strings and gas), and it bends with a turn.
 - Eyes show where an actor is heading.

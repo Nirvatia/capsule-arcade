@@ -43,6 +43,19 @@ export interface PlayerFeel extends HeroFeel {
 
 export const NO_PLAYER_FEEL: PlayerFeel = { ...NO_FEEL, lean: false, shadow: false, suck: false };
 
+/** The game's feel: every idea, the owner took them all (the `feel` prototype switches them). */
+export const GAME_FEEL: PlayerFeel = {
+	gaze: true,
+	eye: true,
+	smear: true,
+	bump: true,
+	puff: true,
+	sphere: true,
+	lean: true,
+	shadow: true,
+	suck: true
+};
+
 /** How far a corner is cut, tiles. */
 const LEAN = 0.08;
 
@@ -73,7 +86,9 @@ export class HeroView {
 		private readonly hero: Hero,
 		/** The light painted over the body in the hell (the BFG charge). */
 		private readonly chargeLight: OverPainter | null = null
-	) {}
+	) {
+		hero.setFeel(GAME_FEEL);
+	}
 
 	private lastTime = -1;
 	private angle = START_ANGLE;
@@ -83,7 +98,7 @@ export class HeroView {
 	private season: HeroSeason = 'summer';
 	/** Seconds the ball keeps rolling after the tunnel. */
 	private afterTunnel = 0;
-	private feel: PlayerFeel = NO_PLAYER_FEEL;
+	private feel: PlayerFeel = GAME_FEEL;
 	private lastFacing: string | null = null;
 	private leanX = 0;
 	private leanY = 0;
@@ -171,17 +186,19 @@ export class HeroView {
 			this.angle += turn * Math.min(1, dt * 30);
 		}
 
-		// a turn taken: the smear and the kick-up start from the heading he leaves
-		if (player.facing && this.lastFacing && player.facing !== this.lastFacing) {
-			this.hero.turnKick(facingAngle(this.lastFacing, this.angle));
+		// a turn taken: the smear and the kick-up start from the heading he leaves; a stop
+		// against a wall: one bump. Not while paused (he stands still then, but hit nothing)
+		if (!options.paused) {
+			if (player.facing && this.lastFacing && player.facing !== this.lastFacing) {
+				this.hero.turnKick(facingAngle(this.lastFacing, this.angle));
+			}
+			this.lastFacing = player.facing;
+			const runningNow = this.speed > 2 && moved > 1e-4;
+			if (this.running && moved < 1e-6 && player.facing && !options.dying) {
+				this.hero.bump();
+			}
+			this.running = runningNow || (this.running && moved > 1e-6);
 		}
-		this.lastFacing = player.facing;
-		// a stop against a wall: one bump
-		const runningNow = this.speed > 2 && moved > 1e-4;
-		if (this.running && moved < 1e-6 && player.facing && !options.dying) {
-			this.hero.bump();
-		}
-		this.running = runningNow || (this.running && moved > 1e-6);
 		// cutting a corner: a turn asked to the side, he drifts a little towards it
 		let lx = 0;
 		let ly = 0;

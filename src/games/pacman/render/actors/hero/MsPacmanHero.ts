@@ -45,9 +45,7 @@ const AWOKEN: Palette = {
 
 const INSIDE: MouthInside = {
 	mid: [104, 12, 48],
-	deep: [66, 6, 34],
-	tongue: [255, 132, 172],
-	tongueLight: [255, 190, 208]
+	deep: [66, 6, 34]
 };
 
 const INK: RGB = [46, 6, 26];

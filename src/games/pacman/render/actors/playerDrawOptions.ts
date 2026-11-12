@@ -22,4 +22,6 @@ export interface PlayerDrawOptions {
 	readonly padSink?: number;
 	/** The hell's BFG charge light: a level with a boss fight gives both heroes it. */
 	readonly chargeLight?: boolean;
+	/** The game is paused: the hero's acting that reacts to stops and turns holds still. */
+	readonly paused?: boolean;
 }

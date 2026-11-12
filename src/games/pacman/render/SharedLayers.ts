@@ -77,7 +77,20 @@ export class SharedLayers {
 		this.msHeroView.setSeason(season);
 		// Ms. Pac-Man the heroine or Pac-Man the hero, the hell included
 		const view = frame.level.profile === 'ms-pacman' ? this.msHeroView : this.heroView;
-		view.draw(frame.ctx, player, layout, frame.time, this.playerOptions(frame));
+		view.draw(frame.ctx, player, layout, frame.time, {
+			...this.playerOptions(frame),
+			paused: frame.paused
+		});
+	}
+
+	/** Where the food ahead is pulled to (the hero's mouth), while he plays; else null. */
+	attract(frame: RenderFrame): { x: number; y: number; angle: number } | null {
+		const player = frame.level.player;
+		if (!player || frame.state !== 'playing' || frame.paused) {
+			return null;
+		}
+		const view = frame.level.profile === 'ms-pacman' ? this.msHeroView : this.heroView;
+		return view.attract(player);
 	}
 
 	private playerOptions(frame: RenderFrame): PlayerDrawOptions {

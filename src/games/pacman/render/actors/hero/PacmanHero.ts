@@ -1,6 +1,7 @@
 // Pac-Man, the hero: the owner's "Shonen" mock-up (anime direction). A fighting-game hero in the
 // maze: cel-shaded gold in hard tone bands with a white highlight, a thick ink outline that is
-// heavier in the shadow, no eye, a wide mouth with a dark cavity and a tongue. Behind him:
+// heavier in the shadow, a minimal eye (a dot under a frowning brow), a wide mouth with a dark
+// cavity (no tongue). Behind him:
 // tapered speed lines in the season's colour, cream dust puffs and the season's own little
 // things (petals, sparks, leaves, snowflakes). The energizer splits the palette (cream, gold,
 // orange-red), cracks open ink-outlined "ki" flames behind him (never longer than 1.2 body
@@ -44,9 +45,7 @@ const AWOKEN: Palette = {
 
 const INSIDE: MouthInside = {
 	mid: [112, 18, 40],
-	deep: [70, 8, 28],
-	tongue: [255, 98, 128],
-	tongueLight: [255, 160, 176]
+	deep: [70, 8, 28]
 };
 
 export const PACMAN_DESIGN: HeroDesign = {

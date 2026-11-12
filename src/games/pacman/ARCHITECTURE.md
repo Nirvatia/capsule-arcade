@@ -54,7 +54,7 @@ render/
   transitions/decay/       the death black hole: field (Dijkstra), timeline (pure clock), WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
   transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
-  actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
+  actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the corner cut, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
   common/          textures, GlPass (every WebGL2 pass), moodBuffer (a world's atmosphere in two
                    screen passes), boardScale (where the maze goes on the
                    screen: 80 % of the height, below the HUD band), colour, maths, seeded random,
@@ -235,5 +235,5 @@ the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arca
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`, `heroCharge`), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch, a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale); `winter-decay.html` is an older standalone page.
+`MsPacmanHero`, `heroCharge`), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale); `winter-decay.html` is an older standalone page.
 ```
