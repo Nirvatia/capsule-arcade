@@ -16,6 +16,8 @@ import {
 } from './doomRift';
 import type { Lane } from './doomRift';
 import { CROSS_ACTIVE } from '../../logic/doom/DoomBalance';
+import { block, liveTile, sealLocked, sealWarn, tar, warnTile } from './attackArt';
+import type { Tile } from './attackArt';
 
 export class DoomCombatView {
 	private readonly scars = new RiftScars();
@@ -114,7 +116,7 @@ export class DoomCombatView {
 		ctx.restore();
 	}
 
-	/** Phase 3: outer corridors rot into the abyss (they slow the player). */
+	/** Phase 3: outer corridors fill with tar (they slow the player). */
 	private drawCorruption(
 		ctx: CanvasRenderingContext2D,
 		boss: DoomBossService,
@@ -125,33 +127,15 @@ export class DoomCombatView {
 		if (boss.corruption <= 0) {
 			return;
 		}
-		const s = layout.tileSize;
-		ctx.save();
+		const tiles: Tile[] = [];
 		for (let y = 0; y < grid.height; y += 1) {
 			for (let x = 0; x < grid.width; x += 1) {
-				if (!boss.isCorrupted(x, y)) {
-					continue;
+				if (boss.isCorrupted(x, y)) {
+					tiles.push({ c: x, r: y });
 				}
-				const px = layout.offsetX + x * s;
-				const py = layout.offsetY + y * s;
-				const pulse = 0.5 + 0.5 * Math.sin(time * 2.2 + x * 0.9 + y * 1.3);
-				ctx.globalAlpha = 0.75;
-				ctx.fillStyle = '#12030a';
-				ctx.fillRect(px, py, s, s);
-				ctx.globalAlpha = 0.35 + 0.3 * pulse;
-				ctx.strokeStyle = '#d0472a';
-				ctx.lineWidth = Math.max(0.8, s * 0.045);
-				ctx.beginPath();
-				for (let k = 0; k < 3; k += 1) {
-					const ax = px + tileNoise(x, y, k) * s;
-					const ay = py + tileNoise(y, x, k + 5) * s;
-					ctx.moveTo(ax, ay);
-					ctx.lineTo(px + tileNoise(x + 3, y, k) * s, py + tileNoise(x, y + 7, k) * s);
-				}
-				ctx.stroke();
 			}
 		}
-		ctx.restore();
+		tar(ctx, tiles, layout.offsetX, layout.offsetY, layout.tileSize, time);
 	}
 
 	private drawPendingSeals(
@@ -163,27 +147,7 @@ export class DoomCombatView {
 		const s = layout.tileSize;
 		for (const seal of boss.pendingSealList) {
 			const p = 1 - Math.max(0, seal.warn) / seal.total;
-			const px = layout.offsetX + seal.x * s;
-			const py = layout.offsetY + seal.y * s;
-			const cx = px + s / 2;
-			const cy = py + s / 2;
-			// the tile darkens and a burning arc closes around it: standing here when it
-			// closes costs a hit; everything stays inside the tile
-			const flicker = p > 0.75 ? 0.6 + 0.4 * Math.sin(time * 50) : 1;
-			ctx.save();
-			ctx.globalAlpha = (0.25 + 0.45 * p) * flicker;
-			ctx.fillStyle = '#1a0004';
-			ctx.fillRect(px + 1, py + 1, s - 2, s - 2);
-			ctx.globalCompositeOperation = 'lighter';
-			ctx.globalAlpha = flicker;
-			ctx.strokeStyle = '#ffb070';
-			ctx.lineWidth = Math.max(1, s * 0.07);
-			ctx.lineCap = 'round';
-			ctx.beginPath();
-			ctx.arc(cx, cy, s * 0.42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p);
-			ctx.stroke();
-			ctx.restore();
-			drawSigil(ctx, cx, cy, s * 0.34, time, (0.45 + 0.55 * p) * flicker, p);
+			sealWarn(ctx, layout.offsetX + seal.x * s, layout.offsetY + seal.y * s, s, p, time);
 		}
 	}
 
@@ -208,39 +172,28 @@ export class DoomCombatView {
 				drawRiftWarning(ctx, hazard, layout, p, flicker, time);
 				continue;
 			}
+			ctx.globalAlpha = soon;
 			for (const tile of hazard.tiles) {
-				const px = layout.offsetX + tile.x * s;
-				const py = layout.offsetY + tile.y * s;
-				ctx.globalCompositeOperation = 'source-over';
-				ctx.globalAlpha = (0.18 + 0.32 * p) * flicker;
-				ctx.fillStyle = rift ? '#3a0010' : '#2a0508';
-				ctx.fillRect(px + 1, py + 1, s - 2, s - 2);
-				ctx.globalCompositeOperation = 'lighter';
-				ctx.globalAlpha = (0.3 + 0.7 * p) * flicker;
-				ctx.strokeStyle = rift ? '#ff3a1a' : '#ff7a3a';
-				ctx.lineWidth = Math.max(0.8, s * (0.04 + 0.05 * p));
-				ctx.beginPath();
-				// a crack that grows across the tile as the blast nears
-				const n = 4;
-				for (let k = 0; k <= n; k += 1) {
-					const u = (k / n) * (0.35 + 0.65 * p);
-					const jx = (tileNoise(tile.x, tile.y, k) - 0.5) * s * 0.4;
-					const jy = (tileNoise(tile.y, tile.x, k + 9) - 0.5) * s * 0.4;
-					const x = rift && hazard.axis === 'y' ? px + s / 2 + jx : px + u * s;
-					const y = rift && hazard.axis === 'y' ? py + u * s : py + s / 2 + jy;
-					if (k === 0) {
-						ctx.moveTo(x, y);
-					} else {
-						ctx.lineTo(x, y);
-					}
-				}
-				ctx.stroke();
-				if (!rift) {
-					ctx.beginPath();
-					ctx.arc(px + s / 2, py + s / 2, s * (0.42 - 0.25 * p), 0, Math.PI * 2);
-					ctx.stroke();
-				}
+				warnTile(ctx, layout.offsetX + tile.x * s, layout.offsetY + tile.y * s, s, p, time);
 			}
+			// a ring that closes on the middle of the blast
+			const mid = centre(hazard.tiles);
+			ctx.globalAlpha = flicker;
+			ctx.strokeStyle = 'rgba(255,214,110,.95)';
+			ctx.lineWidth = Math.max(1.4, s * 0.07);
+			ctx.setLineDash([s * 0.2, s * 0.14]);
+			ctx.lineDashOffset = -time * s;
+			ctx.beginPath();
+			ctx.arc(
+				layout.offsetX + (mid.x + 0.5) * s,
+				layout.offsetY + (mid.y + 0.5) * s,
+				s * (2.6 - 1.4 * p),
+				0,
+				Math.PI * 2
+			);
+			ctx.stroke();
+			ctx.setLineDash([]);
+			ctx.globalAlpha = 1;
 		}
 		ctx.restore();
 	}
@@ -263,22 +216,21 @@ export class DoomCombatView {
 				continue;
 			}
 			for (const tile of hazard.tiles) {
-				const cx = layout.offsetX + (tile.x + 0.5) * s;
-				const cy = layout.offsetY + (tile.y + 0.5) * s;
-				const r = s * (0.3 + 0.5 * (1 - k));
-				ctx.globalCompositeOperation = 'lighter';
-				const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-				g.addColorStop(0, `rgba(255,236,210,${k})`);
-				g.addColorStop(0.4, `rgba(255,110,40,${0.8 * k})`);
-				g.addColorStop(1, 'rgba(0,0,0,0)');
-				ctx.fillStyle = g;
-				ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-				ctx.globalCompositeOperation = 'source-over';
-				ctx.fillStyle = `rgba(0,0,0,${0.9 * k})`;
-				ctx.beginPath();
-				ctx.arc(cx, cy, s * 0.14 * k, 0, Math.PI * 2);
-				ctx.fill();
+				liveTile(ctx, layout.offsetX + tile.x * s, layout.offsetY + tile.y * s, s, k);
 			}
+			// the shock wave runs out from the middle
+			const mid = centre(hazard.tiles);
+			ctx.strokeStyle = `rgba(255,236,200,${0.85 * k})`;
+			ctx.lineWidth = Math.max(2, s * 0.12);
+			ctx.beginPath();
+			ctx.arc(
+				layout.offsetX + (mid.x + 0.5) * s,
+				layout.offsetY + (mid.y + 0.5) * s,
+				s * (1 + 1.6 * (1 - k)),
+				0,
+				Math.PI * 2
+			);
+			ctx.stroke();
 		}
 		ctx.restore();
 	}
@@ -298,36 +250,10 @@ export class DoomCombatView {
 				alpha = 0.4 + 0.6 * Math.abs(Math.sin(time * 10));
 			}
 			if (cell.kind === 'seal') {
-				ctx.save();
-				ctx.globalAlpha = alpha * 0.85;
-				ctx.fillStyle = '#12030a';
-				ctx.fillRect(px, py, s, s);
-				ctx.restore();
-				drawSigil(ctx, px + s / 2, py + s / 2, s * 0.46, time, alpha, 1);
-				continue;
+				sealLocked(ctx, px, py, s, time, alpha);
+			} else {
+				block(ctx, px, py, s, time, alpha);
 			}
-			ctx.save();
-			ctx.globalAlpha = alpha;
-			ctx.fillStyle = '#050005';
-			ctx.fillRect(px, py, s, s);
-			ctx.strokeStyle = '#440011';
-			ctx.lineWidth = Math.max(1, s * 0.06);
-			ctx.beginPath();
-			ctx.moveTo(px, py + s * 0.1);
-			ctx.lineTo(px + s * 0.25, py);
-			ctx.lineTo(px + s * 0.5, py + s * 0.12);
-			ctx.lineTo(px + s * 0.75, py);
-			ctx.lineTo(px + s, py + s * 0.08);
-			ctx.lineTo(px + s * 0.9, py + s * 0.4);
-			ctx.lineTo(px + s, py + s * 0.7);
-			ctx.lineTo(px + s * 0.85, py + s);
-			ctx.lineTo(px + s * 0.55, py + s * 0.88);
-			ctx.lineTo(px + s * 0.3, py + s);
-			ctx.lineTo(px, py + s * 0.85);
-			ctx.lineTo(px + s * 0.08, py + s * 0.5);
-			ctx.closePath();
-			ctx.stroke();
-			ctx.restore();
 		}
 	}
 
@@ -489,44 +415,14 @@ export class DoomCombatView {
 	}
 }
 
-function tileNoise(x: number, y: number, k: number): number {
-	const v = Math.sin(x * 12.9898 + y * 78.233 + k * 37.719) * 43758.5453;
-	return v - Math.floor(v);
-}
-
-/** Seal glyph: a burning ring with a pentagram, used for warnings and locked tiles. */
-function drawSigil(
-	ctx: CanvasRenderingContext2D,
-	cx: number,
-	cy: number,
-	r: number,
-	time: number,
-	alpha: number,
-	strength: number
-): void {
-	ctx.save();
-	ctx.translate(cx, cy);
-	ctx.rotate(time * 0.8);
-	ctx.globalCompositeOperation = 'lighter';
-	ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-	ctx.strokeStyle = '#ff3a1a';
-	ctx.lineWidth = Math.max(0.8, r * 0.12);
-	ctx.beginPath();
-	ctx.arc(0, 0, r, 0, Math.PI * 2);
-	ctx.stroke();
-	ctx.lineWidth = Math.max(0.6, r * 0.08);
-	ctx.strokeStyle = strength >= 1 ? '#ffb070' : '#ff6a3a';
-	ctx.beginPath();
-	for (let i = 0; i <= 5; i += 1) {
-		const a = -Math.PI / 2 + (i * 4 * Math.PI) / 5;
-		const x = Math.cos(a) * r * 0.92;
-		const y = Math.sin(a) * r * 0.92;
-		if (i === 0) {
-			ctx.moveTo(x, y);
-		} else {
-			ctx.lineTo(x, y);
-		}
-	}
-	ctx.stroke();
-	ctx.restore();
+/** The middle of a set of tiles, in tile coordinates. */
+function centre(tiles: readonly { readonly x: number; readonly y: number }[]): {
+	x: number;
+	y: number;
+} {
+	const n = Math.max(1, tiles.length);
+	return {
+		x: tiles.reduce((m, t) => m + t.x, 0) / n,
+		y: tiles.reduce((m, t) => m + t.y, 0) / n
+	};
 }

@@ -268,8 +268,20 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   horns. No wound, cracks, second pair of horns, glow or flames: each phase adds one thing, so the
   shape stays readable at one tile. The echo is violet. A red body sinks into the red flesh, so the
   ink line, the eyes and the rim light carry him.
+- **The boss's attacks (in the game)**: one visual language, so danger reads at a glance on the grey
+  plates and the dark floor, and a warning never looks like a blow or a slow like damage.
+  _Damage_ (the rift, the cross's arms, the eruption's disc, the seals' junctions): the warning is
+  amber hazard hatching that marches over the tiles and a dashed edge, no glow and no fill; the blow
+  is a white-hot core with an orange edge and a dark outline, one continuous beam along a rift or an
+  arm, a disc of hot tiles with a shock ring for the eruption. What a rift leaves is only soot.
+  _The seal_ keeps its ring and pentagram, outlined in ink and lit pale: while it burns the ring
+  closes and the star is drawn stroke by stroke on a darkened tile; once locked it is a dark plate
+  with the whole glyph, a temporary wall that does no harm. _A void cell_ left by the boss is an
+  iron shutter with braces, rivets and a dim red sigil, also a temporary wall. _Slowing_ (the
+  corrupted corridors of phase 3): black glossy tar with bubbles, clipped to its tiles, nothing
+  burns. _The pull_ is unchanged (cords with ember beads).
 - **The hell's heroes (final, as they are)**: the season heroes (the owner's decision: they stay as they are, no hell mark, no armor) plus one thing the hell adds, the BFG charge: the body swells and the mouth gapes, a green ring closes in on it, a glow lights the throat, white-hot at the end; the release is a recoil and a flash. The berserk is the awoken look (his ki flames, her glowing bow). The rolling ball at the rifts is the heroes' own.
-- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.2).
+- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.1).
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze is built of charred iron plates (the owner's pick, "metal doom"): one block to a tile,
   neutral and lighter than the red floor so the maze parts from the ground in grey too, each with a

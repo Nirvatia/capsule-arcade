@@ -1,8 +1,8 @@
-// The rift attack (the owner's mock-up `prototypes/pacman/art/hell-flesh-attacks.html`): the
-// corridor the player runs in tears open along its length like the tunnels' seam. First the
-// marking: a jagged seam grows and the red lips of flesh pull apart as the blast nears; then
-// the burst along the whole corridor, a dark gap with a white-hot core; then a scar that
-// smoulders and fades. Drawn in screen pixels, along the corridor's axis.
+// The rift and the cross's arms, drawn along a whole lane of tiles in the attacks' one visual
+// language (`attackArt`): the warning is amber hazard hatching with a marching dashed edge, no
+// glow and no fill; the blow is one continuous white-hot beam with an orange edge and a dark
+// outline; what it leaves is only soot, so it is never taken for a live hazard. Drawn in screen
+// pixels, along the corridor's axis.
 import type { GridLayout } from '../maze/GridView';
 import type { DoomHazard } from '../../logic/doom/DoomHazards';
 
@@ -16,8 +16,6 @@ interface Beam {
 	readonly ang: number;
 	/** From the first tile's centre to the last one's, px. */
 	readonly len: number;
-	/** Seed of the seam's jag. */
-	readonly seed: number;
 }
 
 function noise(i: number, k: number): number {
@@ -50,27 +48,7 @@ function beamBetween(
 	const y1 = layout.offsetY + (b.y + 0.5) * s;
 	const len = Math.hypot(x1 - x0, y1 - y0);
 	const ang = len > 0 ? Math.atan2(y1 - y0, x1 - x0) : axis === 'y' ? Math.PI / 2 : 0;
-	return { x0, y0, ang, len, seed: a.x * 7 + a.y * 13 };
-}
-
-/** The seam: points from one end of the corridor to the other, jagged across the axis. */
-function seam(beam: Beam, s: number): Array<[number, number]> {
-	const u0 = -s * 0.5;
-	const u1 = beam.len + s * 0.5;
-	const n = Math.max(6, Math.round(((u1 - u0) / s) * 3));
-	const pts: Array<[number, number]> = [];
-	for (let i = 0; i <= n; i += 1) {
-		const u = i / n;
-		const env = Math.sin(Math.PI * u);
-		pts.push([u0 + (u1 - u0) * u, (noise(beam.seed, i) - 0.5) * 2 * s * 0.12 * (0.4 + 0.6 * env)]);
-	}
-	return pts;
-}
-
-function trace(ctx: CanvasRenderingContext2D, pts: ReadonlyArray<readonly [number, number]>): void {
-	ctx.beginPath();
-	pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
-	ctx.stroke();
+	return { x0, y0, ang, len };
 }
 
 /** Puts the context in the beam's frame: x along the corridor from the first tile's centre. */
@@ -115,40 +93,36 @@ function warnBeam(
 	time: number
 ): void {
 	const s = layout.tileSize;
-	const pts = seam(beam, s);
+	const x0 = -s * 0.5;
+	const w = beam.len + s;
 	ctx.save();
 	frame(ctx, beam);
-	ctx.lineCap = 'round';
-	ctx.lineJoin = 'round';
-	ctx.fillStyle = `rgba(30,2,6,${(0.2 + 0.3 * p) * soon})`;
-	ctx.fillRect(-s * 0.5, -s * 0.5 + 1, beam.len + s, s - 2);
-	ctx.strokeStyle = '#12030a';
-	ctx.lineWidth = s * (0.05 + 0.08 * p);
-	trace(ctx, pts);
-	// the lips of flesh pull apart from the middle outwards
-	for (let i = 0; i < pts.length - 1; i += 1) {
-		const u = Math.abs(i / (pts.length - 1) - 0.5) * 2;
-		if (u > p * 1.1 + 0.05) {
-			continue;
-		}
-		const gap = s * (0.03 + 0.17 * p) * (0.6 + 0.4 * noise(i, 8));
-		ctx.strokeStyle = `rgba(196,84,76,${0.9 * soon})`;
-		ctx.lineWidth = s * 0.07;
-		for (const side of [-1, 1]) {
-			ctx.beginPath();
-			ctx.moveTo(pts[i][0], pts[i][1] + side * gap);
-			ctx.lineTo(pts[i + 1][0], pts[i + 1][1] + side * gap);
-			ctx.stroke();
-		}
+	ctx.fillStyle = `rgba(24,8,2,${(0.3 + 0.25 * p) * soon})`;
+	ctx.fillRect(x0, -s * 0.5 + 1, w, s - 2);
+	ctx.save();
+	ctx.beginPath();
+	ctx.rect(x0, -s * 0.5 + 1, w, s - 2);
+	ctx.clip();
+	ctx.strokeStyle = `rgba(255,200,70,${(0.4 + 0.5 * p) * soon})`;
+	ctx.lineWidth = s * 0.11;
+	const step = s * 0.3;
+	const off = (time * s * 0.5) % step;
+	ctx.beginPath();
+	for (let k = x0 - s; k < x0 + w; k += step) {
+		ctx.moveTo(k + off, s * 0.5);
+		ctx.lineTo(k + off + s, -s * 0.5);
 	}
-	ctx.globalCompositeOperation = 'lighter';
-	ctx.strokeStyle = `rgba(255,58,26,${(0.2 + 0.7 * p) * soon})`;
-	ctx.lineWidth = s * (0.05 + 0.1 * p);
-	trace(ctx, pts);
-	for (let i = 0; i < 10; i += 1) {
-		const q = (time * 1.3 + noise(i, 5)) % 1;
-		ctx.fillStyle = `rgba(255,170,80,${0.8 * p * (1 - q)})`;
-		ctx.fillRect(-s * 0.5 + (beam.len + s) * noise(i, 6), -q * s * 1.1, 2, 2);
+	ctx.stroke();
+	ctx.restore();
+	ctx.strokeStyle = `rgba(255,214,110,${0.9 * soon})`;
+	ctx.lineWidth = Math.max(1.2, s * 0.06);
+	ctx.setLineDash([s * 0.18, s * 0.12]);
+	ctx.lineDashOffset = -time * s * 0.5;
+	for (const side of [-1, 1]) {
+		ctx.beginPath();
+		ctx.moveTo(x0, side * (s * 0.5 - 1.5));
+		ctx.lineTo(x0 + w, side * (s * 0.5 - 1.5));
+		ctx.stroke();
 	}
 	ctx.restore();
 }
@@ -186,39 +160,48 @@ function burstBeam(
 	time: number
 ): void {
 	const s = layout.tileSize;
-	const pts = seam(beam, s);
-	const wobble = 0.7 + 0.3 * Math.sin(time * 60);
+	const x0 = -s * 0.5;
+	const w = beam.len + s;
+	const wobble = 0.85 + 0.15 * Math.sin(time * 60);
 	ctx.save();
 	frame(ctx, beam);
-	ctx.lineCap = 'round';
-	ctx.lineJoin = 'round';
-	// the gap: a dark band round the seam
-	ctx.fillStyle = `rgba(8,2,6,${0.9 * k})`;
-	ctx.beginPath();
-	pts.forEach((p, i) =>
-		i ? ctx.lineTo(p[0], p[1] - s * 0.34 * k) : ctx.moveTo(p[0], p[1] - s * 0.34 * k)
-	);
-	for (let i = pts.length - 1; i >= 0; i -= 1) {
-		ctx.lineTo(pts[i][0], pts[i][1] + s * 0.34 * k);
-	}
-	ctx.closePath();
-	ctx.fill();
+	ctx.fillStyle = `rgba(40,6,0,${0.7 * k})`;
+	ctx.fillRect(x0, -s * 0.5, w, s);
 	ctx.globalCompositeOperation = 'lighter';
-	const layers: ReadonlyArray<readonly [string, number, number]> = [
-		['255,40,20', 0.5, 1.1],
-		['255,140,60', 0.8, 0.55],
-		['255,255,240', 1, 0.16]
-	];
-	for (const [rgb, a, w] of layers) {
-		ctx.strokeStyle = `rgba(${rgb},${a * k})`;
-		ctx.lineWidth = s * w * wobble;
-		trace(ctx, pts);
+	const g = ctx.createLinearGradient(0, -s * 0.5, 0, s * 0.5);
+	g.addColorStop(0, 'rgba(255,60,10,0)');
+	g.addColorStop(0.2, `rgba(255,110,30,${0.75 * k})`);
+	g.addColorStop(0.5, `rgba(255,250,232,${k})`);
+	g.addColorStop(0.8, `rgba(255,110,30,${0.75 * k})`);
+	g.addColorStop(1, 'rgba(255,60,10,0)');
+	ctx.fillStyle = g;
+	ctx.fillRect(x0, -s * 0.5, w, s);
+	ctx.fillStyle = `rgba(255,255,244,${0.9 * k})`;
+	ctx.fillRect(x0, -s * 0.11 * wobble, w, s * 0.22 * wobble);
+	ctx.globalCompositeOperation = 'source-over';
+	// the outline: dark at the lane's edge, a pale line just inside it
+	ctx.strokeStyle = `rgba(20,6,2,${0.95 * k})`;
+	ctx.lineWidth = Math.max(1.6, s * 0.09);
+	for (const side of [-1, 1]) {
+		ctx.beginPath();
+		ctx.moveTo(x0, side * (s * 0.5 - 0.5));
+		ctx.lineTo(x0 + w, side * (s * 0.5 - 0.5));
+		ctx.stroke();
 	}
-	for (let i = 0; i < 26; i += 1) {
-		const q = (1 - k) * 0.35 * 2.5 + noise(i, 11);
-		ctx.fillStyle = `rgba(255,${Math.round(180 + 60 * noise(i, 3))},90,${k})`;
+	ctx.strokeStyle = `rgba(255,240,200,${0.9 * k})`;
+	ctx.lineWidth = Math.max(1, s * 0.04);
+	for (const side of [-1, 1]) {
+		ctx.beginPath();
+		ctx.moveTo(x0, side * s * 0.41);
+		ctx.lineTo(x0 + w, side * s * 0.41);
+		ctx.stroke();
+	}
+	ctx.globalCompositeOperation = 'lighter';
+	for (let i = 0; i < 20; i += 1) {
+		const q = (1 - k) * 0.9 + noise(i, 11);
+		ctx.fillStyle = `rgba(255,${Math.round(190 + 60 * noise(i, 3))},110,${k})`;
 		const up = noise(i, 4) > 0.5 ? 1 : -1;
-		ctx.fillRect(-s * 0.5 + (beam.len + s) * noise(i, 9), -((q * 1.4) % 1) * s * 1.3 * up, 3, 3);
+		ctx.fillRect(x0 + w * noise(i, 9), -((q * 1.3) % 1) * s * 0.9 * up, 2.5, 2.5);
 	}
 	ctx.restore();
 }
@@ -250,23 +233,11 @@ export class RiftScars {
 			if (!beam || a <= 0) {
 				continue;
 			}
-			const pts = seam(beam, s);
+			// only soot, with no glow: what is left must never read as a live hazard
 			ctx.save();
 			frame(ctx, beam);
-			ctx.lineCap = 'round';
-			ctx.lineJoin = 'round';
-			ctx.strokeStyle = `rgba(10,2,4,${0.8 * a})`;
-			ctx.lineWidth = s * 0.34;
-			trace(ctx, pts);
-			ctx.globalCompositeOperation = 'lighter';
-			ctx.strokeStyle = `rgba(255,110,40,${0.45 * a * (0.6 + 0.4 * Math.sin(time * 5))})`;
-			ctx.lineWidth = s * 0.06;
-			trace(ctx, pts);
-			for (let i = 0; i < 8; i += 1) {
-				const q = (time * 0.7 + noise(i, 5)) % 1;
-				ctx.fillStyle = `rgba(255,150,70,${0.7 * a * (1 - q)})`;
-				ctx.fillRect(-s * 0.5 + (beam.len + s) * noise(i, 6), -q * s * 0.9, 2, 2);
-			}
+			ctx.fillStyle = `rgba(10,3,4,${0.55 * a})`;
+			ctx.fillRect(-s * 0.5, -s * 0.5 + 1, beam.len + s, s - 2);
 			ctx.restore();
 		}
 	}

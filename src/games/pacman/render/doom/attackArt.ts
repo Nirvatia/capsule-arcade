@@ -1,14 +1,17 @@
-// The boss's attacks redone as one visual language (the owner: danger must read at a glance
-// against the plates and the dark floor; a telegraph differs from a live hazard; a slowing tile
-// must not look like burning damage):
-//  - damage: the warning is amber hazard hatching and a marching dashed edge (no glow, no fill);
-//    the blow is a white-hot core with an orange edge and a dark outline.
-//  - block (void cells, locked seals): a dark iron shutter with braces, rivets and a dim sigil,
-//    a temporary wall that does no harm.
-//  - slow (the corrupted tiles): black tar, glossy, with bubbles; nothing burns.
-//  - seals: the known ring and pentagram, outlined and lit so they read (the pull keeps its look).
+// The boss's attacks in one visual language (the owner's picks from a comparison page): danger must
+// read at a glance against the plates and the dark floor, a warning must differ from a blow, and a
+// slowing tile must not look like burning damage.
+//  - damage: the warning is amber hazard hatching and a marching dashed edge (no glow, no fill),
+//    the blow a white-hot core with an orange edge and a dark outline (`warnTile`, `liveTile`;
+//    the rift and the cross use the same colours along a whole lane, `doomRift`).
+//  - the seal: its ring and pentagram, outlined in ink and lit pale so it parts from the red floor
+//    (`sealWarn` while it burns, `sealLocked` once it is a wall).
+//  - block (a void cell left by the boss): an iron shutter, a temporary wall that does no harm.
+//  - slow (the corrupted tiles of phase 3): black tar, glossy, with bubbles, clipped to its tiles.
 // Everything is drawn in screen pixels, `s` the tile size, `x, y` a tile's top-left corner.
 type Ctx = CanvasRenderingContext2D;
+
+/** A tile by its column and row. */
 export interface Tile {
 	readonly c: number;
 	readonly r: number;
@@ -16,10 +19,10 @@ export interface Tile {
 
 const INK = '#14080a';
 
-const noise = (a: number, b: number): number => {
+function noise(a: number, b: number): number {
 	const v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
 	return v - Math.floor(v);
-};
+}
 
 /** One warning tile: amber hatching that marches, a dashed edge, a faint dark floor under it. */
 export function warnTile(ctx: Ctx, x: number, y: number, s: number, p: number, t: number): void {
@@ -76,59 +79,6 @@ export function liveTile(ctx: Ctx, x: number, y: number, s: number, k: number): 
 	ctx.strokeStyle = `rgba(255,240,200,${0.9 * k})`;
 	ctx.lineWidth = Math.max(1, s * 0.04);
 	ctx.strokeRect(x + s * 0.09, y + s * 0.09, s * 0.82, s * 0.82);
-	ctx.restore();
-}
-
-/** A straight run of tiles as a rift or a cross arm: warning, then a continuous beam. */
-export function lane(
-	ctx: Ctx,
-	tiles: readonly Tile[],
-	ox: number,
-	oy: number,
-	s: number,
-	live: boolean,
-	p: number,
-	t: number
-): void {
-	for (const tile of tiles) {
-		const x = ox + tile.c * s;
-		const y = oy + tile.r * s;
-		if (live) liveTile(ctx, x, y, s, p);
-		else warnTile(ctx, x, y, s, p, t);
-	}
-}
-
-/** The eruption: a disc of tiles; warning rings contract, the blow adds a shock ring. */
-export function eruption(
-	ctx: Ctx,
-	tiles: readonly Tile[],
-	centre: Tile,
-	ox: number,
-	oy: number,
-	s: number,
-	live: boolean,
-	p: number,
-	t: number
-): void {
-	lane(ctx, tiles, ox, oy, s, live, p, t);
-	const cx = ox + (centre.c + 0.5) * s;
-	const cy = oy + (centre.r + 0.5) * s;
-	ctx.save();
-	if (live) {
-		ctx.strokeStyle = `rgba(255,236,200,${0.85 * p})`;
-		ctx.lineWidth = Math.max(2, s * 0.12);
-		ctx.beginPath();
-		ctx.arc(cx, cy, s * (1 + 1.6 * (1 - p)), 0, Math.PI * 2);
-		ctx.stroke();
-	} else {
-		ctx.strokeStyle = 'rgba(255,214,110,.95)';
-		ctx.lineWidth = Math.max(1.4, s * 0.07);
-		ctx.setLineDash([s * 0.2, s * 0.14]);
-		ctx.lineDashOffset = -t * s;
-		ctx.beginPath();
-		ctx.arc(cx, cy, s * (2.6 - 1.4 * p), 0, Math.PI * 2);
-		ctx.stroke();
-	}
 	ctx.restore();
 }
 
@@ -189,7 +139,14 @@ export function block(ctx: Ctx, x: number, y: number, s: number, t: number, fade
 }
 
 /** Tar: black glossy pools that merge across neighbouring tiles, with a sheen and bubbles. */
-export function tar(ctx: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number): void {
+export function tar(
+	ctx: Ctx,
+	tiles: readonly Tile[],
+	ox: number,
+	oy: number,
+	s: number,
+	t: number
+): void {
 	ctx.save();
 	// the pool never leaves its tiles
 	ctx.beginPath();
@@ -267,7 +224,15 @@ export function tar(ctx: Ctx, tiles: readonly Tile[], ox: number, oy: number, s:
  * on a dark disc, so it parts from the red floor. `p` 0..1: how far the warning has come (the ring
  * closes, the pentagram is drawn stroke by stroke); 1 for a locked seal.
  */
-export function sigil(ctx: Ctx, cx: number, cy: number, r: number, t: number, p: number, fade = 1): void {
+export function sigil(
+	ctx: Ctx,
+	cx: number,
+	cy: number,
+	r: number,
+	t: number,
+	p: number,
+	fade = 1
+): void {
 	ctx.save();
 	ctx.globalAlpha = fade;
 	ctx.translate(cx, cy);
