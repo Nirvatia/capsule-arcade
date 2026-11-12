@@ -16,6 +16,8 @@ import { MoodBuffer } from '../../common/moodBuffer';
 
 const T = MEADOW_TILE;
 const REBAKE_DELAY_MS = 160;
+/** How far ahead of the mouth (tiles) the dots feel his pull, when `attract` is given. */
+const SUCK_REACH = 0.9;
 
 interface Point {
 	readonly x: number;
@@ -333,7 +335,11 @@ export class MeadowWorld {
 	 * actors, so neither the night nor the weather dims it. `collected(x, y)` tells which
 	 * food was eaten. Leaves the context untransformed.
 	 */
-	drawFood(ctx: CanvasRenderingContext2D, collected: (x: number, y: number) => boolean): void {
+	drawFood(
+		ctx: CanvasRenderingContext2D,
+		collected: (x: number, y: number) => boolean,
+		attract: { readonly x: number; readonly y: number; readonly angle: number } | null = null
+	): void {
 		const live = this.theme.live;
 		const t = this.t;
 		ctx.save();
@@ -343,10 +349,32 @@ export class MeadowWorld {
 		ctx.scale(this.sc, this.sc);
 		const pellet = live.pellet.texture();
 		const ps = live.pellet.size;
+		// `attract` (the hero's mouth, tiles): the dots just ahead lean into it and shrink
+		const ax = attract ? attract.x * T : 0;
+		const ay = attract ? attract.y * T : 0;
+		const ux = attract ? Math.cos(attract.angle) : 0;
+		const uy = attract ? Math.sin(attract.angle) : 0;
 		for (const p of this.pellets) {
-			if (!collected(p.c, p.r)) {
-				ctx.drawImage(pellet, p.x - ps / 2, p.y - ps / 2, ps, ps);
+			if (collected(p.c, p.r)) {
+				continue;
 			}
+			let x = p.x;
+			let y = p.y;
+			let s = ps;
+			if (attract) {
+				const dx = p.x - ax;
+				const dy = p.y - ay;
+				const ahead = (dx * ux + dy * uy) / T;
+				const side = Math.abs(dx * uy - dy * ux) / T;
+				if (ahead > -0.2 && ahead < SUCK_REACH && side < 0.45) {
+					const k = 1 - Math.max(0, ahead) / SUCK_REACH;
+					const pull = 0.45 * k * k;
+					x -= dx * pull;
+					y -= dy * pull;
+					s *= 1 - 0.35 * k * k;
+				}
+			}
+			ctx.drawImage(pellet, x - s / 2, y - s / 2, s, s);
 		}
 		const en = live.energizer;
 		const enGlow = glowTexture(en.glow);

@@ -130,7 +130,7 @@ export class PacmanHero extends Hero {
 		}
 	}
 
-	/** A small four-point star on the highlight while he is powered. */
+	/** A small four-point star on the highlight while he is powered; his minimal eye if on. */
 	protected drawWorn(
 		ctx: CanvasRenderingContext2D,
 		R: number,
@@ -139,6 +139,36 @@ export class PacmanHero extends Hero {
 		ly: number
 	): void {
 		drawStarGlint(ctx, R, p, lx, ly);
+		if (this.feel.eye) this.drawEye(ctx, R);
+	}
+
+	/**
+	 * His eye, the minimum (the owner: a dot under a frowning brow): a dark dot that follows the
+	 * gaze and a short thick brow slanting down to the front. Never under 1.4 px, so it still
+	 * reads at a tile.
+	 */
+	private drawEye(ctx: CanvasRenderingContext2D, R: number): void {
+		const ex = R * 0.16;
+		const ey = -R * 0.5;
+		const ink = css(PACMAN_DESIGN.calm.ink);
+		ctx.strokeStyle = ink;
+		ctx.lineCap = 'round';
+		// the brow: short, slanting down to the front, clear of the dot so the two never merge
+		ctx.lineWidth = Math.max(1.2, R * 0.075);
+		ctx.beginPath();
+		ctx.moveTo(ex - R * 0.16, ey - R * 0.3);
+		ctx.lineTo(ex + R * 0.15, ey - R * 0.19);
+		ctx.stroke();
+		ctx.fillStyle = ink;
+		ctx.beginPath();
+		ctx.arc(
+			ex + this.gazeX * R * 0.04,
+			ey + R * 0.04 + this.gazeY * R * 0.05,
+			Math.max(1.3, R * 0.085),
+			0,
+			Math.PI * 2
+		);
+		ctx.fill();
 	}
 
 	/** The season's own little things off the back and on bursts (no dust: it read as gas). */

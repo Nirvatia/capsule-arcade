@@ -59,7 +59,37 @@ export interface HeroState {
 	readonly dying?: boolean;
 	/** The world he is in: its colour touches his rim light, trail and particles. */
 	readonly season?: HeroSeason;
+	/** Where he looks, a world angle (the direction the player asked for), or none: ahead. */
+	readonly look?: number | null;
 }
+
+/**
+ * Ways to make the hero feel like he moves through the maze (the `feel` prototype; all off by
+ * default, the game keeps today's hero until the owner picks): his eye leads the move, a turn
+ * is a smear, a wall a bump, a turn kicks up a little of the world, the body is a ball that
+ * rolls; Pac-Man's minimal eye (a dot under a frowning brow).
+ */
+export interface HeroFeel {
+	readonly gaze: boolean;
+	readonly smear: boolean;
+	readonly bump: boolean;
+	readonly puff: boolean;
+	readonly sphere: boolean;
+	readonly eye: boolean;
+}
+
+export const NO_FEEL: HeroFeel = {
+	gaze: false,
+	smear: false,
+	bump: false,
+	puff: false,
+	sphere: false,
+	eye: false
+};
+
+/** Seconds a turn's smear and a wall's bump last. */
+const SMEAR_TIME = 0.08;
+const BUMP_TIME = 0.16;
 
 export interface Palette {
 	readonly light: RGB;
@@ -329,6 +359,14 @@ export abstract class Hero {
 	 * motion, the owner's review); bites, the wind-up and the burst pulse the whole body.
 	 */
 	protected readonly size = new Spring(1);
+	protected feel: HeroFeel = NO_FEEL;
+	/** The gaze in the frame (the hero faces +x): a unit-ish vector, eased. */
+	protected gazeX = 1;
+	protected gazeY = 0;
+	private smearT = 0;
+	private bumpT = 0;
+	/** Body radii travelled, for the sphere's meridians (always forward). */
+	private travel = 0;
 	private flash = 0;
 	/** Curled up into a rolling ball (at a tunnel), and how far the ball has rolled, radians. */
 	private ballOn = false;
@@ -342,6 +380,37 @@ export abstract class Hero {
 	private embers: Particle[] = [];
 	private bursts: Burst[] = [];
 	private seed = 11;
+
+	setFeel(feel: HeroFeel): void {
+		this.feel = feel;
+	}
+
+	/** A turn has just been taken (from `fromAngle`): the smear and the kick-up. */
+	turnKick(fromAngle: number): void {
+		if (this.feel.smear) {
+			this.smearT = SMEAR_TIME;
+		}
+		if (this.feel.puff && this.dying < 0) {
+			const kind = this.particleFor?.('trail') ?? 'ember';
+			for (let i = 0; i < 5; i++) {
+				// thrown on along the old heading, out of the corner
+				this.spawn(
+					kind,
+					this.power > 0.5,
+					fromAngle + (this.random() - 0.5) * 1.2,
+					2.5 + this.random() * 2.5
+				);
+			}
+		}
+	}
+
+	/** He ran into a wall: a short squash against it. */
+	bump(): void {
+		if (this.feel.bump && this.dying < 0) {
+			this.bumpT = BUMP_TIME;
+			this.size.velocity -= 1.5;
+		}
+	}
 
 	setRadius(r: number): void {
 		this.r = r;
@@ -470,7 +539,23 @@ export abstract class Hero {
 		if (step < this.r * 3) {
 			const sign = Math.abs(dx) >= Math.abs(dy) ? Math.sign(dx) : Math.sign(dy);
 			this.roll += (step / Math.max(1, this.r)) * sign;
+			this.travel += step / Math.max(1, this.r);
 		}
+		// the gaze, in the frame: towards the asked direction, or ahead
+		{
+			let gx = 1;
+			let gy = 0;
+			if (this.feel.gaze && s.look !== undefined && s.look !== null) {
+				const rel = s.look - s.angle;
+				gx = Math.cos(rel);
+				gy = Math.sin(rel) * this.flip;
+			}
+			const k = Math.min(1, dt * 18);
+			this.gazeX += (gx - this.gazeX) * k;
+			this.gazeY += (gy - this.gazeY) * k;
+		}
+		this.smearT = Math.max(0, this.smearT - dt);
+		this.bumpT = Math.max(0, this.bumpT - dt);
 		let turn = Math.abs(s.angle - this.angle) % (Math.PI * 2);
 		if (turn > Math.PI) turn = Math.PI * 2 - turn;
 		if (turn > 0.6) this.onTurn?.();
@@ -750,9 +835,16 @@ export abstract class Hero {
 		ctx.rotate(this.angle + spin);
 		ctx.globalAlpha *= 1 - this.sink;
 		const squash = 1 - 0.4 * this.sink;
+		// a turn smears him along the new heading for a moment; a wall squashes him against it
+		const sm = this.smearT > 0 ? Math.sin((this.smearT / SMEAR_TIME) * Math.PI) : 0;
+		const bu = this.bumpT > 0 ? Math.sin((this.bumpT / BUMP_TIME) * Math.PI) : 0;
+		const along = 1 + 0.22 * sm - 0.2 * bu;
+		const across = 1 - 0.12 * sm + 0.12 * bu;
+		// (the frame faces +x: the bump pushes him a little into the wall ahead)
+		if (bu > 0) ctx.translate(r * 0.12 * bu, 0);
 		ctx.scale(
-			this.size.value * S * squash,
-			this.size.value * S * this.flip * squash * (1 - 0.35 * this.sink)
+			this.size.value * S * squash * along,
+			this.size.value * S * this.flip * squash * (1 - 0.35 * this.sink) * across
 		);
 		const R = r;
 
@@ -795,6 +887,7 @@ export abstract class Hero {
 		}
 		const body = this.composeBody(R, lx, ly, p, pulse, mu, md, bend);
 		ctx.drawImage(body.canvas, -body.half, -body.half, body.half * 2, body.half * 2);
+		if (this.feel.sphere) this.paintMeridians(ctx, R, outline);
 		this.over?.(ctx, R, {
 			outline,
 			hinge: A,
@@ -822,6 +915,41 @@ export abstract class Hero {
 
 		this.drawFront?.(ctx);
 		this.drawBursts(ctx);
+	}
+
+	/**
+	 * The ball: faint meridians running back over the body as he travels, so the disc reads as a
+	 * sphere rolling forward (the light stays put in the world).
+	 */
+	private paintMeridians(
+		ctx: CanvasRenderingContext2D,
+		R: number,
+		outline: (c: CanvasRenderingContext2D) => void
+	): void {
+		ctx.save();
+		outline(ctx);
+		ctx.clip();
+		ctx.lineWidth = R * 0.07;
+		const step = 0.9;
+		const shift = (this.travel * 0.55) % step;
+		for (let u = 1 + step - shift; u > -1; u -= step) {
+			if (u >= 1 || u <= -1) continue;
+			// a meridian at u (-1 back .. 1 front): an ellipse seen edge-on as it nears the rim
+			const a = 0.3 * (1 - Math.abs(u));
+			ctx.strokeStyle = `rgba(255,255,255,${a})`;
+			ctx.beginPath();
+			ctx.ellipse(
+				0,
+				0,
+				Math.abs(u) * R,
+				R,
+				0,
+				u > 0 ? -Math.PI / 2 : Math.PI / 2,
+				u > 0 ? Math.PI / 2 : Math.PI * 1.5
+			);
+			ctx.stroke();
+		}
+		ctx.restore();
 	}
 
 	// ── hooks: what each hero adds ──

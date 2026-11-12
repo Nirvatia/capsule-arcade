@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Pac-Man · Feel</title>
+    <!-- Prototype: how the hero feels in motion, every idea on its own switch, played with the
+         arrows on a real season level. Built from the sources: `node prototypes/pacman/build.mjs feel`;
+         open as a file. -->
+    <style>
+      html,body{height:100%;margin:0;overflow:hidden;background:#07060a;color:#fff}
+      #view{position:fixed;inset:0;display:block}
+      .bar{position:fixed;left:50%;transform:translateX(-50%);z-index:5;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:calc(100vw - 32px);max-width:980px}
+      #ctl{bottom:max(12px,env(safe-area-inset-bottom))}
+      #feel{top:max(10px,env(safe-area-inset-top))}
+      .bt{border:0;cursor:pointer;padding:7px 12px;border-radius:999px;font:700 13px "Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#2a2410;background:linear-gradient(#fffaf0,#f2e2b8);box-shadow:0 3px 0 #c9ac62,0 6px 12px rgba(40,30,10,.25)}
+      .bt[aria-pressed="true"]{transform:translateY(2px);color:#fff;background:linear-gradient(#e0a838,#a8721a);box-shadow:0 1px 0 #5a3a08,0 0 12px rgba(255,200,80,.55)}
+      .hint{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:64px;font:600 12px "Trebuchet MS",system-ui,sans-serif;color:rgba(255,255,255,.75);background:rgba(0,0,0,.45);padding:4px 8px;border-radius:6px}
+    </style>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <div class="bar" id="feel"></div>
+    <div class="bar" id="ctl">
+      <button class="bt" id="all">Всё вкл / выкл</button>
+      <button class="bt" id="who">Pac-Man</button>
+      <button class="bt" data-season="summer">Лето</button>
+      <button class="bt" data-season="autumn">Осень</button>
+      <button class="bt" data-season="winter">Зима</button>
+      <button class="bt" data-season="spring">Весна</button>
+      <button class="bt" id="zoom" aria-pressed="false">Лупа ×2</button>
+    </div>
+    <div class="hint">Стрелки или WASD: веди героя</div>
+    <script>
+/*SCRIPT*/
+    </script>
+  </body>
+</html>

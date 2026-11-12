@@ -496,12 +496,15 @@ export class MsPacmanHero extends Hero {
 		g.addColorStop(0.55, css([128, 48, 168]));
 		g.addColorStop(1, css([214, 96, 206]));
 		ctx.fillStyle = g;
+		// the iris and the pupil follow the gaze (ahead by default: as she always looked)
+		const gx = this.gazeX;
+		const gy = this.gazeY * 0.32;
 		ctx.beginPath();
-		ctx.ellipse(rx * 0.2, ry * 0.04, rx * 0.8, ry * 0.95, 0, 0, Math.PI * 2);
+		ctx.ellipse(rx * 0.2 * gx, ry * (0.04 + gy), rx * 0.8, ry * 0.95, 0, 0, Math.PI * 2);
 		ctx.fill();
 		ctx.fillStyle = css([34, 8, 44]);
 		ctx.beginPath();
-		ctx.ellipse(rx * 0.26, ry * 0.02, rx * 0.4, ry * 0.5, 0, 0, Math.PI * 2);
+		ctx.ellipse(rx * 0.26 * gx, ry * (0.02 + gy), rx * 0.4, ry * 0.5, 0, 0, Math.PI * 2);
 		ctx.fill();
 		ctx.restore();
 		// glints: a big one (a star when powered) and a small one
