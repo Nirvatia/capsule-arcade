@@ -59,13 +59,14 @@ render/
                    screen passes), boardScale (where the maze goes on the
                    screen: 80 % of the height, below the HUD band), colour, maths, seeded random,
                    worldDecor (the decor layout and stream shared by every world)
-audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), ArcadeSynth
+audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), ArcadeSynth,
+             audioSettings (mute and master volume, remembered in localStorage)
 ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the HUD of the
              four season worlds, `SeasonHud` in the side margins and `SeasonHudStack` in two bands
              on a taller screen, over `seasonArt` and `seasonThemes`; `BossHud`, the boss levels' one, over
              `hellArt`; ArcadeHud; hudSnapshot, hudFrame), screens/ (`WorldScreens` over `screenArt` for the
              seasons and the hell; `GameScreens`, the older cards, for the arcade),
-             debug/ (dev panel and log), MuteButton (a knob, bottom left), i18n
+             debug/ (dev panel and log), MuteButton (a knob, bottom left, and the volume slider beside it), i18n
 ```
 
 ## Rules of thumb

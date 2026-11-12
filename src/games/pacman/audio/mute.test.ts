@@ -79,4 +79,58 @@ describe('mute', () => {
 		expect(made.every((a) => a.muted)).toBe(true);
 		player.destroy();
 	});
+
+	it('remembers the volume, clamped to 0..1, starting at full', async () => {
+		const storage = new FakeStorage();
+		vi.stubGlobal('localStorage', storage);
+		const first = await import('./audioSettings');
+		expect(get(first.volume)).toBe(1);
+		first.volume.set(0.4);
+		expect(storage.getItem('pacman.volume')).toBe('0.4');
+		first.volume.set(7);
+		expect(get(first.volume)).toBe(1);
+		first.volume.set(0.25);
+
+		vi.resetModules();
+		const second = await import('./audioSettings');
+		expect(get(second.volume)).toBe(0.25);
+	});
+
+	it('scales every sample by the volume, a loop that is playing too', async () => {
+		vi.stubGlobal('localStorage', new FakeStorage());
+		const made: Array<{ volume: number; src: string }> = [];
+		class FakeAudio {
+			muted = false;
+			loop = false;
+			volume = 1;
+			currentTime = 0;
+			preload = '';
+			constructor(public src: string) {
+				made.push(this);
+			}
+			pause(): void {}
+			play(): Promise<void> {
+				return Promise.resolve();
+			}
+		}
+		vi.stubGlobal('Audio', FakeAudio);
+		vi.stubGlobal('window', {});
+		const { EventBus } = await import('../engine/EventBus');
+		const { PacmanAudioPlayer } = await import('./PacmanAudioPlayer');
+		const settings = await import('./audioSettings');
+		const events = new EventBus<import('../core/Events').PacmanEventMap>();
+		const player = new PacmanAudioPlayer(events);
+		events.emit('ui:stateChanged', { state: 'playing' });
+		const siren = made.find((a) => a.src.includes('siren0'))!;
+		const full = siren.volume;
+		expect(full).toBeGreaterThan(0);
+		settings.volume.set(0.5);
+		expect(siren.volume).toBeCloseTo(full * 0.5, 6);
+		events.emit('audio:cue', { cue: 'dot' });
+		const dot = made.find((a) => a.src.includes('eat_dot_'))!;
+		expect(dot.volume).toBeCloseTo(0.55 * 0.5, 6);
+		settings.volume.set(0);
+		expect(siren.volume).toBe(0);
+		player.destroy();
+	});
 });

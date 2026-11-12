@@ -90,6 +90,7 @@ export class ArcadeSynth {
 	private ac: AudioContext | null = null;
 	private master: GainNode | null = null;
 	private muted = false;
+	private volume = 1;
 	private loopName: ArcadeLoop = null;
 	private loopTimer: ReturnType<typeof setTimeout> | null = null;
 	private loopNodes: AudioNode[] = [];
@@ -187,8 +188,16 @@ export class ArcadeSynth {
 		}
 	}
 
+	/** The master volume, 0..1, under the mute. */
+	setVolume(volume: number): void {
+		this.volume = Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : 1;
+		if (this.ac && this.master) {
+			this.master.gain.setValueAtTime(this.level(), this.ac.currentTime);
+		}
+	}
+
 	private level(): number {
-		return this.muted ? 0 : 0.5;
+		return this.muted ? 0 : 0.5 * this.volume;
 	}
 
 	destroy(): void {

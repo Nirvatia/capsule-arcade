@@ -42,13 +42,10 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
 
 ## Part I. The main game
 
-1. **Volume slider** (Sonnet). The mute button and the `M` key are in. Left: a volume slider
-   next to the button, saved in `localStorage` like the mute (`audio/audioSettings`,
-   `PacmanAudioPlayer`, `ArcadeSynth`'s master gain).
-2. **Music track support** (postponed: the owner is still working out how to generate the
+1. **Music track support** (postponed: the owner is still working out how to generate the
    music). A looped file (ogg/mp3 from `static/`) per world, under the same volume. The
-   seasons' music is optional; the hell's track is part II, step 1.2.
-3. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). Today
+   seasons' music is optional; the hell's track is part II, step 1.1.
+2. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). Today
    a season is a palette and a few props on one meadow. The owner wants a whole scene per
    season, in the maze and in the background, not a recolour:
    1. **Autumn: Halloween.** Pumpkins, cobwebs, bats, a gravestone or a lantern here and
@@ -56,13 +53,14 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    2. **Winter: New Year.** A fir tree, baubles, garlands, snow on the walls, lights.
    3. **Spring and summer** get the same treatment afterwards (their themes to be decided with
       the owner).
-   4. **The hell** scene is reworked after the rest (part II, step 1.4).
       Rules that still hold: the walls and the corridors keep their full width, nothing hangs in
       the air in the maze, the decor sits on a surface and moves little, and every important
       thing reads at the size of one tile.
 
-4. **The heroes' looks** (the owner's list). The trail stays as it is: the owner compared
-   wide candidates and narrow variations of it and kept the original. Prototype first: Ms.
+3. **The heroes' design as a whole** (Opus; the owner's question: how a circle seen from
+   above can look modern and feel like it moves through the maze, or whether simplicity is the
+   answer). Explore first, prototype first. The trail stays as it is: the owner compared wide
+   candidates and narrow variations of it and kept the original. Earlier notes: Ms.
    Pac-Man looks clumsy (try the eye, the bow's seat and the proportions one at a time; keep
    the bow), Pac-Man gets a minimal eye (a dot under a frowning brow), no tongue for either.
 
@@ -80,12 +78,10 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    `cord`; the heroes are the season heroes plus the BFG charge. Start from the `hell`
    prototype (`node prototypes/pacman/build.mjs hell`: "Бой" runs the real fight, the attack
    buttons force an attack, "Бессмертие" keeps the hero alive, "Фаза 1-3" jump to a phase; query
-   `?ms`, `?zerk`, `?chg`) and the `mood` prototype. The owner's list, in the agreed order (each
-   is tuned against the plates and the dark floor):
-   1. **The storm's redesign** is open: ask the owner before touching it.
-   2. **The hell's music track** (the owner brings it: generated or a free licence).
-   3. **Balance and a polish pass** of the whole fight; the boss reward (heart or exit).
-   4. **The hell's scene** reworked together with the seasons' scenes (part I, step 3.4).
+   `?ms`, `?zerk`, `?chg`) and the `mood` prototype. Left (the owner: everything else in the
+   hell is done):
+   1. **The hell's music track** (the owner brings it: generated or a free licence).
+   2. **Balance and a polish pass** of the whole fight.
 2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it is
    the only boss. The selection arrives with the second boss: a `BossCatalog` (id, world, maze,
    renderer, design page), a seeded pick per boss level (no immediate repeat), the same for

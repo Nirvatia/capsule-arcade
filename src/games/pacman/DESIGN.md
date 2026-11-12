@@ -24,6 +24,9 @@ size of one tile.
   `Space` / `P` pauses, `M` mutes and unmutes the sound, `H` switches the hero in the menu and
   on the game-over screen. `Esc` does nothing: leaving a game goes through the pause screen's
   Menu button.
+- The sound knob sits in the bottom-left corner; hovering it slides out a volume slider (on a
+  touch screen with room beside the board the slider stays out). The volume is remembered;
+  turning it up from silence unmutes.
 - English by default, Russian switchable (remembered).
 
 ## 3. The run

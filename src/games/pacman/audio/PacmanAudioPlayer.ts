@@ -1,7 +1,7 @@
 import type { EventBus } from '../engine/EventBus';
 import type { PacmanAudioCue, PacmanEventMap, PacmanStateName } from '../core/Events';
 import { ArcadeSynth } from './ArcadeSynth';
-import { muted } from './audioSettings';
+import { muted, volume } from './audioSettings';
 
 /** Is the arcade (secret level) running, and how far its dots are eaten (0..1). */
 export type ArcadeProbe = () => { readonly active: boolean; readonly urgency: number };
@@ -35,7 +35,11 @@ export class PacmanAudioPlayer {
 	private readonly unsubscribeState: () => void;
 	private readonly unsubscribeCue: () => void;
 	private readonly unsubscribeMuted: () => void;
+	private readonly unsubscribeVolume: () => void;
 	private muted = false;
+	/** The master volume, 0..1, and each sample's own level before it. */
+	private master = 1;
+	private readonly levels = new Map<HTMLAudioElement, number>();
 	/** The arcade has its own chiptune sound; the sample sounds stay out of it. */
 	private readonly synth = new ArcadeSynth();
 	private readonly arcade: ArcadeProbe;
@@ -63,10 +67,14 @@ export class PacmanAudioPlayer {
 		this.unsubscribeMuted = muted.subscribe((value) => {
 			this.applyMuted(value);
 		});
+		this.unsubscribeVolume = volume.subscribe((value) => {
+			this.applyVolume(value);
+		});
 	}
 
 	destroy(): void {
 		this.unsubscribeMuted();
+		this.unsubscribeVolume();
 		this.unsubscribeState();
 		this.unsubscribeCue();
 		this.stopBackground();
@@ -84,6 +92,25 @@ export class PacmanAudioPlayer {
 		for (const audio of this.sounds.values()) {
 			audio.muted = value;
 		}
+	}
+
+	/** Scales every sample (a loop playing now too) and the synth by the master volume. */
+	private applyVolume(value: number): void {
+		this.master = value;
+		this.synth.setVolume(value);
+		for (const [audio, level] of this.levels) {
+			audio.volume = this.scaled(level);
+		}
+	}
+
+	private scaled(level: number): number {
+		return Math.min(1, Math.max(0, level * this.master));
+	}
+
+	/** Sets a sample's own level, scaled by the master volume. */
+	private setLevel(audio: HTMLAudioElement, level: number): void {
+		this.levels.set(audio, level);
+		audio.volume = this.scaled(level);
 	}
 
 	private preload(): void {
@@ -285,7 +312,7 @@ export class PacmanAudioPlayer {
 		}
 		this.stopBackground();
 		audio.loop = true;
-		audio.volume = Math.max(0, volume);
+		this.setLevel(audio, Math.max(0, volume));
 		audio.currentTime = 0;
 		void audio.play().catch(() => undefined);
 		this.background = audio;
@@ -310,7 +337,7 @@ export class PacmanAudioPlayer {
 			return;
 		}
 		audio.loop = false;
-		audio.volume = Math.max(0, volume);
+		this.setLevel(audio, Math.max(0, volume));
 		audio.currentTime = 0;
 		void audio.play().catch(() => undefined);
 	}

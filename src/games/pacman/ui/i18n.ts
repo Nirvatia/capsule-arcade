@@ -50,6 +50,7 @@ const EN = {
 	round: 'ROUND',
 	mute: 'Mute',
 	unmute: 'Unmute',
+	volume: 'Volume',
 	pause: 'Pause',
 	food: 'FOOD'
 } as const;
@@ -102,6 +103,7 @@ const RU: Record<I18nKey, string> = {
 	round: 'РАУНД',
 	mute: 'Выключить звук',
 	unmute: 'Включить звук',
+	volume: 'Громкость',
 	pause: 'Пауза',
 	food: 'ЕДА'
 };
