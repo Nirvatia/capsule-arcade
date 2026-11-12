@@ -48,8 +48,7 @@
 	const slotPhase = [3, 2, 1];
 	const numerals = ['', 'I', 'II', 'III'];
 	const enraged = $derived(phase >= 3);
-	const crack =
-		'M0 0 L7 -5 L11 3 L19 -4 L24 4 L33 -3';
+	const crack = 'M0 0 L7 -5 L11 3 L19 -4 L24 4 L33 -3';
 </script>
 
 <svg viewBox="0 0 {w} {compact ? 56 : 72}" width="100%" aria-hidden="true">
@@ -74,7 +73,9 @@
 		{#each [3, 2, 1] as p, i (p)}
 			<g transform="translate({-i * (compact ? 15 : 20) - (compact ? 5 : 7)} 0)">
 				<path
-					d="M0 {-(compact ? 6 : 8)} L{compact ? 6 : 8} 0 L0 {compact ? 6 : 8} L{-(compact ? 6 : 8)} 0Z"
+					d="M0 {-(compact ? 6 : 8)} L{compact ? 6 : 8} 0 L0 {compact ? 6 : 8} L{-(compact
+						? 6
+						: 8)} 0Z"
 					fill={phase >= p ? (p === 3 ? '#fff0c0' : '#ff8a2a') : '#4a2a2e'}
 					stroke="#16060a"
 					stroke-width="2.4"
@@ -82,14 +83,27 @@
 				/>
 			</g>
 		{/each}
-		<text class="lab" x={-(compact ? 54 : 70)} y={compact ? 4 : 5} font-size={compact ? 10 : 12} text-anchor="end"
-			>{phaseLabel} {numerals[phase]}</text
+		<text
+			class="lab"
+			x={-(compact ? 54 : 70)}
+			y={compact ? 4 : 5}
+			font-size={compact ? 10 : 12}
+			text-anchor="end">{phaseLabel} {numerals[phase]}</text
 		>
 	</g>
 
 	<!-- the plate -->
 	<rect x={x0 - 8} y={y0 - 8} width={bw + 16} height={bh + 16} rx="4" fill="#16060a" />
-	<rect x={x0 - 5} y={y0 - 5} width={bw + 10} height={bh + 10} rx="2.5" fill="url(#{uid}-plate)" stroke="#16060a" stroke-width="2" />
+	<rect
+		x={x0 - 5}
+		y={y0 - 5}
+		width={bw + 10}
+		height={bh + 10}
+		rx="2.5"
+		fill="url(#{uid}-plate)"
+		stroke="#16060a"
+		stroke-width="2"
+	/>
 	<rect x={x0 - 4} y={y0 - 4} width={bw + 8} height="2" fill="rgba(255,236,214,.28)" />
 	<rect x={x0 - 4} y={y0 + bh + 2} width={bw + 8} height="2" fill="rgba(0,0,0,.4)" />
 	{#each [x0 - 1, x0 + bw + 1] as rx (rx)}
@@ -142,7 +156,13 @@
 				rx="1.5"
 				fill="url(#{uid}-fill)"
 			/>
-			<rect x={slot.x} y={y0} width={slot.w * segments[i]} height="2.5" fill="rgba(255,255,255,.4)" />
+			<rect
+				x={slot.x}
+				y={y0}
+				width={slot.w * segments[i]}
+				height="2.5"
+				fill="rgba(255,255,255,.4)"
+			/>
 			{#if segments[i] < 1}
 				<rect
 					x={slot.x + slot.w * segments[i] - 6}
@@ -156,7 +176,14 @@
 				<rect x={slot.x + slot.w * segments[i] - 2} y={y0} width="2.4" height={bh} fill="#fffbe8" />
 			{/if}
 			{#if flash}
-				<rect x={slot.x} y={y0} width={slot.w * segments[i]} height={bh} fill="#fff" opacity=".55" />
+				<rect
+					x={slot.x}
+					y={y0}
+					width={slot.w * segments[i]}
+					height={bh}
+					fill="#fff"
+					opacity=".55"
+				/>
 			{/if}
 		{/if}
 		<!-- the phase this compartment holds -->
@@ -184,19 +211,46 @@
 	<!-- bulkheads -->
 	{#each [0, 1] as b (b)}
 		{@const bx = slots[b].x + cw + gap / 2}
-		<rect x={bx - gap / 2 - 1} y={y0 - 6} width={gap + 2} height={bh + 12} rx="1.5" fill="url(#{uid}-plate)" stroke="#16060a" stroke-width="2" />
+		<rect
+			x={bx - gap / 2 - 1}
+			y={y0 - 6}
+			width={gap + 2}
+			height={bh + 12}
+			rx="1.5"
+			fill="url(#{uid}-plate)"
+			stroke="#16060a"
+			stroke-width="2"
+		/>
 		<circle cx={bx} cy={y0 - 1.5} r="1.7" fill="#16060a" />
 		<circle cx={bx} cy={y0 + bh + 1.5} r="1.7" fill="#16060a" />
 	{/each}
 
 	<!-- the plate cracks and glows in the last phase -->
 	{#if enraged}
-		<path d={crack} transform="translate({x0 + 6} {y0 - 5}) scale(.45)" fill="none" stroke="#ff7a2a" stroke-width="3" opacity=".9" />
-		<path d={crack} transform="translate({x0 + bw - 40} {y0 + bh + 5}) scale(.45)" fill="none" stroke="#ff7a2a" stroke-width="3" opacity=".9" />
+		<path
+			d={crack}
+			transform="translate({x0 + 6} {y0 - 5}) scale(.45)"
+			fill="none"
+			stroke="#ff7a2a"
+			stroke-width="3"
+			opacity=".9"
+		/>
+		<path
+			d={crack}
+			transform="translate({x0 + bw - 40} {y0 + bh + 5}) scale(.45)"
+			fill="none"
+			stroke="#ff7a2a"
+			stroke-width="3"
+			opacity=".9"
+		/>
 	{/if}
 
-	<text class="lab" x={w / 2} y={compact ? 16 : 20} font-size={compact ? 10 : 12} text-anchor="middle"
-		>{Math.ceil(hp)}</text
+	<text
+		class="lab"
+		x={w / 2}
+		y={compact ? 16 : 20}
+		font-size={compact ? 10 : 12}
+		text-anchor="middle">{Math.ceil(hp)}</text
 	>
 </svg>
 

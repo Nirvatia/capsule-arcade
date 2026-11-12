@@ -1,6 +1,6 @@
 <!-- The HUD of a boss level (the hell's), in bone, flesh and ember (the owner's skeleton: the
-	same things as the season HUD, and the boss's own). Above the maze: the boss's health bar in a
-	bone frame, three phase compartments that drain from the right; once he falls, the reward hint
+	same things as the season HUD, and the boss's own). Above the maze: the boss's health bar (a
+	riveted iron plate, `BossBar`) with three phase compartments that drain from the right; once he falls, the reward hint
 	hangs there instead. Beside the maze, or in two bands on a tall screen: the score board and the
 	record tag, the level board with its banner, the lives counter, the hero's hearts on a bone rail
 	(the health on this level, apart from the lives) and a dial with the weapon in hand and its ring
@@ -28,7 +28,8 @@
 	} from './seasonArt';
 	import type { Dial } from './seasonArt';
 	import { HELL_THEME } from './seasonThemes';
-	import { WEAPON_ART, bossFrameArt, bossSlots, heartArt, railArt } from './hellArt';
+	import { BERSERK_RING, WEAPON_ART, heartArt, railArt } from './hellArt';
+	import BossBar from './BossBar.svelte';
 
 	let {
 		snap,
@@ -42,21 +43,11 @@
 	const ms = $derived(snap.profile === 'ms-pacman');
 	const lives = $derived(Math.max(0, snap.lives));
 
-	/** The boss's bar in three phase segments, left = the last to go; each 0..1. */
-	const segments = $derived.by(() => {
-		if (!boss) return [0, 0, 0];
-		const edges = [1, ...boss.marks, 0].map((m) => m * boss.hpMax);
-		const out: number[] = [];
-		for (let i = 0; i < edges.length - 1; i++) {
-			out.push(clamp01((boss.hp - edges[i + 1]) / (edges[i] - edges[i + 1])));
-		}
-		return out.reverse();
-	});
-
 	/** The weapon's ring: the BFG's charge filling, or the berserk running down (10 s at most). */
 	const ring = $derived.by(() => {
 		if (!boss) return { ratio: 0, color: '#ff9a4a' };
-		if (boss.weapon === 'berserk') return { ratio: clamp01(boss.berserk / 10), color: '#ff8a2a' };
+		if (boss.weapon === 'berserk')
+			return { ratio: clamp01(boss.berserk / 10), color: BERSERK_RING };
 		if (boss.charge > 0) return { ratio: clamp01(boss.charge), color: '#7dff5a' };
 		return { ratio: 0, color: '#7dff5a' };
 	});
@@ -74,15 +65,7 @@
 	const hearts = $derived(
 		boss ? Array.from({ length: boss.playerHpMax }, (_, i) => i < boss.playerHp) : []
 	);
-	const enraged = $derived(Boolean(boss && boss.phase >= 3));
 	const reward = $derived(Boolean(boss && boss.defeated && boss.rewardOffered));
-
-	const FRAME = {
-		side: { x: 24, y: 32, w: 552, h: 20 },
-		stack: { x: 16, y: 26, w: 368, h: 14 }
-	};
-	const box = $derived(FRAME[mode]);
-	const slots = $derived(bossSlots(box.x, box.w, 3, 6));
 
 	/** The dial: round and a little bigger beside the maze, where the food trail is not needed. */
 	const SIDE_DIAL: Dial = { cx: 121, cy: 330, r: 40 };
@@ -93,7 +76,6 @@
 	const ringLen = $derived(mode === 'side' ? RING_SIDE : RING_STACK);
 
 	const art = $derived({
-		frame: bossFrameArt(theme, box.x, box.y, box.w, box.h, 3, 6),
 		banner:
 			mode === 'side'
 				? bannerArt(theme, { x: 60, y: 20, w: 480, h: 36 })
@@ -127,40 +109,16 @@
 
 {#snippet bar(w: number)}
 	{#if boss && !boss.defeated}
-		<text class="lab" x={box.x} y={mode === 'side' ? 20 : 16} font-size={mode === 'side' ? 13 : 11}
-			>{$t('boss_hell')}</text
-		>
-		<text
-			class="lab"
-			x={box.x + box.w}
-			y={mode === 'side' ? 20 : 16}
-			font-size={mode === 'side' ? 12 : 10}
-			text-anchor="end">{$t('phase')} {boss.phase}/3</text
-		>
-		{@html art.frame}
-		<g class:hot={enraged}>
-			{#each slots as slot, i (i)}
-				<rect
-					class="trail"
-					x={slot.x}
-					y={box.y}
-					width={slot.w * segments[i]}
-					height={box.h}
-					rx={box.h / 2.6}
-					fill="#ffe8c8"
-					opacity=".85"
-				/>
-				<rect
-					class="fill"
-					x={slot.x}
-					y={box.y}
-					width={slot.w * segments[i]}
-					height={box.h}
-					rx={box.h / 2.6}
-					fill={enraged ? '#ff4a1a' : '#ff7a2a'}
-				/>
-			{/each}
-		</g>
+		<BossBar
+			{w}
+			hp={boss.hp}
+			hpMax={boss.hpMax}
+			marks={boss.marks}
+			phase={boss.phase}
+			name={mode === 'side' ? `BLINKY · ${$t('boss_hell')}` : 'BLINKY'}
+			phaseLabel={$t('phase')}
+			uid="boss-bar-{mode}"
+		/>
 	{:else if reward}
 		<g class="sway hang" style:--rot="0deg">
 			{@html art.banner}
@@ -213,6 +171,9 @@
 
 {#snippet weaponDial(fs: number, k: number)}
 	{@html art.dial}
+	{#if weaponKey === 'berserk'}
+		<circle class="rage" cx={dial.cx} cy={dial.cy} r={dial.r - 3} fill="rgba(190,22,16,.7)" />
+	{/if}
 	<circle
 		class="ring"
 		cx={dial.cx}
@@ -226,7 +187,10 @@
 		stroke-dashoffset={ringLen * (1 - ring.ratio)}
 		transform="rotate(-90 {dial.cx} {dial.cy})"
 	/>
-	<g class:idle={!weaponKey} transform="translate({dial.cx} {dial.cy - 2}) scale({k})">
+	<g
+		class:idle={!weaponKey}
+		transform="translate({dial.cx} {dial.cy - 2}) scale({weaponKey === 'berserk' ? k * 1.22 : k})"
+	>
 		<g class="bob">{@html art.weapon}</g>
 	</g>
 	<text
@@ -468,17 +432,19 @@
 		filter: drop-shadow(0 0 3px rgba(255, 90, 42, 0.55));
 		animation: ember 2.5s ease-in-out infinite;
 	}
-	.fill {
-		transition: width 0.08s;
-	}
-	.trail {
-		transition: width 0.5s ease-in 0.3s;
-	}
-	.hot .fill {
-		filter: drop-shadow(0 0 4px rgba(255, 120, 40, 0.9));
-	}
 	.ring {
 		transition: stroke-dashoffset 0.1s linear;
+	}
+	.rage {
+		animation: rage 0.9s ease-in-out infinite alternate;
+	}
+	@keyframes rage {
+		from {
+			opacity: 0.55;
+		}
+		to {
+			opacity: 1;
+		}
 	}
 	.idle {
 		opacity: 0.35;
@@ -571,6 +537,7 @@
 	@media (prefers-reduced-motion: reduce) {
 		.sway,
 		.beat,
+		.rage,
 		.num,
 		:global(.shud .bob) {
 			animation: none;

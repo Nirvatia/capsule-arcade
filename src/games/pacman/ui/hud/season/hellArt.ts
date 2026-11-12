@@ -1,6 +1,6 @@
 /**
  * The hell's own shapes for the boss-level HUD (the same cel style as `seasonArt`, in bone, flesh
- * and ember): the boss's health bar in a bone frame, the hero's hearts on a bone rail, and the
+ * and ember): the hero's hearts on a bone rail, and the
  * weapons that sit in the dial. Everything is markup; the numbers and fills are the component's.
  */
 import type { SeasonTheme } from './seasonThemes';
@@ -21,49 +21,20 @@ export const WEAPON_ART = {
 	bfg: '<rect x="-34" y="-12" width="52" height="24" rx="6" fill="#3a4a3a" stroke="#0a140a" stroke-width="4"/><rect x="-28" y="-6" width="30" height="5" rx="2" fill="#6a8a6a"/><circle cx="26" cy="0" r="16" fill="#7dff5a" stroke="#0a140a" stroke-width="4"/><circle cx="26" cy="0" r="8" fill="#e8ffd9"/><path d="M-20 12 L-26 28 H-12 L-8 12Z" fill="#3a4a3a" stroke="#0a140a" stroke-width="3" stroke-linejoin="round"/>',
 	barrel:
 		'<rect x="-20" y="-28" width="40" height="56" rx="8" fill="#b8821a" stroke="#2a1a04" stroke-width="4"/><rect x="-20" y="-14" width="40" height="7" fill="#6a4a0a" stroke="#2a1a04" stroke-width="2.4"/><rect x="-20" y="8" width="40" height="7" fill="#6a4a0a" stroke="#2a1a04" stroke-width="2.4"/><circle cx="0" cy="-1" r="7" fill="#ffe05a" stroke="#2a1a04" stroke-width="2.4"/><path d="M-12 -24 q4 -3 12 -3" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".5"/>',
-	berserk:
-		'<path d="M-24 -4 L-24 -22 Q-24 -30 -16 -30 L-12 -30 L-12 -34 Q-12 -40 -5 -40 Q2 -40 2 -34 L2 -32 Q10 -36 14 -30 Q16 -24 12 -22 L20 -20 Q28 -14 24 -2 L18 22 Q14 32 4 32 L-10 32 Q-22 32 -24 20Z" fill="#ff8a2a" stroke="#4a1608" stroke-width="4" stroke-linejoin="round"/><path d="M-14 -22 V-8 M-4 -30 V-8 M6 -26 V-8" stroke="#4a1608" stroke-width="3" stroke-linecap="round"/><path d="M-18 -6 q16 -6 34 0" fill="none" stroke="#ffd08a" stroke-width="3" stroke-linecap="round" opacity=".8"/>'
+	berserk: `<path d="M-26 22 C-34 4 -22 -6 -20 -22 C-14 -12 -10 -16 -8 -30 C-2 -20 2 -22 4 -34 C8 -22 14 -18 14 -8 C20 -14 22 -6 24 -2 C34 8 30 20 26 24 C16 32 -16 32 -26 22Z" fill="#ff5a1a" stroke="#2a0c06" stroke-width="3.6" stroke-linejoin="round"/>
+<path d="M-17 22 C-21 10 -13 4 -11 -8 C-7 -2 -3 -6 -1 -18 C3 -8 10 -4 10 4 C16 0 18 10 14 20 C8 28 -10 28 -17 22Z" fill="#ffb040"/>
+<rect x="-18" y="-4" width="36" height="27" rx="9" fill="#fbe6c4" stroke="#2a0c06" stroke-width="3.6"/>
+<circle cx="-13.5" cy="-4" r="6.2" fill="#fbe6c4" stroke="#2a0c06" stroke-width="3.2"/><circle cx="-4.5" cy="-5" r="6.2" fill="#fbe6c4" stroke="#2a0c06" stroke-width="3.2"/><circle cx="4.5" cy="-5" r="6.2" fill="#fbe6c4" stroke="#2a0c06" stroke-width="3.2"/><circle cx="13.5" cy="-4" r="6.2" fill="#fbe6c4" stroke="#2a0c06" stroke-width="3.2"/>
+<rect x="-17" y="-3" width="34" height="25" rx="8" fill="#fbe6c4"/>
+<path d="M-9 -2 V9 M0 -3 V9 M9 -2 V9" stroke="#2a0c06" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M-18 11 Q-6 7 7 13 Q11 17 5 21 Q-8 25 -18 21Z" fill="#f0cf9c" stroke="#2a0c06" stroke-width="3" stroke-linejoin="round"/>
+<path d="M-14 -9 q6 -4 11 -2" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".8"/>`
 } as const;
 
+/** The berserk's ring is pale hot gold: orange on the dial's red glow would be lost. */
+export const BERSERK_RING = '#ffe08a';
+
 export type WeaponArtKey = keyof typeof WEAPON_ART;
-
-/**
- * The boss's bar frame: a bone rail with a dark slot of `slots` equal compartments (the phases)
- * and a bone peg between them. `x, y, w, h` is the slot area; the fills are drawn over it.
- */
-export function bossFrameArt(
-	t: SeasonTheme,
-	x: number,
-	y: number,
-	w: number,
-	h: number,
-	slots = 3,
-	gap = 5
-): string {
-	let s = `<rect x="${x - 7}" y="${y - 7}" width="${w + 14}" height="${h + 14}" rx="${(h + 14) / 2}" fill="${t.ink}"/>`;
-	s += `<rect x="${x - 4}" y="${y - 4}" width="${w + 8}" height="${h + 8}" rx="${(h + 8) / 2}" fill="${BONE}" stroke="${t.ink}" stroke-width="2"/>`;
-	s += `<rect x="${x - 4}" y="${y + h * 0.55}" width="${w + 8}" height="${h * 0.45 + 4}" rx="${(h + 8) / 2}" fill="${BONE_SHADE}" opacity=".5"/>`;
-	const cw = (w - gap * (slots - 1)) / slots;
-	for (let i = 0; i < slots; i += 1) {
-		s += `<rect x="${x + i * (cw + gap)}" y="${y}" width="${cw}" height="${h}" rx="${h / 2.6}" fill="#16060a"/>`;
-	}
-	for (let i = 1; i < slots; i += 1) {
-		const px = x + i * (cw + gap) - gap / 2;
-		s += `<rect x="${px - 3}" y="${y - 6}" width="6" height="${h + 12}" rx="3" fill="${BONE}" stroke="${t.ink}" stroke-width="2"/>`;
-	}
-	return s;
-}
-
-/** Where the compartments of `bossFrameArt` lie, for the fills. */
-export function bossSlots(
-	x: number,
-	w: number,
-	slots = 3,
-	gap = 5
-): ReadonlyArray<{ readonly x: number; readonly w: number }> {
-	const cw = (w - gap * (slots - 1)) / slots;
-	return Array.from({ length: slots }, (_, i) => ({ x: x + i * (cw + gap), w: cw }));
-}
 
 /** A short bone rail the hearts rest on. */
 export function railArt(t: SeasonTheme, x: number, y: number, w: number): string {

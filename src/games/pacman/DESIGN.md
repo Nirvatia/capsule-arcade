@@ -218,10 +218,14 @@ chiptune sound (`config/arcadeConfig.ts`).
   world. On a tall or squarish screen the same things are smaller and in two bands, one above the maze
   and one below it (top: score board and record tag, level board with banner, lives; bottom:
   the food trail, the dial, the pause knob, and the sound knob at the left). The boss levels have their own, in bone, flesh and ember (the same skeleton plus the boss's):
-  above the maze the boss's health bar in a bone frame, three phase compartments that drain from
-  the right (the reward hint hangs there once he falls); the hero's hearts on a bone rail, apart
+  above the maze the boss's health bar, a riveted iron plate like the maze's walls with the boss's
+  name, the number and three phase pips above it and a dark trough in three compartments, one per
+  phase, that drain from the right: hot-metal fill with a white-hot leading edge, the phase reached
+  framed, burned-out compartments cracked, white-gold in the last phase (the reward hint hangs
+  there once he falls); the hero's hearts on a bone rail, apart
   from the lives counter; a dial with the weapon in hand whose ring is the BFG's charge or the
-  berserk running down; the numerals glow like embers and the hearts beat at the hell's pulse.
+  berserk running down (the berserk is a fist in flame, the dial glows red and the ring is pale
+  gold, so it is not lost against the orange); the numerals glow like embers and the hearts beat at the hell's pulse.
   The arcade has its own
   arcade HUD (1UP, high score, round, tries, the rounds' fruit).
 
@@ -265,7 +269,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   heading chevron. A red body sinks into the red flesh, so the ink line, the eyes and the rim
   light carry him.
 - **The hell's heroes (final, as they are)**: the season heroes (the owner's decision: they stay as they are, no hell mark, no armor) plus one thing the hell adds, the BFG charge: the body swells and the mouth gapes, a green ring closes in on it, a glow lights the throat, white-hot at the end; the release is a recoil and a flash. The berserk is the awoken look (his ki flames, her glowing bow). The rolling ball at the rifts is the heroes' own.
-- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.6).
+- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.5).
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze is built of charred iron plates (the owner's pick, "metal doom"): one block to a tile,
   neutral and lighter than the red floor so the maze parts from the ground in grey too, each with a
