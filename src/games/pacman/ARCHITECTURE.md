@@ -55,7 +55,8 @@ render/
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
   transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
   actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
-  common/          textures, GlPass (every WebGL2 pass), boardScale (where the maze goes on the
+  common/          textures, GlPass (every WebGL2 pass), moodBuffer (a world's atmosphere in two
+                   screen passes), boardScale (where the maze goes on the
                    screen: 80 % of the height, below the HUD band), colour, maths, seeded random,
                    worldDecor (the decor layout and stream shared by every world)
 audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), ArcadeSynth
@@ -85,8 +86,18 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the
   tries).
 - Shared drawing helpers go to `render/common/`, not copied into views.
 - A meadow frame: `MeadowWorld.drawWorld` (baked background, live lair gate, portals),
-  `drawMood` (weather, night), `drawFood` (dots, energizers), then the actors and
-  `drawOverlay`. Food sits over the mood so neither night nor weather dims it.
+  `drawMood` (drift, atmosphere, night), `drawFood` (dots, energizers), then the actors and
+  `drawOverlay` (weather, vignette). Food sits over the mood so neither night nor weather dims it.
+- Fill rate is the budget. On integrated graphics a frame is bound by how many full-screen
+  layers it blends, not by script: a GPU that falls behind queues frames, the picture stays
+  smooth and the controls lag. Count a new full-screen layer as a cost. A world's atmosphere
+  (mist, light, wash, storm tint: source-over and additive layers) goes through
+  `render/common/moodBuffer`: the stack is `world * m + a` per pixel, painted into two ~512 px
+  buffers and blended in two passes, however many layers it has. A layer that must cover
+  something drawn later (the vignette over the night's lights) or that clips (bright snow under
+  light) stays a pass of its own. No gradient is built per frame: paint it once into a sprite.
+  Measured with Playwright in Chromium without a GPU (a fair stand-in for weak graphics):
+  a season level went from about 8 full-screen fills per frame to 4.
 - Collectibles (fruit, bonus life, exit) draw through `render/items/collectibleSprite`:
   callers pass the tile size and the time; the bake measures the object and how far its
   glow reaches over its ticker, so the object fills 0.78 of the tile and nothing leaves

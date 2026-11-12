@@ -8,7 +8,8 @@ import { isTeleportToken } from '../../config/gridConfig';
 import type { GridLayout } from '../maze/GridView';
 import { DoomLightmap } from './DoomLightmap';
 import { DOOM_BG, DOOM_TILE } from './DoomBake';
-import { bakeFlesh, MX, MY, SCENE_TILE } from './fleshBake';
+import { bakeFlesh, FRAME, MX, MY, SCENE_TILE } from './fleshBake';
+import { MoodBuffer } from '../common/moodBuffer';
 import { FleshLive, heartbeat } from './fleshLive';
 import {
 	fogTexture,
@@ -174,6 +175,7 @@ export class DoomWorld {
 
 	/** The flesh scene: baked the first time the world is drawn (it takes a moment). */
 	private scene: FleshLive | null = null;
+	private readonly mood = new MoodBuffer();
 	private styleId: MoodStyleId = 'cord';
 
 	constructor(S: GridMatrix, pickupTiles: ReadonlyArray<{ x: number; y: number }>) {
@@ -329,25 +331,29 @@ export class DoomWorld {
 		ctx.save();
 		ctx.globalAlpha = 1;
 		ctx.globalCompositeOperation = 'source-over';
-		ctx.fillStyle = DOOM_BG;
-		ctx.fillRect(0, 0, this.vw, this.vh);
+		const k = this.sc * SCENE_SCALE;
+		const view = { x: -this.wx / k + MX, y: -this.wy / k + MY, w: this.vw / k, h: this.vh / k };
+		// the baked ground covers any usual screen; the plain fill is for one wider than it
+		const covered =
+			view.x >= FRAME.x0 &&
+			view.y >= FRAME.y0 &&
+			view.x + view.w <= FRAME.x0 + FRAME.w &&
+			view.y + view.h <= FRAME.y0 + FRAME.h;
+		if (!covered) {
+			ctx.fillStyle = DOOM_BG;
+			ctx.fillRect(0, 0, this.vw, this.vh);
+		}
 		ctx.translate(this.wx, this.wy);
 		// the scene is drawn at 32 to a tile with the maze's corner at (MX, MY)
-		ctx.scale(this.sc * SCENE_SCALE, this.sc * SCENE_SCALE);
+		ctx.scale(k, k);
 		ctx.translate(-MX, -MY);
-		const k = this.sc * SCENE_SCALE;
-		this.scene.draw(ctx, this.t, {
-			x: -this.wx / k + MX,
-			y: -this.wy / k + MY,
-			w: this.vw / k,
-			h: this.vh / k
-		});
+		this.scene.draw(ctx, this.t, view);
 		ctx.restore();
 	}
 
 	/**
-	 * Atmosphere under the actors: mist, dust and wash, the ash storm tint and the hellish
-	 * night. At night the darkness is cut away by a per-tile light map that spreads along
+	 * Atmosphere under the actors: the dust, then mist, light, wash and the ash storm's tint
+	 * (two passes, see `MoodBuffer`), then the hellish night. At night the darkness is cut away by a per-tile light map that spreads along
 	 * corridors and stops at walls; `actorLights` (tile-center coordinates, radius in
 	 * tiles) are added to the maze's own lights.
 	 */
@@ -356,22 +362,11 @@ export class DoomWorld {
 		const vh = this.vh;
 		const t = this.t;
 		ctx.save();
-		for (const f of this.mist) {
-			img(ctx, fogTexture(), f.x - f.w / 2, f.y - f.h / 2, f.w, f.h, f.alpha);
-		}
-		const W = Math.max(vw, vh);
-		img(ctx, litTexture(), 0, 0, W * 1.5, W * 1.5, 1, true);
 		const pg = glowTexture(0xa89a90);
 		for (const p of this.dust) {
 			img(ctx, pg, p.px * vw - p.sz / 2, p.py * vh - p.sz / 2, p.sz, p.sz, p.alpha);
 		}
-		img(ctx, washTexture(), 0, 0, vw, vh);
-		if (this.stormV > 0) {
-			ctx.globalCompositeOperation = 'source-over';
-			ctx.globalAlpha = this.moodStyle.stormAlpha * this.stormV;
-			ctx.fillStyle = this.moodStyle.storm;
-			ctx.fillRect(0, 0, vw, vh);
-		}
+		this.mood.draw(ctx, vw, vh, this.paintAtmosphere);
 		// darker than the prototype's red wash so the light map actually reads as light
 		const st = this.moodStyle;
 		const beat = Math.min(1, heartbeat(t));
@@ -395,6 +390,28 @@ export class DoomWorld {
 		}
 		ctx.restore();
 	}
+
+	/** Mist, light, wash and the ash storm's tint, in screen space (see `MoodBuffer`). */
+	private readonly paintAtmosphere = (ctx: CanvasRenderingContext2D, additive: boolean): void => {
+		const vw = this.vw;
+		const vh = this.vh;
+		for (const f of this.mist) {
+			img(ctx, fogTexture(), f.x - f.w / 2, f.y - f.h / 2, f.w, f.h, f.alpha);
+		}
+		if (additive) {
+			const W = Math.max(vw, vh);
+			img(ctx, litTexture(), 0, 0, W * 1.5, W * 1.5, 1, true);
+		}
+		img(ctx, washTexture(), 0, 0, vw, vh);
+		if (this.stormV > 0) {
+			ctx.globalCompositeOperation = 'source-over';
+			ctx.globalAlpha = this.moodStyle.stormAlpha * this.stormV;
+			ctx.fillStyle = this.moodStyle.storm;
+			ctx.fillRect(0, 0, vw, vh);
+		}
+		ctx.globalAlpha = 1;
+		ctx.globalCompositeOperation = 'source-over';
+	};
 
 	/** Screen-space layer over the actors: wind-blown embers and the vignette. */
 	drawOverlay(ctx: CanvasRenderingContext2D): void {

@@ -130,6 +130,15 @@ WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
 
 ## Known issues
 
+- **Weak graphics.** The owner's report: on PCs with integrated graphics the controls feel
+  sluggish from the start of a level, while the animation stays smooth (a GPU-bound frame
+  queue). Done so far: the atmosphere of the seasons and the hell in two passes
+  (`render/common/moodBuffer`), no per-frame gradient for the lair's heart, no plain fill
+  under a covering background. Chromium without a GPU, 1600x900: a season 21 → 28 FPS, the
+  hell 15 → 17 FPS. Still to check on the owner's weak PC. If it still lags, the next
+  candidates, by measured cost: the hell's maze-sized glow layers (`emis` and `glow`, drawn
+  additively twice, four times at night) and the hell's ground; then a dev frame meter for
+  real hardware.
 - Headless Chromium without a GPU runs the hell night at ~20 FPS and the flesh hell's first
   frame blocks for about a second while `bakeFlesh` paints the world (once per level). Nobody
   has timed either on real hardware; if the bake shows, spread it over frames.

@@ -41,6 +41,28 @@ function glowSprite(color: string): HTMLCanvasElement {
 
 const GLOW = '255,74,50';
 
+let lairGlowSprite: HTMLCanvasElement | null = null;
+
+/**
+ * The lair's heart glow, painted once and scaled with the beat: a gradient built and filled
+ * every frame costs a weak machine more than the rest of the scene.
+ */
+function lairGlow(): HTMLCanvasElement {
+	if (!lairGlowSprite) {
+		const n = 256;
+		const c = makeCanvas(n, n);
+		const x = context(c);
+		const g = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+		g.addColorStop(0, 'rgba(255,90,60,.85)');
+		g.addColorStop(0.5, 'rgba(210,40,40,.35)');
+		g.addColorStop(1, 'rgba(160,10,20,0)');
+		x.fillStyle = g;
+		x.fillRect(0, 0, n, n);
+		lairGlowSprite = c;
+	}
+	return lairGlowSprite;
+}
+
 export class FleshLive {
 	/** How far the lair gate is open, 0 (shut) .. 1 (slid into its posts). */
 	private gateOpen = 0;
@@ -167,13 +189,8 @@ export class FleshLive {
 		ctx.globalAlpha = 0.4 + 0.4 * Math.min(1, beat);
 		ctx.drawImage(b.glow, b.local.x, b.local.y);
 		const lr = T * (3.2 + 0.7 * beat);
-		const hg = ctx.createRadialGradient(b.lair.x, b.lair.y, 0, b.lair.x, b.lair.y, lr);
-		hg.addColorStop(0, 'rgba(255,90,60,.85)');
-		hg.addColorStop(0.5, 'rgba(210,40,40,.35)');
-		hg.addColorStop(1, 'rgba(160,10,20,0)');
 		ctx.globalAlpha = 0.55 + 0.45 * Math.min(1, beat + 0.25);
-		ctx.fillStyle = hg;
-		ctx.fillRect(b.lair.x - lr, b.lair.y - lr, lr * 2, lr * 2);
+		ctx.drawImage(lairGlow(), b.lair.x - lr, b.lair.y - lr, lr * 2, lr * 2);
 
 		for (const p of b.pads) {
 			const sz = T * (1.3 + 0.3 * beat);

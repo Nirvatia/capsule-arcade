@@ -12,6 +12,7 @@ import { streamY, tunnelRowOf, worldDecor } from '../../common/worldDecor';
 import type { MeadowTheme, WeatherParticle } from './MeadowTheme';
 import { glowTexture, rayTexture } from './meadowSprites';
 import { drawRipplePad } from './ripplePad';
+import { MoodBuffer } from '../../common/moodBuffer';
 
 const T = MEADOW_TILE;
 const REBAKE_DELAY_MS = 160;
@@ -102,6 +103,7 @@ export class MeadowWorld {
 	private bgY = 0;
 	private bgRS = 1;
 	private rebakeAt = 0;
+	private readonly mood = new MoodBuffer();
 
 	constructor(S: GridMatrix, theme: MeadowTheme) {
 		this.S = S;
@@ -285,8 +287,11 @@ export class MeadowWorld {
 		ctx.save();
 		ctx.globalAlpha = 1;
 		ctx.globalCompositeOperation = 'source-over';
-		ctx.fillStyle = this.theme.bake.bg;
-		ctx.fillRect(0, 0, this.vw, this.vh);
+		// the baked background covers the screen with a margin: the plain fill is for before it exists
+		if (!this.bg) {
+			ctx.fillStyle = this.theme.bake.bg;
+			ctx.fillRect(0, 0, this.vw, this.vh);
+		}
 		ctx.translate(this.wx, this.wy);
 		ctx.scale(this.sc, this.sc);
 		if (this.bg) {
@@ -403,48 +408,21 @@ export class MeadowWorld {
 		}
 	}
 
-	/** Atmosphere under the actors: mist, rays, light, drift, wash, weather haze, night. */
+	/**
+	 * Atmosphere under the actors: the drift, then mist, rays, light, wash and weather haze (in
+	 * two passes, see `MoodBuffer`), then the night and its lights.
+	 */
 	drawMood(ctx: CanvasRenderingContext2D): void {
 		const live = this.theme.live;
 		const vw = this.vw;
 		const vh = this.vh;
 		const t = this.t;
 		ctx.save();
-		const fog = live.fog();
-		const mistA = live.mistAlpha(this.stormV);
-		for (const f of this.mist) {
-			sprite(ctx, fog, f.x, f.y, f.w, f.h, mistA);
-		}
-		for (let i = 0; i < 2; i++) {
-			const a = live.rays(t, i, this.stormV, this.nightV);
-			if (a > 0.003) {
-				const w = 70 * (1.6 + i);
-				const h = vh * 1.6;
-				ctx.save();
-				ctx.translate(vw * (0.1 + i * 0.22), -20);
-				ctx.rotate(-0.5);
-				ctx.globalAlpha = Math.min(1, a);
-				ctx.globalCompositeOperation = 'lighter';
-				ctx.drawImage(rayTexture(), -w / 2, 0, w, h);
-				ctx.restore();
-			}
-		}
-		const W = Math.max(vw, vh) * 1.5;
-		ctx.globalAlpha = Math.min(1, live.litAlpha(this.stormV, this.nightV));
-		ctx.globalCompositeOperation = 'lighter';
-		ctx.drawImage(live.lit(), 0, 0, W, W);
 		const spin = live.drift.spin;
 		for (const p of this.drift) {
 			sprite(ctx, p.im, p.px * vw, p.py * vh, p.w, p.h, p.a, spin ? t + p.ph : 0);
 		}
-		ctx.globalAlpha = 1;
-		ctx.globalCompositeOperation = 'source-over';
-		ctx.drawImage(live.wash(), 0, 0, vw, vh);
-		if (this.stormV > 0.002) {
-			ctx.globalAlpha = live.stormAlpha * this.stormV;
-			ctx.fillStyle = live.stormTint;
-			ctx.fillRect(0, 0, vw, vh);
-		}
+		this.mood.draw(ctx, vw, vh, this.paintAtmosphere);
 		if (this.nightV > 0.002) {
 			ctx.globalAlpha = live.nightAlpha * this.nightV;
 			ctx.globalCompositeOperation = 'multiply';
@@ -461,6 +439,48 @@ export class MeadowWorld {
 		}
 		ctx.restore();
 	}
+
+	/** The atmosphere's layers in screen space: covering ones, or (`additive`) all of them. */
+	private readonly paintAtmosphere = (ctx: CanvasRenderingContext2D, additive: boolean): void => {
+		const live = this.theme.live;
+		const vw = this.vw;
+		const vh = this.vh;
+		const t = this.t;
+		const fog = live.fog();
+		const mistA = live.mistAlpha(this.stormV);
+		for (const f of this.mist) {
+			sprite(ctx, fog, f.x, f.y, f.w, f.h, mistA);
+		}
+		if (additive) {
+			for (let i = 0; i < 2; i++) {
+				const a = live.rays(t, i, this.stormV, this.nightV);
+				if (a > 0.003) {
+					const w = 70 * (1.6 + i);
+					const h = vh * 1.6;
+					ctx.save();
+					ctx.translate(vw * (0.1 + i * 0.22), -20);
+					ctx.rotate(-0.5);
+					ctx.globalAlpha = Math.min(1, a);
+					ctx.globalCompositeOperation = 'lighter';
+					ctx.drawImage(rayTexture(), -w / 2, 0, w, h);
+					ctx.restore();
+				}
+			}
+			const W = Math.max(vw, vh) * 1.5;
+			ctx.globalAlpha = Math.min(1, live.litAlpha(this.stormV, this.nightV));
+			ctx.globalCompositeOperation = 'lighter';
+			ctx.drawImage(live.lit(), 0, 0, W, W);
+		}
+		ctx.globalAlpha = 1;
+		ctx.globalCompositeOperation = 'source-over';
+		ctx.drawImage(live.wash(), 0, 0, vw, vh);
+		if (this.stormV > 0.002) {
+			ctx.globalAlpha = live.stormAlpha * this.stormV;
+			ctx.fillStyle = live.stormTint;
+			ctx.fillRect(0, 0, vw, vh);
+			ctx.globalAlpha = 1;
+		}
+	};
 
 	/** Screen-space layer over the actors: the weather particles and the vignette. */
 	drawOverlay(ctx: CanvasRenderingContext2D): void {
