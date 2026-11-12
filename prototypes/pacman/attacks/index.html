@@ -1,0 +1,42 @@
+<title>Атаки босса ада</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<style>
+  :root { --bg:#0b0507; --fg:#f0dcd4; --mut:#b79a92; --line:#3a1c20; --chip:#241014; --chipOn:#a3241a; color-scheme: dark; }
+  html,body { margin:0; background:var(--bg); color:var(--fg); }
+  body { font:15px/1.5 "Inter","Segoe UI",system-ui,sans-serif; padding-block:20px 40px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+  main { max-width:1240px; margin:0 auto; display:grid; gap:16px; }
+  h1 { margin:0; font:700 24px/1.2 "Space Grotesk","Inter",system-ui,sans-serif; text-wrap:balance; }
+  h2 { margin:0; font:700 18px/1.2 "Space Grotesk","Inter",system-ui,sans-serif; }
+  p { margin:0; color:var(--mut); max-width:78ch; }
+  .rules { display:grid; gap:4px; font-size:14px; color:var(--mut); max-width:80ch; }
+  .rules b { color:var(--fg); font-weight:600; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; }
+  button { font:600 13px "Inter",system-ui,sans-serif; color:var(--fg); background:var(--chip); border:1px solid var(--line); border-radius:6px; padding:8px 12px; cursor:pointer; }
+  button[aria-pressed="true"] { background:var(--chipOn); border-color:var(--chipOn); color:#fff; }
+  button:focus-visible { outline:2px solid #ffb06a; outline-offset:2px; }
+  #grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:16px; }
+  figure { margin:0; display:grid; gap:6px; min-width:0; }
+  figcaption { display:grid; gap:2px; font-size:13px; color:var(--mut); }
+  figcaption b { font:600 14px "Space Grotesk","Inter",system-ui,sans-serif; color:var(--fg); }
+  canvas { width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:4px; background:#0a0204; }
+  body.gray canvas { filter:grayscale(1); }
+</style>
+<main>
+  <h1>Атаки босса: один язык</h1>
+  <p>Каждая атака в игре стоит на настоящем лабиринте в масштабе игры, анимирована: предупреждение и удар. Заглушки: герой и босс.</p>
+  <div class="rules">
+    <span><b>Урон.</b> Предупреждение: янтарная штриховка и пунктир, без свечения. Удар: белое раскалённое ядро, оранжевый край, тёмная обводка. Так предупреждение всегда отличается от удара.</span>
+    <span><b>Блок.</b> Пустота и запертые печати ничего не жгут, они закрывают клетку: железный затвор с дымной печатью, временная стена.</span>
+    <span><b>Замедление.</b> Смола (осквернённые клетки): чёрная, глянцевая, с пузырями. Не горит.</span>
+    <span><b>Притяжение.</b> Железная цепь от босса к герою.</span>
+  </div>
+  <div class="bar">
+    <button id="zoom" type="button" aria-pressed="true">Крупно (снять: шире)</button>
+    <button id="gray" type="button" aria-pressed="false">Градации серого</button>
+  </div>
+  <h2>Все вместе</h2>
+  <canvas id="overview" aria-label="Все атаки на лабиринте"></canvas>
+  <h2>По одной</h2>
+  <div id="grid"></div>
+</main>
+<script>/*SCRIPT*/</script>
