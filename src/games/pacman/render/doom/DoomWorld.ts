@@ -189,7 +189,7 @@ export class DoomWorld {
 		this.S.forEach((row, r) =>
 			row.forEach((tt, c) => {
 				if (isTeleportToken(tt)) {
-					this.mazeLights.push({ x: c + 0.5, y: r + 0.5, r: 2.5, tint: 0xff3a2a, a: 0.8 });
+					this.mazeLights.push({ x: c + 0.5, y: r + 0.5, r: 2.5, tint: 0x5ae6ff, a: 0.8 });
 				}
 			})
 		);
@@ -472,11 +472,11 @@ export class DoomWorld {
 		for (const fog of this.fogs) {
 			const u = fog.age / FOG_LIFE;
 			const k = 1 - u;
-			// column of light, then green-white sparks and a ring
+			// column of light, then cyan-white sparks and a ring
 			const flash = Math.min(1, u * 8) * k;
 			img(
 				ctx,
-				glowTexture(0xd8ffd0),
+				glowTexture(0xcff6ff),
 				fog.x - 18,
 				fog.y - 64 * k - 10,
 				36,
@@ -484,7 +484,7 @@ export class DoomWorld {
 				flash,
 				true
 			);
-			img(ctx, glowTexture(0x40ff50), fog.x - 34, fog.y - 34, 68, 68, flash, true);
+			img(ctx, glowTexture(0x40d8ff), fog.x - 34, fog.y - 34, 68, 68, flash, true);
 			img(ctx, glowTexture(0xffffff), fog.x - 12, fog.y - 12, 24, 24, flash * 0.8, true);
 			ctx.globalCompositeOperation = 'lighter';
 			ctx.strokeStyle = `rgba(150,255,150,${0.8 * k})`;
@@ -498,7 +498,7 @@ export class DoomWorld {
 				const sx = fog.x + Math.cos(sp.a) * d;
 				const sy = fog.y + Math.sin(sp.a) * d * 0.6 - sp.up * u;
 				const r = sp.s * k + 0.4;
-				img(ctx, glowTexture(0xd8ffd0), sx - r * 2, sy - r * 2, r * 4, r * 4, k, true);
+				img(ctx, glowTexture(0xcff6ff), sx - r * 2, sy - r * 2, r * 4, r * 4, k, true);
 			}
 		}
 		ctx.restore();

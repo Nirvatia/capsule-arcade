@@ -1,11 +1,11 @@
 // What moves in the flesh hell (the owner's accepted scene): a slow heartbeat (about 2.5 s)
-// drives the glow of the wounds in the walls, the lair's heart, the light pouring out of the
-// rifts and the swelling of the cysts; blood runs along the veins in time with it and the pools
+// drives the glow of the wounds in the walls, the lair's heart and the swelling of the cysts; blood runs along the veins in time with it and the pools
 // ripple. The baked layers come from `fleshBake`; everything here is drawn in the scene's own
 // units, so the caller maps the scene onto the screen first.
 import type { FleshBake } from './fleshBake';
 import { FRAME, SCENE_TILE } from './fleshBake';
 import { paintGateBars, paintGateGlow } from './fleshGate';
+import { paintTeleport, paintTeleportLight } from './fleshTeleport';
 import { context, makeCanvas, veinAt } from './fleshNoise';
 
 /**
@@ -40,7 +40,6 @@ function glowSprite(color: string): HTMLCanvasElement {
 }
 
 const GLOW = '255,74,50';
-const HOT = '255,176,106';
 
 export class FleshLive {
 	/** How far the lair gate is open, 0 (shut) .. 1 (slid into its posts). */
@@ -71,6 +70,10 @@ export class FleshLive {
 		}
 		ctx.globalAlpha = k * (0.4 + 0.4 * Math.min(1, beat));
 		ctx.drawImage(b.glow, b.local.x, b.local.y);
+		ctx.globalAlpha = 1;
+		for (const tn of b.tunnels) {
+			paintTeleportLight(ctx, tn, t, SCENE_TILE, k);
+		}
 		ctx.restore();
 	}
 
@@ -143,8 +146,11 @@ export class FleshLive {
 		ctx.globalCompositeOperation = 'source-over';
 		ctx.globalAlpha = 1;
 
-		// the maze: corridors, rifts, walls
+		// the maze: corridors, walls; the tunnels' gateways and the lair's gate on top
 		ctx.drawImage(b.maze, b.local.x, b.local.y);
+		for (const tn of b.tunnels) {
+			paintTeleport(ctx, tn, t, T);
+		}
 		if (b.gate) {
 			paintGateBars(ctx, b.gate, this.gateOpen);
 		}
@@ -169,25 +175,6 @@ export class FleshLive {
 		ctx.fillStyle = hg;
 		ctx.fillRect(b.lair.x - lr, b.lair.y - lr, lr * 2, lr * 2);
 
-		// the rifts: light pours out of the seam and breathes with the heart
-		for (const rf of b.rifts) {
-			const sz = T * (1.8 + 0.25 * beat);
-			ctx.globalAlpha = 0.3 + 0.22 * Math.min(1, beat + 0.3);
-			ctx.drawImage(glowSprite(HOT), rf.cx - sz / 2, rf.cy - sz / 2, sz, sz);
-			ctx.save();
-			ctx.beginPath();
-			rf.inner.forEach((q, ii) => (ii ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])));
-			ctx.closePath();
-			ctx.clip();
-			const gg = ctx.createLinearGradient(rf.cx - T * 0.2, 0, rf.cx + T * 0.2, 0);
-			gg.addColorStop(0, 'rgba(200,50,30,.85)');
-			gg.addColorStop(0.5, `rgba(255,225,170,${0.75 + 0.2 * Math.min(1, beat + 0.25)})`);
-			gg.addColorStop(1, 'rgba(200,50,30,.85)');
-			ctx.globalAlpha = 1;
-			ctx.fillStyle = gg;
-			ctx.fillRect(rf.cx - T * 0.3, rf.cy - rf.h, T * 0.6, rf.h * 2);
-			ctx.restore();
-		}
 		for (const p of b.pads) {
 			const sz = T * (1.3 + 0.3 * beat);
 			ctx.globalAlpha = 0.28;

@@ -3,7 +3,7 @@
 // flesh with no void: a ground of fibres, pores, veins, half-buried ribs and pools of blood; the
 // maze is cut into it, its corridors the same flesh a little darker and wetter; its walls are
 // charred iron plates, one block to a tile, with a dark outline, a bevel, rivets and a hot edge, no
-// height; the tunnels are vertical rifts of torn flesh.
+// height; the tunnels are iron gateways drawn live (`fleshTeleport`).
 //
 // Everything is painted in the scene's own units (a tile is 32, the maze's top-left corner is at
 // (MX, MY)) and `FleshWorld` draws the result scaled to the game's world. Only what moves is not
@@ -11,6 +11,7 @@
 import type { GridMatrix } from '../../config/gridConfig';
 import { isTeleportToken } from '../../config/gridConfig';
 import type { Gate } from './fleshGate';
+import type { Tunnel } from './fleshTeleport';
 import { gateOf } from './fleshGate';
 import type { Rng, Vein } from './fleshNoise';
 import {
@@ -110,14 +111,6 @@ export interface Cyst {
 	readonly ph: number;
 }
 
-/** A tunnel: the tall torn seam and its inner polygon (a light pours out of it). */
-export interface Rift {
-	readonly cx: number;
-	readonly cy: number;
-	readonly h: number;
-	readonly inner: ReadonlyArray<readonly [number, number]>;
-}
-
 /** A round pad under the spawn or the fruit: where its glow breathes. */
 export interface Pad {
 	readonly cx: number;
@@ -128,7 +121,7 @@ export interface Pad {
 export interface FleshBake {
 	/** The ground, FRAME-sized. */
 	readonly ground: HTMLCanvasElement;
-	/** Corridors, blood, rifts, walls: maze-sized, origin (local.x, local.y). */
+	/** Corridors, blood, walls: maze-sized, origin (local.x, local.y). */
 	readonly maze: HTMLCanvasElement;
 	/** What glows in the walls (additive), and its blur. */
 	readonly emis: HTMLCanvasElement;
@@ -137,7 +130,8 @@ export interface FleshBake {
 	readonly veins: readonly Vein[];
 	readonly pools: readonly Pool[];
 	readonly cysts: readonly Cyst[];
-	readonly rifts: readonly Rift[];
+	/** The tunnel pads, for the live gateways (`fleshTeleport`). */
+	readonly tunnels: readonly Tunnel[];
 	readonly pads: readonly Pad[];
 	/** The lair's centre, scene units. */
 	readonly lair: { readonly x: number; readonly y: number };
@@ -709,42 +703,17 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 
 	const wallShadow = clipTo(blur(tint(wallM, '#000'), 2, true), deckM);
 
-	// ---- the tunnels (vertical rifts) and the round pads under the spawn and the fruit ----
+	// ---- the tunnel pads (live gateways) and the round pads under the spawn and the fruit ----
 	const maw = layer();
-	const rifts: Rift[] = [];
+	const tunnels: Tunnel[] = [];
 	const pads: Pad[] = [];
 	{
 		const mx = maw.x;
 		for (let rr = 0; rr < rows; rr += 1) {
 			for (let c = 0; c < cols; c += 1) {
-				if (kindOf(S, c, rr) !== 'tele') {
-					continue;
+				if (kindOf(S, c, rr) === 'tele') {
+					tunnels.push({ cx: tx(c + 0.5), cy: ty(rr + 0.5), dir: c < cols / 2 ? 1 : -1 });
 				}
-				const pi = rifts.length;
-				const cx = tx(c + 0.5);
-				const cy = ty(rr + 0.5);
-				const H0 = 2 * T * 0.47 * 0.9;
-				const seed = 11 + pi * 7;
-				const outer = riftPoly(cx, cy, H0 * 1.12, T * 0.3, seed);
-				const inn = riftPoly(cx, cy, H0 * 0.94, T * 0.14, seed);
-				polyPath(mx, outer);
-				const rg = mx.createLinearGradient(cx, cy - H0 / 2, cx, cy + H0 / 2);
-				rg.addColorStop(0, '#8a2a2e');
-				rg.addColorStop(0.5, '#c4544c');
-				rg.addColorStop(1, '#8a2a2e');
-				mx.fillStyle = rg;
-				mx.fill();
-				mx.strokeStyle = 'rgba(255,215,200,.4)';
-				mx.lineWidth = 1.2;
-				mx.lineCap = 'round';
-				mx.beginPath();
-				mx.moveTo(cx - T * 0.2, cy - H0 * 0.3);
-				mx.lineTo(cx - T * 0.14, cy - H0 * 0.05);
-				mx.stroke();
-				polyPath(mx, inn);
-				mx.fillStyle = '#0a0206';
-				mx.fill();
-				rifts.push({ cx, cy, h: H0, inner: inn });
 			}
 		}
 		for (let rr = 0; rr < rows; rr += 1) {
@@ -835,7 +804,7 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 		veins,
 		pools,
 		cysts,
-		rifts,
+		tunnels,
 		pads,
 		lair: { x: MX + (cols * T) / 2, y: MY + (rows * T) / 2 },
 		gate: gateOf(S, MX, MY, T),
@@ -1101,43 +1070,4 @@ function paintSkull(
 	ex.arc(cx + 4, cy, 1.5, 0, 7);
 	ex.fill();
 	ex.globalAlpha = 1;
-}
-
-/** The outline of a tall torn seam: ragged jaws that close towards both ends. */
-function riftPoly(
-	cx: number,
-	cy: number,
-	h: number,
-	w: number,
-	seed: number
-): Array<readonly [number, number]> {
-	const r = rng(seed);
-	const n = 16;
-	const left: Array<readonly [number, number]> = [];
-	const right: Array<readonly [number, number]> = [];
-	for (let k = 0; k <= n; k += 1) {
-		const u = k / n;
-		const env = Math.pow(Math.sin(Math.PI * u), 0.7);
-		const jl = 0.7 + 0.6 * r();
-		const jr = 0.7 + 0.6 * r();
-		const y = cy - h / 2 + u * h;
-		left.push([cx - w * env * jl, y]);
-		right.push([cx + w * env * jr, y]);
-	}
-	return left.concat(right.reverse());
-}
-
-function polyPath(
-	x: CanvasRenderingContext2D,
-	pts: ReadonlyArray<readonly [number, number]>
-): void {
-	x.beginPath();
-	pts.forEach((q, ii) => {
-		if (ii) {
-			x.lineTo(q[0], q[1]);
-		} else {
-			x.moveTo(q[0], q[1]);
-		}
-	});
-	x.closePath();
 }
