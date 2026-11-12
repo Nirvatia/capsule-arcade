@@ -257,8 +257,9 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - **The hell's weapons and pickups (in the game)**: BFG (a steel cannon with a green lens),
   barrel (acid green, a flame mark, a lit fuse), berserk (a cream fist in an orange flame, the same
   as the HUD's icon: a dark iron gauntlet was lost on the grey plates), medkit (white with a red cross), each with a
-  wide dark outline, a light top and a gloss. The acid greens and the flame part from the red flesh and the grey plates; red would sink. The exit is an arch of bone on a bone step with pale
-  light pouring out in rays, the only cold thing in the flesh. The heart stays the mint heart
+  wide dark outline, a light top and a gloss. The acid greens and the flame part from the red flesh and the grey plates; red would sink. The exit is a door of the walls' iron standing ajar in a
+  riveted frame, cold light pouring out onto the floor, the only cold thing in the flesh (the
+  owner's pick over the old bone arch, which was seen but did not read as an exit). The heart stays the mint heart
   with a plus. The BFG orb is a pale green-white plasma with a green halo; the berserk's claws
   are orange.
 - **Blinky and the imps (in the game)**: the arcade ghost silhouette, cel-shaded like the

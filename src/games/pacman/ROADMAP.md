@@ -71,10 +71,8 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    the clones are echo wisps, a quarter smaller (accepted); food is eaten within 0.3 of a tile;
    in the hell the lair's gate is of the walls' iron and opens only for who goes through it, the
    heartbeat is a slow swell (peak 0.28, beats about 0.6 s wide), the heart lies at the far end
-   from the player and the exit far from both. Left: the owner picks the exit in the
-   `hell-exit` prototype (today's bone arch, a green emergency exit sign, an iron door ajar);
-   then `EXIT_ART` points at it and the other paintings are deleted. The gate and the pulse are
-   in the game; the owner may still tune them from the same page.
+   from the player and the exit far from both, and the exit is an iron door ajar (the owner's
+   pick in the `hell-exit` prototype).
 
 ## Part II. Boss levels
 

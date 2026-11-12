@@ -1,124 +1,12 @@
-// The boss-level exit, painted with the kit in `render/common/itemPaint`. The owner: the old one
-// (an arched doorway in a bone frame, pale light in rays, after the mock-up
-// `prototypes/pacman/art/hell-flesh-items.html`) is seen but does not read as an exit. Two
-// candidates against it, in the `hell-exit` prototype:
-// - sign: the emergency exit sign (ISO 7010), a green plate with a white running figure and a
-//   door; the only green in the hell;
-// - door: a door of the walls' iron standing ajar, cold light pouring out onto the floor.
+// The boss-level exit (the owner's pick of three, in the `hell-exit` prototype), painted with
+// the kit in `render/common/itemPaint`: a door of the walls' iron standing ajar in a riveted
+// iron frame, cold light pouring out of the doorway onto the floor. The light is the only cold
+// thing in the flesh, and the open leaf says door, so it reads as the way out.
 import type { CollectibleArt, CollectibleMotion } from './collectibleSprite';
 import { drawCollectible, FRUIT_BLOOMS } from './collectibleSprite';
 import { beginItem } from '../common/itemPaint';
 
 const INK = 'rgba(20,6,8,0.96)';
-/** The mock-up is drawn in a 100-unit box; the item kit has 256. */
-const SCALE = 2.3;
-
-function paintArch(ctx: CanvasRenderingContext2D, size: number): void {
-	beginItem(ctx, size);
-	ctx.scale(SCALE, SCALE);
-
-	const arch = (grow: number) => () => {
-		ctx.beginPath();
-		ctx.moveTo(-30 + grow, 42);
-		ctx.lineTo(-30 + grow, -20);
-		ctx.arc(0, -20, 30 - grow, Math.PI, 0);
-		ctx.lineTo(30 - grow, 42);
-		ctx.closePath();
-	};
-	const step = () => {
-		ctx.beginPath();
-		ctx.roundRect(-38, 40, 76, 11, 3);
-	};
-	const part = (path: () => void, fill: string | CanvasGradient, width: number) => {
-		path();
-		ctx.fillStyle = fill;
-		ctx.fill();
-		ctx.lineWidth = width;
-		ctx.strokeStyle = INK;
-		ctx.stroke();
-	};
-
-	// the bone frame and step
-	const bone = ctx.createLinearGradient(-30, 0, 30, 0);
-	bone.addColorStop(0, '#efe2c8');
-	bone.addColorStop(0.5, '#d3c3a4');
-	bone.addColorStop(1, '#9c8a72');
-	part(arch(0), bone, 6);
-	part(step, '#cdbca2', 5);
-
-	// the opening: light pouring out from the far side, in rays
-	const light = ctx.createLinearGradient(0, -40, 0, 42);
-	light.addColorStop(0, '#ffffff');
-	light.addColorStop(0.6, '#bfe2ff');
-	light.addColorStop(1, '#6aa8f0');
-	part(arch(10), light, 4);
-	ctx.save();
-	arch(10)();
-	ctx.clip();
-	ctx.globalCompositeOperation = 'lighter';
-	ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-	ctx.lineWidth = 3;
-	for (let i = -2; i <= 2; i += 1) {
-		ctx.beginPath();
-		ctx.moveTo(i * 3, -20);
-		ctx.lineTo(i * 12, 44);
-		ctx.stroke();
-	}
-	ctx.restore();
-
-	ctx.restore();
-}
-
-/** The emergency exit sign: a green plate, a white figure running into a white door. */
-function paintSign(ctx: CanvasRenderingContext2D, size: number): void {
-	beginItem(ctx, size);
-	const plate = () => {
-		ctx.beginPath();
-		ctx.roundRect(-112, -80, 224, 160, 22);
-	};
-	plate();
-	ctx.lineWidth = 16;
-	ctx.strokeStyle = INK;
-	ctx.stroke();
-	const green = ctx.createLinearGradient(0, -80, 0, 80);
-	green.addColorStop(0, '#3ee08a');
-	green.addColorStop(1, '#0f9a55');
-	ctx.fillStyle = green;
-	ctx.fill();
-	ctx.strokeStyle = 'rgba(210,255,225,0.7)';
-	ctx.lineWidth = 5;
-	ctx.beginPath();
-	ctx.roundRect(-100, -68, 200, 136, 14);
-	ctx.stroke();
-
-	ctx.strokeStyle = '#ffffff';
-	ctx.fillStyle = '#ffffff';
-	// the door: a white frame, the doorway green inside
-	ctx.lineWidth = 12;
-	ctx.strokeRect(30, -50, 50, 100);
-	// the figure, running right into it
-	ctx.beginPath();
-	ctx.arc(-22, -40, 14, 0, Math.PI * 2);
-	ctx.fill();
-	ctx.lineWidth = 16;
-	ctx.beginPath();
-	ctx.moveTo(-28, -20);
-	ctx.lineTo(-42, 12);
-	ctx.moveTo(-42, 12);
-	ctx.lineTo(-22, 30);
-	ctx.lineTo(-24, 52);
-	ctx.moveTo(-42, 12);
-	ctx.lineTo(-62, 30);
-	ctx.lineTo(-80, 34);
-	ctx.moveTo(-30, -16);
-	ctx.lineTo(-8, -2);
-	ctx.lineTo(10, -14);
-	ctx.moveTo(-30, -16);
-	ctx.lineTo(-52, -6);
-	ctx.lineTo(-66, -22);
-	ctx.stroke();
-	ctx.restore();
-}
 
 /** A door of the walls' iron standing ajar, cold light pouring out of it onto the floor. */
 function paintDoor(ctx: CanvasRenderingContext2D, size: number): void {
@@ -200,32 +88,20 @@ function exitMotion(time: number): CollectibleMotion {
 	};
 }
 
-export type ExitStyle = 'arch' | 'sign' | 'door';
-
-const art = (paint: CollectibleArt['paint']): CollectibleArt => ({
+export const EXIT_ART: CollectibleArt = {
 	size: 256,
-	paint,
+	paint: paintDoor,
 	sprite: 240,
 	blooms: FRUIT_BLOOMS,
 	motion: exitMotion
-});
-
-export const EXIT_ARTS: Readonly<Record<ExitStyle, CollectibleArt>> = {
-	arch: art(paintArch),
-	sign: art(paintSign),
-	door: art(paintDoor)
 };
-
-/** The exit the game draws (the candidates are compared in the `hell-exit` prototype). */
-export const EXIT_ART: CollectibleArt = EXIT_ARTS.arch;
 
 export function drawExit(
 	ctx: CanvasRenderingContext2D,
 	x: number,
 	y: number,
 	tile: number,
-	time: number,
-	style?: ExitStyle
+	time: number
 ): void {
-	drawCollectible(ctx, style ? EXIT_ARTS[style] : EXIT_ART, x, y, tile, time);
+	drawCollectible(ctx, EXIT_ART, x, y, tile, time);
 }

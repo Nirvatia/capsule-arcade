@@ -1,14 +1,13 @@
 // Prototype: the owner's hell fixes on the real world (grid_doom, calm phase): the lair gate in
 // the walls' iron, opened only by who goes through it (the boss runs past it, then goes in and
-// out); the calmer heartbeat (the glow live, and its curve against the old one); three exits,
-// at game scale on the maze and magnified. Query: ?capture (window.__advance(seconds)).
+// out); the calmer heartbeat (the glow live, and its curve against the old one); the exit (an
+// iron door ajar, the owner's pick), at game scale on the maze and magnified. Query: ?capture (window.__advance(seconds)).
 import { GRID_DOOM } from '../../../src/games/pacman/config/mazes';
 import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
 import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinkyView';
 import { heartbeat } from '../../../src/games/pacman/render/doom/fleshLive';
 import { easeGate, gateTiles, gateWanted, lairSide } from '../../../src/games/pacman/render/doom/doomGate';
 import { drawExit } from '../../../src/games/pacman/render/items/ExitView';
-import type { ExitStyle } from '../../../src/games/pacman/render/items/ExitView';
 
 const q = new URLSearchParams(location.search);
 const D = Math.min(window.devicePixelRatio || 1, 2);
@@ -28,11 +27,7 @@ const side = lairSide(grid, tiles);
 let gate = 0;
 let time = 0;
 
-const STYLES: ReadonlyArray<{ id: ExitStyle; name: string; x: number }> = [
-	{ id: 'arch', name: 'Сейчас', x: 4.5 },
-	{ id: 'sign', name: 'A. Табличка', x: 11.5 },
-	{ id: 'door', name: 'B. Дверь', x: 18.5 }
-];
+const STYLES: ReadonlyArray<{ name: string; x: number }> = [{ name: 'Выход', x: 11.5 }];
 
 /** The boss's walk: past the gate along the corridor and back, then into the lair and out. */
 const PATH: ReadonlyArray<readonly [number, number]> = [
@@ -94,7 +89,7 @@ function frame(dt: number): void {
 	const L = world.layout;
 	const S = L.tileSize;
 	for (const st of STYLES) {
-		drawExit(W.ctx, L.offsetX + st.x * S, L.offsetY + 24.5 * S, S, time, st.id);
+		drawExit(W.ctx, L.offsetX + st.x * S, L.offsetY + 24.5 * S, S, time);
 	}
 	boss.draw(
 		W.ctx,
@@ -137,12 +132,12 @@ function frame(dt: number): void {
 	const E = fit(exitCv);
 	E.ctx.fillStyle = '#1a0c0f';
 	E.ctx.fillRect(0, 0, E.w, E.h);
-	const cell = E.w / 3;
-	const big = Math.min(cell * 0.8, E.h * 0.7);
+	const cell = E.w / STYLES.length;
+	const big = Math.min(cell * 0.5, E.h * 0.7);
 	E.ctx.textAlign = 'center';
 	E.ctx.font = '700 14px "Trebuchet MS", system-ui, sans-serif';
 	STYLES.forEach((st, i) => {
-		drawExit(E.ctx, cell * (i + 0.5), E.h * 0.45, big, time, st.id);
+		drawExit(E.ctx, cell * (i + 0.5), E.h * 0.45, big, time);
 		E.ctx.fillStyle = '#efe0d8';
 		E.ctx.fillText(st.name, cell * (i + 0.5), E.h - 10);
 	});
