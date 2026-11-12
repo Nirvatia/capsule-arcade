@@ -10,14 +10,22 @@ import { context, makeCanvas, veinAt } from './fleshNoise';
 
 /**
  * How much of the beat's height the light shows, 0..1: the rhythm is the beat's, the peak is
- * lower (the owner found the glow too hot at the top of the beat). The resting glow is unchanged.
+ * low (the owner found the glow too hot at the top of the beat, then the pulse tiring to the
+ * eye). The resting glow is unchanged.
  */
-const PEAK = 0.4;
+const PEAK = 0.28;
 
-/** The heartbeat, 0..~1.2: a strong beat and a weaker one after it, 2.5 s apart. */
+/**
+ * The heartbeat, 0..~1.1: a beat and a softer one after it, 2.5 s apart. Each is a slow swell
+ * (about 0.6 s wide), not a flash: the light breathes rather than blinks.
+ */
 export function heartbeat(t: number): number {
 	const ph = (t * 0.4) % 1;
-	return Math.exp(-Math.pow(ph / 0.07, 2)) + 0.65 * Math.exp(-Math.pow((ph - 0.2) / 0.08, 2));
+	return (
+		Math.exp(-Math.pow(ph / 0.12, 2)) +
+		Math.exp(-Math.pow((ph - 1) / 0.12, 2)) +
+		0.5 * Math.exp(-Math.pow((ph - 0.24) / 0.14, 2))
+	);
 }
 
 const sprites = new Map<string, HTMLCanvasElement>();

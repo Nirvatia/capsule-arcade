@@ -4,6 +4,7 @@ import { PlayerModel } from './PlayerModel';
 import type { PlayerDirection, PlayerTile } from './PlayerModel';
 import type { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
+import { EAT_REACH } from '../../config/actorConfig';
 
 const VECTORS: Record<PlayerDirection, { x: number; y: number }> = {
 	UP: { x: 0, y: -1 },
@@ -222,6 +223,7 @@ export class PlayerService {
 			const step = speed * remaining;
 			if (step < needed) {
 				this.player.addProgress(step);
+				this.eatAhead();
 				remaining = 0;
 			} else {
 				remaining -= needed / speed;
@@ -265,6 +267,7 @@ export class PlayerService {
 			const step = RECOIL_SPEED * remaining;
 			if (step < needed) {
 				this.player.addProgress(step);
+				this.eatAhead();
 				remaining = 0;
 			} else {
 				remaining -= needed / RECOIL_SPEED;
@@ -306,6 +309,7 @@ export class PlayerService {
 			const step = DASH_SPEED * remaining;
 			if (step < needed) {
 				this.player.addProgress(step);
+				this.eatAhead();
 				remaining = 0;
 			} else {
 				remaining -= needed / DASH_SPEED;
@@ -385,6 +389,17 @@ export class PlayerService {
 			return 'RIGHT';
 		}
 		return 'LEFT';
+	}
+
+	/**
+	 * Food is eaten as soon as the hero's centre comes within `EAT_REACH` of it, not only on
+	 * reaching the tile's centre: a turn back just short of a dot still takes it.
+	 */
+	private eatAhead(): void {
+		const target = this.player.target;
+		if (target && 1 - this.player.progress <= EAT_REACH) {
+			this.progress.collectAt(target.x, target.y);
+		}
 	}
 
 	private handleArrival(): boolean {

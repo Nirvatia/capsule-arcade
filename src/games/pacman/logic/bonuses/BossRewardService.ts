@@ -11,9 +11,10 @@ import { debugLog } from '../debug/debugLog';
 export type BossRewardChoice = 'life' | 'exit';
 
 /**
- * The end of a boss level. When the boss dies a bonus life appears where it fell and an
- * exit opens at the far end of the maze. Taking either one ends the level; only the heart
- * gives a life. Nothing ends the level before the player picks.
+ * The end of a boss level. When the boss dies a bonus life appears at the far end of the
+ * maze from the player (it has to be run for) and an exit opens far from both. Taking either
+ * one ends the level; only the heart gives a life. Nothing ends the level before the player
+ * picks.
  */
 export class BossRewardService {
 	private readonly grid: GridService;
@@ -53,18 +54,26 @@ export class BossRewardService {
 		this.pendingChoice = null;
 	}
 
-	/** Places the heart at (or next to) the boss's last tile and the exit far from it. Once. */
-	offer(bossTile: GridPoint): void {
+	/**
+	 * Places the heart as far from the player as the maze allows and the exit far from both
+	 * (where the boss fell no longer matters). Once.
+	 */
+	offer(playerTile: GridPoint): void {
 		if (this.heartTile || this.choiceValue) {
 			return;
 		}
-		const heart = this.nearestFreeTile(bossTile);
+		const fromPlayer = this.freeDistances(playerTile);
+		const heart = this.best(fromPlayer, (d) => d);
 		if (!heart) {
-			console.error('BossRewardService.offer', 'no free tile near the boss', bossTile);
+			console.error('BossRewardService.offer', 'no free tile to place the heart', playerTile);
 			return;
 		}
 		this.heartTile = heart;
-		this.exitTile = this.farthestFreeTile(heart) ?? heart;
+		const fromHeart = this.freeDistances(heart);
+		const exit = this.best(fromPlayer, (d, key) =>
+			key === doomTileKey(heart) ? -1 : Math.min(d, fromHeart.get(key) ?? 0)
+		);
+		this.exitTile = exit ?? heart;
 		this.events.emit('audio:cue', { cue: 'exit-open' });
 		debugLog(this.events, 'spawn', 'boss reward: heart + exit');
 	}
@@ -106,33 +115,33 @@ export class BossRewardService {
 		return this.grid.isPlayerWalkable(x, y) && !this.grid.isTeleport(x, y);
 	}
 
-	private nearestFreeTile(from: GridPoint): GridPoint | null {
-		if (this.isFree(from.x, from.y)) {
-			return { x: from.x, y: from.y };
-		}
-		let best: GridPoint | null = null;
-		let bestDistance = Infinity;
+	/** Steps from `from` to every free tile it reaches, by tile key. */
+	private freeDistances(from: GridPoint): Map<string, number> {
+		const out = new Map<string, number>();
 		for (const [key, distance] of bfsDistanceFrom(this.grid, from)) {
 			const tile = parseKey(key);
-			if (distance < bestDistance && this.isFree(tile.x, tile.y)) {
-				best = tile;
-				bestDistance = distance;
+			if (this.isFree(tile.x, tile.y)) {
+				out.set(key, distance);
 			}
 		}
-		return best;
+		return out;
 	}
 
-	private farthestFreeTile(from: GridPoint): GridPoint | null {
-		let best: GridPoint | null = null;
-		let bestDistance = -1;
-		for (const [key, distance] of bfsDistanceFrom(this.grid, from)) {
-			const tile = parseKey(key);
-			if (distance > bestDistance && key !== doomTileKey(from) && this.isFree(tile.x, tile.y)) {
-				best = tile;
-				bestDistance = distance;
+	/** The tile of `tiles` with the highest score (ties: the first found). */
+	private best(
+		tiles: ReadonlyMap<string, number>,
+		score: (distance: number, key: string) => number
+	): GridPoint | null {
+		let best: string | null = null;
+		let bestScore = -Infinity;
+		for (const [key, distance] of tiles) {
+			const value = score(distance, key);
+			if (value > bestScore) {
+				best = key;
+				bestScore = value;
 			}
 		}
-		return best;
+		return best ? parseKey(best) : null;
 	}
 }
 

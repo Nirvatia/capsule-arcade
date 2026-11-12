@@ -50,20 +50,26 @@ describe('boss reward', () => {
 		expect(hellLevel().session.bossReward).not.toBeNull();
 	});
 
-	it('puts the heart where the boss fell and the exit at the far end of the maze', () => {
+	it('puts the heart far from the player, not where the boss fell, and the exit far from both', () => {
 		const { session, reward, boss } = hellLevel();
-		reward.offer(boss.tile);
-		const heart = reward.heart;
-		const exit = reward.exit;
-		expect(heart).toEqual({ x: boss.tile.x + 0.5, y: boss.tile.y + 0.5 });
-		expect(exit).not.toBeNull();
 		const grid = session.grid;
-		const distances = bfsDistanceFrom(grid, boss.tile);
-		const far = Math.max(...distances.values());
-		const exitDistance = distances.get(`${Math.floor(exit!.x)},${Math.floor(exit!.y)}`) ?? -1;
-		expect(exitDistance).toBeGreaterThan(far * 0.7);
-		expect(grid.isPlayerWalkable(Math.floor(exit!.x), Math.floor(exit!.y))).toBe(true);
-		expect(grid.isTeleport(Math.floor(exit!.x), Math.floor(exit!.y))).toBe(false);
+		// the player stands right where the boss fell
+		const player = { x: boss.tile.x, y: boss.tile.y };
+		reward.offer(player);
+		const heart = reward.heart!;
+		const exit = reward.exit!;
+		const tile = (p: { x: number; y: number }) => `${Math.floor(p.x)},${Math.floor(p.y)}`;
+		const fromPlayer = bfsDistanceFrom(grid, player);
+		const far = Math.max(...fromPlayer.values());
+		expect(heart).not.toEqual({ x: boss.tile.x + 0.5, y: boss.tile.y + 0.5 });
+		expect(fromPlayer.get(tile(heart)) ?? -1).toBeGreaterThan(far * 0.8);
+		expect(fromPlayer.get(tile(exit)) ?? -1).toBeGreaterThan(far * 0.3);
+		const fromHeart = bfsDistanceFrom(grid, { x: Math.floor(heart.x), y: Math.floor(heart.y) });
+		expect(fromHeart.get(tile(exit)) ?? -1).toBeGreaterThan(far * 0.3);
+		for (const p of [heart, exit]) {
+			expect(grid.isPlayerWalkable(Math.floor(p.x), Math.floor(p.y))).toBe(true);
+			expect(grid.isTeleport(Math.floor(p.x), Math.floor(p.y))).toBe(false);
+		}
 	});
 
 	it('waits for the player: nothing ends the level until the heart or the exit is taken', () => {

@@ -9,7 +9,7 @@ import type { BossSnapshot } from './HellBlinkyView';
 import { DoomWorld } from './DoomWorld';
 import type { DoomLight } from './DoomWorld';
 import { pickupSprite } from './DoomSprites';
-import { easeGate, gateTiles, gateWanted } from './doomGate';
+import { easeGate, gateTiles, gateWanted, lairSide } from './doomGate';
 import type { Point } from './doomGate';
 import type { SharedLayers } from '../SharedLayers';
 import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../RenderFrame';
@@ -35,7 +35,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 	private lastPlayerPos: { x: number; y: number } | null = null;
 	/** How far the lair's gate is open (the boss, his echo and the imps open it). */
 	private gate = 0;
-	private gateOf: { grid: GridService; tiles: Point[] } | null = null;
+	private gateOf: { grid: GridService; tiles: Point[]; side: 1 | -1 } | null = null;
 
 	constructor(shared: SharedLayers) {
 		this.shared = shared;
@@ -141,12 +141,13 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		return this.world;
 	}
 
-	/** Opens the lair's gate for the boss (once he has materialised), his echo and the imps. */
+	/** Opens the lair's gate for the boss (once he has materialised), his echo and the imps going through it. */
 	private updateGate(grid: GridService | null, boss: DoomBossService | null, dt: number): void {
 		const actors: Point[] = [];
 		if (grid && boss) {
 			if (this.gateOf?.grid !== grid) {
-				this.gateOf = { grid, tiles: gateTiles(grid) };
+				const tiles = gateTiles(grid);
+				this.gateOf = { grid, tiles, side: lairSide(grid, tiles) };
 			}
 			if (boss.introProgress >= 1) {
 				actors.push(boss.position);
@@ -159,7 +160,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 				actors.push({ x: imp.tile.x + 0.5, y: imp.tile.y + 0.5 });
 			}
 		}
-		const wanted = this.gateOf ? gateWanted(this.gateOf.tiles, actors) : 0;
+		const wanted = this.gateOf ? gateWanted(this.gateOf.tiles, actors, this.gateOf.side) : 0;
 		this.gate = easeGate(this.gate, wanted, dt);
 	}
 

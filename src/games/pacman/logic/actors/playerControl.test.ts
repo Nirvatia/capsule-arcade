@@ -32,6 +32,60 @@ function settle(player: PlayerService): void {
 	}
 }
 
+describe('eating', () => {
+	it('takes a dot 0.3 of a tile before its centre, so a turn back just short of it eats it', () => {
+		const { grid, player } = makePlayer();
+		const progress = (player as unknown as { progress: LevelProgress }).progress;
+		player.setDesiredDirection('LEFT');
+		settle(player);
+		// run left until the tile ahead holds a dot not eaten yet
+		let ahead = { x: player.tile.x - 1, y: player.tile.y };
+		for (
+			let i = 0;
+			i < 400 &&
+			!(grid.tileAt(ahead.x, ahead.y) === 'DT' && !progress.isCollected(ahead.x, ahead.y));
+			i++
+		) {
+			player.update(STEP / 4);
+			ahead = { x: player.tile.x - 1, y: player.tile.y };
+		}
+		settle(player);
+		expect(grid.tileAt(ahead.x, ahead.y)).toBe('DT');
+		// 0.25 of a tile short of the dot's centre, then back
+		while (player.position.x - (ahead.x + 0.5) > 0.26) {
+			player.update(STEP / 8);
+		}
+		expect(progress.isCollected(ahead.x, ahead.y)).toBe(true);
+		player.setDesiredDirection('RIGHT');
+		player.update(0.2);
+		expect(progress.isCollected(ahead.x, ahead.y)).toBe(true);
+	});
+
+	it('leaves a dot the hero turns back from farther than 0.3 of a tile', () => {
+		const { grid, player } = makePlayer();
+		const progress = (player as unknown as { progress: LevelProgress }).progress;
+		player.setDesiredDirection('LEFT');
+		settle(player);
+		let ahead = { x: player.tile.x - 1, y: player.tile.y };
+		for (
+			let i = 0;
+			i < 400 &&
+			!(grid.tileAt(ahead.x, ahead.y) === 'DT' && !progress.isCollected(ahead.x, ahead.y));
+			i++
+		) {
+			player.update(STEP / 4);
+			ahead = { x: player.tile.x - 1, y: player.tile.y };
+		}
+		settle(player);
+		while (player.position.x - (ahead.x + 0.5) > 0.4) {
+			player.update(STEP / 8);
+		}
+		player.setDesiredDirection('RIGHT');
+		player.update(0.1);
+		expect(progress.isCollected(ahead.x, ahead.y)).toBe(false);
+	});
+});
+
 describe('player control', () => {
 	it('reverses on the spot, without waiting for the next tile and without a jump', () => {
 		const { player } = makePlayer();

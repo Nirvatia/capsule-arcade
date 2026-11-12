@@ -150,7 +150,9 @@ The screen fade is a DOM layer over the HUD and the screens, under the dev panel
 `InputController` tracks held direction keys; `GameMain` applies the latest held one
 every frame, so a held key survives pauses, deaths and fades. A reversal turns Pac-Man
 round on the spot (`PlayerModel.reverse`); a turn pressed up to 0.15 tile past a junction
-still takes it (`LATE_TURN`). Tests: `logic/actors/playerControl.test.ts`.
+still takes it (`LATE_TURN`). Food is eaten once the hero's centre is within `EAT_REACH`
+(0.3 of a tile, `config/actorConfig`) of it, so a turn back just short of a dot still takes it.
+Tests: `logic/actors/playerControl.test.ts`.
 
 ## Balance tool
 
@@ -232,5 +234,5 @@ the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arca
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`, `heroCharge`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale), `trails` (three candidates for a stronger hero trail, `render/actors/hero/heroTrails`, against today's one on the real season world, the hero looping round a block; `?capture` for frame series); `winter-decay.html` is an older standalone page.
+`MsPacmanHero`, `heroCharge`), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit candidates `ExitView` `EXIT_ARTS`, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale), `trails` (three candidates for a stronger hero trail, `render/actors/hero/heroTrails`, against today's one on the real season world, the hero looping round a block; `?capture` for frame series); `winter-decay.html` is an older standalone page.
 ```

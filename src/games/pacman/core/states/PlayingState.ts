@@ -73,7 +73,7 @@ export class PlayingState implements GameState {
 			// the boss is dead: the level ends when the player takes the heart or the exit
 			const reward = session.bossReward;
 			if (!combat.endRequested && doomBoss.defeated && reward) {
-				reward.offer(doomBoss.tile);
+				reward.offer(player.tile);
 				reward.update(player);
 				const choice = reward.consumeChoice();
 				if (choice) {

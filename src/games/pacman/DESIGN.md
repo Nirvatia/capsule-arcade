@@ -150,7 +150,8 @@ pads, and no ghosts but their lord.
   abyss: the run goes on to the next level without losing a life.
 - **Weapons** (corner pickups, one slot): BFG (charge, then a green orb), barrel (placed,
   explodes), berserk (a fist: faster, bites the boss, minions extend it), medkit.
-- **Reward**: when the boss dies a heart appears where it fell and an exit at the far end;
+- **Reward**: when the boss dies a heart appears at the far end of the maze from the player
+  (it has to be run for) and an exit far from both;
   taking either ends the level as a win, the heart also gives +1 life.
 - Direction rule: every actor shows where it heads (eyes; the imps add a small chevron; the boss's eyes are enough
   on the tile's leading edge; Pac-Man has his mouth).
@@ -287,9 +288,9 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   neutral and lighter than the red floor so the maze parts from the ground in grey too, each with a
   bevel, a seam and four rivets, every island edged by a dark outline with a thin hot line that
   pulses with the heart. No height or face (the bevel is inside the tile), so the corridors keep
-  their full width; the lair's gate (three bone bars between two posts) slides open when the boss, his echo or an imp comes to it and shuts behind them; the corridor floor is a dark flesh, and the ground outside the maze is not
+  their full width; the lair's gate (two riveted leaves of the walls' iron with glowing slots, between two iron posts) slides open only for whoever goes through it, the boss, his echo or an imp (leaving the lair, or stepping into the doorway from the corridor; never for the boss running past) and shuts behind them; the corridor floor is a dark flesh, and the ground outside the maze is not
   dimmed further (a darker surround makes the maze hang in the air). A little rust (stains in the corners, streaks from the rivets) and blood (spatters, in patches, some with drips) sit on the plates, so they belong to the scene. Ribs half buried, veins, cysts and pools of blood around; a slow heartbeat
-  light; few, bold details on a surface, nothing hanging; a calm background. The teleport is an
+  light (a breathing swell, not a flash: the owner found the sharp beat tiring); few, bold details on a surface, nothing hanging; a calm background. The teleport is an
   iron gateway set in the end of the corridor (the maze's own iron with rivets and lamps), a cyan
   field with bands running along it and chevrons flowing in from the corridor, so it shows where it
   leads; cyan is used nowhere else in the hell, so it is never lost against the red. The boss is redone to

@@ -68,12 +68,13 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    the bow), Pac-Man gets a minimal eye (a dot under a frowning brow), no tongue for either.
 
 5. **The owner's list of fixes** (Sonnet). Done: the echo token never appears near the hero;
-   the clones are echo wisps, a quarter smaller (accepted by the owner, `echo` prototype). Left: in the
-   hell, the lair's gate in the walls' iron and opened only by who leaves or enters the lair
-   (not by the boss running past); a calmer heartbeat pulse; the heart placed far from the
-   player, not where the boss fell; an exit that reads as an exit; food eaten when the hero's
-   centre is within 0.3 of a tile of it (today only on reaching the tile's centre, so a turn
-   back just before a dot leaves it).
+   the clones are echo wisps, a quarter smaller (accepted); food is eaten within 0.3 of a tile;
+   in the hell the lair's gate is of the walls' iron and opens only for who goes through it, the
+   heartbeat is a slow swell (peak 0.28, beats about 0.6 s wide), the heart lies at the far end
+   from the player and the exit far from both. Left: the owner picks the exit in the
+   `hell-exit` prototype (today's bone arch, a green emergency exit sign, an iron door ajar);
+   then `EXIT_ART` points at it and the other paintings are deleted. The gate and the pulse are
+   in the game; the owner may still tune them from the same page.
 
 ## Part II. Boss levels
 

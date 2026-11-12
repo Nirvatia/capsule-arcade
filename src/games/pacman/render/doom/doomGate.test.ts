@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GATE_REACH, easeGate, gateTiles, gateWanted } from './doomGate';
+import { GATE_REACH, easeGate, gateTiles, gateWanted, lairSide } from './doomGate';
 import { gateOf } from './fleshGate';
 import { GRID_DOOM } from '../../config/mazes';
 
@@ -16,17 +16,38 @@ describe('the hell lair gate', () => {
 		expect(new Set(tiles.map((t) => t.y)).size).toBe(1);
 	});
 
-	it('is wanted when the boss, an echo or an imp is at the gate, not when they are far', () => {
+	const side = lairSide(grid, tiles);
+
+	it('knows the lair is below the gate in the hell maze', () => {
+		expect(side).toBe(1);
+	});
+
+	it('opens for whoever leaves the lair, not for actors far from it', () => {
 		const mid = tiles[1];
-		expect(gateWanted(tiles, [])).toBe(0);
-		expect(gateWanted(tiles, [{ x: mid.x, y: mid.y + GATE_REACH + 3 }])).toBe(0);
-		expect(gateWanted(tiles, [{ x: mid.x, y: mid.y + 1 }])).toBe(1);
+		expect(gateWanted(tiles, [], side)).toBe(0);
+		expect(gateWanted(tiles, [{ x: mid.x, y: mid.y + GATE_REACH + 3 }], side)).toBe(0);
+		expect(gateWanted(tiles, [{ x: mid.x, y: mid.y + 1 }], side)).toBe(1);
+	});
+
+	it('opens for whoever steps into the doorway from the corridor', () => {
+		const mid = tiles[1];
 		expect(
-			gateWanted(tiles, [
-				{ x: 0, y: 0 },
-				{ x: mid.x, y: mid.y - 1 }
-			])
+			gateWanted(
+				tiles,
+				[
+					{ x: 0, y: 0 },
+					{ x: mid.x, y: mid.y - 0.6 }
+				],
+				side
+			)
 		).toBe(1);
+	});
+
+	it('stays shut while the boss runs along the corridor past the gate', () => {
+		const corridorY = tiles[0].y - 1;
+		for (let x = tiles[0].x - 3; x <= tiles[2].x + 3; x += 0.25) {
+			expect(gateWanted(tiles, [{ x, y: corridorY }])).toBe(0);
+		}
 	});
 
 	it('slides open fast and shut slowly, and settles exactly', () => {

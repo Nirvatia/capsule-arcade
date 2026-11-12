@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Ад: двери, пульс, выход</title>
+    <!-- Prototype: the owner's hell fixes on the real world (the lair gate, the heartbeat, the
+         exit). Built from the sources: `node prototypes/pacman/build.mjs hell-exit`; open as a file. -->
+    <style>
+      :root{color-scheme:dark}
+      html,body{margin:0;background:#0d0709;color:#efe0d8;font:14px "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+      body{padding:14px max(16px,env(safe-area-inset-right,0px)) 18px max(16px,env(safe-area-inset-left,0px))}
+      h1{margin:0 0 4px;font:700 20px "Arial Narrow",system-ui,sans-serif;letter-spacing:.03em;text-transform:uppercase}
+      p{margin:0 0 12px;color:#b09890;max-width:90ch}
+      main{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px}
+      .side{display:grid;gap:12px;align-content:start}
+      canvas{display:block;width:100%;border:1px solid #402225;border-radius:8px;background:#000}
+      #world{aspect-ratio:1/1}
+      #exits{aspect-ratio:3/1.3}
+      #pulse{aspect-ratio:3/1.2}
+      @media (max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
+    </style>
+  </head>
+  <body>
+    <h1>Ад: двери логова, пульс, выход</h1>
+    <p>Босс бегает по коридору мимо дверей (они должны оставаться закрытыми), потом заходит в логово и выходит (тут открываются). Свечение пульсирует по новой, спокойной кривой. Внизу лабиринта три выхода в игровом размере, справа они же крупно.</p>
+    <main>
+      <canvas id="world"></canvas>
+      <div class="side">
+        <canvas id="exits"></canvas>
+        <canvas id="pulse"></canvas>
+      </div>
+    </main>
+    <script>
+/*SCRIPT*/
+    </script>
+  </body>
+</html>
