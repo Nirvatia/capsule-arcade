@@ -1,4 +1,4 @@
-<title>Цвет босса ада</title>
+<title>Фазы босса без цвета</title>
 <meta name="claude:viewport-fit-sides" content="cover" />
 <style>
   :root { --bg:#0b0507; --fg:#f0dcd4; --mut:#b79a92; --line:#3a1c20; --chip:#241014; --chipOn:#a3241a; color-scheme: dark; }
@@ -14,20 +14,21 @@
   button[aria-pressed="true"] { background:var(--chipOn); border-color:var(--chipOn); color:#fff; }
   button:focus-visible { outline:2px solid #ffb06a; outline-offset:2px; }
   #grid { display:grid; gap:22px; }
-  .line { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:12px; }
+  .line { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:12px; }
   figure { margin:0; display:grid; gap:4px; min-width:0; }
   figcaption { font:600 13px "Space Grotesk","Inter",system-ui,sans-serif; letter-spacing:.04em; }
   canvas { width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:4px; background:#0a0204; }
   body.gray canvas { filter:grayscale(1); }
 </style>
 <main>
-  <h1>Фаза II босса: вместо чёрного</h1>
-  <p>Тебе понравилось направление «цвет раскаляется», но чёрный сольётся с полом. Ты прав, и я нашла свою ошибку: в прошлом макете босс стоял на плитах стены, а не на полу. Теперь он в настоящем коридоре и на перекрёстке, где вокруг только тёмный пол. Между фазами I и III три цвета для фазы II и отклонённый чёрный для сравнения.</p>
+  <h1>Фазы босса при одном цвете</h1>
+  <p>Цвета заняты бесами, поэтому тело Блинки остаётся красным во всех фазах, а фазы различаются другим. Босс стоит в настоящем коридоре на тёмном полу, анимирован. В каждом направлении одна добавка на фазу, без раны, трещин, второй пары рогов, огня и свечения. Сверху для сравнения текущий.</p>
   <div class="bar">
     <button id="zoom" type="button" aria-pressed="true">Крупно (снять: масштаб игры)</button>
     <button id="gray" type="button" aria-pressed="false">Градации серого</button>
   </div>
   <div id="grid"></div>
 </main>
+
 
 <script>/*SCRIPT*/</script>

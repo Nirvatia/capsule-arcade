@@ -1,24 +1,36 @@
-// Throwaway comparison page for the boss's phase II colour (part II, step 1): the owner picked
-// direction B (the colour heats) but black sinks into the floor, so three brighter phase II
-// colours are shown on the real maze, in a corridor and at a junction, between phases I and III.
+// Throwaway comparison page for the boss's phases (part II, step 1): the body colour is one (the
+// other colours are the imps'), so the phases differ by something else. The current Blinky and
+// three directions (a silhouette, iron, a face) on the real floor of a corridor.
 // Deleted once the owner has chosen.
 import { GRID_DOOM } from '../../../src/games/pacman/config/mazes';
 import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
+import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinkyView';
+import type { BossSnapshot } from '../../../src/games/pacman/render/doom/HellBlinkyView';
 import { drawBoss } from './bossNew';
-import type { Phase2 } from './bossNew';
+import type { Direction } from './bossNew';
 
-interface Col {
-	readonly name: string;
-	readonly phase: 1 | 2 | 3;
-	readonly p2?: Phase2;
-}
-const COLS: readonly Col[] = [
-	{ name: 'Фаза I', phase: 1 },
-	{ name: 'II · чёрный (отклонён)', phase: 2, p2: 'black' },
-	{ name: 'II · оранжевый', phase: 2, p2: 'orange' },
-	{ name: 'II · маджента', phase: 2, p2: 'magenta' },
-	{ name: 'II · голубой', phase: 2, p2: 'blue' },
-	{ name: 'Фаза III', phase: 3 }
+type Row = 'now' | Direction;
+const ROWS: ReadonlyArray<{ id: Row; name: string; note: string }> = [
+	{
+		id: 'now',
+		name: 'Сейчас',
+		note: 'Фаза 3 набирает слои: вторая пара рогов, трещины, рана, свечение, огонь по подолу, светлое тело.'
+	},
+	{
+		id: 'silhouette',
+		name: '1 · Силуэт',
+		note: 'Тело красное во всех фазах. Короткие рога, потом длинные дугой, потом ещё и рваный подол.'
+	},
+	{
+		id: 'iron',
+		name: '2 · Железо',
+		note: 'Красное тело. Ничего, потом крупный железный шлем из плит, потом шлем и железные рога.'
+	},
+	{
+		id: 'face',
+		name: '3 · Лицо',
+		note: 'Красное тело. Хмурый рот, потом оскал с клыками, потом раскрытый рёв.'
+	}
 ];
 const W = 1280;
 const H = 720;
@@ -28,14 +40,10 @@ const at = (c: number, r: number) => GRID_DOOM[r]?.[c];
 const floor = (c: number, r: number) => at(c, r) === 'FL';
 const wall = (c: number, r: number) => at(c, r) === 'WL';
 let corridor = { x: 12, y: 10 };
-let junction = { x: 12, y: 10 };
 for (let r = 3; r < GRID_DOOM.length - 3; r += 1) {
 	for (let c = 3; c < GRID_DOOM[0].length - 3; c += 1) {
 		if (floor(c, r) && floor(c - 1, r) && floor(c + 1, r) && wall(c, r - 1) && wall(c, r + 1)) {
 			corridor = { x: c, y: r };
-		}
-		if (floor(c, r) && floor(c - 1, r) && floor(c + 1, r) && floor(c, r - 1) && floor(c, r + 1)) {
-			junction = { x: c, y: r };
 		}
 	}
 }
@@ -54,44 +62,65 @@ world.drawMood(bctx, []);
 const layout = world.layout;
 const s = layout.tileSize;
 
+const view = new HellBlinkyView();
+function snap(phase: number): BossSnapshot {
+	return {
+		x: corridor.x + 0.5,
+		y: corridor.y + 0.5,
+		phase,
+		state: 'CHASE' as BossSnapshot['state'],
+		shape: 'none' as BossSnapshot['shape'],
+		dir: 'RIGHT',
+		progress: 0,
+		alpha: 1,
+		intro: 1,
+		look: 0,
+		hit: 0,
+		echo: false
+	};
+}
+
 const state = { gray: false, zoom: true };
 const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
 const grid = $('grid');
-const cells: Array<{ cv: HTMLCanvasElement; col: Col; tile: { x: number; y: number } }> = [];
-for (const [title, tile] of [
-	['В коридоре', corridor],
-	['На перекрёстке', junction]
-] as const) {
+const cells: Array<{ cv: HTMLCanvasElement; row: Row; phase: 1 | 2 | 3 }> = [];
+for (const row of ROWS) {
 	const sec = document.createElement('section');
 	const h = document.createElement('h3');
-	h.textContent = title;
+	h.textContent = row.name;
+	const p = document.createElement('p');
+	p.textContent = row.note;
 	const line = document.createElement('div');
 	line.className = 'line';
-	for (const col of COLS) {
+	for (const phase of [1, 2, 3] as const) {
 		const fig = document.createElement('figure');
 		const cv = document.createElement('canvas');
-		cv.width = 300;
-		cv.height = 225;
+		cv.width = 360;
+		cv.height = 270;
 		const cap = document.createElement('figcaption');
-		cap.textContent = col.name;
+		cap.textContent = `Фаза ${['I', 'II', 'III'][phase - 1]}`;
 		fig.append(cv, cap);
 		line.append(fig);
-		cells.push({ cv, col, tile });
+		cells.push({ cv, row: row.id, phase });
 	}
-	sec.append(h, line);
+	sec.append(h, p, line);
 	grid.append(sec);
 }
 
 function paint(c: (typeof cells)[number], t: number): void {
-	const cx = layout.offsetX + (c.tile.x + 0.5) * s;
-	const cy = layout.offsetY + (c.tile.y + 0.5) * s;
-	const w = (state.zoom ? 2.6 : 6) * s;
-	const h = (w * 225) / 300;
+	const cx = layout.offsetX + (corridor.x + 0.5) * s;
+	const cy = layout.offsetY + (corridor.y + 0.5) * s;
+	const w = (state.zoom ? 2.8 : 6.4) * s;
+	const h = (w * 270) / 360;
 	const ctx = c.cv.getContext('2d') as CanvasRenderingContext2D;
 	const k = c.cv.width / (w * D);
 	ctx.setTransform(k * D, 0, 0, k * D, -(cx - w / 2) * k * D, -(cy - h / 2) * k * D);
 	ctx.drawImage(base, 0, 0, W, H);
-	drawBoss(ctx, cx, cy, s, c.col.phase, 'colour', t, c.col.p2);
+	if (c.row === 'now') {
+		view.draw(ctx, snap(c.phase), layout, t);
+	} else {
+		drawBoss(ctx, cx, cy, s, c.phase, c.row, t);
+	}
 }
 
 function sync(): void {
