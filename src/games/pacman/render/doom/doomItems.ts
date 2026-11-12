@@ -1,5 +1,5 @@
 // The hell's pickup icons (the owner's mock-up `prototypes/pacman/art/hell-flesh-items.html`):
-// BFG, barrel, berserk gauntlet and medkit in the heroes' style, a wide dark outline, a light
+// BFG, barrel, berserk fist and medkit in the heroes' style, a wide dark outline, a light
 // top, a gloss. Each is painted in a box of -50..50 round the origin, light from the upper
 // left, and baked once by `DoomSprites`; the animated bits of the mock-up (the pulsing lens,
 // the flickering fuse, the burning cracks) are the pickup's glow in `DoomCombatView`.
@@ -179,78 +179,87 @@ export const paintBarrel: Painter = (ctx) => {
 	ctx.fill();
 };
 
-/** Berserk: a black iron gauntlet with bone spikes and burning cracks (the hero's own look). */
+const FLAME =
+	'M-26 22 C-34 4 -22 -6 -20 -22 C-14 -12 -10 -16 -8 -30 C-2 -20 2 -22 4 -34 C8 -22 14 -18 14 -8 C20 -14 22 -6 24 -2 C34 8 30 20 26 24 C16 32 -16 32 -26 22Z';
+const FLAME_IN =
+	'M-17 22 C-21 10 -13 4 -11 -8 C-7 -2 -3 -6 -1 -18 C3 -8 10 -4 10 4 C16 0 18 10 14 20 C8 28 -10 28 -17 22Z';
+
+/**
+ * Berserk: the HUD's fist in flame (a cream fist in an orange flame), so the pickup and the dial
+ * show the same thing. The old black iron gauntlet was grey-brown on the grey plates and got lost.
+ */
 export const paintFist: Painter = (ctx) => {
+	const cream = '#fbe6c4';
+	bloom(ctx, 0, 0, 54, '255,120,40', 0.5);
+	ctx.save();
+	ctx.scale(1.38, 1.38);
+	ctx.translate(0, 2);
+	const flame = new Path2D(FLAME);
+	ctx.fillStyle = '#ff5a1a';
+	ctx.fill(flame);
+	ctx.lineWidth = 3.6;
+	ctx.strokeStyle = INK;
+	ctx.lineJoin = 'round';
+	ctx.stroke(flame);
+	ctx.fillStyle = '#ffb040';
+	ctx.fill(new Path2D(FLAME_IN));
 	part(
 		ctx,
 		() => {
 			ctx.beginPath();
-			ctx.roundRect(-28, 16, 56, 26, 6);
+			ctx.roundRect(-18, -4, 36, 27, 9);
 		},
-		linear(ctx, -28, 0, 28, 0, ['#2c2824', '#6a625a', '#2c2824'])
+		cream
 	);
-	ctx.fillStyle = 'rgba(255,150,50,.85)';
-	ctx.fillRect(-26, 26, 52, 6);
-	part(
-		ctx,
-		() => {
-			ctx.beginPath();
-			ctx.roundRect(-36, -20, 72, 42, 13);
-		},
-		linear(ctx, 0, -20, 0, 22, ['#5a4f47', '#2e2824', '#161210'])
-	);
-	for (let i = 0; i < 4; i += 1) {
-		const fx = -36 + i * 18;
+	for (const [x, y] of [
+		[-13.5, -4],
+		[-4.5, -5],
+		[4.5, -5],
+		[13.5, -4]
+	]) {
 		part(
 			ctx,
 			() => {
 				ctx.beginPath();
-				ctx.roundRect(fx, -26, 18, 24, 7);
+				ctx.arc(x, y, 6.2, 0, Math.PI * 2);
 			},
-			linear(ctx, 0, -26, 0, -2, ['#6a5e54', '#2e2824']),
-			5
+			cream,
+			3.2
 		);
-		ctx.fillStyle = '#f2e8d4';
-		ctx.beginPath();
-		ctx.moveTo(fx + 3, -26);
-		ctx.lineTo(fx + 9, -44);
-		ctx.lineTo(fx + 15, -26);
-		ctx.closePath();
-		ctx.fill();
-		ctx.lineWidth = 3;
-		ctx.strokeStyle = INK;
-		ctx.stroke();
 	}
+	ctx.beginPath();
+	ctx.roundRect(-17, -3, 34, 25, 8);
+	ctx.fillStyle = cream;
+	ctx.fill();
+	ctx.strokeStyle = INK;
+	ctx.lineWidth = 2.4;
+	ctx.lineCap = 'round';
+	ctx.beginPath();
+	for (const x of [-9, 0, 9]) {
+		ctx.moveTo(x, -2);
+		ctx.lineTo(x, 9);
+	}
+	ctx.stroke();
 	part(
 		ctx,
 		() => {
 			ctx.beginPath();
-			ctx.roundRect(-36, 2, 46, 18, 9);
+			ctx.moveTo(-18, 11);
+			ctx.quadraticCurveTo(-6, 7, 7, 13);
+			ctx.quadraticCurveTo(11, 17, 5, 21);
+			ctx.quadraticCurveTo(-8, 25, -18, 21);
+			ctx.closePath();
 		},
-		linear(ctx, 0, 2, 0, 20, ['#4a4038', '#1c1714']),
-		5
+		'#f0cf9c',
+		3
 	);
-	const cracks = () => {
-		ctx.beginPath();
-		ctx.moveTo(-22, -6);
-		ctx.lineTo(-10, 4);
-		ctx.lineTo(-16, 14);
-		ctx.moveTo(12, -8);
-		ctx.lineTo(20, 2);
-		ctx.lineTo(10, 10);
-		ctx.lineTo(16, 16);
-	};
-	ctx.lineCap = 'round';
-	ctx.lineJoin = 'round';
-	ctx.strokeStyle = 'rgba(255,150,50,.9)';
-	ctx.lineWidth = 4;
-	cracks();
+	ctx.strokeStyle = 'rgba(255,255,255,.8)';
+	ctx.lineWidth = 2.6;
+	ctx.beginPath();
+	ctx.moveTo(-14, -9);
+	ctx.quadraticCurveTo(-8, -13, -3, -11);
 	ctx.stroke();
-	ctx.strokeStyle = '#fff0b0';
-	ctx.lineWidth = 1.6;
-	cracks();
-	ctx.stroke();
-	bloom(ctx, 0, 6, 34, '255,140,40', 0.35);
+	ctx.restore();
 };
 
 /** A white first-aid box with a raised red cross. */

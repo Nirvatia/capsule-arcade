@@ -254,10 +254,9 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   a gloss and a glint (`render/common/itemPaint`); the mock-ups' looks are not kept.
 - A boss level ends by the player's choice: the heart (+1 life) or the exit.
 - **The hell's weapons and pickups (in the game)**: BFG (a steel cannon with a green lens),
-  barrel (acid green, a flame mark, a lit fuse), berserk (a black iron gauntlet with bone spikes
-  and burning cracks, the hero's own berserk look), medkit (white with a red cross), each with a
-  wide dark outline, a light top and a gloss. The acid greens part from the red flesh, the iron
-  matches the berserk armor; red would sink. The exit is an arch of bone on a bone step with pale
+  barrel (acid green, a flame mark, a lit fuse), berserk (a cream fist in an orange flame, the same
+  as the HUD's icon: a dark iron gauntlet was lost on the grey plates), medkit (white with a red cross), each with a
+  wide dark outline, a light top and a gloss. The acid greens and the flame part from the red flesh and the grey plates; red would sink. The exit is an arch of bone on a bone step with pale
   light pouring out in rays, the only cold thing in the flesh. The heart stays the mint heart
   with a plus. The BFG orb is a pale green-white plasma with a green halo; the berserk's claws
   are orange.
@@ -269,7 +268,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   heading chevron. A red body sinks into the red flesh, so the ink line, the eyes and the rim
   light carry him.
 - **The hell's heroes (final, as they are)**: the season heroes (the owner's decision: they stay as they are, no hell mark, no armor) plus one thing the hell adds, the BFG charge: the body swells and the mouth gapes, a green ring closes in on it, a glow lights the throat, white-hot at the end; the release is a recoil and a flash. The berserk is the awoken look (his ki flames, her glowing bow). The rolling ball at the rifts is the heroes' own.
-- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.5).
+- **The hell's night and storm (in the game, first version)**: the night is a neutral dark maroon that multiplies the world, cut by a light map that follows the corridors from the player, the boss, the pickups and the bursts (the player's light follows him smoothly); the cord's and the wounds' own light is drawn again over the dark, so the maze stays readable as a glowing lattice. The storm is ash streaks and embers with a warm tint. The owner kept the night as it is (`cord`); the storm's redesign is still open (`ROADMAP.md`, part II, step 1.4).
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze is built of charred iron plates (the owner's pick, "metal doom"): one block to a tile,
   neutral and lighter than the red floor so the maze parts from the ground in grey too, each with a
