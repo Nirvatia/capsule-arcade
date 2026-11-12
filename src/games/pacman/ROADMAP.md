@@ -66,13 +66,6 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
    Pac-Man looks clumsy (try the eye, the bow's seat and the proportions one at a time; keep
    the bow), Pac-Man gets a minimal eye (a dot under a frowning brow), no tongue for either.
 
-5. **The owner's list of fixes** (Sonnet). Done: the echo token never appears near the hero;
-   the clones are echo wisps, a quarter smaller (accepted); food is eaten within 0.3 of a tile;
-   in the hell the lair's gate is of the walls' iron and opens only for who goes through it, the
-   heartbeat is a slow swell (peak 0.28, beats about 0.6 s wide), the heart lies at the far end
-   from the player and the exit far from both, and the exit is an iron door ajar (the owner's
-   pick in the `hell-exit` prototype).
-
 ## Part II. Boss levels
 
 1. **The hell: the polish and what is left** (Opus for a look, Sonnet for the steps). The hell is
