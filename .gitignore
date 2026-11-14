@@ -22,6 +22,8 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+.kimi-code/local.toml
+
 # Pac-Man prototype pages are built on demand (node prototypes/pacman/build.mjs <name>), not stored
 prototypes/pacman/arcade.html
 prototypes/pacman/collectibles.html
