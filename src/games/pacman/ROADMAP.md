@@ -48,8 +48,18 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
 2. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). Today
    a season is a palette and a few props on one meadow. The owner wants a whole scene per
    season, in the maze and in the background, not a recolour:
-   1. **Winter: New Year (the `winter-scene` prototype is built, awaiting the owner's look).**
-      A fir tree, baubles, garlands, snow on the walls, lights.
+   1. **Winter: New Year (stage 4, reworked: the `winter-materials` prototype is built, awaiting
+      the owner's pick).** The owner rejected the `winter-scene` New Year dressing (the garlands,
+      the corridor snow, the side-view fir tree); the accepted winter art (the background, the
+      ground, the pellets, the palette) stays the base. The new direction: a season changes the
+      **material** of the world, not its colours — top-down only, no pseudo-height, the maze
+      silhouette, the corridor width, the food and hero readability unchanged, the static baked,
+      no new full-screen passes (budget: High 4, Medium 3, Low 2). Stage 4 first compares the
+      winter wall material on the real maze (`node prototypes/pacman/build.mjs winter-materials`:
+      current walls as control, snowy stone as the recommended one, snow-covered wood as the
+      alternative, day only, a zoomed fragment next to the full maze); after the owner's pick the
+      material gets detailed, then the winter corridor floor, then walls + floor together day and
+      night, and only then, if needed, one top-down fir and one very limited New Year accent.
    2. **Autumn: Halloween.** Pumpkins, cobwebs, bats, a gravestone or a lantern here and
       there; the walls and the ground dressed for it too, not only the margins.
    3. **Spring and summer** get the same treatment afterwards (their themes to be decided with
