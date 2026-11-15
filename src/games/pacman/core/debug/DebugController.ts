@@ -8,6 +8,7 @@ import type { DoomAttackKind } from '../../logic/doom/DoomAttackCore';
 import type { DebugRenderFlags } from '../../render/debug/DebugOverlayView';
 import type { RenderPipeline } from '../../render/RenderPipeline';
 import type { RenderQuality } from '../../render/common/renderQuality';
+import { graphics } from '../../render/common/graphicsSetting';
 
 export type { DebugRenderFlags };
 
@@ -76,8 +77,9 @@ export class DebugController {
 		return this.frameMeter?.snapshot() ?? null;
 	}
 
+	/** The panel's quality buttons set the player's graphics setting: the game applies it. */
 	setQuality(quality: RenderQuality): void {
-		this.render?.setQuality(quality);
+		graphics.set(quality);
 	}
 
 	get quality(): RenderQuality {

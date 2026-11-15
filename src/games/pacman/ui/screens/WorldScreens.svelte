@@ -21,6 +21,7 @@
 		ropesArt
 	} from './screenArt';
 	import { clamp01, fmt } from '../hud/season/seasonFormat';
+	import { graphics } from '../../render/common/graphicsSetting';
 
 	let { snap, actions }: { snap: HudSnapshot; actions: ScreenActions } = $props();
 
@@ -49,9 +50,9 @@
 	);
 
 	const SIZE = {
-		menu: { w: 520, h: 612 },
+		menu: { w: 520, h: 668 },
 		ready: { w: 540, h: 356 },
-		pause: { w: 460, h: 408 },
+		pause: { w: 460, h: 456 },
 		over: { w: 480, h: 552 }
 	} as const;
 	const VEIL = { menu: 0.4, ready: 0.18, pause: 0.5, over: 0.55 } as const;
@@ -98,6 +99,8 @@
 	/** The language knob names the language it switches to. */
 	const langLabel = $derived($t('language').slice(0, 2));
 	const worldName = $derived($t(`world_${snap.world}`).toUpperCase());
+	/** The graphics plank names the setting; a click goes to the next one. */
+	const graphicsLabel = $derived(`${$t('graphics')}: ${$t(`gfx_${$graphics}`)}`);
 </script>
 
 <!-- The {@html} below is the screens' own static art (`seasonArt`, `screenArt`, built from
@@ -291,6 +294,20 @@
 				{#each help as line, i (i)}
 					<text class="chalk" x="92" y={536 + i * 30} font-size="22">{line}</text>
 				{/each}
+				{@render ropes(170, 350, 608, 170, 350, 624)}
+				{@render plank(
+					'scr-gfx',
+					130,
+					624,
+					260,
+					38,
+					graphicsLabel,
+					20,
+					graphics.cycle,
+					false,
+					7,
+					'hang'
+				)}
 			{:else if screen === 'ready'}
 				<g transform="translate(0 {retry ? RETRY_LIFT : 0})">
 					<g class="sway" style:--rot="0deg">
@@ -364,6 +381,20 @@
 					'hang b'
 				)}
 				{@render knob(408, 362, langLabel, 18, $t('language'), toggleLang)}
+				{@render ropes(140, 320, 384, 140, 320, 404)}
+				{@render plank(
+					'scr-gfx',
+					110,
+					404,
+					240,
+					40,
+					graphicsLabel,
+					20,
+					graphics.cycle,
+					false,
+					7,
+					'hang'
+				)}
 			{:else}
 				<g style="filter:grayscale(.5) brightness(.82)">
 					<g class="sway" style:--rot="-1deg">

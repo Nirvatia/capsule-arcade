@@ -3,6 +3,7 @@
 <script lang="ts">
 	import type { HudSnapshot } from '../hud/hudSnapshot';
 	import { t, toggleLang } from '../i18n';
+	import { graphics } from '../../render/common/graphicsSetting';
 	import LifeIcon from '../hud/LifeIcon.svelte';
 	import type { ScreenActions } from './screenActions';
 
@@ -42,6 +43,9 @@
 				<button type="button" tabindex={-1} onclick={act(actions.menu)}>{$t('menu')}</button>
 				<button type="button" tabindex={-1} class="ghost" onclick={act(toggleLang)}
 					>{$t('language')}</button
+				>
+				<button type="button" tabindex={-1} class="ghost" onclick={act(graphics.cycle)}
+					>{$t('graphics')}: {$t(`gfx_${$graphics}`)}</button
 				>
 			</div>
 		</div>

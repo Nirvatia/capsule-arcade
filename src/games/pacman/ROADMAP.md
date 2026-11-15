@@ -150,7 +150,12 @@ WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   at DPR 1 High 38 / 34 → 49 / 44 FPS, Medium 50 / 43 → 60 / 60, Low 59 / 57 → 60 / 60; at DPR 2
   High 12 / 9 → 15 / 13, Medium (2400x1350) 58 / 48. The picture is the same within the noise of
   the weather particles (High), the swap to the baked copy differs by 0.5 of 255 on average.
-  Nobody has measured it on a weak PC yet (the owner has none at hand). If it still lags there:
+  The graphics setting is in the menu and on the pause screen (Auto by default, `DESIGN.md`
+  §2); in the same browser at DPR 2 Auto goes from High to Medium in the first seconds of play
+  and stays there. Nobody has measured it on a weak PC yet (the owner has none at hand): Auto
+  judges by the frame times, and the report was of smooth frames with late controls, so check
+  there that Auto does step down; if the frame times stay short while the controls lag, feed it
+  the rAF backlog as well. If it still lags there:
   High's two live maps (the drifting mist costs two passes), a Low that renders below the
   screen's resolution, then the hell's maze-sized glow layers (`emis` and `glow`, drawn
   additively twice, four times at night) and the hell's ground; the hell does not bake its

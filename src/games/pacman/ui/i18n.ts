@@ -52,7 +52,12 @@ const EN = {
 	unmute: 'Unmute',
 	volume: 'Volume',
 	pause: 'Pause',
-	food: 'FOOD'
+	food: 'FOOD',
+	graphics: 'GRAPHICS',
+	gfx_auto: 'AUTO',
+	gfx_high: 'HIGH',
+	gfx_medium: 'MEDIUM',
+	gfx_low: 'LOW'
 } as const;
 
 export type I18nKey = keyof typeof EN;
@@ -105,7 +110,12 @@ const RU: Record<I18nKey, string> = {
 	unmute: 'Включить звук',
 	volume: 'Громкость',
 	pause: 'Пауза',
-	food: 'ЕДА'
+	food: 'ЕДА',
+	graphics: 'ГРАФИКА',
+	gfx_auto: 'АВТО',
+	gfx_high: 'ВЫСОКАЯ',
+	gfx_medium: 'СРЕДНЯЯ',
+	gfx_low: 'НИЗКАЯ'
 };
 
 function initial(): Lang {

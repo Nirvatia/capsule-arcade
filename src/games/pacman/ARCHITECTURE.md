@@ -5,7 +5,7 @@ How the code is built. The game itself: `DESIGN.md`. The plan: `ROADMAP.md`.
 ## Code map
 
 ```
-core/        GameMain (wiring, input → director, auto-pause, HUD frame), Events, InputController
+core/        GameMain (wiring, input → director, auto-pause, HUD frame, the graphics setting), Events, InputController
              Director (transition table, pause stack, screen fade, `flow` snapshot)
   flow/      GameState interface, StateClock (timeline of named phases)
   states/    menu, ready (intro | short), playing, paused, death, level-clear, game-over
@@ -59,7 +59,9 @@ render/
   common/          textures, GlPass (every WebGL2 pass), moodBuffer (a world's atmosphere and
                    night in two small maps, a shade and a light, drawn over the screen, over a
                    part of it or into a baked background), renderQuality (the quality tiers' DPR
-                   caps and atmosphere rates), boardScale
+                   caps and atmosphere rates), graphicsSetting (the player's choice: Auto or a
+                   tier, remembered in localStorage), autoQuality (Auto: steps the tier down
+                   while a lower one is faster), boardScale
                    (where the maze goes on the screen: 80 % of the height, below the HUD band),
                    colour, maths, seeded random, worldDecor (the decor layout and stream shared
                    by every world)
@@ -70,7 +72,8 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the
              on a taller screen, over `seasonArt` and `seasonThemes`; `BossHud`, the boss levels' one, over
              `hellArt`; ArcadeHud; hudSnapshot, hudFrame), screens/ (`WorldScreens` over `screenArt` for the
              seasons and the hell; `GameScreens`, the older cards, for the arcade),
-             debug/ (dev panel and log), MuteButton (a knob, bottom left, and the volume slider beside it), i18n
+             debug/ (dev panel and log), MuteButton (a knob, bottom left, and the volume slider beside it), i18n;
+             the graphics setting is a plank under the menu and the pause screen (a button on the arcade's pause card)
 ```
 
 ## Rules of thumb
@@ -116,6 +119,14 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the
   one's rectangle is redrawn from the raw background, the object and that part of the maps, on
   whole device pixels. New static decor belongs in the bake (`MeadowBake`), never between
   `drawWorld` and `drawMood`: what is painted there lies over the baked atmosphere.
+- The render quality is the player's graphics setting (`render/common/graphicsSetting`: Auto,
+  High, Medium, Low; a store, remembered). `GameMain` applies it to `RenderPipeline.setQuality`:
+  the tier caps the canvas's DPR in every world (2 / 1.5 / 1) and sets a season's atmosphere.
+  With Auto, `AutoQuality` is fed the frame times of play (not of the menu, READY or a pause):
+  a two-second window slower than 48 frames a second steps one tier down; if the next window is
+  not at least 15 % faster, the fill rate is not what holds the frames (a 30 Hz screen, a busy
+  processor), so it goes back up and stops looking; it never steps up otherwise. What it found
+  is remembered; picking Auto again makes it look from High.
 - Collectibles (fruit, bonus life, exit) draw through `render/items/collectibleSprite`:
   callers pass the tile size and the time; the bake measures the object and how far its
   glow reaches over its ticker, so the object fills 0.78 of the tile and nothing leaves
@@ -188,9 +199,9 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
 - Dev panels: `` ` `` or the DEV button; `F8` steps one frame. Panel groups (`ui/debug/`, the
   look is `devUi.css`): a status card with FPS, p95 update/render times, rAF backlog, input-to-
   render latency and the canvas size, then ВРЕМЯ, УРОВЕНЬ, ИГРОК, БОСС (the hell), СПАВН,
-  ОТРИСОВКА (manual quality low/medium/high, debug overlays and the season layer switches:
-  atmosphere, night, weather, drift, vignette). The quality tiers cap the canvas's DPR at
-  1 / 1.5 / 2 and set the atmosphere's pass count and repaint rate. The log window shows live timers and
+  ОТРИСОВКА (quality low/medium/high: the buttons set the player's graphics setting, which
+  turns Auto off; debug overlays and the season layer switches: atmosphere, night, weather,
+  drift, vignette; a switch bakes the world again). The log window shows live timers and
   the `debug:log` stream. The text grows with the screen (12 to 16 px). `FrameMeter` keeps the
   last few seconds and exists in dev builds only.
 - `window.__pacman = { level, director, render }` for the console and Playwright.
@@ -211,6 +222,10 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
 - `core/debug/debugTools.test.ts` — time control, boss debug hooks, silent dev log, the frame
   meter's summaries and input samples.
 - `render/common/renderQuality.test.ts` — the quality names and the DPR cap of each tier.
+- `render/common/autoQuality.test.ts` — Auto: fast frames keep the tier, a slow window steps
+  down, a tier that is no faster is undone and ends the search, the frames after a change and
+  stalls do not count, a remembered result.
+- `render/common/graphicsSetting.test.ts` — the order of the choices, what Auto remembered.
 - `render/common/moodBuffer.test.ts` — the atmosphere maps on a recording 2D context: shade then
   light, the night's multiply, a cover-only stack, a part of the maps, the edges stretched over a
   bake's margins, the repaint rate, and a painter that leaves its alpha behind.

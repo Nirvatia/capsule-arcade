@@ -28,6 +28,13 @@ size of one tile.
   touch screen with room beside the board the slider stays out). The volume is remembered;
   turning it up from silence unmutes.
 - English by default, Russian switchable (remembered).
+- Graphics: a plank under the menu and under the pause screen, one click to the next setting:
+  Auto (the default), High, Medium, Low; remembered. Auto starts on High and steps down by
+  itself while the game cannot keep its frame rate and a lower setting really is faster; it
+  never steps back up on its own. High is the full picture: the screen's own resolution (up to
+  twice the css size), the mist drifting and the sun rays flickering. Medium and Low keep the
+  same scene with the mist and the rays standing still, at a lower resolution on a dense screen
+  (1.5 times and once the css size).
 
 ## 3. The run
 

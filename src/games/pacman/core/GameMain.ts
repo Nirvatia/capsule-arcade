@@ -18,6 +18,8 @@ import {
 } from '../ui/debug/debugActions';
 import { TimeControl } from '../engine/TimeControl';
 import { FrameMeter } from './debug/FrameMeter';
+import { AutoQuality } from '../render/common/autoQuality';
+import { graphics, loadAutoQuality, saveAutoQuality } from '../render/common/graphicsSetting';
 import { DebugController } from './debug/DebugController';
 import { debugLog } from '../logic/debug/debugLog';
 import { pushDevLog } from '../ui/debug/devLog';
@@ -31,6 +33,7 @@ export class GameMain implements GameModule {
 	private render: RenderPipeline | null = null;
 	private audio: PacmanAudioPlayer | null = null;
 	private detachAutoPause: (() => void) | null = null;
+	private detachGraphics: (() => void) | null = null;
 
 	async init(container: HTMLDivElement): Promise<void> {
 		if (this.loop) {
@@ -48,6 +51,17 @@ export class GameMain implements GameModule {
 		let lastState = '';
 		const time = new TimeControl();
 		const frameMeter = import.meta.env.DEV ? new FrameMeter() : null;
+		// the graphics setting: a tier picked by hand, or Auto watching the frames of play
+		let auto: AutoQuality | null = null;
+		this.detachGraphics = graphics.subscribe((choice) => {
+			if (choice === 'auto') {
+				auto = new AutoQuality(loadAutoQuality());
+				render.setQuality(auto.quality);
+			} else {
+				auto = null;
+				render.setQuality(choice);
+			}
+		});
 		const loop = new GameLoop(
 			(dt) => {
 				const held = input.heldDirection;
@@ -68,13 +82,17 @@ export class GameMain implements GameModule {
 			},
 			1 / 60,
 			(real) => time.advance(real),
-			frameMeter
-				? (timing) =>
-						frameMeter.recordFrame({
-							...timing,
-							...render.canvasInfo
-						})
-				: null
+			(timing) => {
+				frameMeter?.recordFrame({ ...timing, ...render.canvasInfo });
+				const flow = director.flow;
+				if (auto && !auto.settled && flow.state === 'playing' && !flow.paused) {
+					const next = auto.sample(timing.frameMs);
+					if (next) {
+						render.setQuality(next);
+						saveAutoQuality(auto.state);
+					}
+				}
+			}
 		);
 		const input = new InputController({
 			direction: (direction) => {
@@ -183,6 +201,8 @@ export class GameMain implements GameModule {
 		this.input?.detach();
 		this.detachAutoPause?.();
 		this.detachAutoPause = null;
+		this.detachGraphics?.();
+		this.detachGraphics = null;
 		screenActions.set(null);
 		hudFrame.set(null);
 		clearDebugController();
