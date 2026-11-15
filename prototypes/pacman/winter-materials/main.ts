@@ -26,6 +26,19 @@ const T = MEADOW_TILE;
 
 const world = new MeadowWorld(S, theme);
 world.setQuality('high');
+// the materials are compared on the bare world, day only: the world bakes its atmosphere into
+// the background, under whatever this page paints over it, so the atmosphere is switched off
+world.setDebugFlags({
+	grid: false,
+	ghostPaths: false,
+	hitboxes: false,
+	fronts: false,
+	atmosphere: false,
+	night: false,
+	weather: false,
+	drift: false,
+	vignette: false
+});
 const hero = new PacmanHero();
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;

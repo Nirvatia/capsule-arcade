@@ -57,8 +57,9 @@ render/
   transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
   actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the corner cut, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
   common/          textures, GlPass (every WebGL2 pass), moodBuffer (a world's atmosphere and
-                   night in small multiply/additive buffers), renderQuality (the dev quality
-                   tiers' DPR caps and atmosphere rates), boardScale
+                   night in two small maps, a shade and a light, drawn over the screen, over a
+                   part of it or into a baked background), renderQuality (the quality tiers' DPR
+                   caps and atmosphere rates), boardScale
                    (where the maze goes on the screen: 80 % of the height, below the HUD band),
                    colour, maths, seeded random, worldDecor (the decor layout and stream shared
                    by every world)
@@ -89,17 +90,32 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the
   carried explicitly by `LevelLoader.changeLevel` (score, lives, life threshold, arcade
   tries).
 - Shared drawing helpers go to `render/common/`, not copied into views.
-- A meadow frame: `MeadowWorld.drawWorld` (baked background, live lair gate, portals),
-  `drawMood` (drift, atmosphere, night), `drawFood` (dots, energizers), then the actors and
-  `drawOverlay` (weather, vignette). Food sits over the mood so neither night nor weather dims it.
+- A meadow frame: `MeadowWorld.drawWorld` (the background with the atmosphere that holds
+  still, the live lair gate, portals and smoke, the drift), `drawMood` (High's live mist and
+  light, the night's local lights), `drawFood` (dots, energizers), then the actors and
+  `drawOverlay` (weather). Food sits over the mood so neither night nor weather dims it.
 - Fill rate is the budget. On integrated graphics a frame is bound by how many full-screen
   layers it blends, not by script: a GPU that falls behind queues frames, the picture stays
   smooth and the controls lag. Count a new full-screen layer as a cost. A world's atmosphere
-  (mist, light, wash, storm tint and the night tint) goes through `render/common/moodBuffer`:
-  covering layers become a small multiply map, additive layers a light map. High composites both
-  every frame (four season passes with the world and vignette), Medium repaints the maps at 30 Hz
-  and drops the vignette (three), Low mixes both into one layer at 15 Hz (two). No gradient is
-  built per frame: paint it once into a sprite.
+  (mist, light, wash, storm tint, vignette and the night tint) goes through
+  `render/common/moodBuffer`: covering layers become a small shade map, additive layers and the
+  covering layers' colour a light map. No gradient is built per frame: paint it once into a
+  sprite.
+- A season bakes its atmosphere. The mood only changes twice a level (the weather at half the
+  dots, the night at three quarters), so once it has settled `MeadowWorld` bakes the maps into
+  a copy of the background (`lit`), six strips over six frames, and draws that copy alone. While
+  the mood moves, the same maps go over the raw background every frame (repainted every frame on
+  High, at 30 Hz on Medium, at 15 Hz on Low), so the swap to the baked copy shows nothing.
+  Full-screen passes of a settled season: Medium and Low one (everything holds still and is
+  baked, the mist where it stands by the middle of a level), High three (the covering layers and
+  the night are baked; the drifting mist's cover and the whole stack's light stay two live
+  maps, which is the same picture as before the bake); while the mood moves, three and four.
+  The vignette is in the baked maps, under the actors; the night's lights, the weather and the
+  drift take its darkening from a lookup (`vignetteAt`). The world objects that move under the
+  atmosphere (lair gate, portals, chimney smoke) are `liveObjects`: over the baked copy each
+  one's rectangle is redrawn from the raw background, the object and that part of the maps, on
+  whole device pixels. New static decor belongs in the bake (`MeadowBake`), never between
+  `drawWorld` and `drawMood`: what is painted there lies over the baked atmosphere.
 - Collectibles (fruit, bonus life, exit) draw through `render/items/collectibleSprite`:
   callers pass the tile size and the time; the bake measures the object and how far its
   glow reaches over its ticker, so the object fills 0.78 of the tile and nothing leaves
@@ -195,6 +211,11 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
 - `core/debug/debugTools.test.ts` — time control, boss debug hooks, silent dev log, the frame
   meter's summaries and input samples.
 - `render/common/renderQuality.test.ts` — the quality names and the DPR cap of each tier.
+- `render/common/moodBuffer.test.ts` — the atmosphere maps on a recording 2D context: shade then
+  light, the night's multiply, a cover-only stack, a part of the maps, the edges stretched over a
+  bake's margins, the repaint rate, and a painter that leaves its alpha behind.
+- `render/common/math.test.ts` — `settle`: an eased value lands on its target (a mood that never
+  lands is never baked).
 - `logic/actors/playerControl.test.ts` — reversal, late turns, held keys.
 - `logic/doom/doomMechanics.test.ts` — pickups, BFG, minions, attack sets per phase,
   fairness (rift, eruption, seals), maze stays connected.
@@ -242,5 +263,5 @@ the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arca
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`, `heroCharge`), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale), `winter-scene` (the New Year winter candidate the owner rejected: corridor snow, wall garlands and a lit fir tree on the real winter maze, with day / snowfall / night buttons), `winter-materials` (stage 4: the winter wall material comparison — control / snowy stone / snow-covered wood, day only, with a zoomed fragment); `winter-decay.html` is an older standalone page.
+`MsPacmanHero`, `heroCharge`), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale), `winter-scene` (the New Year winter candidate the owner rejected: corridor snow, wall garlands and a lit fir tree on the real winter maze, with day / snowfall / night buttons), `winter-materials` (stage 4: the winter wall material comparison — control / snowy stone / snow-covered wood, day only, on the bare world with the atmosphere switched off, since a page that paints over `drawWorld` paints over the baked atmosphere; with a zoomed fragment); `winter-decay.html` is an older standalone page.
 ```

@@ -53,8 +53,9 @@ each new boss. The depth and post-processing pass comes last of all (see Later).
       the corridor snow, the side-view fir tree); the accepted winter art (the background, the
       ground, the pellets, the palette) stays the base. The new direction: a season changes the
       **material** of the world, not its colours — top-down only, no pseudo-height, the maze
-      silhouette, the corridor width, the food and hero readability unchanged, the static baked,
-      no new full-screen passes (budget: High 4, Medium 3, Low 2). Stage 4 first compares the
+      silhouette, the corridor width, the food and hero readability unchanged, the static baked
+      (into `MeadowBake`: what is painted over `drawWorld` lies over the baked atmosphere), no new
+      full-screen passes (a settled season: High 3, Medium 1, Low 1). Stage 4 first compares the
       winter wall material on the real maze (`node prototypes/pacman/build.mjs winter-materials`:
       current walls as control, snowy stone as the recommended one, snow-covered wood as the
       alternative, day only, a zoomed fragment next to the full maze); after the owner's pick the
@@ -142,18 +143,22 @@ WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
 
 - **Weak graphics.** The owner's report: on PCs with integrated graphics the controls feel
   sluggish from the start of a level, while the animation stays smooth (a GPU-bound frame
-  queue). Done so far: the atmosphere of the seasons and the hell in two passes
-  (`render/common/moodBuffer`), no per-frame gradient for the lair's heart, no plain fill
-  under a covering background. Chromium without a GPU, 1600x900: a season 21 → 28 FPS, the
-  hell 15 → 17 FPS. Still to check on the owner's weak PC. If it still lags, the next
-  candidates, by measured cost: the hell's maze-sized glow layers (`emis` and `glow`, drawn
-  additively twice, four times at night) and the hell's ground. The dev frame meter now reads
-  FPS, update/render p95, the rAF backlog and input-to-render latency. Manual dev quality tiers
-  cap the canvas at DPR 1 / 1.5 / 2 and the season atmosphere at 4 / 3 / 2 full-screen passes
-  (the night tint is part of the mood's multiply map; only High keeps the vignette). Measured
-  again in Chromium without a GPU at 1600x900 DPR 2, a winter night: High 14 FPS, Medium 27,
-  Low 60. Still to check on the owner's weak PC; if it still lags, the next candidates are the
-  hell's maze-sized glow layers and ground.
+  queue); the atmosphere was the heaviest layer. Done: a season bakes its settled atmosphere
+  into the background (`ARCHITECTURE.md`, Rules of thumb), so Medium and Low blend one
+  full-screen layer and High three, instead of four; the tiers cap the canvas at DPR 1 / 1.5 / 2.
+  Measured in Chromium without a GPU, winter, 1600x900, day / storm and night, before → after:
+  at DPR 1 High 38 / 34 → 49 / 44 FPS, Medium 50 / 43 → 60 / 60, Low 59 / 57 → 60 / 60; at DPR 2
+  High 12 / 9 → 15 / 13, Medium (2400x1350) 58 / 48. The picture is the same within the noise of
+  the weather particles (High), the swap to the baked copy differs by 0.5 of 255 on average.
+  Nobody has measured it on a weak PC yet (the owner has none at hand). If it still lags there:
+  High's two live maps (the drifting mist costs two passes), a Low that renders below the
+  screen's resolution, then the hell's maze-sized glow layers (`emis` and `glow`, drawn
+  additively twice, four times at night) and the hell's ground; the hell does not bake its
+  atmosphere yet and its quality tiers only cap the DPR. The dev frame meter reads FPS,
+  update/render p95, the rAF backlog and input-to-render latency.
+- The `winter-scene` prototype (the rejected candidate) paints its snow, garlands and tree
+  between `drawWorld` and `drawMood`: since the bake they lie over the baked atmosphere and are
+  not tinted by it. Delete the prototype, or move its layers, if it is ever needed again.
 - Headless Chromium without a GPU runs the hell night at ~20 FPS and the flesh hell's first
   frame blocks for about a second while `bakeFlesh` paints the world (once per level). Nobody
   has timed either on real hardware; if the bake shows, spread it over frames.

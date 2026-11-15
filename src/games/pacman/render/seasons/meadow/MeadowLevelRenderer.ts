@@ -26,6 +26,8 @@ const GHOST_STYLES: Readonly<Record<string, GhostStyle>> = {
 	autumn: 'hedgehog',
 	winter: 'bunny'
 };
+/** A world not drawn for this long gives up its baked background (it is baked again in a few frames). */
+const IDLE_BAKE_MS = 3000;
 const GATE_OPEN_RATE = 7;
 const GATE_CLOSE_RATE = 3;
 
@@ -226,6 +228,13 @@ export class MeadowLevelRenderer implements LevelRenderer, WorldPreview {
 			throw new Error(`MeadowLevelRenderer: no theme for ${season.name}`);
 		}
 		const i = this.worlds.findIndex((w) => w.grid === season.grid && w.theme === theme);
+		// a world left behind keeps its background for a return; its baked copy can go
+		const now = performance.now();
+		this.worlds.forEach((w, at) => {
+			if (at !== i && w.world.idleFor(now) > IDLE_BAKE_MS) {
+				w.world.releaseBake();
+			}
+		});
 		if (i >= 0) {
 			const [hit] = this.worlds.splice(i, 1);
 			this.worlds.unshift(hit);
