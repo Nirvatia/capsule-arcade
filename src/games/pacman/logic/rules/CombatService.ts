@@ -45,6 +45,8 @@ export class CombatService {
 	private arcadeLostValue = false;
 	private hitStopValue = 0;
 	private readonly nearMiss: NearMissTracker;
+	/** The mask: while it shields the hero, no ghost touches him (and he eats none). */
+	private shield: { readonly shieldsHero: boolean } | null = null;
 
 	constructor(
 		player: PlayerService,
@@ -222,6 +224,11 @@ export class CombatService {
 		this.lastDeathReasonValue = 'none';
 		this.ghosts.setPowerActive(false);
 		this.ghosts.setVisible(!this.hellModeValue);
+	}
+
+	/** What can shield the hero from the ghosts' touch (the mask of `AbilityService`). */
+	setShield(source: { readonly shieldsHero: boolean } | null): void {
+		this.shield = source;
 	}
 
 	setProfile(profile: GameProfile): void {
@@ -408,15 +415,11 @@ export class CombatService {
 
 	private checkCollisions(): void {
 		const position = this.player.position;
+		const untouchable = this.player.isInvulnerable || Boolean(this.shield?.shieldsHero);
 		const contact =
 			this.rulesProfile === 'ms-pacman'
-				? msContact(
-						position,
-						this.player.isInvulnerable,
-						this.hypnosis.overdriveActive,
-						this.ghosts.list
-					)
-				: classicContact(position, this.player.isInvulnerable, this.ghosts.list, (ghost, d2) =>
+				? msContact(position, untouchable, this.hypnosis.overdriveActive, this.ghosts.list)
+				: classicContact(position, untouchable, this.ghosts.list, (ghost, d2) =>
 						this.nearMiss.observe(ghost, d2, position)
 					);
 		if (!contact) {

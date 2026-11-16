@@ -152,6 +152,7 @@ export class MeadowLevelRenderer implements LevelRenderer, WorldPreview {
 					isMs ? (hypnosis?.mode ?? null) : null
 				);
 			}
+			this.shared.drawAbilitiesOver(frame, layout);
 			if (state !== 'death') {
 				// while dying, the pipeline draws Pac-Man over the level decay
 				this.shared.drawPlayer(frame, layout);

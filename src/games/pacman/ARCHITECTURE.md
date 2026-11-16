@@ -16,7 +16,8 @@ config/      gridConfig (tile tokens, level constants), mazes/ (one file per maz
              string per row, checked by parseMaze; `grid_01`–`grid_04` the season mazes,
              `classic01` the secret level's, `doom` the hell's; validateMaze), scores, actor contact distance,
              flowConfig (every flow duration), arcadeConfig (the secret level's rounds),
-             echoConfig (the echo bonus), hypnosisConfig (the overdrive and the
+             abilityConfig (the abilities: the token, the mask, the shock), echoConfig
+             (the echo's riot), hypnosisConfig (the overdrive and the
              hypnosis: times, the feeder's threshold, the hunter's speed)
 logic/
   level/     LevelLoader (the run: level number, profile, secret / hell routing, arcade
@@ -30,7 +31,8 @@ logic/
   rules/     CombatService (power, lives / tries, score, death, hit-stop), ghostContact
              (who touches which ghost, per profile; near misses), HypnosisService
              (Ms. Pac-Man overdrive and hypnosis: feeder / hunter, guides the ghost), LairCodeService
-  bonuses/   fruit, Easter egg, echo clone, boss reward
+  bonuses/   fruit, Easter egg, AbilityService (the season levels' abilities: the token, the
+             slot, the F key, the mask, the shock; it owns the EchoCloneService riot), boss reward
   doom/      the hell: DoomBossService (the boss's state machine), DoomArena (hazards,
              seals, void, pull, corruption, echo, shake), DoomMinionSwarm, DoomAttackPlanner
              (which attack, fair or not), DoomTargeting (tile picks), weapons, pickups
@@ -183,6 +185,16 @@ still takes it (`LATE_TURN`). Food is eaten once the hero's centre is within `EA
 (0.3 of a tile, `config/actorConfig`) of it, so a turn back just short of a dot still takes it.
 Tests: `logic/actors/playerControl.test.ts`.
 
+`F` / `Shift` set one fire request (`LevelLoader.requestFire`) that `PlayingState` consumes each
+frame: the hell's weapons take it, a season level hands it to `AbilityService.use`. The
+abilities update before the ghosts and the combat, so a mask put on this frame shields the
+hero from this frame's touches. The mask reaches the rules in two places: `CombatService`
+treats the hero as untouchable while `AbilityService.shieldsHero` (`setShield`), and
+`GhostService.setHeroHidden` sends the hunters to their scatter corners. The shock holds a
+ghost with `GhostService.freeze` (its state stays, so it is still deadly); a scare, eyes or a
+reset frees it. The token's tile comes from `SpawnLocator.findReachableTile` (a step window by
+path from the hero, the tiles around hunting ghosts closed).
+
 ## Balance tool
 
 `logic/balance/balanceBot.ts` plays one season level on the real services (no screen): the
@@ -190,7 +202,7 @@ nearest dot by path, out of the ghosts' reach, an energizer when a ghost is near
 while the power lasts; a middling player on purpose, seeded (the game's own dice too).
 `BALANCE=1 BALANCE_SEEDS=12 BALANCE_OUT=<file> npx vitest run src/games/pacman/logic/balance`
 runs every season maze in every season as both heroes and writes a table (clear rate, time,
-deaths, first death, score, echo and hypnosis statistics); without `BALANCE` the report is
+deaths, first death, score, ability token and hypnosis statistics; the bot never spends an ability); without `BALANCE` the report is
 skipped. `BALANCE=levels` (with `BALANCE_LEVELS=1,4,...`) plays chosen game levels one by one
 to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLevelSession`).
 
@@ -209,7 +221,9 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   fades for 0.8 s before READY; wait for it before `showPlaying()` / `debug*()` (both are
   ignored during a fade). `director.flow` shows the state, phase and timers. Useful:
   `debugGotoLevel(n)`, `debugEnterSecret()`, `debugEnterHell()`, `debugCompleteLevel()`,
-  `debugKillPlayer()`.
+  `debugKillPlayer()`, `debugGrantAbility('echo' | 'mask' | 'shock')` (the slot; F spends it),
+  `abilities.debugSpawn(level.player, level.ghosts, kind)` (a token). The СПАВН panel has the
+  same as buttons.
 - Deterministic screenshots: Playwright `page.clock.install()` + a seeded `Math.random`
   init script make most frames repeatable; boss phase 3 and the death wave stay chaotic.
 
@@ -247,8 +261,13 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   feeding plan.
 - `logic/rules/hypnosis.test.ts` — feeder / hunter choice, the mode holds, a hunter eats (200
   each), frightened ghosts run from it.
-- `logic/bonuses/echoClone.test.ts` — the echo: the chance and the window, the token, 7-9 clones for
-  2-3 s, dots and fruit eaten, energizers left, active ghosts kill a clone, the end.
+- `logic/bonuses/echoClone.test.ts` — the echo's riot: 7-9 clones for 3 s from the given tile,
+  dots and fruit eaten, energizers left, active ghosts kill a clone, the end.
+- `logic/bonuses/abilities.test.ts` — the token (the chance and the kinds, the window, reachable
+  in 8-18 steps on a way past no ghost, gone for good), the slot through a death, the refusals
+  (an empty slot, the power on, nobody in the shock's reach), the echo from the hero, the mask
+  (ghosts pass through, the grace, the hunters go to their corners, an energizer ends it), the
+  shock (the chain, the held ghosts stay deadly, an energizer frees them).
 - `render/actors/hero/heroTrail.test.ts` — the heroes' season table, trail and rolling ball.
 - `logic/actors/playerTunnel.test.ts` — the tunnel's `teleport` fx.
 - `logic/level/mazeCycle.test.ts` — the maze order, the season levels without the boss

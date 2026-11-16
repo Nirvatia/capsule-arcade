@@ -1,7 +1,5 @@
 import type { GridService } from '../maze/GridService';
 import type { LevelProgress } from '../level/LevelProgress';
-import type { SpawnLocator } from '../maze/SpawnLocator';
-import type { PlayerService } from '../actors/PlayerService';
 import type { GhostService } from '../actors/GhostService';
 import type { FruitService } from './FruitService';
 import type { GridPoint } from '../maze/GridModel';
@@ -10,8 +8,8 @@ import type { PacmanEventMap } from '../../core/Events';
 import { ACTOR_CONTACT_DISTANCE_SQ } from '../../config/actorConfig';
 import { ECHO } from '../../config/echoConfig';
 
-/** waiting (nothing yet), token (on the board), riot (the clones run), spent (done). */
-export type EchoClonePhase = 'waiting' | 'token' | 'riot' | 'spent';
+/** idle (nothing runs) or riot (the clones run). */
+export type EchoClonePhase = 'idle' | 'riot';
 
 export type EchoDirection = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
 
@@ -41,7 +39,7 @@ export interface EchoClone {
 	readonly facing: EchoDirection;
 	/** False for a clone a ghost caught (kept for a moment so the view can show it going). */
 	readonly alive: boolean;
-	/** Whether it is running yet (the clones leave the token one after another). */
+	/** Whether it is running yet (the clones leave the hero one after another). */
 	readonly started: boolean;
 }
 
@@ -58,25 +56,17 @@ interface Clone {
 }
 
 /**
- * The echo bonus. Some season levels (a chance, at most one token per level) get a token at a
- * random place once a random share of the dots is eaten. Taking it sets off a riot: 7-9
- * clones of the hero run from the token's tile in every direction for 2-3 seconds, eating the
- * dots and the fruit they meet (not the energizers), and a clone dies on an active ghost
- * (frightened ghosts and eyes are harmless to it). Same for both heroes.
+ * The echo ability's riot (`AbilityService` hands it out and starts it): 7-9 clones of the
+ * hero run from his tile in every direction for 3 seconds, eating the dots and the fruit they
+ * meet (not the energizers), and a clone dies on an active ghost (frightened ghosts and eyes
+ * are harmless to it). Same for both heroes.
  */
 export class EchoCloneService {
 	private readonly grid: GridService;
 	private readonly progress: LevelProgress;
-	private readonly locator: SpawnLocator;
 	private readonly events: EventBus<PacmanEventMap>;
 	private readonly random: () => number;
-	private phaseValue: EchoClonePhase = 'waiting';
-	/** This level's roll: whether the token comes, and at which share of the dots. */
-	private comes = false;
-	private threshold = 0.5;
-	private consumed = false;
-	private tokenTileValue: GridPoint | null = null;
-	private tokenTimerValue = 0;
+	private phaseValue: EchoClonePhase = 'idle';
 	private clonesValue: Clone[] = [];
 	private riotTimerValue = 0;
 	private riotDurationValue = 0;
@@ -85,50 +75,31 @@ export class EchoCloneService {
 	constructor(
 		grid: GridService,
 		progress: LevelProgress,
-		locator: SpawnLocator,
 		events: EventBus<PacmanEventMap>,
 		random: () => number = Math.random
 	) {
-		if (!grid || !progress || !locator || !events) {
+		if (!grid || !progress || !events) {
 			console.error('EchoCloneService.constructor', 'missing dependency');
 			throw new Error('EchoCloneService.constructor: missing dependency');
 		}
 		this.grid = grid;
 		this.progress = progress;
-		this.locator = locator;
 		this.events = events;
 		this.random = random;
-		this.roll();
 	}
 
 	get phase(): EchoClonePhase {
 		return this.phaseValue;
 	}
 
-	/** Seconds the token or the riot has left. */
+	/** Seconds the riot has left. */
 	get timer(): number {
-		if (this.phaseValue === 'riot') {
-			return this.riotTimerValue;
-		}
-		if (this.phaseValue === 'token') {
-			return this.tokenTimerValue;
-		}
-		return 0;
+		return this.phaseValue === 'riot' ? this.riotTimerValue : 0;
 	}
 
 	/** How long this riot lasts in all (for the HUD's bar). */
 	get duration(): number {
 		return this.riotDurationValue;
-	}
-
-	/** Whether this level has an echo token at all (the roll). */
-	get willCome(): boolean {
-		return this.comes;
-	}
-
-	get tokenPosition(): { x: number; y: number } | null {
-		const tile = this.tokenTileValue;
-		return tile ? { x: tile.x + 0.5, y: tile.y + 0.5 } : null;
 	}
 
 	/** The clones of the riot, with positions between tiles. */
@@ -148,84 +119,29 @@ export class EchoCloneService {
 		});
 	}
 
-	/** A new level or a restart: nothing out, and the level's chance rolled again. */
+	/** A new level, a restart or a death: nothing runs. */
 	reset(): void {
-		this.phaseValue = 'waiting';
-		this.consumed = false;
-		this.tokenTileValue = null;
-		this.tokenTimerValue = 0;
+		this.phaseValue = 'idle';
 		this.clonesValue = [];
 		this.riotTimerValue = 0;
 		this.riotDurationValue = 0;
-		this.roll();
 	}
 
-	/** Dev: puts the token on the board now, whatever the roll said. */
-	debugSpawn(): void {
-		if (this.phaseValue === 'token' || this.phaseValue === 'riot') {
-			return;
-		}
-		const tile = this.locator.findSafeTile(this.progress.collectedDots) ?? this.findAnyDotTile();
-		if (!tile) {
-			console.error('EchoCloneService.debugSpawn', 'no spawn tile available');
-			return;
-		}
-		this.placeToken(tile);
-	}
-
-	/** Dev: sets off the riot at `tile` now. */
-	debugRiot(tile: GridPoint): void {
+	/** Sets off the riot at `tile` (a riot already running is not restarted). */
+	start(tile: GridPoint): void {
 		if (this.phaseValue === 'riot') {
+			return;
+		}
+		if (!this.walkable(tile)) {
+			console.error('EchoCloneService.start', 'tile is not walkable', tile);
 			return;
 		}
 		this.startRiot(tile);
 	}
 
-	update(
-		dt: number,
-		player: PlayerService,
-		world: { readonly ghosts: GhostService; readonly fruit: FruitService }
-	): void {
+	update(dt: number, world: { readonly ghosts: GhostService; readonly fruit: FruitService }): void {
 		if (!Number.isFinite(dt) || dt < 0) {
 			console.error('EchoCloneService.update', 'invalid delta time', dt);
-			return;
-		}
-		if (!player) {
-			console.error('EchoCloneService.update', 'missing player service');
-			return;
-		}
-		if (this.phaseValue === 'waiting') {
-			if (
-				this.comes &&
-				!this.consumed &&
-				this.progress.collectionRatio >= this.threshold &&
-				this.progress.remainingDots > 0
-			) {
-				const tile = this.locator.findSafeTile(this.progress.collectedDots, [], {
-					from: player.tile,
-					min: ECHO.minSteps
-				});
-				if (tile) {
-					this.placeToken(tile);
-				}
-			}
-			return;
-		}
-		if (this.phaseValue === 'token') {
-			this.tokenTimerValue = Math.max(0, this.tokenTimerValue - dt);
-			if (this.tokenTimerValue <= 0) {
-				this.phaseValue = 'spent';
-				this.consumed = true;
-				this.tokenTileValue = null;
-				this.events.emit('audio:cue', { cue: 'fruit-expire' });
-				return;
-			}
-			if (this.touchesPlayer(player)) {
-				const tile = this.tokenTileValue;
-				if (tile) {
-					this.startRiot(tile);
-				}
-			}
 			return;
 		}
 		if (this.phaseValue === 'riot') {
@@ -233,26 +149,11 @@ export class EchoCloneService {
 		}
 	}
 
-	private roll(): void {
-		this.comes = this.random() < ECHO.chance;
-		this.threshold = ECHO.window[0] + this.random() * (ECHO.window[1] - ECHO.window[0]);
-	}
-
-	private placeToken(tile: GridPoint): void {
-		this.tokenTileValue = tile;
-		this.tokenTimerValue = ECHO.tokenSeconds;
-		this.phaseValue = 'token';
-		this.events.emit('audio:cue', { cue: 'fruit-spawn' });
-	}
-
 	private startRiot(tile: GridPoint): void {
 		const [minClones, maxClones] = ECHO.clones;
 		const count = minClones + Math.floor(this.random() * (maxClones - minClones + 1));
-		const [minSeconds, maxSeconds] = ECHO.seconds;
-		this.riotDurationValue = minSeconds + this.random() * (maxSeconds - minSeconds);
+		this.riotDurationValue = ECHO.seconds;
 		this.riotTimerValue = this.riotDurationValue;
-		this.tokenTileValue = null;
-		this.tokenTimerValue = 0;
 		// every clone starts in a way of its own: the open ways are dealt out in turn from a
 		// random one, so the clones fan out instead of running in a line
 		const open = DIRECTIONS.filter((d) => this.walkable(this.targetFor(tile, d)));
@@ -272,7 +173,6 @@ export class EchoCloneService {
 		}
 		this.phaseValue = 'riot';
 		this.progress.collectDotOnly(tile.x, tile.y);
-		this.events.emit('audio:cue', { cue: 'power-start' });
 	}
 
 	private runRiot(dt: number, world: { ghosts: GhostService; fruit: FruitService }): void {
@@ -406,37 +306,9 @@ export class EchoCloneService {
 		if (this.phaseValue !== 'riot') {
 			return;
 		}
-		this.phaseValue = 'spent';
-		this.consumed = true;
+		this.phaseValue = 'idle';
 		this.clonesValue = [];
 		this.riotTimerValue = 0;
-		this.events.emit('audio:cue', { cue: 'power-end' });
-	}
-
-	private findAnyDotTile(): GridPoint | null {
-		for (let y = 0; y < this.grid.height; y += 1) {
-			for (let x = 0; x < this.grid.width; x += 1) {
-				if (this.grid.tileAt(x, y) === 'DT' && !this.progress.isCollected(x, y)) {
-					return { x, y };
-				}
-			}
-		}
-		return null;
-	}
-
-	private touchesPlayer(player: PlayerService): boolean {
-		const position = player.position;
-		const center = this.tokenPosition;
-		if (!center) {
-			return false;
-		}
-		const dx = position.x - center.x;
-		const dy = position.y - center.y;
-		if (dx * dx + dy * dy <= ACTOR_CONTACT_DISTANCE_SQ) {
-			return true;
-		}
-		const tile = player.tile;
-		return tile.x === center.x - 0.5 && tile.y === center.y - 0.5;
 	}
 
 	private targetFor(tile: GridPoint, direction: EchoDirection): GridPoint {

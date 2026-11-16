@@ -10,7 +10,7 @@ import { EasterEggService } from '../bonuses/EasterEggService';
 import { HypnosisService } from '../rules/HypnosisService';
 import { SpawnLocator } from '../maze/SpawnLocator';
 import { LairCodeService } from '../rules/LairCodeService';
-import { EchoCloneService } from '../bonuses/EchoCloneService';
+import { AbilityService } from '../bonuses/AbilityService';
 import { DoomBossService } from '../doom/DoomBossService';
 import { DoomAbilityService } from '../doom/DoomAbilityService';
 import { BossRewardService } from '../bonuses/BossRewardService';
@@ -47,7 +47,8 @@ export interface LevelSession {
 	readonly fruit: FruitService;
 	readonly egg: EasterEggService;
 	readonly hypnosis: HypnosisService;
-	readonly echo: EchoCloneService;
+	/** The season levels' abilities: the token, the slot, echo, mask and shock. */
+	readonly abilities: AbilityService;
 	readonly lairCode: LairCodeService;
 	/** Present on the hell level only. */
 	readonly doom: DoomSession | null;
@@ -85,7 +86,8 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 	const combat = new CombatService(player, ghosts, progress, score, events, hypnosis, lairCode);
 	const fruit = new FruitService(profile, level, grid, locator, progress, score, events);
 	const egg = new EasterEggService(level, grid, ghosts, lairCode, progress, events, score);
-	const echo = new EchoCloneService(grid, progress, locator, events);
+	const abilities = new AbilityService(grid, progress, locator, events);
+	combat.setShield(abilities);
 	let doom: DoomSession | null = null;
 	if (hell) {
 		const bossSpawn = grid.bossSpawn();
@@ -145,7 +147,7 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		fruit,
 		egg,
 		hypnosis,
-		echo,
+		abilities,
 		lairCode,
 		doom,
 		bossReward: hell ? new BossRewardService(grid, events) : null
@@ -161,7 +163,7 @@ export function resetLevelSession(session: LevelSession): void {
 	session.fruit.reset();
 	session.egg.reset();
 	session.hypnosis.reset();
-	session.echo.reset();
+	session.abilities.reset();
 	session.doom?.boss.reset();
 	session.doom?.abilities.reset();
 	session.bossReward?.reset();
@@ -176,7 +178,7 @@ export function resetForNextLevel(session: LevelSession): void {
 	session.fruit.reset();
 	session.egg.reset();
 	session.hypnosis.reset();
-	session.echo.reset();
+	session.abilities.reset();
 	session.doom?.boss.reset();
 	session.doom?.abilities.reset();
 	session.bossReward?.reset();

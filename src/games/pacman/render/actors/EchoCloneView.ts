@@ -71,6 +71,7 @@ export class EchoCloneView {
 	private readonly wisps = new Map<number, Wisp>();
 	private lastTime = -1;
 
+	/** The riot (nothing while it does not run). */
 	draw(
 		ctx: CanvasRenderingContext2D,
 		echo: EchoCloneService,
@@ -84,32 +85,27 @@ export class EchoCloneView {
 		}
 		const dt = this.lastTime < 0 ? 0 : Math.min(0.1, Math.max(0, time - this.lastTime));
 		this.lastTime = time;
-		if (echo.phase === 'token') {
-			this.drawToken(ctx, echo, layout, time);
-		} else if (echo.phase === 'riot') {
+		if (echo.phase === 'riot') {
 			this.drawRiot(ctx, echo, layout, dt, time);
-		}
-		if (echo.phase !== 'riot') {
+		} else {
 			this.wisps.clear();
 		}
 	}
 
-	private drawToken(
+	/** The echo ability's token at `at` (tile-centre coordinates), `left` seconds to take it. */
+	drawToken(
 		ctx: CanvasRenderingContext2D,
-		echo: EchoCloneService,
+		at: { readonly x: number; readonly y: number },
+		left: number,
 		layout: GridLayout,
 		time: number
 	): void {
-		const at = echo.tokenPosition;
-		if (!at) {
-			return;
-		}
 		const S = layout.tileSize;
 		const x = layout.offsetX + at.x * S;
 		const y = layout.offsetY + at.y * S;
 		const r = S * WISP_RADIUS;
 		// the last two seconds it flickers: take it or lose it
-		const blinking = echo.timer < 2 && Math.floor(echo.timer * 5) % 2 === 0;
+		const blinking = left < 2 && Math.floor(left * 5) % 2 === 0;
 		ctx.save();
 		ctx.globalAlpha = blinking ? 0.45 : 1;
 		const pulse = 0.5 + 0.5 * Math.sin(time * 4);

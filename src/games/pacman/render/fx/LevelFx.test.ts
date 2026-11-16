@@ -17,6 +17,10 @@ const EVERY_EVENT: PacmanFx[] = [
 	{ kind: 'extra-life', x: 2.5, y: 2.5 },
 	{ kind: 'teleport', x: 0.5, y: 9.5, tx: 24.5, ty: 9.5 },
 	{ kind: 'echo-pop', x: 4.5, y: 4.5 },
+	{ kind: 'ability-take', x: 4.5, y: 5.5 },
+	{ kind: 'ability-fizzle', x: 4.5, y: 5.5 },
+	{ kind: 'mask', x: 4.5, y: 5.5, on: true },
+	{ kind: 'shock', x: 4.5, y: 5.5, links: [{ x0: 4.5, y0: 5.5, x1: 7.5, y1: 5.5 }] },
 	{ kind: 'near-miss', x: 6.5, y: 6.5, gx: 8.5, gy: 6.5, ghost: 'INKY' }
 ];
 

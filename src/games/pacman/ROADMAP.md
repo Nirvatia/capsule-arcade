@@ -49,19 +49,23 @@ all (see Later).
 2. **Abilities: echo, mask, shock** (Opus High, one chat; the rules are in `DESIGN.md` §5,
    Abilities). A season level may hold one ability token (or none); the hero carries the taken
    ability in a slot and spends it with F (the hell's fire key). The echo clone stops being an
-   instant bonus and becomes one of the three. Stages:
-   1. The rules in `DESIGN.md` §5, approved by the owner before code.
-   2. The mechanics on placeholder art: the ability service (the token, its reachable spawn, the
-      slot, F, the energizer and overdrive locks), the echo started from the hero, the mask and
-      the shock services, a dev button that grants each ability, a plain HUD slot, tests.
-   3. The `powers` prototype (the owner picks): the three token / slot icons (2-3 candidates
+   instant bonus and becomes one of the three.
+   Done: the rules (`DESIGN.md` §5) and the mechanics on placeholder art (`AbilityService`,
+   the dev panel's grant and token buttons, the slot as a label under the HUD dial, tests).
+   Left:
+   1. The `powers` prototype (the owner picks): the three token / slot icons (2-3 candidates
       each, at one tile and magnified, beside an energizer, a fruit and the ghosts); the hero's
       turn into a ghost for the mask, both heroes, three colour candidates (the hero's yellow with
       his eye / her bow; a pale see-through ghost with a yellow rim; a yellow ghost body with a dark
       outline), checked beside all four ghosts and a frightened one (Clyde's orange is the risk);
       the shock as chain lightning (two variants) against a pull vortex, as frame series on the
       real ghosts. The owner wants effects that are rich, not cheap.
-   4. The picked art in the game, checked on the High / Medium / Low tiers and in a browser.
+   2. The picked art in the game, checked on the High / Medium / Low tiers and in a browser; the
+      HUD slot gets its own art (now the dial's label, `F: MASK`).
+   3. Sounds of their own for the token, a spent ability and a refused press (now borrowed
+      arcade wavs: `credit`, `extend`, a quiet `eat_dot_1`).
+   4. Not yet played by hand: whether 5 s of mask, 3 s of shock and a 6-tile reach feel
+      "modest but worth it"; tune after a few runs (`config/abilityConfig.ts`).
 3. **Mobile controls** (none today: the keyboard only). Swipes on the board (feeding the held
    direction), an optional on-screen pad, tap to confirm and pause, buttons for the ability and
    the hell's fire, `touch-action: none`, the audio unlocked by the first touch, a portrait HUD

@@ -71,8 +71,61 @@ export class SpawnLocator {
 		return tile;
 	}
 
-	/** Steps from `from` to every tile the hero can reach (tunnels not counted), by tile index. */
-	private pathSteps(from: GridPoint): Map<number, number> {
+	/**
+	 * A dot tile `steps[0]`..`steps[1]` steps (by path, tunnels not counted) from `from`, on a way
+	 * that never enters a `blocked` tile; `pick` (0..1) chooses among them. Null when none is.
+	 * Only eaten dot tiles count, unless `anyDot` (the dev panel's spawn on a fresh board).
+	 */
+	findReachableTile(
+		from: GridPoint,
+		steps: readonly [number, number],
+		blocked: readonly GridPoint[],
+		pick: number,
+		anyDot = false
+	): GridPoint | null {
+		const [min, max] = steps;
+		if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) {
+			console.error('SpawnLocator.findReachableTile', 'invalid steps', steps);
+			return null;
+		}
+		const W = this.grid.width;
+		const closed = new Set(blocked.map((t) => t.y * W + t.x));
+		const reach = this.pathSteps(from, closed);
+		const available: GridPoint[] = [];
+		const tiles = anyDot ? this.allDotTiles() : this.progress.safeSpawnTiles();
+		for (const tile of tiles) {
+			if (!this.isInside(tile.x, tile.y) || this.grid.tileAt(tile.x, tile.y) !== 'DT') {
+				continue;
+			}
+			const d = reach.get(tile.y * W + tile.x);
+			if (d !== undefined && d >= min && d <= max) {
+				available.push(tile);
+			}
+		}
+		if (available.length === 0) {
+			return null;
+		}
+		const safePick = Number.isFinite(pick) ? Math.min(0.999999, Math.max(0, pick)) : 0;
+		return available[Math.floor(safePick * available.length)] ?? null;
+	}
+
+	private allDotTiles(): GridPoint[] {
+		const tiles: GridPoint[] = [];
+		for (let y = 0; y < this.grid.height; y += 1) {
+			for (let x = 0; x < this.grid.width; x += 1) {
+				if (this.grid.tileAt(x, y) === 'DT') {
+					tiles.push({ x, y });
+				}
+			}
+		}
+		return tiles;
+	}
+
+	/**
+	 * Steps from `from` to every tile the hero can reach (tunnels not counted), by tile index;
+	 * the `closed` tiles (by index) are never entered.
+	 */
+	private pathSteps(from: GridPoint, closed: ReadonlySet<number> = new Set()): Map<number, number> {
 		const W = this.grid.width;
 		const steps = new Map<number, number>();
 		if (!this.grid.isPlayerWalkable(from.x, from.y)) {
@@ -94,7 +147,7 @@ export class SpawnLocator {
 					const x = t.x + dx;
 					const y = t.y + dy;
 					const k = y * W + x;
-					if (!steps.has(k) && this.grid.isPlayerWalkable(x, y)) {
+					if (!steps.has(k) && !closed.has(k) && this.grid.isPlayerWalkable(x, y)) {
 						steps.set(k, d);
 						next.push({ x, y });
 					}

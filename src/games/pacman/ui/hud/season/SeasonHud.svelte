@@ -49,7 +49,14 @@
 	const ratio = $derived(
 		snap.timer && snap.timer.duration > 0 ? clamp01(snap.timer.remaining / snap.timer.duration) : 0
 	);
-	const timerLabel = $derived(snap.timer ? $t(snap.timer.kind) : $t('power'));
+	// the dial shows what runs; an ability waiting in the slot (placeholder until its own art)
+	const timerLabel = $derived(
+		snap.timer
+			? $t(snap.timer.kind)
+			: snap.ability
+				? `${$t('abilityKey')} ${$t(snap.ability)}`
+				: $t('power')
+	);
 	/** The world's own night starts at three quarters of the dots; the board dims with it. */
 	const night = $derived(snap.dots >= 0.75);
 	const ms = $derived(snap.profile === 'ms-pacman');

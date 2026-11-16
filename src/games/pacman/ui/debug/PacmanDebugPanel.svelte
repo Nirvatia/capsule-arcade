@@ -12,6 +12,7 @@
 	import type { FramePerfSummary } from '../../core/debug/FrameMeter';
 	import type { RenderQuality } from '../../render/common/renderQuality';
 	import { FRUIT_ORDER } from '../../logic/bonuses/fruitCatalog';
+	import { ABILITY_KINDS } from '../../config/abilityConfig';
 	import { attackWeightsForPhase, DOOM_ATTACK_KINDS } from '../../logic/doom/DoomAttackCore';
 	import { BOSS_HP, PHASE_THRESHOLDS } from '../../logic/doom/DoomBalance';
 	import type { DoomPickupKind } from '../../logic/doom/DoomPickupModel';
@@ -453,12 +454,29 @@
 						<button type="button" class="dev-btn" tabindex={-1} onclick={run((d) => d.spawnEgg())}
 							>Easter egg</button
 						>
-						<button type="button" class="dev-btn" tabindex={-1} onclick={run((d) => d.spawnEcho())}
-							>Echo</button
-						>
-						<button type="button" class="dev-btn" tabindex={-1} onclick={run((d) => d.echoRiot())}
-							>Riot</button
-						>
+					</div>
+				</div>
+				<div class="dev-row">
+					<span class="dev-lab">Способн.</span>
+					<div class="dev-ctl">
+						{#each ABILITY_KINDS as kind (kind)}
+							<button
+								type="button"
+								class="dev-chip"
+								tabindex={-1}
+								title="в слот (F тратит)"
+								onclick={run((d) => d.grantAbility(kind))}>{kind}</button
+							>
+						{/each}
+						{#each ABILITY_KINDS as kind (kind)}
+							<button
+								type="button"
+								class="dev-chip"
+								tabindex={-1}
+								title="жетон на поле"
+								onclick={run((d) => d.spawnAbility(kind))}>{kind} ◌</button
+							>
+						{/each}
 					</div>
 				</div>
 			{/if}

@@ -30,8 +30,8 @@ export interface BotResult {
 	readonly score: number;
 	/** Seconds at the first death (or the whole run if it never died). */
 	readonly firstDeathAt: number;
-	/** 1 when an echo token showed up on the level. */
-	readonly echoTokens: number;
+	/** 1 when an ability token showed up on the level (the bot never spends one). */
+	readonly abilityTokens: number;
 	readonly hypnoses: number;
 	/** Of the hypnoses, how many planned to feed and how many to hunt. */
 	readonly feeders: number;
@@ -104,7 +104,7 @@ function distances(
 }
 
 export function playLevel(run: BotRun): BotResult {
-	// the game's own dice (the echo's chance and place) follow the run's seed too, so a seed
+	// the game's own dice (the ability token's chance and place) follow the run's seed too, so a seed
 	// always plays the same game
 	const realRandom = Math.random;
 	Math.random = seeded(run.seed ^ 0x5bd1e995);
@@ -118,7 +118,7 @@ export function playLevel(run: BotRun): BotResult {
 function play(run: BotRun): BotResult {
 	const random = seeded(run.seed);
 	const events = new EventBus<PacmanEventMap>();
-	let echoTokens = 0;
+	let abilityTokens = 0;
 	let eatenByHunter = 0;
 	events.on('fx:event', (e) => {
 		if (e.kind === 'ghost-eaten' && e.points === 200 && session.hypnosis.mode === 'hunter')
@@ -135,7 +135,7 @@ function play(run: BotRun): BotResult {
 	});
 	resetLevelSession(session);
 	session.combat.setLives(99);
-	const { grid, player, ghosts, combat, progress, fruit, echo, lairCode } = session;
+	const { grid, player, ghosts, combat, progress, fruit, abilities, lairCode } = session;
 	const maxSeconds = run.maxSeconds ?? 600;
 	let seconds = 0;
 	let deaths = 0;
@@ -233,13 +233,18 @@ function play(run: BotRun): BotResult {
 		lairCode.update(DT);
 		player.update(DT);
 		fruit.update(DT, player);
-		echo.update(DT, player, { ghosts, fruit });
+		abilities.update(DT, {
+			player,
+			ghosts,
+			fruit,
+			powered: combat.isPowerActive || session.hypnosis.overdriveActive
+		});
 		ghosts.update(DT);
 		combat.update(DT);
 		seconds += DT;
-		if (!sawToken && echo.phase !== 'waiting') {
+		if (!sawToken && abilities.phase !== 'waiting') {
 			sawToken = true;
-			echoTokens = 1;
+			abilityTokens = 1;
 		}
 		const hypno = session.hypnosis.hypnotizedKind;
 		if (hypno && hypno !== hypnotisedBefore) {
@@ -261,6 +266,7 @@ function play(run: BotRun): BotResult {
 			deaths += 1;
 			if (firstDeathAt < 0) firstDeathAt = seconds;
 			combat.finishDeath();
+			abilities.onDeath();
 			lastTile = '';
 		}
 		if (combat.endRequested) {
@@ -273,7 +279,7 @@ function play(run: BotRun): BotResult {
 		deaths,
 		score: session.score.score,
 		firstDeathAt: firstDeathAt < 0 ? seconds : firstDeathAt,
-		echoTokens,
+		abilityTokens,
 		hypnoses,
 		feeders,
 		hunters,

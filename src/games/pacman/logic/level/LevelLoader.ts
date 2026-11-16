@@ -8,7 +8,8 @@ import type { EasterEggService } from '../bonuses/EasterEggService';
 import type { HypnosisService } from '../rules/HypnosisService';
 import type { BossRewardService } from '../bonuses/BossRewardService';
 import type { LairCodeService } from '../rules/LairCodeService';
-import type { EchoCloneService } from '../bonuses/EchoCloneService';
+import type { AbilityService } from '../bonuses/AbilityService';
+import type { AbilityKind } from '../../config/abilityConfig';
 import type { DoomBossService } from '../doom/DoomBossService';
 import type { DoomAbilityService } from '../doom/DoomAbilityService';
 import { SECRET_LEVEL_NUMBER, HELL_LEVEL_INTERVAL } from '../../config/gridConfig';
@@ -158,8 +159,8 @@ export class LevelLoader {
 		return this.sessionValue?.hypnosis ?? null;
 	}
 
-	get echo(): EchoCloneService | null {
-		return this.sessionValue?.echo ?? null;
+	get abilities(): AbilityService | null {
+		return this.sessionValue?.abilities ?? null;
 	}
 
 	get doomBoss(): DoomBossService | null {
@@ -251,6 +252,7 @@ export class LevelLoader {
 	prepareAfterDeath(): void {
 		const session = this.ensure();
 		session.combat.finishDeath();
+		session.abilities.onDeath();
 		if (session.doom) {
 			session.doom.boss.reset();
 			session.doom.abilities.reset();
@@ -308,11 +310,11 @@ export class LevelLoader {
 		this.arcadeRoundValue = 1;
 	}
 
-	/** Dev: sets off the echo riot at the hero's tile now. */
-	debugEchoRiot(): void {
+	/** Dev: puts `kind` in the hero's ability slot now (season levels). */
+	debugGrantAbility(kind: AbilityKind): void {
 		const session = this.sessionValue;
-		if (session) {
-			session.echo.debugRiot(session.player.tile);
+		if (session && !this.hellModeValue && !this.secretModeValue) {
+			session.abilities.debugGrant(kind);
 		}
 	}
 
@@ -325,7 +327,9 @@ export class LevelLoader {
 			session.doom?.abilities.debugSpawn();
 			return;
 		}
-		session.echo.debugSpawn();
+		if (!this.secretModeValue) {
+			session.abilities.debugSpawn(session.player, session.ghosts);
+		}
 	}
 
 	debugEnterHell(): void {

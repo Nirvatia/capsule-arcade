@@ -7,7 +7,8 @@ import type { PacmanAudioCue } from '../core/Events';
 import type { PlayerDrawOptions } from './actors/playerDrawOptions';
 import { chargePainter } from './actors/hero/heroCharge';
 import { heroSeasonOf } from './actors/hero/heroSeasons';
-import { EchoCloneView } from './actors/EchoCloneView';
+import { AbilityView } from './actors/AbilityView';
+import { ABILITY } from '../config/abilityConfig';
 import { FruitView } from './items/fruit/FruitView';
 import { EasterEggView } from './items/EasterEggView';
 import { drawBonusLife } from './items/BonusLifeView';
@@ -24,7 +25,7 @@ export class SharedLayers {
 	private readonly msHeroView = new HeroView(new MsPacmanHero(), chargePainter);
 	private readonly fruitView = new FruitView();
 	private readonly easterEggView = new EasterEggView();
-	private readonly echoCloneView = new EchoCloneView();
+	private readonly abilityView = new AbilityView();
 
 	drawCollectibles(frame: RenderFrame, layout: GridLayout): void {
 		const { ctx, level } = frame;
@@ -38,9 +39,9 @@ export class SharedLayers {
 			this.easterEggView.draw(ctx, egg, layout, frame.time);
 		}
 
-		const echo = level.echo;
-		if (echo && (echo.phase === 'token' || echo.phase === 'riot')) {
-			this.echoCloneView.draw(ctx, echo, layout, frame.time);
+		const abilities = level.abilities;
+		if (abilities && !level.hellMode && !level.secretMode) {
+			this.abilityView.drawUnder(ctx, abilities, layout, frame.time);
 		}
 
 		const reward = level.bossReward;
@@ -52,6 +53,16 @@ export class SharedLayers {
 		}
 		if (heart) {
 			drawBonusLife(ctx, layout.offsetX + heart.x * S, layout.offsetY + heart.y * S, S, frame.time);
+		}
+	}
+
+	/** What the abilities show over the ghosts (the shock's held ghosts and its arcs). */
+	drawAbilitiesOver(frame: RenderFrame, layout: GridLayout): void {
+		const { level } = frame;
+		const abilities = level.abilities;
+		const ghosts = level.ghosts;
+		if (abilities && ghosts && !level.hellMode && !level.secretMode) {
+			this.abilityView.drawOver(frame.ctx, abilities, ghosts, layout, frame.time);
 		}
 	}
 
@@ -77,10 +88,24 @@ export class SharedLayers {
 		this.msHeroView.setSeason(season);
 		// Ms. Pac-Man the heroine or Pac-Man the hero, the hell included
 		const view = frame.level.profile === 'ms-pacman' ? this.msHeroView : this.heroView;
-		view.draw(frame.ctx, player, layout, frame.time, {
+		const abilities = frame.level.abilities;
+		const masked = Boolean(abilities?.masked) && frame.state === 'playing';
+		const ctx = frame.ctx;
+		if (masked) {
+			// PLACEHOLDER: a faded hero in a halo until the `powers` prototype picks the ghost form
+			const left = abilities?.timer ?? 0;
+			const blink = left < ABILITY.mask.blinkSeconds && Math.floor(left * 8) % 2 === 0;
+			ctx.save();
+			ctx.globalAlpha *= blink ? 0.8 : 0.45;
+		}
+		view.draw(ctx, player, layout, frame.time, {
 			...this.playerOptions(frame),
 			paused: frame.paused
 		});
+		if (masked) {
+			ctx.restore();
+			this.abilityView.drawMaskHalo(ctx, player.position, layout, frame.time);
+		}
 	}
 
 	/** Where the food ahead is pulled to (the hero's mouth), while he plays; else null. */

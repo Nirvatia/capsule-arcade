@@ -228,6 +228,19 @@ export class PacmanAudioPlayer {
 			this.play('eyes.wav', 0.55);
 			return;
 		}
+		// the abilities borrow the arcade's sounds until they get their own
+		if (cue === 'ability-take') {
+			this.play('credit.wav', 0.6);
+			return;
+		}
+		if (cue === 'ability-use') {
+			this.play('extend.wav', 0.6);
+			return;
+		}
+		if (cue === 'ability-fizzle') {
+			this.play('eat_dot_1.wav', 0.35);
+			return;
+		}
 		console.error('PacmanAudioPlayer.handleCue', 'unknown audio cue', cue);
 	}
 

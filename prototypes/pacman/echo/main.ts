@@ -1,13 +1,12 @@
 // Prototype: the echo bonus in its own look (echo wisps, `render/actors/EchoCloneView`), played
 // by the real services on a real season world at game scale: a riot set off again and again
-// from the hero's start, and a token waiting on the board. Buttons: the four seasons, quarter
+// from above the hero's start (`AbilityService.echo`), and a token waiting on the board. Buttons: the four seasons, quarter
 // speed. Query: ?season=winter&capture (capture: window.__advance(seconds) steps 1/60 s).
 import { EventBus } from '../../../src/games/pacman/engine/EventBus';
 import type { PacmanEventMap } from '../../../src/games/pacman/core/Events';
 import { buildLevelSession } from '../../../src/games/pacman/logic/level/LevelSession';
 import type { LevelSession } from '../../../src/games/pacman/logic/level/LevelSession';
 import { seasonForLevel } from '../../../src/games/pacman/logic/level/SeasonCatalog';
-import type { PlayerService } from '../../../src/games/pacman/logic/actors/PlayerService';
 import { EchoCloneView } from '../../../src/games/pacman/render/actors/EchoCloneView';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
@@ -29,15 +28,14 @@ let vw = 0;
 let vh = 0;
 let world: MeadowWorld;
 let riot: LevelSession;
-let token: LevelSession;
+/** The token's tile centre and the seconds it has left (it blinks in its last two). */
+let tokenAt = { x: 0.5, y: 0.5 };
+let tokenLeft = 8;
 let pause = 0;
 let time = 0;
 const riotView = new EchoCloneView();
 const tokenView = new EchoCloneView();
 const hero = new PacmanHero();
-
-/** A stand-in hero far from everything: the echo only reads where he is. */
-const away = { position: { x: 0.5, y: 0.5 }, tile: { x: 0, y: 0 } } as unknown as PlayerService;
 
 function session(): LevelSession {
 	const level = SEASONS.indexOf(season) + 1;
@@ -55,7 +53,7 @@ function session(): LevelSession {
 function startRiot(): void {
 	riot = session();
 	const s = riot.grid.playerSpawn;
-	riot.echo.debugRiot({ x: s.x, y: s.y - 2 });
+	riot.abilities.echo.start({ x: s.x, y: s.y - 2 });
 }
 
 function build(): void {
@@ -65,8 +63,20 @@ function build(): void {
 	world.setMood(0, 0);
 	for (let i = 0; i < 40; i++) world.update(0.1);
 	startRiot();
-	token = session();
-	token.echo.debugSpawn();
+	// the token on a dot tile a few steps from the hero's start
+	const g = riot.grid;
+	const s = g.playerSpawn;
+	outer: for (let d = 6; d < 20; d++) {
+		for (let y = 0; y < g.height; y++) {
+			for (let x = 0; x < g.width; x++) {
+				if (g.tileAt(x, y) === 'DT' && Math.abs(x - s.x) + Math.abs(y - s.y) === d) {
+					tokenAt = { x: x + 0.5, y: y + 0.5 };
+					break outer;
+				}
+			}
+		}
+	}
+	tokenLeft = 8;
 	for (const b of document.querySelectorAll<HTMLButtonElement>('[data-season]')) {
 		b.setAttribute('aria-pressed', String(b.dataset.season === season));
 	}
@@ -97,8 +107,8 @@ function frame(realDt: number): void {
 	const dt = realDt * (slow ? 0.25 : 1);
 	time += dt;
 	world.update(dt);
-	if (riot.echo.phase === 'riot') {
-		riot.echo.update(dt, away, { ghosts: riot.ghosts, fruit: riot.fruit });
+	if (riot.abilities.echo.phase === 'riot') {
+		riot.abilities.echo.update(dt, { ghosts: riot.ghosts, fruit: riot.fruit });
 	} else {
 		pause += dt;
 		if (pause > 0.8) {
@@ -106,9 +116,9 @@ function frame(realDt: number): void {
 			startRiot();
 		}
 	}
-	if (token.echo.phase !== 'token') {
-		token = session();
-		token.echo.debugSpawn();
+	tokenLeft -= dt;
+	if (tokenLeft <= 0) {
+		tokenLeft = 8;
 	}
 	const L = world.layout;
 	const S = L.tileSize;
@@ -118,8 +128,8 @@ function frame(realDt: number): void {
 	world.drawWorld(ctx);
 	world.drawMood(ctx);
 	world.drawFood(ctx, (x, y) => riot.progress.isCollected(x, y));
-	tokenView.draw(ctx, token.echo, L, time);
-	riotView.draw(ctx, riot.echo, L, time);
+	tokenView.drawToken(ctx, tokenAt, tokenLeft, L, time);
+	riotView.draw(ctx, riot.abilities.echo, L, time);
 	const s = riot.grid.playerSpawn;
 	hero.setRadius(S * 0.39);
 	hero.update(dt, {

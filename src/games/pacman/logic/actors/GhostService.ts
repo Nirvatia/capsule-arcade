@@ -66,6 +66,10 @@ export class GhostService {
 	/** The arcade round's waves and characters; null outside the secret level. */
 	private arcade: ArcadeRoundTuning | null = null;
 	private waveIndex = 0;
+	/** Seconds each ghost the shock struck still stands still. */
+	private readonly frozen = new Map<GhostKind, number>();
+	/** The hero wears the mask: no ghost hunts him. */
+	private heroHiddenValue = false;
 
 	constructor(grid: GridService, player: PlayerService, progress: LevelProgress) {
 		if (!grid) {
@@ -190,6 +194,9 @@ export class GhostService {
 			return;
 		}
 		this.msOverdriveValue = value;
+		if (value) {
+			this.frozen.clear();
+		}
 		for (const ghost of this.ghosts) {
 			if (value) {
 				if (ghost.state === 'active' || ghost.state === 'frightened') {
@@ -203,6 +210,50 @@ export class GhostService {
 		}
 	}
 
+	/**
+	 * The shock: the ghost stands still for `seconds` (its state does not change, so an active
+	 * one stays deadly to touch). A scare, eyes or a reset frees it.
+	 */
+	freeze(kind: GhostKind, seconds: number): void {
+		if (!Number.isFinite(seconds) || seconds <= 0) {
+			console.error('GhostService.freeze', 'invalid seconds', { kind, seconds });
+			return;
+		}
+		this.frozen.set(kind, seconds);
+	}
+
+	/** Seconds the ghost still stands still (0 when it moves). */
+	frozenFor(kind: GhostKind): number {
+		return this.frozen.get(kind) ?? 0;
+	}
+
+	/** Frees every ghost the shock holds. */
+	thawAll(): void {
+		this.frozen.clear();
+	}
+
+	/**
+	 * The mask: while hidden, no ghost hunts the hero; the ones in chase (and the enraged ones)
+	 * head for their scatter corners. Hiding turns the hunters round, like a change of wave.
+	 */
+	setHeroHidden(value: boolean): void {
+		if (this.heroHiddenValue === value) {
+			return;
+		}
+		this.heroHiddenValue = value;
+		if (value) {
+			for (const ghost of this.ghosts) {
+				if ((ghost.state === 'active' && this.mode === 'chase') || ghost.state === 'enraged') {
+					ghost.setForceReverse(true);
+				}
+			}
+		}
+	}
+
+	get heroHidden(): boolean {
+		return this.heroHiddenValue;
+	}
+
 	setGhostState(kind: GhostKind, state: GhostState): void {
 		const ghost = this.ghosts.find((item) => item.kind === kind);
 		if (!ghost) {
@@ -214,6 +265,7 @@ export class GhostService {
 	}
 
 	frightenActive(): void {
+		this.frozen.clear();
 		for (const ghost of this.ghosts) {
 			if (ghost.state === 'active') {
 				ghost.setState('frightened');
@@ -233,6 +285,7 @@ export class GhostService {
 	}
 
 	toEyes(ghost: GhostModel): void {
+		this.frozen.delete(ghost.kind);
 		ghost.setState('eyes');
 		ghost.setForceReverse(false);
 	}
@@ -251,6 +304,8 @@ export class GhostService {
 		this.powerActiveValue = false;
 		this.msOverdriveValue = false;
 		this.banishedValue = false;
+		this.frozen.clear();
+		this.heroHiddenValue = false;
 	}
 
 	private resetWaves(): void {
@@ -322,6 +377,17 @@ export class GhostService {
 	}
 
 	private updateGhost(ghost: GhostModel, dt: number): void {
+		const frozen = this.frozen.get(ghost.kind);
+		if (frozen !== undefined) {
+			const left = frozen - dt;
+			if (left > EPSILON) {
+				this.frozen.set(ghost.kind, left);
+				return;
+			}
+			// the rest of the frame it walks again
+			this.frozen.delete(ghost.kind);
+			dt = Math.max(0, -left);
+		}
 		if (ghost.state === 'lair') {
 			ghost.decreaseExitTimer(dt);
 			if (ghost.exitTimer > 0) {
@@ -485,6 +551,10 @@ export class GhostService {
 		}
 		if (ghost.state === 'hypnotized') {
 			return nearestDotTarget(this.grid, this.progress, ghost.tile) ?? SCATTER_TARGETS[ghost.kind];
+		}
+		if (this.heroHiddenValue && (ghost.state === 'enraged' || ghost.state === 'active')) {
+			// the hero wears the mask: nobody hunts him
+			return SCATTER_TARGETS[ghost.kind];
 		}
 		if (ghost.state === 'enraged') {
 			return this.player.tile;

@@ -5,9 +5,7 @@ import { ECHO } from '../../config/echoConfig';
 import { SCORE_TABLE } from '../../config/scoreConfig';
 import { buildLevelSession } from '../level/LevelSession';
 import { seasonForLevel } from '../level/SeasonCatalog';
-import { SpawnLocator } from '../maze/SpawnLocator';
 import { EchoCloneService } from './EchoCloneService';
-import type { PlayerService } from '../actors/PlayerService';
 
 const DT = 1 / 60;
 
@@ -23,43 +21,6 @@ function seeded(seed: number): () => number {
 	};
 }
 
-/** A generator that gives these values in turn. */
-function values(...list: number[]): () => number {
-	let i = 0;
-	return () => list[Math.min(i++, list.length - 1)] as number;
-}
-
-/** Steps by path between two tiles the hero can walk, tunnels not counted. */
-function pathSteps(
-	grid: { isPlayerWalkable(x: number, y: number): boolean },
-	from: { x: number; y: number },
-	to: { x: number; y: number }
-): number {
-	const seen = new Set([`${from.x},${from.y}`]);
-	let frontier = [from];
-	for (let d = 0; frontier.length > 0; d += 1) {
-		if (frontier.some((t) => t.x === to.x && t.y === to.y)) return d;
-		const next: Array<{ x: number; y: number }> = [];
-		for (const t of frontier) {
-			for (const [dx, dy] of [
-				[1, 0],
-				[-1, 0],
-				[0, 1],
-				[0, -1]
-			]) {
-				const n = { x: t.x + dx, y: t.y + dy };
-				const k = `${n.x},${n.y}`;
-				if (!seen.has(k) && grid.isPlayerWalkable(n.x, n.y)) {
-					seen.add(k);
-					next.push(n);
-				}
-			}
-		}
-		frontier = next;
-	}
-	return Infinity;
-}
-
 function setup(random: () => number, level = 1) {
 	const events = new EventBus<PacmanEventMap>();
 	const fx: PacmanFx[] = [];
@@ -73,126 +34,41 @@ function setup(random: () => number, level = 1) {
 		secret: false,
 		godMode: false
 	});
-	const locator = new SpawnLocator(session.grid, session.progress);
-	const echo = new EchoCloneService(session.grid, session.progress, locator, events, random);
+	const echo = new EchoCloneService(session.grid, session.progress, events, random);
 	const world = { ghosts: session.ghosts, fruit: session.fruit };
-	/** A stand-in hero standing on a tile (the echo only reads where he is). */
-	const hero = (x: number, y: number) =>
-		({ position: { x: x + 0.5, y: y + 0.5 }, tile: { x, y } }) as unknown as PlayerService;
-	const far = hero(0, 0);
-	const eatDots = (n: number) => {
-		let left = n;
-		for (let y = 0; y < session.grid.height && left > 0; y += 1) {
-			for (let x = 0; x < session.grid.width && left > 0; x += 1) {
-				if (session.grid.tileAt(x, y) === 'DT' && !session.progress.isCollected(x, y)) {
-					session.progress.collectDotOnly(x, y);
-					left -= 1;
-				}
-			}
-		}
-	};
-	const run = (seconds: number, player: PlayerService = far) => {
+	const run = (seconds: number) => {
 		for (let i = 0; i < Math.round(seconds / DT); i += 1) {
-			echo.update(DT, player, world);
+			echo.update(DT, world);
 		}
 	};
-	/** Takes the token: the hero steps on it. */
-	const takeToken = () => {
-		const at = echo.tokenPosition;
-		if (!at) throw new Error('no token');
-		echo.update(DT, hero(Math.floor(at.x), Math.floor(at.y)), world);
-	};
-	return { session, echo, fx, eatDots, run, takeToken, hero, far, world, events };
+	return { session, echo, fx, run, world, events };
 }
-
-describe('the echo token', () => {
-	it('comes on about a third of the levels', () => {
-		let comes = 0;
-		const N = 600;
-		for (let seed = 1; seed <= N; seed += 1) {
-			if (setup(seeded(seed)).echo.willCome) comes += 1;
-		}
-		expect(comes / N).toBeGreaterThan(ECHO.chance - 0.06);
-		expect(comes / N).toBeLessThan(ECHO.chance + 0.06);
-	});
-
-	it('does not come on a level that did not roll it', () => {
-		const { echo, eatDots, run, session } = setup(values(0.99, 0.5));
-		expect(echo.willCome).toBe(false);
-		eatDots(Math.floor(session.grid.dotCount * 0.9));
-		run(2);
-		expect(echo.phase).toBe('waiting');
-	});
-
-	it('waits for its share of the dots, then lies on a safe dot tile', () => {
-		// rolled to come, at the start of its window
-		const { echo, eatDots, run, session } = setup(values(0, 0));
-		run(1);
-		expect(echo.phase).toBe('waiting');
-		eatDots(Math.floor(session.grid.dotCount * (ECHO.window[0] - 0.05)));
-		run(0.5);
-		expect(echo.phase).toBe('waiting');
-		eatDots(Math.ceil(session.grid.dotCount * 0.1));
-		run(0.5);
-		expect(echo.phase).toBe('token');
-		const at = echo.tokenPosition!;
-		expect(session.grid.tileAt(Math.floor(at.x), Math.floor(at.y))).toBe('DT');
-	});
-
-	it('never lies near the hero: at least its steps away by path', () => {
-		for (let seed = 1; seed <= 40; seed += 1) {
-			const { echo, eatDots, run, session, hero } = setup(values(0, 0));
-			eatDots(Math.floor(session.grid.dotCount * (0.35 + (seed % 7) * 0.05)));
-			// the hero stands on the very tile the token would have picked without him
-			const locator = new SpawnLocator(session.grid, session.progress);
-			const naive = locator.findSafeTile(session.progress.collectedDots)!;
-			run(0.2, hero(naive.x, naive.y));
-			expect(echo.phase).toBe('token');
-			const at = echo.tokenPosition!;
-			const tile = { x: Math.floor(at.x), y: Math.floor(at.y) };
-			expect(pathSteps(session.grid, naive, tile)).toBeGreaterThanOrEqual(ECHO.minSteps);
-		}
-	});
-
-	it('is gone after its seconds, for good', () => {
-		const { echo, eatDots, run, session } = setup(values(0, 0));
-		eatDots(Math.floor(session.grid.dotCount * 0.5));
-		run(0.2);
-		expect(echo.phase).toBe('token');
-		run(ECHO.tokenSeconds + 0.5);
-		expect(echo.phase).toBe('spent');
-		expect(echo.tokenPosition).toBeNull();
-		run(1);
-		expect(echo.phase).toBe('spent');
-	});
-
-	it('is rolled again by a reset (a restart)', () => {
-		const rolls = [0, 0, 0.99, 0.5];
-		const { echo } = setup(values(...rolls));
-		expect(echo.willCome).toBe(true);
-		echo.reset();
-		expect(echo.willCome).toBe(false);
-		expect(echo.phase).toBe('waiting');
-	});
-});
 
 describe('the riot', () => {
 	function started(seed: number) {
 		const s = setup(seeded(seed));
-		s.echo.debugSpawn();
-		s.takeToken();
+		s.echo.start(s.session.grid.playerSpawn);
 		return s;
 	}
 
-	it('has 7-9 clones and lasts 2-3 seconds, whatever the dice say', () => {
+	it('has 7-9 clones and lasts 3 seconds, whatever the dice say', () => {
 		for (let seed = 1; seed <= 80; seed += 1) {
 			const { echo } = started(seed);
 			expect(echo.phase).toBe('riot');
 			expect(echo.clones.length).toBeGreaterThanOrEqual(ECHO.clones[0]);
 			expect(echo.clones.length).toBeLessThanOrEqual(ECHO.clones[1]);
-			expect(echo.duration).toBeGreaterThanOrEqual(ECHO.seconds[0]);
-			expect(echo.duration).toBeLessThanOrEqual(ECHO.seconds[1]);
+			expect(echo.duration).toBe(3);
 		}
+	});
+
+	it('starts from the tile it is given, not from a walled one', () => {
+		const { echo, session } = setup(seeded(1));
+		const at = session.grid.playerSpawn;
+		echo.start(at);
+		expect(echo.clones.every((c) => c.x === at.x + 0.5 && c.y === at.y + 0.5)).toBe(true);
+		const walled = setup(seeded(1));
+		walled.echo.start({ x: 0, y: 0 });
+		expect(walled.echo.phase).toBe('idle');
 	});
 
 	it('sends the clones out in different ways, one after another', () => {
@@ -217,7 +93,7 @@ describe('the riot', () => {
 			}
 		}
 		expect(energizers).toHaveLength(4);
-		run(ECHO.seconds[1] + 0.2);
+		run(ECHO.seconds + 0.2);
 		const eaten = before.dots - session.progress.remainingDots;
 		expect(eaten).toBeGreaterThan(10);
 		expect(session.score.score - before.score).toBe(eaten * SCORE_TABLE.dot);
@@ -230,7 +106,7 @@ describe('the riot', () => {
 		for (let seed = 1; seed <= 12; seed += 1) {
 			const { echo, session } = started(seed);
 			for (let i = 0; i < Math.round(3.2 / DT) && echo.phase === 'riot'; i += 1) {
-				echo.update(DT, session.player, { ghosts: session.ghosts, fruit: session.fruit });
+				echo.update(DT, { ghosts: session.ghosts, fruit: session.fruit });
 				for (const c of echo.clones) {
 					const x = Math.floor(c.x);
 					const y = Math.floor(c.y);
@@ -243,15 +119,23 @@ describe('the riot', () => {
 	});
 
 	it('eats the fruit it meets, for the fruit points', () => {
-		const { echo, session, eatDots, world, far } = setup(seeded(3));
-		eatDots(90);
+		const { echo, session, world } = setup(seeded(3));
+		let left = 90;
+		for (let y = 0; y < session.grid.height && left > 0; y += 1) {
+			for (let x = 0; x < session.grid.width && left > 0; x += 1) {
+				if (session.grid.tileAt(x, y) === 'DT' && !session.progress.isCollected(x, y)) {
+					session.progress.collectDotOnly(x, y);
+					left -= 1;
+				}
+			}
+		}
 		session.fruit.update(DT, session.player);
 		expect(session.fruit.active).not.toBeNull();
 		const at = session.fruit.position;
 		const points = SCORE_TABLE.fruit[session.fruit.active!];
 		const score = session.score.score;
-		echo.debugRiot({ x: Math.floor(at.x), y: Math.floor(at.y) });
-		echo.update(DT, far, world);
+		echo.start({ x: Math.floor(at.x), y: Math.floor(at.y) });
+		echo.update(DT, world);
 		expect(session.fruit.active).toBeNull();
 		expect(session.score.score - score).toBe(points);
 	});
@@ -259,13 +143,13 @@ describe('the riot', () => {
 	it('loses a clone to an active ghost, and only to an active one', () => {
 		const verdicts: Array<[string, number]> = [];
 		for (const state of ['active', 'enraged', 'frightened', 'eyes', 'lair'] as const) {
-			const { echo, session, world, far, fx } = setup(seeded(9));
-			echo.debugRiot({ x: 12, y: 20 });
+			const { echo, session, world, fx } = setup(seeded(9));
+			echo.start({ x: 12, y: 20 });
 			const ghost = session.ghosts.list[0]!;
 			ghost.teleportTo({ x: 12, y: 20 });
 			ghost.setState(state);
 			const count = echo.clones.length;
-			for (let i = 0; i < 20; i += 1) echo.update(DT, far, world);
+			for (let i = 0; i < 20; i += 1) echo.update(DT, world);
 			const lost = fx.filter((e) => e.kind === 'echo-pop').length;
 			verdicts.push([state, lost]);
 			expect(echo.clones.filter((c) => c.alive).length).toBe(count - lost);
@@ -278,18 +162,14 @@ describe('the riot', () => {
 	});
 
 	it('ends after its seconds and the clones are gone', () => {
-		const { echo, run, session } = started(2);
+		const { echo, run } = started(2);
 		const duration = echo.duration;
 		run(duration - 0.3);
 		expect(echo.phase).toBe('riot');
 		run(0.5);
-		expect(echo.phase).toBe('spent');
+		expect(echo.phase).toBe('idle');
 		expect(echo.clones).toHaveLength(0);
 		expect(echo.timer).toBe(0);
-		// a spent echo does not come again on this level
-		session.progress.resetDots();
-		run(2);
-		expect(echo.phase).toBe('spent');
 	});
 
 	it('ends at once when the clones eat the last dot', () => {
@@ -306,10 +186,10 @@ describe('the riot', () => {
 		}
 		const left = session.progress.remainingDots;
 		expect(left).toBeGreaterThan(0);
-		echo.debugRiot(start);
+		echo.start(start);
 		run(1.5);
 		expect(session.progress.remainingDots).toBe(0);
-		expect(echo.phase).toBe('spent');
+		expect(echo.phase).toBe('idle');
 	});
 
 	it('drives the HUD with a duration that covers the time left', () => {

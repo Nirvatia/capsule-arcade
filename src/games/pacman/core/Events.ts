@@ -26,6 +26,10 @@ export type PacmanAudioCue =
 	| 'exit-enter'
 	| 'teleport'
 	| 'bonus-life'
+	/** An ability token taken into the slot, an ability spent, a press refused. */
+	| 'ability-take'
+	| 'ability-use'
+	| 'ability-fizzle'
 	/** The arcade's intermission starts. */
 	| 'intermission';
 
@@ -86,6 +90,19 @@ export type PacmanFx =
 	| { kind: 'teleport'; x: number; y: number; tx: number; ty: number }
 	/** A clone of the echo riot was caught by a ghost. */
 	| { kind: 'echo-pop'; x: number; y: number }
+	/** An ability token went into the slot. */
+	| { kind: 'ability-take'; x: number; y: number }
+	/** The ability key was pressed when the ability cannot be spent (power on, nobody in reach). */
+	| { kind: 'ability-fizzle'; x: number; y: number }
+	/** The mask goes on (or comes off) the hero. */
+	| { kind: 'mask'; x: number; y: number; on: boolean }
+	/** The shock's discharge: one link from its source to each ghost struck. */
+	| {
+			kind: 'shock';
+			x: number;
+			y: number;
+			links: ReadonlyArray<{ x0: number; y0: number; x1: number; y1: number }>;
+	  }
 	/** A ghost brushed past Pac-Man and he got away: from the ghost (gx, gy) to him. */
 	| { kind: 'near-miss'; x: number; y: number; gx: number; gy: number; ghost: GhostKind };
 

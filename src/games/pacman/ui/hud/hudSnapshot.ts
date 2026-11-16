@@ -5,12 +5,13 @@ import type { FruitKind } from '../../logic/bonuses/fruitCatalog';
 import { fruitForLevel } from '../../logic/bonuses/fruitCatalog';
 import { BOSS_HP, PHASE_THRESHOLDS, PLAYER_MAX_HP } from '../../logic/doom/DoomBalance';
 import { arcadeRound } from '../../config/arcadeConfig';
+import type { AbilityKind } from '../../config/abilityConfig';
 
 export type HudWorld = 'spring' | 'summer' | 'autumn' | 'winter' | 'hell' | 'secret';
 
 /** A running timer the HUD shows as a draining bar. */
 export interface HudTimer {
-	readonly kind: 'power' | 'overdrive' | 'echo';
+	readonly kind: 'power' | 'overdrive' | AbilityKind;
 	readonly remaining: number;
 	readonly duration: number;
 }
@@ -57,6 +58,8 @@ export interface HudSnapshot {
 	/** 0..1 of the dots eaten (weather at 0.5, night at 0.75). */
 	readonly dots: number;
 	readonly timer: HudTimer | null;
+	/** The ability in the hero's slot, waiting for the F key; null when the slot is empty. */
+	readonly ability: AbilityKind | null;
 	/** The fruits of the last levels up to this one, oldest first (arcade style). */
 	readonly fruits: readonly FruitKind[];
 	readonly boss: HudBoss | null;
@@ -79,10 +82,14 @@ export function buildHudSnapshot(
 			? 'hell'
 			: ((season?.name ?? 'spring') as HudWorld);
 	let timer: HudTimer | null = null;
-	const echo = level.echo;
+	const abilities = level.abilities;
 	const hypnosis = level.hypnosis;
-	if (echo && echo.phase === 'riot') {
-		timer = { kind: 'echo', remaining: echo.timer, duration: Math.max(echo.timer, echo.duration) };
+	if (abilities && abilities.phase === 'active') {
+		timer = {
+			kind: abilities.kind,
+			remaining: abilities.timer,
+			duration: Math.max(abilities.timer, abilities.duration)
+		};
 	} else if (hypnosis?.overdriveActive) {
 		timer = { kind: 'overdrive', remaining: hypnosis.overdriveTimer, duration: 5 };
 	} else if (combat?.isPowerActive) {
@@ -137,6 +144,10 @@ export function buildHudSnapshot(
 		lives: (secret ? combat?.tries : combat?.lives) ?? 0,
 		dots: level.progress?.collectionRatio ?? 0,
 		timer,
+		ability:
+			abilities && abilities.phase === 'carried' && !secret && !level.hellMode
+				? abilities.kind
+				: null,
 		fruits,
 		boss
 	};

@@ -3,6 +3,7 @@ import type { LevelLoader } from '../../logic/level/LevelLoader';
 import type { TimeControl } from '../../engine/TimeControl';
 import type { FrameMeter, FramePerfSummary } from './FrameMeter';
 import type { FruitKind } from '../../logic/bonuses/fruitCatalog';
+import type { AbilityKind } from '../../config/abilityConfig';
 import type { DoomPickupKind } from '../../logic/doom/DoomPickupModel';
 import type { DoomAttackKind } from '../../logic/doom/DoomAttackCore';
 import type { DebugRenderFlags } from '../../render/debug/DebugOverlayView';
@@ -141,6 +142,12 @@ export class DebugController {
 		if (fruit?.active) {
 			add('bonus', `fruit ${fruit.active.toLowerCase()}`, fruit.timer);
 		}
+		const abilities = this.loader.abilities;
+		if (abilities && !this.loader.hellMode && !this.loader.secretMode) {
+			const roll = abilities.willCome ? abilities.kind : 'none';
+			const left = abilities.phase === 'token' ? abilities.tokenTimer : abilities.timer;
+			add('bonus', `ability ${abilities.phase} · ${roll}`, left);
+		}
 		const doom = this.loader.doom;
 		const boss = this.loader.doomBoss;
 		if (doom) {
@@ -266,13 +273,18 @@ export class DebugController {
 		this.loader.egg?.debugSpawn();
 	}
 
-	spawnEcho(): void {
-		this.loader.echo?.debugSpawn();
+	/** Puts an ability token of `kind` on a tile the hero can reach. */
+	spawnAbility(kind: AbilityKind): void {
+		const loader = this.loader;
+		if (!loader.hellMode && !loader.secretMode && loader.player && loader.ghosts) {
+			loader.abilities?.debugSpawn(loader.player, loader.ghosts, kind);
+		}
 	}
 
-	/** Sets off the echo riot at the hero's tile. */
-	echoRiot(): void {
-		this.loader.debugEchoRiot();
+	/** Puts `kind` straight into the hero's ability slot (F spends it). */
+	grantAbility(kind: AbilityKind): void {
+		this.loader.debugGrantAbility(kind);
+		this.loader.emitHud();
 	}
 
 	/** Respawns every hell pickup at once. */

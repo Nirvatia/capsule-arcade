@@ -46,7 +46,7 @@ function line(row: Row): string {
 		`score ${mean(r.map((x) => x.score))
 			.toFixed(0)
 			.padStart(5)}`,
-		`echo ${(mean(r.map((x) => x.echoTokens)) * 100).toFixed(0).padStart(3)}%`,
+		`token ${(mean(r.map((x) => x.abilityTokens)) * 100).toFixed(0).padStart(3)}%`,
 		`hypnoses ${mean(r.map((x) => x.hypnoses)).toFixed(1)} (feed ${mean(r.map((x) => x.feeders)).toFixed(1)} hunt ${mean(r.map((x) => x.hunters)).toFixed(1)}, ghosts eaten ${mean(r.map((x) => x.huntedGhosts)).toFixed(1)}, dots fed ${mean(r.map((x) => x.fedDots)).toFixed(1)})`
 	].join('  ');
 }

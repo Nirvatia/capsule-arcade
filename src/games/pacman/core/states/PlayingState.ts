@@ -29,7 +29,7 @@ export class PlayingState implements GameState {
 			this.hitStop = Math.max(0, this.hitStop - dt);
 			return;
 		}
-		const { player, fruit, egg, echo, ghosts, combat, lairCode } = session;
+		const { player, fruit, egg, abilities, ghosts, combat, lairCode, hypnosis } = session;
 		if (combat.deathActive) {
 			ctx.director.showDeath();
 			return;
@@ -46,16 +46,27 @@ export class PlayingState implements GameState {
 		ctx.level.syncLairOpen();
 		player.update(dt);
 		fruit.update(dt, player);
-		// the arcade is plain Pac-Man: no Easter egg, no echo
+		const fireRequested = ctx.level.consumeFireRequest();
+		// the arcade is plain Pac-Man: no Easter egg, no abilities; the hell fires instead
 		if (!ctx.level.secretMode) {
 			egg.update(dt, player);
-			echo.update(dt, player, { ghosts, fruit });
+		}
+		if (!ctx.level.secretMode && !session.doom) {
+			const world = {
+				player,
+				ghosts,
+				fruit,
+				powered: combat.isPowerActive || hypnosis.overdriveActive
+			};
+			abilities.update(dt, world);
+			if (fireRequested) {
+				abilities.use(world);
+			}
 		}
 		if (egg.consumeSecretRequested()) {
 			ctx.director.shiftWorld('enter', () => ctx.level.enterSecretLevel());
 			return;
 		}
-		const fireRequested = ctx.level.consumeFireRequest();
 		if (session.doom) {
 			const { boss: doomBoss, abilities: doom } = session.doom;
 			doomBoss.update(dt, player);
