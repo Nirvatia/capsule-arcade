@@ -9,7 +9,7 @@
 //   cold blue with arcs crawling round it, a shake at the end and a puff of smoke on release.
 import { drawCuteGhost } from './cuteGhost';
 import type { CuteShape, Palette } from './cuteGhost';
-import { BOW_SPAN, PINK_TINT, paintedBow } from './hero/MsPacmanHero';
+import { drawNebulaBow } from './hero/MsPacmanHero';
 import type { HeroSeason } from './hero/heroSeasons';
 
 type Ctx = CanvasRenderingContext2D;
@@ -269,8 +269,8 @@ function iconOrb(c: Ctx, x: number, y: number, S: number, t: number): void {
 
 /** The heroes' own colours: his gold, her magenta (deeper than Pinky's pink), and the halo's. */
 const OWN: Record<'pac' | 'ms', { body: Palette; halo: string }> = {
-	pac: { body: { b: '#ffd84a', s: '#e8a020' }, halo: '255,206,64' },
-	ms: { body: { b: '#e95aa8', s: '#ae266e' }, halo: '255,110,190' }
+	pac: { body: { b: '#ffc23a', s: '#e8781e' }, halo: '255,190,64' },
+	ms: { body: { b: '#7a4ad8', s: '#3c1e8a' }, halo: '200,120,255' }
 };
 
 export interface GhostForm {
@@ -285,7 +285,7 @@ export interface GhostForm {
 	readonly step: number;
 }
 
-function paintForm(c: Ctx, f: GhostForm, S: number, dpr: number): void {
+function paintForm(c: Ctx, f: GhostForm, S: number): void {
 	drawCuteGhost(c, 0, 0, (S / 25) * 0.78, {
 		shape: f.shape,
 		kind: 'BLINKY',
@@ -297,13 +297,11 @@ function paintForm(c: Ctx, f: GhostForm, S: number, dpr: number): void {
 		palette: OWN[f.ms ? 'ms' : 'pac'].body
 	});
 	if (f.ms) {
-		// her bow on the ghost's head, tipped the way she wears it
-		const R = S * 0.39;
-		const half = R * BOW_SPAN * 0.85;
+		// her nebula bow on the ghost's head, tipped the way she wears it
 		c.save();
 		c.translate(-S * 0.2, -S * 0.36);
 		c.rotate(-0.45);
-		c.drawImage(paintedBow(R * dpr, f.season, PINK_TINT), -half, -half, half * 2, half * 2);
+		drawNebulaBow(c, S * 0.39, f.time, 0);
 		c.restore();
 	}
 }
@@ -331,14 +329,14 @@ export function drawGhostForm(
 			S * 1.6 * dpr,
 			(cc) => {
 				cc.scale(dpr, dpr);
-				paintForm(cc, f, S, dpr);
+				paintForm(cc, f, S);
 			},
 			1
 		);
 		blit(c, tint(sp, '#ffffff', whiten), x, y, dpr);
 	} else {
 		c.translate(x, y);
-		paintForm(c, f, S, dpr);
+		paintForm(c, f, S);
 	}
 	c.restore();
 }
@@ -398,7 +396,7 @@ export function drawMorph(
 				cc.scale(dpr, dpr);
 				if (out) {
 					halo(cc, 0, S * 0.03, S, f.time, OWN[f.ms ? 'ms' : 'pac'].halo);
-					paintForm(cc, f, S, dpr);
+					paintForm(cc, f, S);
 				} else {
 					hero(cc);
 				}

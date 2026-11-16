@@ -100,24 +100,21 @@ describe('the trail', () => {
 		expect(hero.particles.length).toBe(before);
 	});
 
-	it.each([
-		['spring', 'petal'],
-		['summer', 'spark'],
-		['autumn', 'leaf'],
-		['winter', 'flake']
-	] as const)('is %s particles (%s) for Pac-Man', (season, kind) => {
-		const hero = newHero();
-		run(hero, { x: 0, y: 0 }, { x: 5, y: 0 }, 0.6, { season });
-		const kinds = new Set(hero.particles.map((p) => p.kind));
-		expect(kinds).toEqual(new Set([kind]));
-	});
+	it.each(['spring', 'summer', 'autumn', 'winter'] as const)(
+		'is glints of sunlight for Pac-Man, whatever the season (%s)',
+		(season) => {
+			const hero = newHero();
+			run(hero, { x: 0, y: 0 }, { x: 5, y: 0 }, 0.6, { season });
+			const kinds = new Set(hero.particles.map((p) => p.kind));
+			expect(kinds).toEqual(new Set(['spark']));
+		}
+	);
 
-	it('gets twinkles with the season for Ms. Pac-Man', () => {
+	it('is stars for Ms. Pac-Man, whatever the season', () => {
 		const hero = newHero(true);
 		run(hero, { x: 0, y: 0 }, { x: 5, y: 0 }, 0.8, { season: 'spring' });
 		const kinds = new Set(hero.particles.map((p) => p.kind));
-		expect(kinds.has('petal')).toBe(true);
-		expect(kinds.has('star')).toBe(true);
+		expect(kinds).toEqual(new Set(['star']));
 	});
 
 	it.each([false, true])('turns to fire when powered (Ms. Pac-Man: %s)', (ms) => {

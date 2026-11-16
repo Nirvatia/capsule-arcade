@@ -1,6 +1,6 @@
-// What both heroes share in the owner's anime mock-ups: the season's particles (and dust), the
-// ink-outlined "ki" flames behind a powered hero and the little star on his highlight. All drawn
-// in code, in the same outlined style; the colours come from the season (`heroSeasons.ts`).
+// What both heroes share: the season's particles (and dust), drops and sparks of fire, the
+// little star on the highlight. All drawn in code, in the same outlined style; the colours
+// come from the season (`heroSeasons.ts`).
 import type { Particle, ParticleKind } from './Hero';
 import { css } from './Hero';
 import { SEASON_LOOKS } from './heroSeasons';
@@ -266,74 +266,4 @@ export function drawStarGlint(
 	ctx.fillStyle = css([255, 255, 255], p);
 	starPath(ctx, cx, cy, big, big * 0.28);
 	ctx.fill();
-}
-
-export interface FlameLook {
-	readonly outer: RGB;
-	readonly inner: RGB;
-	readonly ink: RGB;
-}
-
-/**
- * Ink-outlined "ki" flames round the back of the body (frame space, behind it): an outer
- * tongue and a smaller bright one inside it, at most 1.2 body radii long, the length
- * trembling with time `t`; `k` 0..1 is how strong the look is.
- */
-export function drawKiFlames(
-	ctx: CanvasRenderingContext2D,
-	R: number,
-	k: number,
-	t: number,
-	look: FlameLook
-): void {
-	const N = 9;
-	const a = Math.min(1, k * 1.4);
-	ctx.lineJoin = 'round';
-	ctx.lineCap = 'round';
-	for (const pass of [0, 1]) {
-		for (let i = 0; i < N; i++) {
-			const f = i / (N - 1);
-			const ang = Math.PI + (f - 0.5) * 2.5;
-			const flick = 0.5 + 0.5 * Math.sin(t * 11 + i * 2.3);
-			const edge = 1 - Math.abs(f - 0.5) * 1.3;
-			const len = R * (0.22 + 0.7 * flick) * k * edge * (pass === 0 ? 1 : 0.58);
-			if (len < 1) continue;
-			const bx = Math.cos(ang) * R * 0.93;
-			const by = Math.sin(ang) * R * 0.93;
-			// outwards, blown back (away from the heading), swaying a little
-			let dx = Math.cos(ang) - 0.7;
-			let dy = Math.sin(ang) * 0.8 + 0.12 * Math.sin(t * 7 + i);
-			const n = Math.hypot(dx, dy) || 1;
-			dx /= n;
-			dy /= n;
-			const px = -dy;
-			const py = dx;
-			const w = R * (pass === 0 ? 0.17 : 0.09);
-			ctx.beginPath();
-			ctx.moveTo(bx + px * w, by + py * w);
-			ctx.quadraticCurveTo(
-				bx + dx * len * 0.55 + px * w * 0.9,
-				by + dy * len * 0.55 + py * w * 0.9,
-				bx + dx * len,
-				by + dy * len
-			);
-			ctx.quadraticCurveTo(
-				bx + dx * len * 0.5 - px * w * 0.5,
-				by + dy * len * 0.5 - py * w * 0.5,
-				bx - px * w,
-				by - py * w
-			);
-			ctx.closePath();
-			if (pass === 0) {
-				ctx.fillStyle = css(look.outer, a);
-				ctx.fill();
-				ctx.strokeStyle = css(look.ink, a);
-				ctx.lineWidth = Math.max(1, R * 0.035);
-				ctx.stroke();
-			} else {
-				ctx.fillStyle = css(look.inner, a);
-				ctx.fill();
-			}
-		}
-	}
 }

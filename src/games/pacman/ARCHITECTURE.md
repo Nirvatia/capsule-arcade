@@ -57,7 +57,7 @@ render/
   transitions/decay/       the death black hole: field (Dijkstra), timeline (pure clock), WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
   transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
-  actors/ (hero/: the shared Hero, PacmanHero, MsPacmanHero, heroSeasons (the season's colours), heroFx (season particles, ki flames); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the corner cut, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
+  actors/ (hero/: the shared Hero, PacmanHero (the sun), MsPacmanHero (the galaxy, `drawNebulaBow` shared with the mask's ghost form), heroSeasons (the season's colours), heroFx (season particles, fire drops and sparks); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
   common/          textures, GlPass (every WebGL2 pass), moodBuffer (a world's atmosphere and
                    night in two small maps, a shade and a light, drawn over the screen, over a
                    part of it or into a baked background), renderQuality (the quality tiers' DPR
@@ -183,7 +183,13 @@ every frame, so a held key survives pauses, deaths and fades. A reversal turns P
 round on the spot (`PlayerModel.reverse`); a turn pressed up to 0.15 tile past a junction
 still takes it (`LATE_TURN`). Food is eaten once the hero's centre is within `EAT_REACH`
 (0.3 of a tile, `config/actorConfig`) of it, so a turn back just short of a dot still takes it.
-Tests: `logic/actors/playerControl.test.ts`.
+A turn pressed within `CORNER_WINDOW` (0.4 of a tile) of a junction is cut: `PlayerModel.cutCorner`
+counts the hero on the junction (its food eaten) and keeps where he really is as a corner offset
+that every step on the new axis shrinks as much, so he runs the corner on the diagonal (the
+arcade's cornering; not into a tunnel's pad). `CombatService` sets Pac-Man's rage speed each
+frame (`RAGE`, `rageSpeed` in `config/actorConfig`: +22 % fading to +10 % with the power; not
+her overdrive, not the arcade) and a hit-stop of `RAGE.impactStop` as an energizer strikes.
+Tests: `logic/actors/playerControl.test.ts`, `logic/actors/playerCorner.test.ts`.
 
 Touch (`core/touchInput.ts`): `InputController` listens to the window's pointer events (not
 the mouse's); a `SwipeTracker` turns a finger's moves into direction presses and holds the last
@@ -257,6 +263,7 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
 - `render/common/math.test.ts` — `settle`: an eased value lands on its target (a mood that never
   lands is never baked).
 - `logic/actors/playerControl.test.ts` — reversal, late turns, held keys.
+- `logic/actors/playerCorner.test.ts` — cornering on the diagonal, the rage's dash and the energizer's hit-stop.
 - `logic/doom/doomMechanics.test.ts` — pickups, BFG, minions, attack sets per phase,
   fairness (rift, eruption, seals), maze stays connected.
 - `logic/bonuses/bossReward.test.ts` — heart and exit.
@@ -279,7 +286,7 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   (an empty slot, the power on, nobody in the shock's reach), the echo from the hero, the mask
   (ghosts pass through, the grace, the hunters go to their corners, an energizer ends it), the
   shock (the chain, the held ghosts stay deadly, an energizer frees them).
-- `render/actors/hero/heroTrail.test.ts` — the heroes' season table, trail and rolling ball.
+- `render/actors/hero/heroTrail.test.ts` — the heroes' season table, their element trails and rolling ball.
 - `logic/actors/playerTunnel.test.ts` — the tunnel's `teleport` fx.
 - `logic/level/mazeCycle.test.ts` — the maze order, the season levels without the boss
   levels.
@@ -308,5 +315,5 @@ the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arca
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`, `heroCharge`), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale), `elements` (the heroes as elements, the everyday form, in three variants: fire and a nebula, a sun and a galaxy, fire and water; frame by frame, the three side by side, on every season and running the real maze; `elements/forms.ts`, `cosmos.ts`, `fireWater.ts`, `kit.ts`); `winter-decay.html` is an older standalone page.
+`MsPacmanHero`, `heroCharge`), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale); `winter-decay.html` is an older standalone page.
 ```

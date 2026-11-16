@@ -37,7 +37,7 @@ suggestion (Opus for the design of a look or a mechanic, Sonnet for the steps).
 ## Order
 
 **I** the main game (what is left: the abilities' sounds and tuning, a check on a real phone,
-the heroes' look, the seasons' scenes), **II** the boss levels (the hell's polish, then the random boss, then the new
+the owner's play of the new heroes, the seasons' scenes), **II** the boss levels (the hell's polish, then the random boss, then the new
 worlds), **III** the interface of each new boss. The depth and post-processing pass comes last of
 all (see Later).
 
@@ -68,66 +68,32 @@ all (see Later).
    landscape). Left for a real phone: iOS Safari's audio unlock and pinch, how the swipe's length
    (`swipeThreshold`) and the pad's size feel under a thumb, the safe areas of a notched screen,
    and the Auto graphics tier there.
-4. **The heroes' redesign** (Opus, prototype first). The owner likes the heroes but they lack
-   force: bulky in the maze (a radius of 0.39 of a tile, 0.78 of the corridor), no rage in the
-   energizer (only a palette and flames), the moves feel thick though the render is clean. The
-   owner wants a full redesign: a nimble form (smaller, ~0.31 of a tile, not necessarily a pure
-   ball) and a true rage transformation in the energizer / overdrive. Stages:
-   1. **The `heroes` prototype: all three directions rejected** (the page is deleted). A ninja
-      ball with a headband, B a jelly, C a predator cub / maned beast, each with a rage form. The
-      owner liked the ideas, not the execution. Lessons for the next round:
-      - the art must match the rest of the game: build on the heroes' own material (`Hero.ts`:
-        the palette ramp, rim and bounce light, highlights, particles), not a new flat painter;
-      - one tile: small accessories (a headband, ears, a tail, many spikes) turn to noise there;
-        the silhouette must read on its own;
-      - the body stays inside its tile: no shape that stretches into an oval;
-      - the headband idea was liked, but it reads badly at one tile.
-        Next: the feel first, on the current art (stage 2), to see how much of the missing force was
-        the art at all; then the art from a reference the owner approves (his mock-up, or one made
-        from Claude's written briefs), reproduced in code at the game's level.
-        1b. The `rage` prototype (second round, on the heroes' own machinery: 1, his flame mane / her
-        wings; 2, his molten core and comet tail / her crystal): rejected too, deleted. The clue the
-        owner took from it: the element works for the heroes (the fiery Pac-Man), and Ms. Pac-Man
-        should be an element as well. Why it keeps coming back (talked through with the owner): the
-        circle with a mouth already reads as a celestial body, the hero's verb is to consume (fire,
-        a star, the black hole of the death), one tile kills details but keeps light, colour and
-        motion, and a stream of fire is the speed the heroes lacked.
-        1c. **The `elements` prototype (built, awaiting the owner's word;** `node prototypes/pacman/
-build.mjs elements`, `?v=1|2|3&scene=sheet|compare|seasons|maze&season=`): the everyday form
-        first, as the owner asked (the trail and the rage after it), in three variants, all on
-        `PacmanHero` / `MsPacmanHero` with the body's paint their own (`Hero` got an always-on
-        `drawAura` hook; `MsPacmanHero` a `drawBow` hook):
-        - 1, fire and a nebula (`elements/forms.ts`; the owner: "looks better", kept as variant 1):
-          an ember core in a mantle of anime flames that rise at rest and stream back along the
-          run; a deep violet body with clouds and stars drifting inside, a halo of star dust, her
-          bow a ribbon of light. 0.33 of a tile.
-        - 2, cosmos, from scratch (`elements/cosmos.ts`): a sun (self-lit radial bands from a
-          white heart to a red limb, their edges boiling; a corona of twelve turning rays,
-          straight and wavy in turn, under one ink line, that the run stretches back into a solar
-          wind; glints of sunlight for a trail) and a galaxy (deep space with a tilted spiral
-          galaxy turning inside, a glowing limb, a pale cloud round her eye so the lashes read;
-          her bow a bipolar nebula: two glowing lobes, a star at the knot). Tried and dropped on
-          the way: soft additive rays (unseen on the floors), prominence loops (read as a
-          teapot's handles), thin rays (a sea urchin); orange rays were too close to autumn's
-          orange hedgehog, so they are gold.
-        - 3, fire and water, from scratch (`elements/fireWater.ts`): each hero a drop of its
-          element, one silhouette and one ink line (the tail painted under the body with its ink
-          and again over the body's ink outside it): flat anime fire running from the body into a
-          flickering tail and two side licks, which rise at rest and sweep back on the run, little
-          flames for a trail; Ms. Pac-Man blue water, cel-shaded under the key light (a hard
-          highlight, the light gathering on the far side, bubbles rising), all but round at rest
-          and drawn out on the run, a water bow, coral lipstick, droplets for a trail. 0.32 of a
-          tile. The rolling ball's meridians are off on variants 2 and 3 (they read as lines on
-          the element).
-          Next, once the owner picks a look: the flexible trail, then the rage (an inferno; her
-          overdrive a supernova or its water/galaxy counterpart).
-   2. The feel, whatever the art: the size, real corner cutting in `PlayerService` (a turn
-      pressed early takes the corner on the diagonal; the ghosts cannot), the rage's dash
-      (+20-25 % fading to +10 %) and its bite (a stronger hit-stop, the ghost's crunch, the chain
-      200-1600 rising); the balance bot checks the ramp after.
-   3. The chosen art in detail: turning, chewing, the death, the turn into rage and back, Ms.
-      Pac-Man; then all that hangs on the old heroes: the HUD's life icons and the menu's hero
-      coins (SVG), the mask's ghost form (her bow), the death's black hole.
+4. **The heroes' redesign: in the game, awaiting the owner's play.** The owner found the old
+   heroes bulky (0.39 of a tile), without rage in the energizer, thick to move. Rounds of
+   prototypes (all deleted): `heroes` (a ninja, a jelly, a predator: primitive next to the rest of
+   the art, small accessories turn to noise at one tile, a body must stay inside its tile),
+   `rage` (a flame mane, wings, a molten core: the clue was the element) and `elements` (three
+   variants of the heroes as elements). The owner picked variant 2, cosmos: **Pac-Man a sun, Ms.
+   Pac-Man a galaxy** (`PacmanHero` / `MsPacmanHero`, 0.33 of a tile; the look in `DESIGN.md`
+   §6), her nebula bow a quarter smaller than the old bow and no lipstick (the owner's calls).
+   Done with it:
+   - the feel (the owner's three points): real cornering in `PlayerService` (a turn pressed
+     within 0.4 of a tile of a junction takes it at once and runs the corner on the diagonal;
+     the ghosts cannot; the drawn lean is off), Pac-Man's dash under the energizer (+22 % fading
+     to +10 %; not her overdrive: the balance bot found her dying far more with it, 8 deaths a
+     level to 13), the energizer's blow (a 0.1 s hit-stop for both, a flash, three rings, a
+     burst, a hard kick of the screen);
+   - the art in the game with its states: the rage (his flare: white-hot bands, a bigger and
+     faster corona, streaks of light; her accretion ring and stars spiralling in), the ball,
+     the death, the mask's ghost form (his gold, her violet with the nebula bow), the HUD's
+     hero and life icons and the menu's coins (SVG);
+   - the trails: glints of sunlight, stars (fire in the rage); the season's own particles are
+     no longer shed by the heroes.
+     Left:
+   1. The owner plays it: the rage looks were designed in the game, without a prototype.
+   2. The bite in the rage: the ghost's crunch, the chain 200-1600 rising with it.
+   3. The balance bot never presses a turn early, so its numbers do not show the cornering; a
+      bot that corners would tell how much easier it makes the levels.
       Kept: no tongue; Ms. Pac-Man's bow.
 5. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). None is
    started: the winter prototypes (`winter-scene`, the New Year dressing, and

@@ -1,17 +1,17 @@
-// Ms. Pac-Man, the heroine: the owner's "Maho-shoujo" mock-up (anime direction). A pink
-// cartoon heroine, cel-shaded like Pac-Man (hard tone bands, ink heavier in the shadow): a big
-// glossy eye with a gradient iris, an ink wing on the lid, lashes and a brow; blush strokes,
-// red lipstick on the ends of the lips and a little fang; a big scarlet polka-dot bow on a
-// spring, with a flower on its knot that carries the season. Behind her: two outlined ribbons
-// (the season's and a pink one), petals, dust and manga twinkles. Powered, the bow glows, rose-
-// gold ki flames open behind her, the brow lifts and the highlight turns to a star. The
-// machinery (acting, bites, spring, energizer beat) is the shared Hero.
+// Ms. Pac-Man, the heroine: a galaxy (the owner's pick of the `elements` prototype, variant 2).
+// A sphere of deep space with a tilted spiral galaxy turning inside, stars twinkling, an
+// atmosphere glowing at her limb and a pale cloud round her eye (so the ink of the lashes reads);
+// her bow a bipolar nebula (two glowing lobes, a star at the knot) on a spring, no lipstick (the
+// owner's calls: the bow a quarter smaller than her old one, the lips bare). Her eye is the
+// anime one (a gradient iris, an ink wing on the lid, lashes, a brow; it blinks and squints),
+// with blush on the cheek and a little fang. The rage (her overdrive) pulls the sky in: the
+// galaxy spins up and flares, an accretion ring of light circles her and stars spiral into her.
+// Stars for a trail. The machinery (mouth, acting, bites, spring, the energizer's beat, the
+// ball, the death) is the shared Hero; the body's paint is hers.
 import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from './Hero';
-import { Hero, Spring, css, glow, mix } from './Hero';
-import { SEASON_LOOKS } from './heroSeasons';
-import type { HeroSeason, RGB } from './heroSeasons';
+import { Hero, Spring, css, glow } from './Hero';
+import type { RGB } from './heroSeasons';
 import {
-	drawKiFlames,
 	drawSeasonParticle,
 	drawFireSpark,
 	drawFlameDrop,
@@ -22,272 +22,131 @@ import {
 	starPath
 } from './heroFx';
 
+const TAU = Math.PI * 2;
+
+/** Under her own paint (only the ball and the flash show it); the ink is her outline. */
 const CALM: Palette = {
-	light: [238, 156, 206],
-	mid: [226, 86, 162],
-	shadow: [174, 38, 110],
-	deep: [110, 20, 70],
-	bounce: [224, 144, 198],
-	ink: [46, 6, 26],
+	light: [120, 80, 210],
+	mid: [70, 40, 150],
+	shadow: [40, 20, 100],
+	deep: [20, 10, 50],
+	bounce: [130, 60, 200],
+	ink: [22, 6, 44],
 	highlight: [255, 255, 255],
-	rim: [255, 222, 242]
+	rim: [180, 200, 255]
 };
 const AWOKEN: Palette = {
-	light: [238, 228, 238],
-	mid: [234, 128, 198],
-	shadow: [214, 40, 140],
-	deep: [140, 20, 96],
-	bounce: [228, 152, 208],
-	ink: [46, 6, 26],
+	light: [200, 150, 255],
+	mid: [150, 90, 230],
+	shadow: [96, 50, 180],
+	deep: [40, 20, 90],
+	bounce: [220, 110, 230],
+	ink: [22, 6, 44],
 	highlight: [255, 255, 255],
-	rim: [255, 226, 200]
+	rim: [255, 220, 255]
 };
 
 const INSIDE: MouthInside = {
-	mid: [104, 12, 48],
-	deep: [66, 6, 34]
+	mid: [40, 12, 70],
+	deep: [16, 4, 34]
 };
 
-const INK: RGB = [46, 6, 26];
-
-/** The colours of what she wears: the bow, the lipstick, the blush (an echo clone's are blue). */
-export interface MsTint {
-	readonly id: string;
-	readonly bow: RGB;
-	readonly bowShade: RGB;
-	readonly bowTail: RGB;
-	readonly lipstick: RGB;
-	readonly blush: RGB;
-}
-export const PINK_TINT: MsTint = {
-	id: 'pink',
-	bow: [236, 28, 70],
-	bowShade: [164, 8, 48],
-	bowTail: [214, 20, 60],
-	lipstick: [232, 28, 72],
-	blush: [232, 64, 112]
-};
+const INK: RGB = [22, 6, 44];
+const BLUSH: RGB = [240, 100, 180];
 
 /** Her bow: on top of the head, a little behind, on the head's outline. */
 export const BOW_ANGLE = -0.63 * Math.PI;
 export const BOW_DISTANCE = 0.95;
+/** The nebula bow's size against the head (her old bow was 1: the owner, a quarter smaller). */
+export const BOW_SCALE = 0.75;
 
-const bowCache = new Map<string, HTMLCanvasElement>();
-/** The painted bow's canvas spans this many head radii either side of the knot. */
-export const BOW_SPAN = 1.1;
+/** The galaxy's arms: the broad glow, the bright lane in it. */
+const ARMS: ReadonlyArray<readonly [string, string]> = [
+	['255,110,214', '255,206,246'],
+	['110,160,255', '196,226,255']
+];
 
-/** The flower on the bow's knot, which carries the season (all around (0, 0)). */
-function paintBadge(ctx: CanvasRenderingContext2D, R: number, season: HeroSeason): void {
-	ctx.lineJoin = 'round';
-	ctx.lineCap = 'round';
-	const edge: RGB = [120, 30, 60];
-	if (season === 'summer') {
-		ctx.strokeStyle = css([226, 130, 20]);
-		ctx.lineWidth = R * 0.05;
-		ctx.beginPath();
-		for (let i = 0; i < 8; i++) {
-			const a = (i / 8) * Math.PI * 2;
-			ctx.moveTo(Math.cos(a) * R * 0.11, Math.sin(a) * R * 0.11);
-			ctx.lineTo(Math.cos(a) * R * 0.19, Math.sin(a) * R * 0.19);
-		}
-		ctx.stroke();
-		ctx.fillStyle = css([255, 212, 50]);
-		ctx.strokeStyle = css([190, 100, 10]);
-		ctx.lineWidth = R * 0.03;
-		ctx.beginPath();
-		ctx.arc(0, 0, R * 0.12, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.stroke();
-	} else if (season === 'autumn' || season === 'hell') {
-		ctx.fillStyle = css(season === 'hell' ? [255, 150, 60] : [244, 124, 40]);
-		ctx.strokeStyle = css([130, 52, 14]);
-		ctx.lineWidth = R * 0.035;
-		ctx.beginPath();
-		for (let i = 0; i < 10; i++) {
-			const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
-			const r = i % 2 === 0 ? R * 0.2 : R * 0.09;
-			ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-		}
-		ctx.closePath();
-		ctx.fill();
-		ctx.stroke();
-	} else if (season === 'winter') {
-		ctx.strokeStyle = css([120, 176, 232]);
-		ctx.lineWidth = R * 0.05;
-		ctx.beginPath();
-		for (let i = 0; i < 3; i++) {
-			const a = (i / 3) * Math.PI;
-			ctx.moveTo(Math.cos(a) * R * 0.2, Math.sin(a) * R * 0.2);
-			ctx.lineTo(-Math.cos(a) * R * 0.2, -Math.sin(a) * R * 0.2);
-		}
-		ctx.stroke();
-		ctx.fillStyle = css([240, 248, 255]);
-		ctx.beginPath();
-		ctx.arc(0, 0, R * 0.07, 0, Math.PI * 2);
-		ctx.fill();
-	} else {
-		// spring: a five-petal blossom with a yellow heart
-		ctx.fillStyle = css([255, 238, 244]);
-		ctx.strokeStyle = css(edge, 0.9);
-		ctx.lineWidth = R * 0.025;
-		for (let i = 0; i < 5; i++) {
-			const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
-			ctx.beginPath();
-			ctx.ellipse(
-				Math.cos(a) * R * 0.11,
-				Math.sin(a) * R * 0.11,
-				R * 0.085,
-				R * 0.075,
-				a,
-				0,
-				Math.PI * 2
-			);
-			ctx.fill();
-			ctx.stroke();
-		}
-		ctx.fillStyle = css([255, 208, 40]);
-		ctx.beginPath();
-		ctx.arc(0, 0, R * 0.05, 0, Math.PI * 2);
-		ctx.fill();
-	}
-}
+/** The galaxy's turn, radians per second, calm and in the rage. */
+const TURN = 0.45;
+const TURN_RAGE = 2.6;
 
 /**
- * The bow painted once per size and season: two rounded loops and two tails round a knot,
- * ink round everything (heavier away from the light), a crisp darker shape away from the
- * light, a pale highlight along each loop, white polka dots, a fold mark on each loop and
- * the season's flower on the knot. Its own frame: the knot at the centre, up (-y) pointing
- * away from her head.
+ * Her bow, a bipolar nebula, at its knot (0, 0) with its wings along x and its outside to -y,
+ * `R` her head's radius: two lobes of glowing gas (pink and blue-violet) under one ink line,
+ * filaments drifting in them, a star at the knot. `p` the glow of the rage, 0..1.
  */
-export function paintedBow(deviceR: number, season: HeroSeason, tint: MsTint): HTMLCanvasElement {
-	const R = Math.max(4, Math.round(deviceR));
-	const key = `${R}:${season}:${tint.id}`;
-	let c = bowCache.get(key);
-	if (c) return c;
-	if (bowCache.size > 60) bowCache.clear();
-	const lx = -0.45;
-	const ly = -0.85;
-	c = document.createElement('canvas');
-	c.width = c.height = Math.ceil(R * BOW_SPAN * 2);
-	const ctx = c.getContext('2d') as CanvasRenderingContext2D;
-	ctx.translate(c.width / 2, c.height / 2);
+export function drawNebulaBow(
+	ctx: CanvasRenderingContext2D,
+	R: number,
+	t: number,
+	p: number
+): void {
+	ctx.save();
+	ctx.save();
+	ctx.globalCompositeOperation = 'lighter';
+	ctx.globalAlpha = 0.45 + 0.35 * p;
+	const g = R * (0.9 + 0.3 * p);
+	ctx.drawImage(glow([230, 140, 255]), -g, -g, g * 2, g * 2);
+	ctx.restore();
+	const k = BOW_SCALE * (1 + 0.1 * p);
+	ctx.scale(k, k);
+	ctx.translate(0, -R * 0.08);
+	const lobe = (s: number) => {
+		ctx.moveTo(0, 0);
+		ctx.quadraticCurveTo(s * R * 0.32, -R * 0.54, s * R * 0.82, -R * 0.5);
+		ctx.quadraticCurveTo(s * R * 1.12, -R * 0.05, s * R * 0.84, R * 0.36);
+		ctx.quadraticCurveTo(s * R * 0.34, R * 0.34, 0, 0);
+		ctx.closePath();
+	};
 	ctx.lineJoin = 'round';
-	ctx.lineCap = 'round';
-	const base = tint.bow;
-	const shade = tint.bowShade;
-	const tailC = tint.bowTail;
-	const loop = (side: number) => {
-		// a rounded teardrop from the knot, out to the side and a little up
-		const ux = Math.cos(-0.22 * side) * side;
-		const uy = Math.sin(-0.22 * side) * side * side;
-		const px = -uy;
-		const py = ux;
-		const len = R * 0.62;
-		const wid = R * 0.3;
-		const ex = ux * len;
-		const ey = uy * len - R * 0.06;
+	ctx.beginPath();
+	lobe(-1);
+	lobe(1);
+	ctx.strokeStyle = 'rgb(34,8,58)';
+	ctx.lineWidth = R * 0.11;
+	ctx.stroke();
+	for (const s of [-1, 1]) {
+		const fill = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 1.02);
+		fill.addColorStop(0, 'rgb(255,238,252)');
+		fill.addColorStop(0.3 + 0.1 * p, 'rgb(255,142,226)');
+		fill.addColorStop(0.72, s < 0 ? 'rgb(182,78,236)' : 'rgb(116,118,252)');
+		fill.addColorStop(1, 'rgb(76,48,186)');
+		ctx.fillStyle = fill;
+		ctx.beginPath();
+		lobe(s);
+		ctx.fill();
+		// the gas's filaments, drifting
+		ctx.save();
+		ctx.clip();
+		const drift = Math.sin(t * 1.6 + s) * R * 0.05;
+		ctx.strokeStyle = 'rgba(255,255,255,.5)';
+		ctx.lineWidth = R * 0.045;
 		ctx.beginPath();
 		ctx.moveTo(0, 0);
-		ctx.bezierCurveTo(
-			ux * len * 0.25 + px * wid * 1.1,
-			uy * len * 0.25 + py * wid * 1.1,
-			ex + px * wid * 1.05,
-			ey + py * wid * 1.05,
-			ex + ux * R * 0.06,
-			ey + uy * R * 0.06
-		);
-		ctx.bezierCurveTo(
-			ex - px * wid * 1.05,
-			ey - py * wid * 1.05,
-			ux * len * 0.25 - px * wid * 1.1,
-			uy * len * 0.25 - py * wid * 1.1,
-			0,
-			0
-		);
-		ctx.closePath();
-	};
-	const tail = (side: number) => {
-		ctx.beginPath();
-		ctx.moveTo(-R * 0.05 * side, R * 0.04);
-		ctx.lineTo(R * 0.24 * side, R * 0.52);
-		ctx.lineTo(R * 0.14 * side, R * 0.46);
-		ctx.lineTo(R * 0.05 * side, R * 0.54);
-		ctx.lineTo(R * 0.05 * side, R * 0.04);
-		ctx.closePath();
-	};
-	const parts = [() => tail(-1), () => tail(1), () => loop(-1), () => loop(1)];
-	// ink, heavier on the side away from the light
+		ctx.quadraticCurveTo(s * R * 0.4, -R * 0.42 + drift, s * R * 0.86, -R * 0.26);
+		ctx.moveTo(0, 0);
+		ctx.quadraticCurveTo(s * R * 0.46, R * 0.3 - drift, s * R * 0.86, R * 0.16);
+		ctx.stroke();
+		ctx.restore();
+	}
+	// the star at the knot
+	const tw = 0.85 + 0.15 * Math.sin(t * 6);
 	ctx.save();
-	ctx.translate(-lx * R * 0.03, -ly * R * 0.03);
-	ctx.fillStyle = css(INK);
-	ctx.strokeStyle = css(INK);
-	for (const [i, part] of parts.entries()) {
-		ctx.lineWidth = i < 2 ? R * 0.05 : R * 0.1;
-		part();
-		ctx.fill();
-		ctx.stroke();
-	}
+	ctx.globalCompositeOperation = 'lighter';
+	ctx.globalAlpha = 0.8;
+	ctx.drawImage(glow([255, 230, 255]), -R * 0.5, -R * 0.5, R, R);
 	ctx.restore();
-	for (const [i, part] of parts.entries()) {
-		part();
-		ctx.fillStyle = css(i < 2 ? tailC : base);
-		ctx.fill();
-		// the darker shape: the part shifted towards the light, cut out of a shaded copy
-		ctx.save();
-		part();
-		ctx.clip();
-		ctx.beginPath();
-		ctx.rect(-R * 2, -R * 2, R * 4, R * 4);
-		ctx.save();
-		ctx.translate(lx * R * 0.1, ly * R * 0.1);
-		part();
-		ctx.restore();
-		ctx.fillStyle = css(shade, 0.85);
-		ctx.fill('evenodd');
-		ctx.restore();
-	}
-	// a pale highlight along the top of each loop
-	ctx.strokeStyle = 'rgba(255,170,190,0.9)';
-	ctx.lineWidth = R * 0.05;
-	for (const side of [-1, 1]) {
-		ctx.beginPath();
-		ctx.moveTo(side * R * 0.2 + lx * R * 0.05, -R * 0.2 + ly * R * 0.05);
-		ctx.quadraticCurveTo(side * R * 0.42, -R * 0.34, side * R * 0.58, -R * 0.2);
-		ctx.stroke();
-	}
-	// polka dots
-	ctx.fillStyle = 'rgba(255,255,255,0.95)';
-	for (const side of [-1, 1]) {
-		for (const [dx, dy, r] of [
-			[0.36, -0.18, 0.05],
-			[0.54, 0.0, 0.04],
-			[0.3, 0.1, 0.03]
-		] as const) {
-			ctx.beginPath();
-			ctx.arc(side * R * dx, R * dy, R * r, 0, Math.PI * 2);
-			ctx.fill();
-		}
-	}
-	// a fold mark on each loop: a short ink stroke ending in a dot
-	ctx.strokeStyle = css(INK);
-	ctx.fillStyle = css(INK);
-	ctx.lineWidth = R * 0.035;
-	for (const side of [-1, 1]) {
-		ctx.beginPath();
-		ctx.moveTo(side * R * 0.18, R * 0.02);
-		ctx.lineTo(side * R * 0.32, -R * 0.02);
-		ctx.stroke();
-		ctx.beginPath();
-		ctx.arc(side * R * 0.32, -R * 0.02, R * 0.03, 0, Math.PI * 2);
-		ctx.fill();
-	}
-	paintBadge(ctx, R, season);
-	bowCache.set(key, c);
-	return c;
+	ctx.fillStyle = '#fff';
+	ctx.strokeStyle = 'rgb(34,8,58)';
+	ctx.lineWidth = R * 0.04;
+	starPath(ctx, 0, 0, R * 0.42 * tw, R * 0.1, -Math.PI / 2 + t * 0.4);
+	ctx.fill();
+	ctx.stroke();
+	ctx.restore();
 }
 
 export const MS_DESIGN: HeroDesign = {
-	id: 'ms-pacman',
+	id: 'ms-pacman-galaxy',
 	calm: CALM,
 	awoken: AWOKEN,
 	hinge: 0.08,
@@ -297,14 +156,17 @@ export const MS_DESIGN: HeroDesign = {
 	grinRest: 0.1,
 	grinRun: 0.04,
 	chompRate: 4.8,
-	flare: [255, 214, 236],
-	death: 'spin'
+	flare: [240, 200, 255],
+	death: 'spin',
+	bands: [0.1, 0.3, 0.64],
+	powerScale: 1.22
 };
+
+/** The accretion ring of the rage: radii (body radii) and its tilt in her frame. */
+const RING = { rx: 1.5, ry: 0.42, tilt: -0.3 };
 
 export class MsPacmanHero extends Hero {
 	protected readonly design: HeroDesign = MS_DESIGN;
-	/** What she wears (pink; an echo clone's copy is blue). */
-	protected readonly tint: MsTint = PINK_TINT;
 	/** The bow's sway, radians, on a soft spring. */
 	private readonly bow = new Spring(0);
 	/** Seconds into a blink, or -1; the next blink is due at `nextBlink`. */
@@ -313,10 +175,13 @@ export class MsPacmanHero extends Hero {
 	private blinks = 0;
 	/** A happy squint after a bite, 1 → 0. */
 	private squint = 0;
+	/** The galaxy's turn, radians (it speeds up in the rage). */
+	private turn = 0;
 
 	protected resetLooks(): void {
 		this.bow.value = 0;
 		this.bow.velocity = 0;
+		this.turn = 0;
 	}
 
 	protected onBite(): void {
@@ -329,6 +194,7 @@ export class MsPacmanHero extends Hero {
 	}
 
 	protected afterUpdate(dt: number): void {
+		this.turn += dt * (TURN + (TURN_RAGE - TURN) * this.power);
 		this.bow.step(0.07 * Math.sin(this.time * 2.1), dt, 90, 7);
 		this.squint = Math.max(0, this.squint - dt / 0.35);
 		if (this.blink >= 0) {
@@ -342,50 +208,194 @@ export class MsPacmanHero extends Hero {
 		}
 	}
 
-	/** Rose-gold ink-outlined ki flames round the back of the body while she is powered. */
-	protected drawBehind(ctx: CanvasRenderingContext2D, R: number, k: number): void {
-		drawKiFlames(ctx, R, k, this.time, {
-			outer: [255, 140, 176],
-			inner: [255, 224, 120],
-			ink: INK
-		});
+	/** A violet glow round her, brighter in the rage. */
+	protected drawAura(ctx: CanvasRenderingContext2D, R: number, p: number): void {
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		ctx.globalAlpha = 0.3 + 0.2 * p;
+		const g = R * (2 + 0.5 * p);
+		ctx.drawImage(glow([170, 100, 255]), -g, -g, g * 2, g * 2);
+		ctx.restore();
 	}
 
-	/** Two ribbons of her bow (scarlet, polka-dotted) wound round the pink ball, turning with the roll. */
+	/**
+	 * The rage behind her (`k` its look times the end-of-power pulse): the accretion ring's far
+	 * half, and stars spiralling in from the sky round her.
+	 */
+	protected drawBehind(ctx: CanvasRenderingContext2D, R: number, k: number): void {
+		const t = this.time;
+		this.ring(ctx, R, k, true);
+		ctx.save();
+		for (let i = 0; i < 9; i++) {
+			const f = (t * 0.7 + i / 9) % 1;
+			const r = R * (2.4 - 1.4 * f);
+			const a = (i / 9) * TAU + f * 2.6 - this.turn * 0.3;
+			const x = Math.cos(a) * r;
+			const y = Math.sin(a) * r;
+			ctx.globalAlpha = k * Math.sin(Math.PI * f);
+			ctx.fillStyle = i % 3 === 0 ? 'rgb(255,190,240)' : 'rgb(255,255,255)';
+			starPath(ctx, x, y, R * (0.16 + 0.08 * (1 - f)), R * 0.04, a);
+			ctx.fill();
+		}
+		ctx.restore();
+	}
+
+	/** One half of the accretion ring (`back`: the far one, behind her), with stars on it. */
+	private ring(ctx: CanvasRenderingContext2D, R: number, k: number, back: boolean): void {
+		if (k < 0.01) return;
+		const t = this.time;
+		ctx.save();
+		ctx.rotate(RING.tilt);
+		const from = back ? Math.PI : 0;
+		const arc = () => {
+			ctx.beginPath();
+			ctx.ellipse(0, 0, R * RING.rx, R * RING.ry, 0, from, from + Math.PI);
+		};
+		ctx.lineCap = 'round';
+		ctx.globalCompositeOperation = 'lighter';
+		arc();
+		ctx.strokeStyle = `rgba(255,120,220,${0.45 * k})`;
+		ctx.lineWidth = R * 0.26;
+		ctx.stroke();
+		arc();
+		ctx.strokeStyle = `rgba(160,190,255,${0.5 * k})`;
+		ctx.lineWidth = R * 0.12;
+		ctx.stroke();
+		arc();
+		ctx.strokeStyle = `rgba(255,246,255,${0.95 * k})`;
+		ctx.lineWidth = R * 0.05;
+		ctx.stroke();
+		ctx.globalCompositeOperation = 'source-over';
+		// motes running round the ring
+		for (let i = 0; i < 8; i++) {
+			const a = t * 3 + (i / 8) * TAU;
+			const s = Math.sin(a);
+			if (back ? s > 0 : s < 0) continue;
+			ctx.globalAlpha = k;
+			ctx.fillStyle = '#fff';
+			ctx.beginPath();
+			ctx.arc(Math.cos(a) * R * RING.rx, s * R * RING.ry, R * 0.06, 0, TAU);
+			ctx.fill();
+		}
+		ctx.restore();
+	}
+
+	/**
+	 * Deep space, a spiral galaxy turning in it (faster and brighter in the rage), stars, a cloud
+	 * round the eye, a glowing limb.
+	 */
+	protected decorate(sc: CanvasRenderingContext2D, R: number, p: number): void {
+		const t = this.time;
+		const base = sc.createRadialGradient(-R * 0.1, R * 0.05, 0, -R * 0.1, R * 0.05, R * 1.05);
+		base.addColorStop(0, 'rgb(92,46,168)');
+		base.addColorStop(0.55, 'rgb(52,26,118)');
+		base.addColorStop(1, 'rgb(26,12,66)');
+		sc.fillStyle = base;
+		sc.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
+		// the galaxy: tilted, flattened, turning; each arm a stroke that thins outwards
+		const gx = -R * 0.2;
+		const gy = R * 0.14;
+		const tilt = -0.35;
+		const ct = Math.cos(tilt);
+		const st = Math.sin(tilt);
+		const at = (a: number, r: number): [number, number] => {
+			const x = Math.cos(a) * r;
+			const y = Math.sin(a) * r * 0.55;
+			return [gx + x * ct - y * st, gy + x * st + y * ct];
+		};
+		const bright = 1 + 0.6 * p;
+		sc.lineCap = 'round';
+		ARMS.forEach(([broad, lane], arm) => {
+			const steps = 22;
+			for (let pass = 0; pass < 2; pass++) {
+				for (let i = 0; i < steps; i++) {
+					const s0 = i / steps;
+					const s1 = (i + 1) / steps;
+					const [x0, y0] = at(this.turn + arm * Math.PI + s0 * 3.4, R * (0.06 + 0.7 * s0));
+					const [x1, y1] = at(this.turn + arm * Math.PI + s1 * 3.4, R * (0.06 + 0.7 * s1));
+					const alpha = pass === 0 ? 0.42 * (1 - s0 * 0.5) * bright : 0.8 * (1 - s0 * 0.7) * bright;
+					sc.strokeStyle = `rgba(${pass === 0 ? broad : lane},${Math.min(1, alpha)})`;
+					sc.lineWidth = pass === 0 ? R * (0.24 * (1 - s0) + 0.06) : R * (0.07 * (1 - s0) + 0.02);
+					sc.beginPath();
+					sc.moveTo(x0, y0);
+					sc.lineTo(x1, y1);
+					sc.stroke();
+				}
+			}
+		});
+		const coreR = R * 0.32 * (1 + 0.5 * p);
+		const core = sc.createRadialGradient(gx, gy, 0, gx, gy, coreR);
+		core.addColorStop(0, 'rgba(255,250,232,1)');
+		core.addColorStop(0.3, 'rgba(255,214,240,.8)');
+		core.addColorStop(1, 'rgba(255,170,230,0)');
+		sc.fillStyle = core;
+		sc.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
+		// stars, turning slowly with the galaxy, twinkling
+		for (let i = 0; i < 10; i++) {
+			const a = hash(i, 21) * TAU + this.turn * 0.3;
+			const r = R * (0.2 + 0.7 * hash(i, 22));
+			const x = Math.cos(a) * r;
+			const y = Math.sin(a) * r;
+			const tw = 0.35 + 0.65 * Math.max(0, Math.sin(t * (2 + hash(i, 23) * 3) + i * 1.9));
+			sc.fillStyle = `rgba(255,255,255,${tw})`;
+			if (i < 2) {
+				starPath(sc, x, y, R * 0.13 * tw, R * 0.03);
+				sc.fill();
+			} else {
+				sc.beginPath();
+				sc.arc(x, y, Math.max(0.5, R * (0.025 + 0.025 * hash(i, 24))), 0, TAU);
+				sc.fill();
+			}
+		}
+		// a pale cloud round her eye, so the ink of the lashes reads on deep space
+		const face = sc.createRadialGradient(R * 0.3, -R * 0.45, 0, R * 0.3, -R * 0.45, R * 0.5);
+		face.addColorStop(0, 'rgba(255,176,232,.62)');
+		face.addColorStop(1, 'rgba(255,150,220,0)');
+		sc.fillStyle = face;
+		sc.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
+		// the atmosphere at her limb
+		const limb = sc.createRadialGradient(0, 0, R * 0.7, 0, 0, R);
+		limb.addColorStop(0, 'rgba(150,190,255,0)');
+		limb.addColorStop(0.75, `rgba(176,160,255,${0.5 + 0.2 * p})`);
+		limb.addColorStop(1, 'rgba(236,206,255,.95)');
+		sc.fillStyle = limb;
+		sc.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
+	}
+
+	/** Her galaxy's two arms wound round the ball, turning with the roll. */
 	protected paintBallPattern(ctx: CanvasRenderingContext2D, R: number): void {
 		ctx.lineCap = 'round';
 		ctx.lineJoin = 'round';
-		for (let k = 0; k < 2; k++) {
+		ARMS.forEach(([broad, lane], k) => {
 			const a0 = k * Math.PI;
-			const point = (t: number) => {
-				const r = R * (0.1 + 1.0 * t);
-				const a = a0 + t * 2.6;
-				return { x: Math.cos(a) * r, y: Math.sin(a) * r };
-			};
-			const ribbon = () => {
+			const arm = () => {
 				ctx.beginPath();
 				for (let i = 0; i <= 28; i++) {
-					const q = point(i / 28);
-					if (i === 0) ctx.moveTo(q.x, q.y);
-					else ctx.lineTo(q.x, q.y);
+					const s = i / 28;
+					const r = R * (0.08 + 1.0 * s);
+					const a = a0 + s * 2.6;
+					if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+					else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
 				}
 			};
-			ribbon();
+			arm();
 			ctx.strokeStyle = css(INK, 0.9);
-			ctx.lineWidth = R * 0.34;
+			ctx.lineWidth = R * 0.32;
 			ctx.stroke();
-			ribbon();
-			ctx.strokeStyle = css(this.tint.bow);
-			ctx.lineWidth = R * 0.24;
+			arm();
+			ctx.strokeStyle = `rgb(${broad})`;
+			ctx.lineWidth = R * 0.22;
 			ctx.stroke();
-			ctx.fillStyle = 'rgba(255,255,255,0.95)';
-			for (const t of [0.3, 0.5, 0.7, 0.9]) {
-				const q = point(t);
-				ctx.beginPath();
-				ctx.arc(q.x, q.y, R * 0.045, 0, Math.PI * 2);
-				ctx.fill();
-			}
-		}
+			arm();
+			ctx.strokeStyle = `rgb(${lane})`;
+			ctx.lineWidth = R * 0.07;
+			ctx.stroke();
+		});
+		const core = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.35);
+		core.addColorStop(0, 'rgba(255,250,232,1)');
+		core.addColorStop(1, 'rgba(255,170,230,0)');
+		ctx.fillStyle = core;
+		ctx.fillRect(-R * 0.4, -R * 0.4, R * 0.8, R * 0.8);
 	}
 
 	/** Twinkles and little hearts circling the ball. */
@@ -419,7 +429,7 @@ export class MsPacmanHero extends Hero {
 
 	/** Blush: three short slanted strokes on the cheek. */
 	private drawBlush(ctx: CanvasRenderingContext2D, R: number, ex: number, ey: number): void {
-		ctx.strokeStyle = css(this.tint.blush, 0.9);
+		ctx.strokeStyle = css(BLUSH, 0.9);
 		ctx.lineWidth = Math.max(0.8, R * 0.026);
 		ctx.lineCap = 'round';
 		ctx.beginPath();
@@ -438,7 +448,7 @@ export class MsPacmanHero extends Hero {
 	 * a brow above. It blinks, squints happily after a bite, lifts the brow and puts a star in
 	 * its glint when she is powered, and stays shut while she dies.
 	 */
-	protected drawEye(ctx: CanvasRenderingContext2D, R: number, p: number): void {
+	private drawEye(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		// above the upper lip even with the mouth wide open, clear of the bow; at tile size
 		// (a small radius) the eye grows a little so it still reads
 		const lod = R < 20 ? 1.25 : 1;
@@ -555,8 +565,8 @@ export class MsPacmanHero extends Hero {
 	}
 
 	/**
-	 * Red lipstick on the ends of the lips and a little fang on the upper one; the lips
-	 * themselves are a thin ink line.
+	 * Her lips: the ink line and the little fang under the upper one; no lipstick (the owner's
+	 * call: the galaxy is colour enough).
 	 */
 	protected drawLips(
 		ctx: CanvasRenderingContext2D,
@@ -569,21 +579,6 @@ export class MsPacmanHero extends Hero {
 		ctx.lineWidth = R * 0.05;
 		lips();
 		ctx.stroke();
-		const hot = this.power;
-		ctx.strokeStyle = css(mix(this.tint.lipstick, [244, 52, 120], hot));
-		ctx.lineWidth = R * 0.1;
-		ctx.lineCap = 'butt';
-		const bar = (to: { x: number; y: number }) => {
-			const fx = ends.A.x + (to.x - ends.A.x) * 0.72;
-			const fy = ends.A.y + (to.y - ends.A.y) * 0.72;
-			ctx.beginPath();
-			ctx.moveTo(fx, fy);
-			ctx.lineTo(ends.A.x + (to.x - ends.A.x) * 0.99, ends.A.y + (to.y - ends.A.y) * 0.99);
-			ctx.stroke();
-		};
-		if (ends.U.y < -R * 0.15) bar(ends.U);
-		if (ends.Dn.y > R * 0.15) bar(ends.Dn);
-		// the fang, under the upper lip near its end
 		if (ends.U.y < -R * 0.3) {
 			const fx = ends.A.x + (ends.U.x - ends.A.x) * 0.66;
 			const fy = ends.A.y + (ends.U.y - ends.A.y) * 0.66;
@@ -598,10 +593,9 @@ export class MsPacmanHero extends Hero {
 			ctx.fill();
 			ctx.stroke();
 		}
-		ctx.lineCap = 'round';
 	}
 
-	/** The bow swaying on its spring (glowing when powered), her eye, a star on the highlight. */
+	/** The accretion ring's near half (the rage), the bow, her eye, a star on the highlight. */
 	protected drawWorn(
 		ctx: CanvasRenderingContext2D,
 		R: number,
@@ -609,48 +603,25 @@ export class MsPacmanHero extends Hero {
 		lx: number,
 		ly: number
 	): void {
-		this.drawBow(ctx, R, p);
+		this.ring(ctx, R, p, false);
+		ctx.save();
+		ctx.translate(Math.cos(BOW_ANGLE) * R * BOW_DISTANCE, Math.sin(BOW_ANGLE) * R * BOW_DISTANCE);
+		ctx.rotate(BOW_ANGLE + Math.PI / 2 + this.bow.value);
+		drawNebulaBow(ctx, R, this.time, p);
+		ctx.restore();
 		// the eye last: on her face, in front of the bow
 		this.drawEye(ctx, R, p);
 		drawStarGlint(ctx, R, p, lx, ly);
 	}
 
-	/** The bow on its knot, swaying on its spring (glowing when powered). */
-	protected drawBow(ctx: CanvasRenderingContext2D, R: number, p: number): void {
-		const dpr = Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
-		const turn = this.bowTurn();
-		const scale = 1 + 0.1 * p;
-		ctx.save();
-		ctx.translate(Math.cos(BOW_ANGLE) * R * BOW_DISTANCE, Math.sin(BOW_ANGLE) * R * BOW_DISTANCE);
-		if (p > 0.01) {
-			// the bow glows: a soft golden halo behind it
-			ctx.globalCompositeOperation = 'lighter';
-			ctx.globalAlpha = 0.5 * p;
-			ctx.drawImage(glow([255, 214, 120]), -R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
-			ctx.globalAlpha = 1;
-			ctx.globalCompositeOperation = 'source-over';
-		}
-		ctx.rotate(turn);
-		ctx.scale(scale, scale);
-		const half = R * BOW_SPAN;
-		ctx.drawImage(paintedBow(R * dpr, this.season, this.tint), -half, -half, half * 2, half * 2);
-		ctx.restore();
-	}
-
-	/** The bow's turn on the head, radians: its place on the outline plus the sway. */
-	protected bowTurn(): number {
-		return BOW_ANGLE + Math.PI / 2 + this.bow.value;
-	}
-
-	/** Dust, the season's own things and manga twinkles off the back; hearts and stars on bursts. */
+	/** Stars for a trail (fire and stars in the rage); hearts and stars on bursts. */
 	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
+		const r = this.random();
 		if (moment === 'trail') {
-			const r = this.random();
 			if (this.ball) return r < 0.5 ? 'heart' : 'star';
-			if (this.power > 0.5) return r < 0.5 ? 'ember' : 'star';
-			return r < 0.5 ? SEASON_LOOKS[this.season].particle : 'star';
+			return this.power > 0.5 && r < 0.4 ? 'ember' : 'star';
 		}
-		return this.random() < 0.45 ? 'heart' : 'star';
+		return r < 0.45 ? 'heart' : 'star';
 	}
 
 	protected sizeFor(kind: ParticleKind): number {
@@ -667,11 +638,11 @@ export class MsPacmanHero extends Hero {
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
 		if (e.kind === 'ember' && e.hot) {
-			drawFireSpark(ctx, e, s, [255, 140, 176], [255, 224, 120]);
+			drawFireSpark(ctx, e, s, [255, 140, 220], [255, 236, 250]);
 			return;
 		}
 		if (e.kind === 'flame') {
-			drawFlameDrop(ctx, e, [255, 140, 176], [255, 224, 120]);
+			drawFlameDrop(ctx, e, [200, 110, 255], [255, 220, 250]);
 			return;
 		}
 		if (drawSeasonParticle(ctx, e, a, s, this.season)) return;
@@ -681,8 +652,8 @@ export class MsPacmanHero extends Hero {
 		ctx.lineJoin = 'round';
 		if (e.kind === 'heart') {
 			const h = s * 1.6;
-			ctx.fillStyle = 'rgba(255,72,130,1)';
-			ctx.strokeStyle = css([120, 20, 60], 0.9);
+			ctx.fillStyle = 'rgba(255,90,200,1)';
+			ctx.strokeStyle = css(INK, 0.9);
 			ctx.lineWidth = Math.max(0.8, h * 0.18);
 			ctx.beginPath();
 			ctx.moveTo(0, h * 0.9);
@@ -691,10 +662,10 @@ export class MsPacmanHero extends Hero {
 			ctx.fill();
 			ctx.stroke();
 		} else {
-			// a manga twinkle: white (gold when she is powered), thinly outlined
+			// a manga twinkle: white (pink-gold in the rage), thinly outlined
 			ctx.rotate(e.spin * (e.max - e.life));
-			ctx.fillStyle = this.power > 0.5 ? css([255, 226, 110]) : 'rgba(255,252,255,1)';
-			ctx.strokeStyle = css([110, 26, 76], 0.85);
+			ctx.fillStyle = this.power > 0.5 ? css([255, 214, 246]) : 'rgba(255,252,255,1)';
+			ctx.strokeStyle = css([60, 20, 100], 0.85);
 			ctx.lineWidth = Math.max(0.8, s * 0.14);
 			starPath(ctx, 0, 0, s * 1.7, s * 0.4);
 			ctx.fill();
@@ -703,4 +674,13 @@ export class MsPacmanHero extends Hero {
 		ctx.restore();
 		ctx.globalAlpha = 1;
 	}
+}
+
+/** A repeatable random number in 0..1 for (a, b). */
+function hash(a: number, b = 0): number {
+	let h = Math.imul(a | 0, 0x27d4eb2d) ^ Math.imul((b | 0) + 0x9e3779b9, 0x85ebca6b);
+	h ^= h >>> 15;
+	h = Math.imul(h, 0x2c1b3c6d);
+	h ^= h >>> 12;
+	return ((h >>> 0) % 100000) / 100000;
 }

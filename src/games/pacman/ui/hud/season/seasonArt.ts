@@ -239,15 +239,43 @@ export function knobArt(t: SeasonTheme): string {
 	return `<circle r="23" fill="${t.mid}" stroke="${t.ink}" stroke-width="4"/><path d="M-17 -8 A19 19 0 0 1 8 -17" fill="none" stroke="${t.light}" stroke-width="4" stroke-linecap="round" opacity=".85"/>`;
 }
 
-/** Icons drawn at the origin, roughly 40 units across. */
-export function heroArt(ms: boolean): string {
-	let s =
-		'<circle r="20" fill="#ffc61a" stroke="#2a1a05" stroke-width="3.4"/><path d="M0 0 L19 -9 A21 21 0 0 1 19 9 Z" fill="#3a1d05" stroke="#2a1a05" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="-7" cy="-9" rx="8" ry="5" fill="#fff" opacity=".6" transform="rotate(-25 -7 -9)"/>';
-	if (ms) {
-		s +=
-			'<path d="M-3 -19 L-14 -27 L-14 -12Z M-3 -19 L8 -27 L8 -12Z" fill="#e0243c" stroke="#3a0a10" stroke-width="2.4" stroke-linejoin="round"/><circle cx="-3" cy="-19" r="4" fill="#ff6a8a" stroke="#3a0a10" stroke-width="2"/>';
+/** Twelve rays of a sun in splendour round the origin: straight and short in turn, two tones, ink. */
+function sunRays(r: number, long: number, short: number, ink: string, w: number): string {
+	let s = '';
+	for (let i = 0; i < 12; i += 1) {
+		const a = (i / 12) * Math.PI * 2;
+		const h = (Math.PI / 12) * (i % 2 === 0 ? 0.92 : 0.8);
+		const len = i % 2 === 0 ? long : short;
+		const p = (ang: number, rr: number) =>
+			`${(Math.cos(ang) * rr).toFixed(2)} ${(Math.sin(ang) * rr).toFixed(2)}`;
+		s += `<path d="M${p(a - h, r)} L${p(a, r + len)} L${p(a + h, r)}Z" fill="#ffaa24" stroke="${ink}" stroke-width="${w}" stroke-linejoin="round"/>`;
+		s += `<path d="M${p(a - h * 0.5, r)} L${p(a, r + len * 0.55)} L${p(a + h * 0.5, r)}Z" fill="#ffea82"/>`;
 	}
 	return s;
+}
+
+/** Icons drawn at the origin, roughly 40 units across: the sun (Pac-Man), the galaxy (Ms. Pac-Man). */
+export function heroArt(ms: boolean): string {
+	if (!ms) {
+		return (
+			sunRays(15, 8, 6, '#601808', 2.4) +
+			'<circle r="16" fill="#de4816" stroke="#601808" stroke-width="3"/><circle r="13.6" fill="#fa7e1e"/><circle r="10.6" fill="#ffb836"/><circle r="7" cx="-1" fill="#ffe278"/><circle r="3.6" cx="-1" fill="#fffae0"/>' +
+			'<path d="M1 0 L17 -8 L17 8 Z" fill="#8c220c" stroke="#601808" stroke-width="2.2" stroke-linejoin="round"/>' +
+			'<path d="M-1 -12 L5 -10" stroke="#601808" stroke-width="2" stroke-linecap="round"/><circle cx="2.4" cy="-7.4" r="1.7" fill="#601808"/>'
+		);
+	}
+	const lobe = (sx: number, fill: string) =>
+		`<path d="M0 0 Q${sx * 4.4} -7.4 ${sx * 11.2} -6.8 Q${sx * 15.3} -0.7 ${sx * 11.5} 4.9 Q${sx * 4.6} 4.6 0 0Z" fill="${fill}" stroke="#220a3a" stroke-width="1.6" stroke-linejoin="round"/>`;
+	return (
+		'<circle r="18" fill="#2c1462" stroke="#16062c" stroke-width="3.2"/>' +
+		'<circle r="15.6" fill="none" stroke="#c8a8ff" stroke-width="2.6" opacity=".75"/>' +
+		'<ellipse cx="2" cy="-7" rx="7" ry="5" fill="#ffb0e8" opacity=".45"/>' +
+		'<g transform="translate(-4 3) rotate(-20)"><path d="M0 0 C4 -2 8 0 9 4" fill="none" stroke="#ff7ad6" stroke-width="3" stroke-linecap="round"/><path d="M0 0 C-4 2 -8 0 -9 -4" fill="none" stroke="#7aa2ff" stroke-width="3" stroke-linecap="round"/><circle r="3" fill="#fff6e8"/></g>' +
+		'<circle cx="-11" cy="-4" r="0.9" fill="#fff"/><circle cx="-7" cy="11" r="0.8" fill="#fff"/><circle cx="6" cy="10" r="0.9" fill="#fff"/>' +
+		'<path d="M1 0 L18 -8 L18 8 Z" fill="#10041e" stroke="#16062c" stroke-width="2.2" stroke-linejoin="round"/>' +
+		'<ellipse cx="4" cy="-8" rx="2.6" ry="3.4" fill="#fff"/><ellipse cx="4.8" cy="-7.8" rx="1.5" ry="2.1" fill="#3a1060"/><path d="M1 -11.5 Q4 -13 7 -11" fill="none" stroke="#16062c" stroke-width="1.4" stroke-linecap="round"/>' +
+		`<g transform="translate(-6 -16) rotate(-25)">${lobe(-1, '#c25ae8')}${lobe(1, '#8a7cff')}<path d="M0 -4.2 L1 -1 L4.2 0 L1 1 L0 4.2 L-1 1 L-4.2 0 L-1 -1Z" fill="#fff" stroke="#220a3a" stroke-width=".8"/></g>`
+	);
 }
 
 export const ENERGIZER_ART: Record<SeasonTheme['energizer'], string> = {

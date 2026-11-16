@@ -1,55 +1,79 @@
-// Pac-Man, the hero: the owner's "Shonen" mock-up (anime direction). A fighting-game hero in the
-// maze: cel-shaded gold in hard tone bands with a white highlight, a thick ink outline that is
-// heavier in the shadow, a minimal eye (a dot under a frowning brow), a wide mouth with a dark
-// cavity (no tongue). Behind him:
-// tapered speed lines in the season's colour, cream dust puffs and the season's own little
-// things (petals, sparks, leaves, snowflakes). The energizer splits the palette (cream, gold,
-// orange-red), cracks open ink-outlined "ki" flames behind him (never longer than 1.2 body
-// radii, their length trembling) and puts a star on the highlight. The machinery (acting,
-// bites, spring, energizer beat) is the shared Hero.
+// Pac-Man, the hero: a sun (the owner's pick of the `elements` prototype, variant 2). Self-lit,
+// so the key light never shades him: hard radial bands from a white heart to a red limb, their
+// edges boiling; round him a corona as a sun in splendour (twelve turning rays, straight and
+// wavy in turn, two tones under one ink line) that the run stretches back into a solar wind,
+// and a warm glow; glints of sunlight for a trail. The rage (the energizer) is a flare: he
+// burns white-hot, the corona grows and spins fast, long streaks of light flicker between its
+// rays and the trail is drops of fire. His minimal eye (a dot under a frowning brow). The
+// machinery (mouth, acting, bites, spring, the energizer's beat, the ball, the death) is the
+// shared Hero; the body's paint is his.
 import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from './Hero';
-import { Hero, css, mix } from './Hero';
-import { SEASON_LOOKS } from './heroSeasons';
+import { Hero, css, glow, mix } from './Hero';
+import type { RGB } from './heroSeasons';
 import {
 	INK,
-	drawKiFlames,
-	drawSeasonParticle,
 	drawFireSpark,
 	drawFlameDrop,
 	drawStarGlint,
 	particleLift,
 	particleSwirl,
-	particleSize
+	particleSize,
+	starPath
 } from './heroFx';
 
+const TAU = Math.PI * 2;
+
+/** Under his own paint (only the ball and the flash show it); the ink is his outline. */
 const CALM: Palette = {
-	light: [236, 213, 58],
-	mid: [230, 160, 34],
-	shadow: [186, 88, 24],
-	deep: [120, 50, 16],
-	bounce: [234, 142, 66],
-	ink: [38, 14, 12],
-	highlight: [255, 255, 255],
-	rim: [255, 238, 176]
+	light: [255, 240, 170],
+	mid: [255, 190, 70],
+	shadow: [240, 120, 30],
+	deep: [150, 40, 10],
+	bounce: [255, 140, 40],
+	ink: [96, 24, 8],
+	highlight: [255, 255, 240],
+	rim: [255, 220, 150]
 };
 const AWOKEN: Palette = {
-	light: [236, 232, 198],
-	mid: [236, 186, 58],
-	shadow: [226, 72, 34],
-	deep: [150, 40, 20],
-	bounce: [234, 134, 76],
-	ink: [38, 14, 12],
+	light: [255, 252, 224],
+	mid: [255, 222, 120],
+	shadow: [255, 160, 50],
+	deep: [190, 60, 14],
+	bounce: [255, 176, 70],
+	ink: [96, 24, 8],
 	highlight: [255, 255, 255],
-	rim: [255, 238, 176]
+	rim: [255, 236, 190]
 };
 
 const INSIDE: MouthInside = {
-	mid: [112, 18, 40],
-	deep: [70, 8, 28]
+	mid: [140, 34, 12],
+	deep: [80, 14, 6]
 };
 
+/** The sun's bands, outside in: radius (body radii), calm and white-hot colours; the limb first. */
+const BANDS: ReadonlyArray<readonly [number, RGB, RGB]> = [
+	[1.2, [222, 72, 22], [255, 132, 40]],
+	[0.9, [250, 126, 30], [255, 184, 64]],
+	[0.7, [255, 184, 54], [255, 226, 130]],
+	[0.47, [255, 226, 120], [255, 246, 200]],
+	[0.24, [255, 250, 224], [255, 255, 252]]
+];
+
+const CORONA_INK = 'rgb(96,24,8)';
+const CORONA_OUTER: readonly [RGB, RGB] = [
+	[255, 170, 36],
+	[255, 226, 120]
+];
+const CORONA_INNER: readonly [RGB, RGB] = [
+	[255, 234, 130],
+	[255, 255, 236]
+];
+/** The corona's turn, radians per second, calm and in the rage. */
+const SPIN = 0.5;
+const SPIN_RAGE = 3;
+
 export const PACMAN_DESIGN: HeroDesign = {
-	id: 'pacman',
+	id: 'pacman-sun',
 	calm: CALM,
 	awoken: AWOKEN,
 	hinge: 0.08,
@@ -59,16 +83,176 @@ export const PACMAN_DESIGN: HeroDesign = {
 	grinRest: 0.2,
 	grinRun: 0.08,
 	chompRate: 4.2,
-	flare: [255, 232, 170],
-	death: 'open'
+	flare: [255, 220, 140],
+	death: 'open',
+	// lighter tone bands (the ball's cel), and bigger in the rage
+	bands: [0.1, 0.3, 0.64],
+	powerScale: 1.22
 };
 
 export class PacmanHero extends Hero {
 	protected readonly design: HeroDesign = PACMAN_DESIGN;
+	/** 0 standing, 1 running: the solar wind. */
+	private sweep = 0;
+	/** The corona's turn, radians (it speeds up in the rage). */
+	private spin = 0;
 
-	/** Ink-outlined ki flames around the back of the body: orange, a yellow core, at most 1.2 R. */
+	protected afterUpdate(dt: number): void {
+		this.sweep += ((this.moving ? 1 : 0) - this.sweep) * Math.min(1, dt * 5);
+		this.spin += dt * (SPIN + (SPIN_RAGE - SPIN) * this.power);
+	}
+
+	protected resetLooks(): void {
+		this.sweep = 0;
+		this.spin = 0;
+	}
+
+	/** A warm glow, then the corona. */
+	protected drawAura(ctx: CanvasRenderingContext2D, R: number, p: number): void {
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		ctx.globalAlpha = 0.3 + 0.2 * p + 0.05 * Math.sin(this.time * 7);
+		const g = R * (2.2 + 0.6 * p);
+		ctx.drawImage(glow([255, 150, 40]), -g, -g, g * 2, g * 2);
+		ctx.restore();
+		this.corona(ctx, R, p);
+	}
+
+	/**
+	 * The corona as a sun in splendour: twelve rays turning round him, straight and wavy in
+	 * turn, two tones under one ink line. The run stretches the rays on his back and bends them
+	 * back into a solar wind, and shortens the ones ahead; the rage makes them longer and hotter.
+	 */
+	private corona(ctx: CanvasRenderingContext2D, R: number, p: number): void {
+		const t = this.time;
+		const w = this.sweep;
+		const N = 12;
+		const shapes: Array<(inset: number) => void> = [];
+		for (let i = 0; i < N; i++) {
+			const a = this.spin + (i / N) * TAU;
+			const straight = i % 2 === 0;
+			const ca = Math.cos(a);
+			const sa = Math.sin(a);
+			const back = Math.max(0, -ca);
+			const front = Math.max(0, ca);
+			let len = R * (straight ? 0.42 : 0.32) * (0.92 + 0.08 * Math.sin(t * (7 + 6 * p) + i * 1.3));
+			len *= (1 + 0.55 * p) * (1 + 1.3 * w * back * back) * (1 - 0.55 * w * front);
+			const half = (TAU / N) * (straight ? 0.46 : 0.4);
+			const base = R * 0.97;
+			const tipR = R * 1.02 + len;
+			const tx = ca * tipR - w * len * 0.5 * (1 - back);
+			const ty = sa * tipR;
+			const nx = -sa;
+			const ny = ca;
+			const sway = straight ? 0 : Math.sin(t * 6 + i) * 0.2;
+			shapes.push((inset) => {
+				const h = half * (1 - inset * 0.55);
+				const k = 1 - inset * 0.5;
+				const ex = ca * base + (tx - ca * base) * k;
+				const ey = sa * base + (ty - sa * base) * k;
+				const b0x = Math.cos(a - h) * base;
+				const b0y = Math.sin(a - h) * base;
+				const b1x = Math.cos(a + h) * base;
+				const b1y = Math.sin(a + h) * base;
+				const W = base * h;
+				const along = (x0: number, y0: number, f: number, off: number) =>
+					[x0 + (ex - x0) * f + nx * off, y0 + (ey - y0) * f + ny * off] as const;
+				ctx.moveTo(b0x, b0y);
+				if (straight) {
+					const [m0x, m0y] = along(b0x, b0y, 0.5, W * 0.12);
+					const [m1x, m1y] = along(b1x, b1y, 0.5, -W * 0.12);
+					ctx.quadraticCurveTo(m0x, m0y, ex, ey);
+					ctx.quadraticCurveTo(m1x, m1y, b1x, b1y);
+				} else {
+					// a wavy ray: both edges swing the same way, a flame laid along the ray
+					const o = W * (0.8 + sway);
+					const [c0x, c0y] = along(b0x, b0y, 0.33, o);
+					const [c1x, c1y] = along(b0x, b0y, 0.66, -o);
+					const [d1x, d1y] = along(b1x, b1y, 0.66, -o);
+					const [d0x, d0y] = along(b1x, b1y, 0.33, o);
+					ctx.bezierCurveTo(c0x, c0y, c1x, c1y, ex, ey);
+					ctx.bezierCurveTo(d1x, d1y, d0x, d0y, b1x, b1y);
+				}
+				ctx.closePath();
+			});
+		}
+		const all = (inset: number) => {
+			ctx.beginPath();
+			for (const s of shapes) s(inset);
+		};
+		ctx.save();
+		ctx.lineJoin = 'round';
+		all(0);
+		ctx.strokeStyle = CORONA_INK;
+		ctx.lineWidth = R * 0.12;
+		ctx.stroke();
+		all(0);
+		ctx.fillStyle = css(mix(CORONA_OUTER[0], CORONA_OUTER[1], p));
+		ctx.fill();
+		all(0.45);
+		ctx.fillStyle = css(mix(CORONA_INNER[0], CORONA_INNER[1], p));
+		ctx.fill();
+		ctx.restore();
+	}
+
+	/**
+	 * The flare (the rage, `k` its look times the end-of-power pulse): long streaks of white-gold
+	 * light flickering out between the corona's rays.
+	 */
 	protected drawBehind(ctx: CanvasRenderingContext2D, R: number, k: number): void {
-		drawKiFlames(ctx, R, k, this.time, { outer: [255, 132, 28], inner: [255, 228, 98], ink: INK });
+		const t = this.time;
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		ctx.lineCap = 'round';
+		for (let i = 0; i < 12; i++) {
+			const a = this.spin * 0.6 + ((i + 0.5) / 12) * TAU;
+			const flick = 0.5 + 0.5 * Math.sin(t * (13 + (i % 4) * 3) + i * 2.1);
+			const len = R * (0.9 + 0.7 * flick) * k;
+			if (len < R * 0.05) continue;
+			const g = ctx.createLinearGradient(
+				Math.cos(a) * R,
+				Math.sin(a) * R,
+				Math.cos(a) * (R + len),
+				Math.sin(a) * (R + len)
+			);
+			g.addColorStop(0, `rgba(255,240,180,${0.8 * k})`);
+			g.addColorStop(1, 'rgba(255,190,80,0)');
+			ctx.strokeStyle = g;
+			ctx.lineWidth = R * (0.08 + 0.06 * flick);
+			ctx.beginPath();
+			ctx.moveTo(Math.cos(a) * R * 0.95, Math.sin(a) * R * 0.95);
+			ctx.lineTo(Math.cos(a) * (R + len), Math.sin(a) * (R + len));
+			ctx.stroke();
+		}
+		ctx.restore();
+	}
+
+	/** His own light: radial bands from a white heart to a red limb, boiling; white-hot in the rage. */
+	protected decorate(sc: CanvasRenderingContext2D, R: number, p: number): void {
+		const t = this.time;
+		BANDS.forEach(([r, calm, hot], i) => {
+			const last = i === BANDS.length - 1;
+			const breath = last ? (1 + 0.5 * p) * (1 + 0.06 * Math.sin(t * (5 + 6 * p))) : 1;
+			const boil = 1 + 0.6 * p;
+			sc.fillStyle = css(mix(calm, hot, p));
+			sc.beginPath();
+			for (let j = 0; j <= 48; j++) {
+				const a = (j / 48) * TAU;
+				const rr =
+					R *
+					r *
+					breath *
+					(1 +
+						boil * 0.045 * Math.sin(5 * a + t * 2.2 + i) +
+						boil * 0.03 * Math.sin(9 * a - t * 3.1 + i * 2));
+				const x = Math.cos(a) * rr - R * 0.04;
+				const y = Math.sin(a) * rr;
+				if (j === 0) sc.moveTo(x, y);
+				else sc.lineTo(x, y);
+			}
+			sc.closePath();
+			sc.fill();
+		});
 	}
 
 	/** Three fire swirls on the gold ball (white-hot when powered), turning with the roll. */
@@ -80,9 +264,9 @@ export class PacmanHero extends Hero {
 			const swirl = () => {
 				ctx.beginPath();
 				for (let i = 0; i <= 24; i++) {
-					const t = i / 24;
-					const r = R * (0.1 + 1.0 * t);
-					const a = a0 + t * 2.3;
+					const s = i / 24;
+					const r = R * (0.1 + 1.0 * s);
+					const a = a0 + s * 2.3;
 					if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
 					else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
 				}
@@ -123,8 +307,8 @@ export class PacmanHero extends Hero {
 					len: R * 0.95,
 					ang: a + Math.PI / 2
 				},
-				[255, 132, 28],
-				[255, 228, 98]
+				[255, 150, 40],
+				[255, 236, 150]
 			);
 		}
 	}
@@ -149,7 +333,7 @@ export class PacmanHero extends Hero {
 	private drawEye(ctx: CanvasRenderingContext2D, R: number): void {
 		const ex = R * 0.16;
 		const ey = -R * 0.5;
-		const ink = css(PACMAN_DESIGN.calm.ink);
+		const ink = css(CALM.ink);
 		ctx.strokeStyle = ink;
 		ctx.lineCap = 'round';
 		// the brow: short, slanting down to the front, clear of the dot so the two never merge
@@ -170,11 +354,9 @@ export class PacmanHero extends Hero {
 		ctx.fill();
 	}
 
-	/** The season's own little things off the back and on bursts (no dust: it read as gas). */
+	/** Glints of sunlight for a trail; fire in the rage and rolled into a ball. */
 	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
-		const own = SEASON_LOOKS[this.season].particle;
-		// powered or rolled into a ball, the trail is fire; otherwise the season's own things
-		return moment === 'trail' && (this.power > 0.5 || this.ball) ? 'ember' : own;
+		return moment === 'trail' && (this.power > 0.5 || this.ball) ? 'ember' : 'spark';
 	}
 
 	protected sizeFor(kind: ParticleKind): number {
@@ -190,14 +372,26 @@ export class PacmanHero extends Hero {
 	}
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
-		if (e.kind === 'ember' && e.hot) {
-			drawFireSpark(ctx, e, s, [255, 132, 28], [255, 228, 98]);
+		if (e.kind === 'ember') {
+			drawFireSpark(ctx, e, s, [255, 150, 40], [255, 236, 150]);
 			return;
 		}
 		if (e.kind === 'flame') {
-			drawFlameDrop(ctx, e, [255, 132, 28], [255, 228, 98]);
+			drawFlameDrop(ctx, e, [255, 150, 40], [255, 236, 150]);
 			return;
 		}
-		drawSeasonParticle(ctx, e, a, s, this.season);
+		// a glint of sunlight: a small gold star in a warm glow, shrinking as it fades
+		const u = e.life / e.max;
+		const r = s * (0.25 + 0.45 * u);
+		ctx.save();
+		ctx.globalAlpha = a * 0.6;
+		ctx.globalCompositeOperation = 'lighter';
+		ctx.drawImage(glow([255, 160, 50]), e.x - r * 1.8, e.y - r * 1.8, r * 3.6, r * 3.6);
+		ctx.globalCompositeOperation = 'source-over';
+		ctx.globalAlpha = a;
+		ctx.fillStyle = 'rgb(255,232,150)';
+		starPath(ctx, e.x, e.y, r * 1.4, r * 0.32, e.spin * (e.max - e.life));
+		ctx.fill();
+		ctx.restore();
 	}
 }
