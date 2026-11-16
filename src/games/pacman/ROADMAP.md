@@ -68,10 +68,28 @@ all (see Later).
    landscape). Left for a real phone: iOS Safari's audio unlock and pinch, how the swipe's length
    (`swipeThreshold`) and the pad's size feel under a thumb, the safe areas of a notched screen,
    and the Auto graphics tier there.
-4. **The heroes' look** (Opus, prototype first). The owner does not like the heroes' design
-   (both, not only Ms. Pac-Man); what exactly to change is to be asked first (silhouette,
-   proportions, eye, outline). Kept: the feel (every idea of the `feel` prototype,
-   `GAME_FEEL`), no tongue, the original trail, Ms. Pac-Man's bow. The mask's ghost form (step 2) follows the heroes: retouch its transition frames after the redesign.
+4. **The heroes' redesign** (Opus, prototype first). The owner likes the heroes but they lack
+   force: bulky in the maze (a radius of 0.39 of a tile, 0.78 of the corridor), no rage in the
+   energizer (only a palette and flames), the moves feel thick though the render is clean. The
+   owner wants a full redesign: a nimble form (smaller, ~0.31 of a tile, not necessarily a pure
+   ball) and a true rage transformation in the energizer / overdrive. Stages:
+   1. **The `heroes` prototype (built, awaiting the owner's pick;** `node prototypes/pacman/build.mjs
+heroes`, scenes `?scene=sheet|maze|lineup`, `&hero=ms`, `&season=`): three directions, both
+      heroes, each with the nimble form, the rage form and the turn between them (a burst):
+      A, a ninja ball (a headband whose tails show the speed; in rage they burn; hers: the bow's
+      ribbons, a spiral eye); B, a jelly (stretches running, squashes turning; in rage hot amber
+      with spikes, teeth and a glowing core; hers pearl with hypnotic rings); C, a predator (the
+      ghosts are small animals, the hero hunts them: a cub with ears and a tail; in rage a beast
+      with a spiked mane and a maw; hers a fox, in her overdrive a three-tailed kitsune). The
+      owner may pick one or a mix.
+   2. The feel, whatever the art: the size, real corner cutting in `PlayerService` (a turn
+      pressed early takes the corner on the diagonal; the ghosts cannot), the rage's dash
+      (+20-25 % fading to +10 %) and its bite (a stronger hit-stop, the ghost's crunch, the chain
+      200-1600 rising); the balance bot checks the ramp after.
+   3. The chosen art in detail: turning, chewing, the death, the turn into rage and back, Ms.
+      Pac-Man; then all that hangs on the old heroes: the HUD's life icons and the menu's hero
+      coins (SVG), the mask's ghost form (her bow), the death's black hole.
+      Kept: no tongue; Ms. Pac-Man's bow.
 5. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). None is
    started: the winter prototypes (`winter-scene`, the New Year dressing, and
    `winter-materials`, the wall materials) were both dropped. Today a season is a palette and a
