@@ -53,13 +53,19 @@ all (see Later).
    Done: the rules (`DESIGN.md` §5) and the mechanics on placeholder art (`AbilityService`,
    the dev panel's grant and token buttons, the slot as a label under the HUD dial, tests).
    Left:
-   1. The `powers` prototype (the owner picks): the three token / slot icons (2-3 candidates
+   1. The `powers` prototype (built, awaiting the owner's pick; `node prototypes/pacman/build.mjs
+powers`, scenes `?scene=icons|mask|lineup|shock|shock-live`; the vortex was dropped by the
+      owner): the three token / slot icons (2-3 candidates
       each, at one tile and magnified, beside an energizer, a fruit and the ghosts); the hero's
       turn into a ghost for the mask, both heroes, three colour candidates (the hero's yellow with
       his eye / her bow; a pale see-through ghost with a yellow rim; a yellow ghost body with a dark
       outline), checked beside all four ghosts and a frightened one (Clyde's orange is the risk);
-      the shock as chain lightning (two variants) against a pull vortex, as frame series on the
-      real ghosts. The owner wants effects that are rich, not cheap.
+      the shock in two looks (V1 branching lightning, V2 plasma strands and a cage), as frame
+      series on the real ghosts. The owner wants effects that are rich, not cheap. The mask's
+      ghost form is the season's ghost (tulip, turtle, hedgehog, bunny) in the hero's own colour:
+      his gold, her magenta (`cuteGhost` takes a `palette`; her bow is `paintedBow`). Seen in the
+      lineup: his gold sits close to Clyde's orange and her magenta to Pinky's pink at game scale
+      (her bow and the calm face help; B's pale body and C's halo do not depend on the colour).
    2. The picked art in the game, checked on the High / Medium / Low tiers and in a browser; the
       HUD slot gets its own art (now the dial's label, `F: MASK`).
    3. Sounds of their own for the token, a spent ability and a refused press (now borrowed

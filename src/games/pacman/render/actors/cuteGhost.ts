@@ -6,7 +6,8 @@ import type { GhostKind, GhostState } from '../../logic/actors/GhostModel';
 import type { HypnosisMode } from '../../logic/rules/HypnosisService';
 
 type Ctx = CanvasRenderingContext2D;
-type Palette = { b: string; s: string };
+/** A body colour and its shade (the belly, the feet). */
+export type Palette = { b: string; s: string };
 
 export type CuteShape = 'drop' | 'hedgehog' | 'bunny' | 'tulip' | 'turtle';
 export type CuteState = 'normal' | 'scared' | 'overdrive' | 'eyes' | 'rage' | 'feeder' | 'hunter';
@@ -26,6 +27,8 @@ export interface CuteOptions {
 	readonly step: number;
 	/** The ghosts are hunting (not scattering): a normal ghost looks menacing. */
 	readonly chasing?: boolean;
+	/** A body colour of its own in the normal state (the hero in the mask), not the kind's. */
+	readonly palette?: Palette;
 }
 
 const TAU = Math.PI * 2;
@@ -614,7 +617,7 @@ export function drawCuteGhost(c: Ctx, x: number, y: number, unit: number, o: Cut
 	c.translate(0, 10);
 	c.rotate(Math.sin(o.step) * 0.08 + o.lookX * 0.1);
 	c.translate(0, -10);
-	let pal = BODY[o.kind];
+	let pal = o.palette ?? BODY[o.kind];
 	if (scared) {
 		pal = o.white ? WHITE : o.state === 'overdrive' ? OVERDRIVE : SCARED;
 	} else if (o.state === 'feeder' || o.state === 'hunter') {

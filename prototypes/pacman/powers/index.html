@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Pac-Man · Powers</title>
+    <!-- Prototype: the abilities' looks (the icons, the mask's ghost form and its turn, the
+         shock) on the real season worlds with the real ghost painter. Built from the sources:
+         `node prototypes/pacman/build.mjs powers`; open as a file. -->
+    <style>
+      html,body{height:100%;margin:0;overflow:hidden;background:#0b0a10}
+      #view{position:fixed;inset:0;display:block}
+      #ctl{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:calc(100vw - 32px);max-width:1200px}
+      .bt{border:0;cursor:pointer;padding:7px 12px;border-radius:999px;font:700 13px "Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#2a2410;background:linear-gradient(#fffaf0,#f2e2b8);box-shadow:0 3px 0 #c9ac62,0 8px 14px rgba(40,30,10,.22)}
+      .bt[aria-pressed="true"]{transform:translateY(2px);color:#fff;background:linear-gradient(#e0a838,#a8721a);box-shadow:0 1px 0 #5a3a08,0 0 14px rgba(255,200,80,.6)}
+      .sep{width:10px}
+      body.capture #ctl{display:none}
+    </style>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <div id="ctl">
+      <button class="bt" data-scene="icons">Иконки</button>
+      <button class="bt" data-scene="mask">Маска: кадры</button>
+      <button class="bt" data-scene="lineup">Маска: в ряду</button>
+      <button class="bt" data-scene="shock">Разряд: кадры</button>
+      <button class="bt" data-scene="shock-live">Разряд: вживую</button>
+      <span class="sep"></span>
+      <button class="bt" data-season="summer">Лето</button>
+      <button class="bt" data-season="autumn">Осень</button>
+      <button class="bt" data-season="winter">Зима</button>
+      <button class="bt" data-season="spring">Весна</button>
+      <span class="sep"></span>
+      <button class="bt" data-hero="pacman">Pac-Man</button>
+      <button class="bt" data-hero="ms">Ms. Pac-Man</button>
+      <button class="bt" data-shock="bolt">V1</button>
+      <button class="bt" data-shock="plasma">V2</button>
+      <button class="bt" id="slow" aria-pressed="false">×0.25</button>
+    </div>
+    <script>
+/*SCRIPT*/
+    </script>
+  </body>
+</html>

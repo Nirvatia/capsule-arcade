@@ -73,7 +73,8 @@ const BOW_ANGLE = -0.63 * Math.PI;
 const BOW_DISTANCE = 0.95;
 
 const bowCache = new Map<string, HTMLCanvasElement>();
-const BOW_SPAN = 1.1;
+/** The painted bow's canvas spans this many head radii either side of the knot. */
+export const BOW_SPAN = 1.1;
 
 /** The flower on the bow's knot, which carries the season (all around (0, 0)). */
 function paintBadge(ctx: CanvasRenderingContext2D, R: number, season: HeroSeason): void {
@@ -158,7 +159,7 @@ function paintBadge(ctx: CanvasRenderingContext2D, R: number, season: HeroSeason
  * the season's flower on the knot. Its own frame: the knot at the centre, up (-y) pointing
  * away from her head.
  */
-function paintedBow(deviceR: number, season: HeroSeason, tint: MsTint): HTMLCanvasElement {
+export function paintedBow(deviceR: number, season: HeroSeason, tint: MsTint): HTMLCanvasElement {
 	const R = Math.max(4, Math.round(deviceR));
 	const key = `${R}:${season}:${tint.id}`;
 	let c = bowCache.get(key);
