@@ -73,15 +73,18 @@ all (see Later).
    energizer (only a palette and flames), the moves feel thick though the render is clean. The
    owner wants a full redesign: a nimble form (smaller, ~0.31 of a tile, not necessarily a pure
    ball) and a true rage transformation in the energizer / overdrive. Stages:
-   1. **The `heroes` prototype (built, awaiting the owner's pick;** `node prototypes/pacman/build.mjs
-heroes`, scenes `?scene=sheet|maze|lineup`, `&hero=ms`, `&season=`): three directions, both
-      heroes, each with the nimble form, the rage form and the turn between them (a burst):
-      A, a ninja ball (a headband whose tails show the speed; in rage they burn; hers: the bow's
-      ribbons, a spiral eye); B, a jelly (stretches running, squashes turning; in rage hot amber
-      with spikes, teeth and a glowing core; hers pearl with hypnotic rings); C, a predator (the
-      ghosts are small animals, the hero hunts them: a cub with ears and a tail; in rage a beast
-      with a spiked mane and a maw; hers a fox, in her overdrive a three-tailed kitsune). The
-      owner may pick one or a mix.
+   1. **The `heroes` prototype: all three directions rejected** (the page is deleted). A ninja
+      ball with a headband, B a jelly, C a predator cub / maned beast, each with a rage form. The
+      owner liked the ideas, not the execution. Lessons for the next round:
+      - the art must match the rest of the game: build on the heroes' own material (`Hero.ts`:
+        the palette ramp, rim and bounce light, highlights, particles), not a new flat painter;
+      - one tile: small accessories (a headband, ears, a tail, many spikes) turn to noise there;
+        the silhouette must read on its own;
+      - the body stays inside its tile: no shape that stretches into an oval;
+      - the headband idea was liked, but it reads badly at one tile.
+        Next: the feel first, on the current art (stage 2), to see how much of the missing force was
+        the art at all; then the art from a reference the owner approves (his mock-up, or one made
+        from Claude's written briefs), reproduced in code at the game's level.
    2. The feel, whatever the art: the size, real corner cutting in `PlayerService` (a turn
       pressed early takes the corner on the diagonal; the ghosts cannot), the rage's dash
       (+20-25 % fading to +10 %) and its bite (a stronger hit-stop, the ghost's crunch, the chain
