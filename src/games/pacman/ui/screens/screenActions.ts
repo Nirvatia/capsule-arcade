@@ -5,4 +5,8 @@ export interface ScreenActions {
 	menu: () => void;
 	profile: () => void;
 	restart: () => void;
+	/** The ability (a season level) or a shot (the hell): the HUD's dial on a touch screen. */
+	fire: () => void;
+	/** The on-screen pad: a direction while pressed, null when let go. */
+	steer: (direction: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | null) => void;
 }

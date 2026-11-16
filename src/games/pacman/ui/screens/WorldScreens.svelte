@@ -22,6 +22,7 @@
 	} from './screenArt';
 	import { clamp01, fmt } from '../hud/season/seasonFormat';
 	import { graphics } from '../../render/common/graphicsSetting';
+	import { controls, touchDevice } from '../controlsSetting';
 
 	let { snap, actions }: { snap: HudSnapshot; actions: ScreenActions } = $props();
 
@@ -88,8 +89,9 @@
 
 	/** The help lines on the chalk board: the keys, split at their separators. */
 	const help = $derived.by(() => {
-		const parts = $t('pressEnter').split(' · ');
-		return [parts.slice(0, 2).join(' · '), parts.slice(2).join(' · '), $t('fire')].filter(Boolean);
+		const parts = $t($touchDevice ? 'pressTouch' : 'pressEnter').split(' · ');
+		const fire = $t($touchDevice ? 'fireTouch' : 'fire');
+		return [parts.slice(0, 2).join(' · '), parts.slice(2).join(' · '), fire].filter(Boolean);
 	});
 
 	const eaten = $derived(
@@ -101,6 +103,8 @@
 	const worldName = $derived($t(`world_${snap.world}`).toUpperCase());
 	/** The graphics plank names the setting; a click goes to the next one. */
 	const graphicsLabel = $derived(`${$t('graphics')}: ${$t(`gfx_${$graphics}`)}`);
+	/** On a touch screen the control scheme's plank stands beside it (swipes, or the pad too). */
+	const controlsLabel = $derived(`${$t('controls')}: ${$t(`ctl_${$controls}`)}`);
 </script>
 
 <!-- The {@html} below is the screens' own static art (`seasonArt`, `screenArt`, built from
@@ -294,20 +298,50 @@
 				{#each help as line, i (i)}
 					<text class="chalk" x="92" y={536 + i * 30} font-size="22">{line}</text>
 				{/each}
-				{@render ropes(170, 350, 608, 170, 350, 624)}
-				{@render plank(
-					'scr-gfx',
-					130,
-					624,
-					260,
-					38,
-					graphicsLabel,
-					20,
-					graphics.cycle,
-					false,
-					7,
-					'hang'
-				)}
+				{#if $touchDevice}
+					{@render ropes(110, 410, 608, 110, 410, 624)}
+					{@render plank(
+						'scr-gfx',
+						30,
+						624,
+						225,
+						38,
+						graphicsLabel,
+						16,
+						graphics.cycle,
+						false,
+						7,
+						'hang'
+					)}
+					{@render plank(
+						'scr-ctl',
+						265,
+						624,
+						225,
+						38,
+						controlsLabel,
+						16,
+						controls.cycle,
+						false,
+						8,
+						'hang b'
+					)}
+				{:else}
+					{@render ropes(170, 350, 608, 170, 350, 624)}
+					{@render plank(
+						'scr-gfx',
+						130,
+						624,
+						260,
+						38,
+						graphicsLabel,
+						20,
+						graphics.cycle,
+						false,
+						7,
+						'hang'
+					)}
+				{/if}
 			{:else if screen === 'ready'}
 				<g transform="translate(0 {retry ? RETRY_LIFT : 0})">
 					<g class="sway" style:--rot="0deg">
@@ -381,20 +415,50 @@
 					'hang b'
 				)}
 				{@render knob(408, 362, langLabel, 18, $t('language'), toggleLang)}
-				{@render ropes(140, 320, 384, 140, 320, 404)}
-				{@render plank(
-					'scr-gfx',
-					110,
-					404,
-					240,
-					40,
-					graphicsLabel,
-					20,
-					graphics.cycle,
-					false,
-					7,
-					'hang'
-				)}
+				{#if $touchDevice}
+					{@render ropes(90, 370, 384, 90, 370, 404)}
+					{@render plank(
+						'scr-gfx',
+						14,
+						404,
+						210,
+						40,
+						graphicsLabel,
+						15,
+						graphics.cycle,
+						false,
+						7,
+						'hang'
+					)}
+					{@render plank(
+						'scr-ctl',
+						236,
+						404,
+						210,
+						40,
+						controlsLabel,
+						15,
+						controls.cycle,
+						false,
+						8,
+						'hang b'
+					)}
+				{:else}
+					{@render ropes(140, 320, 384, 140, 320, 404)}
+					{@render plank(
+						'scr-gfx',
+						110,
+						404,
+						240,
+						40,
+						graphicsLabel,
+						20,
+						graphics.cycle,
+						false,
+						7,
+						'hang'
+					)}
+				{/if}
 			{:else}
 				<g style="filter:grayscale(.5) brightness(.82)">
 					<g class="sway" style:--rot="-1deg">

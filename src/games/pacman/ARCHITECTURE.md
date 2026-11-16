@@ -185,6 +185,17 @@ still takes it (`LATE_TURN`). Food is eaten once the hero's centre is within `EA
 (0.3 of a tile, `config/actorConfig`) of it, so a turn back just short of a dot still takes it.
 Tests: `logic/actors/playerControl.test.ts`.
 
+Touch (`core/touchInput.ts`): `InputController` listens to the window's pointer events (not
+the mouse's); a `SwipeTracker` turns a finger's moves into direction presses and holds the last
+one while the finger stays (`heldDirection` takes a held key first, then the pad, then the
+swipe). Touches on anything marked `data-no-swipe` (the HUD dials, the pad) or on a button never
+steer. The pad (`ui/TouchPad.svelte`) and the dials reach the game through `ScreenActions`
+(`steer`, `fire`). `GameMain.holdPageForTouch` sets `touch-action: none` and friends on the page
+while the game is open and unlocks the audio on the first touch or key
+(`PacmanAudioPlayer.unlock`, `ArcadeSynth.unlock`). `ui/controlsSetting.ts` holds the touch
+screen flag and the control scheme (swipe / pad, remembered). Tests:
+`core/touchInput.test.ts`.
+
 `F` / `Shift` set one fire request (`LevelLoader.requestFire`) that `PlayingState` consumes each
 frame: the hell's weapons take it, a season level hands it to `AbilityService.use`. The
 abilities update before the ghosts and the combat, so a mask put on this frame shields the

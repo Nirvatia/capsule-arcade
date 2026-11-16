@@ -162,16 +162,20 @@ export class GameMain implements GameModule {
 		const onBlur = (): void => director.autoPause();
 		document.addEventListener('visibilitychange', onVisibility);
 		window.addEventListener('blur', onBlur);
+		const releasePage = holdPageForTouch(() => audio.unlock());
 		this.detachAutoPause = () => {
 			document.removeEventListener('visibilitychange', onVisibility);
 			window.removeEventListener('blur', onBlur);
+			releasePage();
 		};
 		screenActions.set({
 			confirm: () => input.pressConfirm(),
 			pause: () => input.pressPause(),
 			menu: () => input.pressMenu(),
 			profile: () => input.pressProfile(),
-			restart: () => director.restartLevel()
+			restart: () => director.restartLevel(),
+			fire: () => input.pressFire(),
+			steer: (direction) => input.steer(direction)
 		});
 		if (import.meta.env.DEV) {
 			const dev = new DebugController(director, level, time, frameMeter, render);
@@ -217,4 +221,64 @@ export class GameMain implements GameModule {
 		this.render = null;
 		this.audio = null;
 	}
+}
+
+/**
+ * A touch screen plays the game, it does not scroll, zoom or select it: the page holds still
+ * under the fingers while the game is open. The first touch (or key) also starts the sound,
+ * which a phone allows only inside a gesture. Returns what undoes it.
+ */
+function holdPageForTouch(unlockAudio: () => void): () => void {
+	if (typeof document === 'undefined') {
+		return () => undefined;
+	}
+	const root = document.documentElement;
+	const body = document.body;
+	const saved = {
+		rootTouch: root.style.touchAction,
+		rootOverscroll: root.style.overscrollBehavior,
+		bodyTouch: body.style.touchAction,
+		bodySelect: body.style.userSelect,
+		bodyCallout: body.style.getPropertyValue('-webkit-touch-callout'),
+		bodyTap: body.style.getPropertyValue('-webkit-tap-highlight-color')
+	};
+	root.style.touchAction = 'none';
+	root.style.overscrollBehavior = 'none';
+	body.style.touchAction = 'none';
+	body.style.userSelect = 'none';
+	body.style.setProperty('-webkit-touch-callout', 'none');
+	body.style.setProperty('-webkit-tap-highlight-color', 'transparent');
+	// iOS Safari zooms on a pinch even under touch-action: none
+	const noGesture = (event: Event): void => event.preventDefault();
+	const noMenu = (event: Event): void => {
+		if ((event as PointerEvent).pointerType !== 'mouse') {
+			event.preventDefault();
+		}
+	};
+	let unlocked = false;
+	const unlock = (): void => {
+		if (unlocked) {
+			return;
+		}
+		unlocked = true;
+		unlockAudio();
+		window.removeEventListener('pointerup', unlock);
+		window.removeEventListener('keydown', unlock);
+	};
+	document.addEventListener('gesturestart', noGesture);
+	window.addEventListener('contextmenu', noMenu);
+	window.addEventListener('pointerup', unlock);
+	window.addEventListener('keydown', unlock);
+	return () => {
+		root.style.touchAction = saved.rootTouch;
+		root.style.overscrollBehavior = saved.rootOverscroll;
+		body.style.touchAction = saved.bodyTouch;
+		body.style.userSelect = saved.bodySelect;
+		body.style.setProperty('-webkit-touch-callout', saved.bodyCallout);
+		body.style.setProperty('-webkit-tap-highlight-color', saved.bodyTap);
+		document.removeEventListener('gesturestart', noGesture);
+		window.removeEventListener('contextmenu', noMenu);
+		window.removeEventListener('pointerup', unlock);
+		window.removeEventListener('keydown', unlock);
+	};
 }

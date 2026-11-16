@@ -1,4 +1,9 @@
+import { SwipeTracker, swipeThreshold } from './touchInput';
+
 export type InputDirection = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+
+/** What a touch on these does is theirs (buttons, the HUD's dial, the pad): it never steers. */
+const NO_SWIPE = 'button, a, input, select, [role="button"], [data-no-swipe]';
 
 export interface InputHandlers {
 	direction?: (direction: InputDirection) => void;
@@ -30,6 +35,9 @@ export class InputController {
 	private attached = false;
 	/** Direction keys held down, the latest pressed last. */
 	private held: InputDirection[] = [];
+	/** A finger swiping on the game; and the on-screen pad's direction, while pressed. */
+	private readonly swipe = new SwipeTracker(swipeThreshold(720));
+	private padHeld: InputDirection | null = null;
 
 	constructor(handlers: InputHandlers) {
 		this.handlers = handlers;
@@ -46,6 +54,10 @@ export class InputController {
 		window.addEventListener('keydown', this.handleKeyDown);
 		window.addEventListener('keyup', this.handleKeyUp);
 		window.addEventListener('blur', this.releaseAll);
+		window.addEventListener('pointerdown', this.handlePointerDown, { passive: false });
+		window.addEventListener('pointermove', this.handlePointerMove, { passive: false });
+		window.addEventListener('pointerup', this.handlePointerUp);
+		window.addEventListener('pointercancel', this.handlePointerUp);
 		this.attached = true;
 	}
 
@@ -60,7 +72,11 @@ export class InputController {
 		window.removeEventListener('keydown', this.handleKeyDown);
 		window.removeEventListener('keyup', this.handleKeyUp);
 		window.removeEventListener('blur', this.releaseAll);
-		this.held = [];
+		window.removeEventListener('pointerdown', this.handlePointerDown);
+		window.removeEventListener('pointermove', this.handlePointerMove);
+		window.removeEventListener('pointerup', this.handlePointerUp);
+		window.removeEventListener('pointercancel', this.handlePointerUp);
+		this.releaseAll();
 		this.attached = false;
 	}
 
@@ -70,7 +86,24 @@ export class InputController {
 	 * latest key falls back to one still held.
 	 */
 	get heldDirection(): InputDirection | null {
-		return this.held.length > 0 ? this.held[this.held.length - 1] : null;
+		if (this.held.length > 0) {
+			return this.held[this.held.length - 1] ?? null;
+		}
+		return this.padHeld ?? this.swipe.held;
+	}
+
+	/**
+	 * The on-screen pad: a direction while a finger is on it (turning as it slides round), null
+	 * when it lets go. A new direction is a press, as a key's.
+	 */
+	steer(direction: InputDirection | null): void {
+		if (direction === this.padHeld) {
+			return;
+		}
+		this.padHeld = direction;
+		if (direction) {
+			this.pressDirection(direction);
+		}
 	}
 
 	pressDirection(direction: InputDirection): void {
@@ -179,7 +212,41 @@ export class InputController {
 		this.held = this.held.filter((d) => d !== direction);
 	};
 
+	private handlePointerDown = (event: PointerEvent): void => {
+		if (event.pointerType === 'mouse' || !this.steersAt(event.target)) {
+			return;
+		}
+		const side = Math.min(window.innerWidth || 0, window.innerHeight || 0);
+		this.swipe.setThreshold(swipeThreshold(side || 720));
+		this.swipe.down(event.pointerId, event.clientX, event.clientY);
+	};
+
+	private handlePointerMove = (event: PointerEvent): void => {
+		if (event.pointerType === 'mouse' || !this.swipe.active) {
+			return;
+		}
+		const direction = this.swipe.move(event.pointerId, event.clientX, event.clientY);
+		if (event.cancelable) {
+			event.preventDefault();
+		}
+		if (direction) {
+			this.pressDirection(direction);
+		}
+	};
+
+	private handlePointerUp = (event: PointerEvent): void => {
+		this.swipe.up(event.pointerId);
+	};
+
+	/** Whether a touch that lands on `target` steers (not on a button, the dial or the pad). */
+	private steersAt(target: EventTarget | null): boolean {
+		const element = target as { closest?: (selector: string) => unknown } | null;
+		return !(element && typeof element.closest === 'function' && element.closest(NO_SWIPE));
+	}
+
 	private releaseAll = (): void => {
 		this.held = [];
+		this.padHeld = null;
+		this.swipe.reset();
 	};
 }

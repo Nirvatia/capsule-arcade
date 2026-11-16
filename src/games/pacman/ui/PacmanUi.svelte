@@ -11,6 +11,8 @@
 	import GameScreens from './screens/GameScreens.svelte';
 	import WorldScreens from './screens/WorldScreens.svelte';
 	import MuteButton from './MuteButton.svelte';
+	import TouchPad from './TouchPad.svelte';
+	import { controls, touchDevice } from './controlsSetting';
 	import { bossHudLayoutFor, hudLayoutFor } from '../config/hudLayout';
 
 	let innerWidth = $state(1280);
@@ -36,12 +38,18 @@
 		{#if $hudFrame.world === 'secret'}
 			<ArcadeHud snap={$hudFrame} />
 		{:else if isSeasonKey($hudFrame.world) && layout.mode === 'side'}
-			<SeasonHud snap={$hudFrame} scale={layout.scale} onpause={() => $screenActions?.pause()} />
+			<SeasonHud
+				snap={$hudFrame}
+				scale={layout.scale}
+				onpause={() => $screenActions?.pause()}
+				onfire={() => $screenActions?.fire()}
+			/>
 		{:else if isSeasonKey($hudFrame.world)}
 			<SeasonHudStack
 				snap={$hudFrame}
 				scale={layout.scale}
 				onpause={() => $screenActions?.pause()}
+				onfire={() => $screenActions?.fire()}
 			/>
 		{:else}
 			<BossHud
@@ -49,8 +57,12 @@
 				scale={bossLayout.scale}
 				mode={bossLayout.mode}
 				onpause={() => $screenActions?.pause()}
+				onfire={() => $screenActions?.fire()}
 			/>
 		{/if}
+	{/if}
+	{#if $screenActions && $touchDevice && $controls === 'pad' && ($hudFrame.state === 'playing' || $hudFrame.state === 'ready')}
+		<TouchPad steer={$screenActions.steer} mode={layout.mode} scale={layout.scale} />
 	{/if}
 	{#if $screenActions}
 		{#if $hudFrame.world === 'secret'}

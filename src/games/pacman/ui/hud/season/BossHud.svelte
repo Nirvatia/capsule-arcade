@@ -35,8 +35,15 @@
 		snap,
 		scale,
 		mode,
-		onpause
-	}: { snap: HudSnapshot; scale: number; mode: HudMode; onpause: () => void } = $props();
+		onpause,
+		onfire
+	}: {
+		snap: HudSnapshot;
+		scale: number;
+		mode: HudMode;
+		onpause: () => void;
+		onfire: () => void;
+	} = $props();
 
 	const theme = HELL_THEME;
 	const boss = $derived(snap.boss);
@@ -209,6 +216,23 @@
 			text-anchor="middle">{weaponValue}</text
 		>
 	{/if}
+	<!-- the dial fires (F on a keyboard, a tap on a phone) -->
+	<circle
+		class="dialhit"
+		cx={dial.cx}
+		cy={dial.cy}
+		r={dial.r + 8}
+		fill="transparent"
+		role="button"
+		tabindex="-1"
+		aria-label={weaponLabel}
+		data-no-swipe
+		onpointerdown={(event) => {
+			event.preventDefault();
+			onfire();
+		}}
+		onkeydown={() => {}}
+	/>
 {/snippet}
 
 <div
@@ -378,6 +402,10 @@
 </div>
 
 <style>
+	.dialhit {
+		pointer-events: all;
+		cursor: pointer;
+	}
 	.shud {
 		position: fixed;
 		inset: 0;

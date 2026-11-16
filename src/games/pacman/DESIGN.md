@@ -24,6 +24,14 @@ size of one tile.
   `Space` / `P` pauses, `M` mutes and unmutes the sound, `H` switches the hero in the menu and
   on the game-over screen. `Esc` does nothing: leaving a game goes through the pause screen's
   Menu button.
+- **Touch screens** (a phone, a tablet): a swipe anywhere on the game steers, and the finger
+  kept down keeps steering, as a held key does; a drag that bends turns again without lifting
+  the finger. The HUD's dial is the button: it spends the ability on a season level and fires
+  in the hell. The menu's CONTROLS plank (touch screens only, remembered) adds an on-screen pad
+  low on the left (in the margin on a landscape screen, in the lower HUD band on a tall one,
+  never over the maze). START, the pause knob and the screens' planks are tapped. The page does
+  not scroll, zoom or select under the fingers; the first touch starts the sound. The menu's
+  chalk board shows the touch help instead of the keys.
 - The sound knob sits in the bottom-left corner; hovering it slides out a volume slider (on a
   touch screen with room beside the board the slider stays out). The volume is remembered;
   turning it up from silence unmutes.

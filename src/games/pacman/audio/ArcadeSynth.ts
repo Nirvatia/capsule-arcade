@@ -206,6 +206,11 @@ export class ArcadeSynth {
 		this.ac = null;
 	}
 
+	/** A touch screen's first touch: the context may only start inside a gesture. */
+	unlock(): void {
+		this.context();
+	}
+
 	private context(): AudioContext | null {
 		if (!this.available) {
 			return null;

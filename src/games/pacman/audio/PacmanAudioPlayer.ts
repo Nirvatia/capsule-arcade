@@ -23,6 +23,23 @@ const PRELOAD_FILES: readonly string[] = [
 	'eyes.wav'
 ];
 
+/** Every sample the game plays, started once by the first touch (`unlock`). */
+const UNLOCK_SOUNDS = [
+	'credit.wav',
+	'death_0.wav',
+	'death_1.wav',
+	'eat_dot_0.wav',
+	'eat_dot_1.wav',
+	'eat_fruit.wav',
+	'eat_ghost.wav',
+	'extend.wav',
+	'eyes.wav',
+	'fright.wav',
+	'intermission.wav',
+	'siren0.wav',
+	'start.wav'
+] as const;
+
 export class PacmanAudioPlayer {
 	private readonly events: EventBus<PacmanEventMap>;
 	private readonly available: boolean;
@@ -42,6 +59,9 @@ export class PacmanAudioPlayer {
 	private readonly levels = new Map<HTMLAudioElement, number>();
 	/** The arcade has its own chiptune sound; the sample sounds stay out of it. */
 	private readonly synth = new ArcadeSynth();
+	private unlocked = false;
+	/** Samples the unlock started and has not stopped yet; the game playing one takes it over. */
+	private readonly unlocking = new Set<HTMLAudioElement>();
 	private readonly arcade: ArcadeProbe;
 	private arcadeUrgency = 0;
 	private arcadePower = false;
@@ -324,6 +344,7 @@ export class PacmanAudioPlayer {
 			return;
 		}
 		this.stopBackground();
+		this.claim(audio);
 		audio.loop = true;
 		this.setLevel(audio, Math.max(0, volume));
 		audio.currentTime = 0;
@@ -341,6 +362,43 @@ export class PacmanAudioPlayer {
 		this.background = null;
 	}
 
+	/**
+	 * The first touch on a phone: a browser there plays a sound only after a gesture has started
+	 * it, so every sample is started (muted) and stopped once inside that gesture.
+	 */
+	unlock(): void {
+		if (this.unlocked || !this.available) {
+			return;
+		}
+		this.unlocked = true;
+		this.synth.unlock();
+		for (const name of UNLOCK_SOUNDS) {
+			const audio = this.sound(name);
+			if (!audio || !audio.paused) {
+				continue;
+			}
+			const volume = audio.volume;
+			audio.muted = true;
+			this.unlocking.add(audio);
+			void audio
+				.play()
+				.then(() => {
+					// the game may have started it meanwhile: then it is the game's to stop
+					if (this.unlocking.has(audio)) {
+						audio.pause();
+						audio.currentTime = 0;
+					}
+				})
+				.catch(() => undefined)
+				.finally(() => {
+					if (this.unlocking.delete(audio)) {
+						audio.muted = this.muted;
+						audio.volume = volume;
+					}
+				});
+		}
+	}
+
 	private play(name: string, volume: number): void {
 		if (!this.available) {
 			return;
@@ -349,10 +407,18 @@ export class PacmanAudioPlayer {
 		if (!audio) {
 			return;
 		}
+		this.claim(audio);
 		audio.loop = false;
 		this.setLevel(audio, Math.max(0, volume));
 		audio.currentTime = 0;
 		void audio.play().catch(() => undefined);
+	}
+
+	/** The game plays a sample the unlock is still holding: it is heard, at the game's mute. */
+	private claim(audio: HTMLAudioElement): void {
+		if (this.unlocking.delete(audio)) {
+			audio.muted = this.muted;
+		}
 	}
 
 	private stop(name: string): void {

@@ -1,6 +1,7 @@
 <!-- Menu, ready, pause and game over, over the game. Buttons never keep focus, so the
 	arrows keep steering. On the secret level the titles take the arcade look. -->
 <script lang="ts">
+	import { touchDevice } from '../controlsSetting';
 	import type { HudSnapshot } from '../hud/hudSnapshot';
 	import { t, toggleLang } from '../i18n';
 	import { graphics } from '../../render/common/graphicsSetting';
@@ -80,7 +81,11 @@
 					>{$t('language')}</button
 				>
 			</div>
-			<p class="help">{$t('pressEnter')}<br />{$t('fire')}</p>
+			<p class="help">
+				{$t($touchDevice ? 'pressTouch' : 'pressEnter')}<br />{$t(
+					$touchDevice ? 'fireTouch' : 'fire'
+				)}
+			</p>
 		</div>
 	{:else if snap.state === 'ready'}
 		<div class="ready">

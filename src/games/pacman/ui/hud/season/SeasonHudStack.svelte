@@ -23,10 +23,15 @@
 	import type { Dial, TrailBox } from './seasonArt';
 	import { SEASON_THEMES } from './seasonThemes';
 	import AbilitySlot from './AbilitySlot.svelte';
+	import { touchDevice } from '../../controlsSetting';
 	import type { SeasonKey } from './seasonThemes';
 
-	let { snap, scale, onpause }: { snap: HudSnapshot; scale: number; onpause: () => void } =
-		$props();
+	let {
+		snap,
+		scale,
+		onpause,
+		onfire
+	}: { snap: HudSnapshot; scale: number; onpause: () => void; onfire: () => void } = $props();
 
 	const theme = $derived(SEASON_THEMES[snap.world as SeasonKey]);
 
@@ -66,7 +71,7 @@
 		snap.timer
 			? $t(snap.timer.kind)
 			: snap.ability
-				? `${$t('abilityKey')} ${$t(snap.ability)}`
+				? `${$touchDevice ? $t('abilityTap') : $t('abilityKey')} ${$t(snap.ability)}`
 				: $t('power')
 	);
 	const night = $derived(snap.dots >= 0.75);
@@ -184,6 +189,23 @@
 				>{snap.timer.remaining.toFixed(1)}s</text
 			>
 		{/if}
+		<!-- the dial is the ability's button (a shot in the hell): F on a keyboard, a tap on a phone -->
+		<circle
+			class="dialhit"
+			cx={DIAL.cx}
+			cy={DIAL.cy}
+			r={DIAL.r + 8}
+			fill="transparent"
+			role="button"
+			tabindex="-1"
+			aria-label={timerLabel}
+			data-no-swipe
+			onpointerdown={(event) => {
+				event.preventDefault();
+				onfire();
+			}}
+			onkeydown={() => {}}
+		/>
 
 		<g
 			class="knob"
@@ -264,6 +286,10 @@
 		paint-order: stroke;
 		stroke-linejoin: round;
 		font-variant-numeric: tabular-nums;
+	}
+	.dialhit {
+		pointer-events: all;
+		cursor: pointer;
 	}
 	.ring {
 		transition: stroke-dashoffset 0.1s linear;

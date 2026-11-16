@@ -36,8 +36,8 @@ suggestion (Opus for the design of a look or a mechanic, Sonnet for the steps).
 
 ## Order
 
-**I** the main game (what is left: the abilities, the mobile controls, the heroes' look, the
-seasons' scenes), **II** the boss levels (the hell's polish, then the random boss, then the new
+**I** the main game (what is left: the abilities' sounds and tuning, a check on a real phone,
+the heroes' look, the seasons' scenes), **II** the boss levels (the hell's polish, then the random boss, then the new
 worlds), **III** the interface of each new boss. The depth and post-processing pass comes last of
 all (see Later).
 
@@ -62,10 +62,12 @@ all (see Later).
       "modest but worth it"; tune after a few runs (`config/abilityConfig.ts`). Also look at it in
       play: her magenta ghost form beside Pinky and his gold one beside Clyde at game scale (the
       halo, her bow and the calm face tell them apart in the prototype).
-3. **Mobile controls** (none today: the keyboard only). Swipes on the board (feeding the held
-   direction), an optional on-screen pad, tap to confirm and pause, buttons for the ability and
-   the hell's fire, `touch-action: none`, the audio unlocked by the first touch, a portrait HUD
-   layout, the Auto graphics tier checked on a phone.
+3. **Mobile controls: on a real phone.** Done: swipes, the optional pad, the dial as the ability
+   and fire button, tap screens, the page held still, the audio unlocked by the first touch, the
+   touch help (`DESIGN.md` §2). Checked only in Chromium's iPhone emulation (portrait and
+   landscape). Left for a real phone: iOS Safari's audio unlock and pinch, how the swipe's length
+   (`swipeThreshold`) and the pad's size feel under a thumb, the safe areas of a notched screen,
+   and the Auto graphics tier there.
 4. **The heroes' look** (Opus, prototype first). The owner does not like the heroes' design
    (both, not only Ms. Pac-Man); what exactly to change is to be asked first (silhouette,
    proportions, eye, outline). Kept: the feel (every idea of the `feel` prototype,
