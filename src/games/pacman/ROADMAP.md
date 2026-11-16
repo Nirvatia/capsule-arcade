@@ -36,43 +36,55 @@ suggestion (Opus for the design of a look or a mechanic, Sonnet for the steps).
 
 ## Order
 
-**I** the main game (what is left: the volume slider, the seasons' scenes), **II** the boss
-levels (the hell's polish, then the random boss, then the new worlds), **III** the interface of
-each new boss. The depth and post-processing pass comes last of all (see Later).
+**I** the main game (what is left: the abilities, the mobile controls, the heroes' look, the
+seasons' scenes), **II** the boss levels (the hell's polish, then the random boss, then the new
+worlds), **III** the interface of each new boss. The depth and post-processing pass comes last of
+all (see Later).
 
 ## Part I. The main game
 
 1. **Music track support** (postponed: the owner is still working out how to generate the
    music). A looped file (ogg/mp3 from `static/`) per world, under the same volume. The
    seasons' music is optional; the hell's track is part II, step 1.1.
-2. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). Today
-   a season is a palette and a few props on one meadow. The owner wants a whole scene per
-   season, in the maze and in the background, not a recolour:
-   1. **Winter: New Year (stage 4, reworked: the `winter-materials` prototype is built, awaiting
-      the owner's pick).** The owner rejected the `winter-scene` New Year dressing (the garlands,
-      the corridor snow, the side-view fir tree); the accepted winter art (the background, the
-      ground, the pellets, the palette) stays the base. The new direction: a season changes the
-      **material** of the world, not its colours — top-down only, no pseudo-height, the maze
-      silhouette, the corridor width, the food and hero readability unchanged, the static baked
-      (into `MeadowBake`: what is painted over `drawWorld` lies over the baked atmosphere), no new
-      full-screen passes (a settled season: High 3, Medium 1, Low 1). Stage 4 first compares the
-      winter wall material on the real maze (`node prototypes/pacman/build.mjs winter-materials`:
-      current walls as control, snowy stone as the recommended one, snow-covered wood as the
-      alternative, day only, a zoomed fragment next to the full maze); after the owner's pick the
-      material gets detailed, then the winter corridor floor, then walls + floor together day and
-      night, and only then, if needed, one top-down fir and one very limited New Year accent.
-   2. **Autumn: Halloween.** Pumpkins, cobwebs, bats, a gravestone or a lantern here and
-      there; the walls and the ground dressed for it too, not only the margins.
-   3. **Spring and summer** get the same treatment afterwards (their themes to be decided with
-      the owner).
-      Rules that still hold: the walls and the corridors keep their full width, nothing hangs in
-      the air in the maze, the decor sits on a surface and moves little, and every important
-      thing reads at the size of one tile.
-
-3. **Ms. Pac-Man's look** (Opus, prototype first). The heroes' feel is in the game (every idea
-   of the `feel` prototype, `GAME_FEEL`), Pac-Man has his minimal eye, neither has a tongue,
-   the trail stays the original. Left from the owner's notes: Ms. Pac-Man looks clumsy (try
-   the eye, the bow's seat and the proportions one at a time; keep the bow).
+2. **Abilities: echo, mask, shock** (Opus High, one chat; the rules are in `DESIGN.md` §5,
+   Abilities). A season level may hold one ability token (or none); the hero carries the taken
+   ability in a slot and spends it with F (the hell's fire key). The echo clone stops being an
+   instant bonus and becomes one of the three. Stages:
+   1. The rules in `DESIGN.md` §5, approved by the owner before code.
+   2. The mechanics on placeholder art: the ability service (the token, its reachable spawn, the
+      slot, F, the energizer and overdrive locks), the echo started from the hero, the mask and
+      the shock services, a dev button that grants each ability, a plain HUD slot, tests.
+   3. The `powers` prototype (the owner picks): the three token / slot icons (2-3 candidates
+      each, at one tile and magnified, beside an energizer, a fruit and the ghosts); the hero's
+      turn into a ghost for the mask, both heroes, three colour candidates (the hero's yellow with
+      his eye / her bow; a pale see-through ghost with a yellow rim; a yellow ghost body with a dark
+      outline), checked beside all four ghosts and a frightened one (Clyde's orange is the risk);
+      the shock as chain lightning (two variants) against a pull vortex, as frame series on the
+      real ghosts. The owner wants effects that are rich, not cheap.
+   4. The picked art in the game, checked on the High / Medium / Low tiers and in a browser.
+3. **Mobile controls** (none today: the keyboard only). Swipes on the board (feeding the held
+   direction), an optional on-screen pad, tap to confirm and pause, buttons for the ability and
+   the hell's fire, `touch-action: none`, the audio unlocked by the first touch, a portrait HUD
+   layout, the Auto graphics tier checked on a phone.
+4. **The heroes' look** (Opus, prototype first). The owner does not like the heroes' design
+   (both, not only Ms. Pac-Man); what exactly to change is to be asked first (silhouette,
+   proportions, eye, outline). Kept: the feel (every idea of the `feel` prototype,
+   `GAME_FEEL`), no tongue, the original trail, Ms. Pac-Man's bow. The mask's ghost form (step 2) follows the heroes: retouch its transition frames after the redesign.
+5. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). None is
+   started: the winter prototypes (`winter-scene`, the New Year dressing, and
+   `winter-materials`, the wall materials) were both dropped. Today a season is a palette and a
+   few props on one meadow; the owner wants a whole scene per season, in the maze and in the
+   background, not a recolour. Lessons kept from the dropped winter rounds: the accepted season
+   art (the background, the ground, the pellets, the palette) is the base; top-down only, no
+   pseudo-height; the maze silhouette, the corridor width, the food and the heroes' readability
+   unchanged; the static baked into `MeadowBake` (what is painted over `drawWorld` lies over the
+   baked atmosphere); no new full-screen passes (a settled season: High 3, Medium 1, Low 1). The
+   order: winter (New Year), autumn (Halloween: pumpkins, cobwebs, bats, a gravestone or a
+   lantern, the walls and the ground dressed too), then spring and summer (themes to be decided
+   with the owner). Rules that still hold: the walls and the corridors keep their full width,
+   nothing hangs in the air in the maze, the decor sits on a surface and moves little, and every
+   important thing reads at the size of one tile.
+6. **Mazes**: the owner reworks the weak ones.
 
 ## Part II. Boss levels
 
@@ -161,9 +173,6 @@ WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
   additively twice, four times at night) and the hell's ground; the hell does not bake its
   atmosphere yet and its quality tiers only cap the DPR. The dev frame meter reads FPS,
   update/render p95, the rAF backlog and input-to-render latency.
-- The `winter-scene` prototype (the rejected candidate) paints its snow, garlands and tree
-  between `drawWorld` and `drawMood`: since the bake they lie over the baked atmosphere and are
-  not tinted by it. Delete the prototype, or move its layers, if it is ever needed again.
 - Headless Chromium without a GPU runs the hell night at ~20 FPS and the flesh hell's first
   frame blocks for about a second while `bakeFlesh` paints the world (once per level). Nobody
   has timed either on real hardware; if the bake shows, spread it over frames.

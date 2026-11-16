@@ -20,7 +20,7 @@ size of one tile.
 - Arrows or `WASD` steer. A key may be pressed early (the turn is taken at the next
   junction) or up to 0.15 tile late; a reversal turns round on the spot; a held key keeps
   steering through pauses, deaths and fades.
-- `Enter` confirms (start, resume); READY cannot be skipped. `F` / `Shift` fires a hell weapon,
+- `Enter` confirms (start, resume); READY cannot be skipped. `F` / `Shift` spends the carried ability on a season level (§5) and fires a weapon in the hell,
   `Space` / `P` pauses, `M` mutes and unmutes the sound, `H` switches the hero in the menu and
   on the game-over screen. `Esc` does nothing: leaving a game goes through the pause screen's
   Menu button.
@@ -100,13 +100,40 @@ balance bot: about twice the deaths at season level 10 as at level 1, still clea
   lair's centre, between the ghosts' spawns. Pac-Man walks in and takes it: the remaining
   dots turn into points, +500, and the arcade starts. Clearing the dots first just ends
   the level.
-- **Echo clone** (both heroes, season levels only): a rare bonus. About a third of the levels
-  (`config/echoConfig.ts`) get one token, on an eaten dot tile at least 8 steps (by path) from
-  the hero, once a random 30-70 % of the dots are eaten; it waits 8 s. Taking it sets off a
-  riot: 7-9 echo wisps run out of the token's tile in different ways for 2-3 s, eating the dots (the usual 10
-  points) and the fruit they meet, never the energizers. A clone dies on an active (or
-  enraged) ghost; frightened ghosts and eyes are harmless to it. If the clones eat the last
-  dot the level ends as usual.
+
+### Abilities (season levels, both heroes)
+
+A rare power the player carries and spends at the right moment. There are three: **echo**,
+**mask** and **shock**. They are modest on purpose: one per level at most, and only worth it
+in the right situation.
+
+- **The token.** A season level rolls once (`config/abilityConfig.ts`): about half the levels
+  get one ability token, of a kind picked at random (equal odds), the others get none. Once a
+  random 30-70 % of the dots are eaten the token appears on an eaten dot tile 8-18 steps (by
+  path, tunnels not counted) from the hero, on a way that does not pass through or beside an
+  active ghost (no such tile now: it tries again a moment later). It waits 8 s and blinks in
+  its last 2 s; missed, it is gone for the level. At most one token per level, never a second.
+- **The slot.** Taking the token puts the ability in the hero's slot (shown in the HUD). It
+  stays through a death on the same level and burns at the level's end, unspent or not.
+- **Spending.** `F` / `Shift` spends it. Not during an energizer (Pac-Man) or an overdrive (Ms.
+  Pac-Man): the press is refused with a short fizzle and the ability stays. An energizer eaten
+  while the mask or the shock runs ends that ability at once (the energizer works as usual); an
+  echo riot keeps running.
+- **Echo.** 7-9 echo wisps run out of the hero's tile in different ways for 3 s, eating the dots
+  (the usual 10 points) and the fruit they meet, never the energizers. A wisp dies on an active
+  (or enraged) ghost; frightened ghosts and eyes are harmless to it. If they eat the last dot the
+  level ends as usual. Worth it in a part of the maze still full of dots.
+- **Mask.** The hero turns into a ghost for 5 s (blinking in the last 1 s): the ghosts do not
+  touch it, and the ones in chase go to their scatter corners instead (they lose the hero). It
+  eats dots and fruit as usual but cannot eat or hypnotise ghosts. When it ends inside a ghost,
+  the hero is untouchable for 0.5 s more. Worth it when the hero is cornered.
+- **Shock.** A discharge strikes the nearest active (or enraged) ghost within 6 tiles of the
+  hero and jumps on to every other one within 6 tiles of a ghost already struck. Struck ghosts
+  stand still for 3 s (shaking in the last 0.5 s) and stay deadly to touch: the shock stops them,
+  it does not open a way through them. Scared, hypnotised and lair ghosts and eyes are not
+  struck. With no ghost in reach the press is refused with a fizzle and the ability stays. Worth
+  it when the ghosts bunch up close.
+- While the mask or the shock runs, the HUD slot shows the time left.
 
 ## 6. Seasons
 
@@ -177,7 +204,7 @@ chiptune sound (`config/arcadeConfig.ts`).
   ambush plan on a board, Pac-Man eats the chalk.
 - Its own 3 tries, carried between rounds: dying never costs the game's lives; losing all
   tries returns to the main game with no penalty.
-- Plain Pac-Man rules for both profiles (energizers scare), no egg, no echo.
+- Plain Pac-Man rules for both profiles (energizers scare), no egg, no abilities.
 - Ghost characters: Blinky the hunter (straight at Pac-Man), Pinky the ambusher (the
   junction he runs into), Inky the herder (the junction behind him), Clyde the keeper
   (guards the quarter with the most food, chases only up close); per-round scatter / chase
