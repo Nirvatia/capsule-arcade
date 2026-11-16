@@ -12,8 +12,8 @@ import type { Hero, HeroFeel, OverPainter } from './hero/Hero';
 import { NO_FEEL } from './hero/Hero';
 import type { HeroSeason } from './hero/heroSeasons';
 
-/** Body radius in tiles (Pac-Man 10 % smaller than the first cut, the owner's review). */
-const RADIUS = 0.39;
+/** The hero's radius in tiles (the nimble heroes: the sun and the galaxy). */
+const RADIUS = 0.33;
 
 function facingAngle(facing: string | null, fallback: number): number {
 	if (facing === 'UP') return -Math.PI / 2;
@@ -43,7 +43,10 @@ export interface PlayerFeel extends HeroFeel {
 
 export const NO_PLAYER_FEEL: PlayerFeel = { ...NO_FEEL, lean: false, shadow: false, suck: false };
 
-/** The game's feel: every idea, the owner took them all (the `feel` prototype switches them). */
+/**
+ * The game's feel: every idea the owner took (the `feel` prototype switches them), but the
+ * lean: the hero really cuts corners now (`PlayerService`), a drawn lean would cut them twice.
+ */
 export const GAME_FEEL: PlayerFeel = {
 	gaze: true,
 	eye: true,
@@ -51,7 +54,7 @@ export const GAME_FEEL: PlayerFeel = {
 	bump: true,
 	puff: true,
 	sphere: true,
-	lean: true,
+	lean: false,
 	shadow: true,
 	suck: true
 };

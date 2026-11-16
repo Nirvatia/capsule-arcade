@@ -9,6 +9,11 @@ const RESPAWN_INVULNERABILITY = 2;
 const TELEPORT_INVULNERABILITY = 0.5;
 const TELEPORT_IMPULSE = 0.3;
 
+/** `v` moved `by` towards 0, never past it. */
+function toward0(v: number, by: number): number {
+	return v > 0 ? Math.max(0, v - by) : Math.min(0, v + by);
+}
+
 export class PlayerModel {
 	private tileValue: PlayerTile;
 	private targetValue: PlayerTile | null = null;
@@ -18,6 +23,13 @@ export class PlayerModel {
 	private readonly speedValue: number;
 	private invulnerableValue = 0;
 	private impulseValue = 0;
+	/**
+	 * A corner being cut: how far off the tile's centre line the hero still is, tiles. He took
+	 * the turn before reaching the junction's centre, so he is behind it on the old axis; every
+	 * step on the new axis takes as much off this, so he runs the corner on the diagonal.
+	 */
+	private cornerX = 0;
+	private cornerY = 0;
 
 	constructor(spawn: PlayerTile, speed = 6) {
 		if (!Number.isInteger(spawn.x) || !Number.isInteger(spawn.y) || spawn.x < 0 || spawn.y < 0) {
@@ -68,9 +80,14 @@ export class PlayerModel {
 		return this.impulseValue > 0;
 	}
 
+	/** Is a corner still being cut (the hero off the centre line)? */
+	get isCutting(): boolean {
+		return this.cornerX !== 0 || this.cornerY !== 0;
+	}
+
 	get position(): { x: number; y: number } {
-		const baseX = this.tileValue.x + 0.5;
-		const baseY = this.tileValue.y + 0.5;
+		const baseX = this.tileValue.x + 0.5 + this.cornerX;
+		const baseY = this.tileValue.y + 0.5 + this.cornerY;
 		if (!this.targetValue) {
 			return { x: baseX, y: baseY };
 		}
@@ -115,6 +132,26 @@ export class PlayerModel {
 		this.progressValue = 0;
 	}
 
+	/**
+	 * Cuts the corner: `short` tiles before the junction (the move's target), the hero counts
+	 * as on it and starts off in `direction`, keeping where he really is as the corner offset.
+	 */
+	cutCorner(direction: PlayerDirection, next: PlayerTile): void {
+		const from = this.tileValue;
+		const to = this.targetValue;
+		if (!to) {
+			console.error('PlayerModel.cutCorner', 'no active move');
+			return;
+		}
+		const short = 1 - this.progressValue;
+		this.cornerX += (from.x - to.x) * short;
+		this.cornerY += (from.y - to.y) * short;
+		this.tileValue = to;
+		this.targetValue = null;
+		this.progressValue = 0;
+		this.beginMove(direction, next);
+	}
+
 	/** Turns round mid-move: heads back to the tile it left, from the same spot. */
 	reverse(direction: PlayerDirection): void {
 		if (!this.targetValue) {
@@ -139,6 +176,9 @@ export class PlayerModel {
 			return;
 		}
 		this.progressValue = Math.min(1, this.progressValue + amount);
+		// the corner: as much back onto the centre line as he went on
+		this.cornerX = toward0(this.cornerX, amount);
+		this.cornerY = toward0(this.cornerY, amount);
 	}
 
 	completeMove(): void {
@@ -164,6 +204,8 @@ export class PlayerModel {
 		this.tileValue = { x: destination.x, y: destination.y };
 		this.targetValue = null;
 		this.progressValue = 0;
+		this.cornerX = 0;
+		this.cornerY = 0;
 		const currentInvulnerability = Number.isFinite(this.invulnerableValue)
 			? Math.max(0, this.invulnerableValue)
 			: 0;
@@ -199,5 +241,7 @@ export class PlayerModel {
 		this.progressValue = 0;
 		this.invulnerableValue = RESPAWN_INVULNERABILITY;
 		this.impulseValue = 0;
+		this.cornerX = 0;
+		this.cornerY = 0;
 	}
 }

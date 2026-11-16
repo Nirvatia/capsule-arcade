@@ -11,6 +11,7 @@ import { SCORE_TABLE } from '../../config/scoreConfig';
 import { NearMissTracker, classicContact, msContact } from './ghostContact';
 import { debugLog } from '../debug/debugLog';
 import { ARCADE } from '../../config/arcadeConfig';
+import { RAGE, rageSpeed } from '../../config/actorConfig';
 
 const DEFAULT_POWER_DURATION = 6;
 /** Gameplay freezes this long when a ghost is eaten, so the bite lands. */
@@ -273,6 +274,7 @@ export class CombatService {
 		}
 
 		this.ghosts.setPowerActive(this.powerTimerValue > 0);
+		this.player.setRageSpeed(this.rageFactor());
 		this.nearMiss.tick(dt);
 		this.checkCollisions();
 	}
@@ -397,7 +399,23 @@ export class CombatService {
 		debugLog(this.events, 'spawn', 'extra life', this.livesValue);
 	}
 
+	/**
+	 * Pac-Man's speed under the energizer: a dash fading as it runs out. Not Ms. Pac-Man's
+	 * overdrive (the balance bot: a faster heroine rams more ghosts into hypnosis and dies far
+	 * more), not the arcade (its own speeds).
+	 */
+	private rageFactor(): number {
+		if (this.secretModeValue || this.rulesProfile === 'ms-pacman') {
+			return 1;
+		}
+		return this.powerTimerValue > 0 && this.powerDurationValue > 0
+			? rageSpeed(this.powerTimerValue / this.powerDurationValue)
+			: 1;
+	}
+
 	private activatePower(): void {
+		// the energizer strikes: the play stops for a beat (the hero's own beat, the ring)
+		this.hitStopValue = Math.max(this.hitStopValue, RAGE.impactStop);
 		if (this.rulesProfile === 'ms-pacman') {
 			this.hypnosis.startOverdrive(this.ghosts);
 			this.events.emit('audio:cue', { cue: 'power-start' });

@@ -4,7 +4,7 @@ import { PlayerModel } from './PlayerModel';
 import type { PlayerDirection, PlayerTile } from './PlayerModel';
 import type { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
-import { EAT_REACH } from '../../config/actorConfig';
+import { CORNER_WINDOW, EAT_REACH } from '../../config/actorConfig';
 
 const VECTORS: Record<PlayerDirection, { x: number; y: number }> = {
 	UP: { x: 0, y: -1 },
@@ -26,6 +26,8 @@ export class PlayerService {
 	private readonly events: EventBus<PacmanEventMap>;
 	private readonly player: PlayerModel;
 	private speedModifierValue = 1;
+	/** The rage's speed factor (1: none). */
+	private rageValue = 1;
 	private recoilRemainingValue = 0;
 	private recoilDirectionValue: PlayerDirection | null = null;
 	private dashRemainingValue = 0;
@@ -99,6 +101,24 @@ export class PlayerService {
 		this.speedModifierValue = value;
 	}
 
+	/** The rage's speed factor on top of the level's (1: no rage). */
+	setRageSpeed(value: number): void {
+		if (!Number.isFinite(value) || value <= 0) {
+			console.error('PlayerService.setRageSpeed', 'invalid factor', value);
+			return;
+		}
+		this.rageValue = value;
+	}
+
+	get rageSpeed(): number {
+		return this.rageValue;
+	}
+
+	/** Is the hero still cutting a corner (off the centre line, on the diagonal)? */
+	get isCutting(): boolean {
+		return this.player.isCutting;
+	}
+
 	setDesiredDirection(direction: PlayerDirection): void {
 		this.player.setDesired(direction);
 		const facing = this.player.facing;
@@ -168,6 +188,7 @@ export class PlayerService {
 
 	reset(): void {
 		this.player.reset(this.grid.playerSpawn);
+		this.rageValue = 1;
 		this.endRecoil();
 		this.endDash();
 		this.movementLockedValue = false;
@@ -212,6 +233,9 @@ export class PlayerService {
 				}
 				this.player.beginMove(direction, target);
 			}
+			if (this.cutCorner()) {
+				continue;
+			}
 			const needed = Math.max(0, 1 - this.player.progress);
 			if (needed <= EPSILON) {
 				this.player.completeMove();
@@ -236,6 +260,37 @@ export class PlayerService {
 		if (guard >= 512) {
 			console.error('PlayerService.update', 'movement guard exhausted');
 		}
+	}
+
+	/**
+	 * The arcade's cornering: a perpendicular turn asked within `CORNER_WINDOW` of the junction
+	 * ahead is taken there and then; the hero counts as on the junction (its food is eaten) and
+	 * runs the rest of the corner on the diagonal. Not into a tunnel's pad, not while a corner
+	 * is still being cut.
+	 */
+	private cutCorner(): boolean {
+		const target = this.player.target;
+		const facing = this.player.facing;
+		const desired = this.player.desired;
+		if (!target || !facing || !desired || desired === facing) {
+			return false;
+		}
+		if (desired === this.oppositeDirection(facing) || this.player.isCutting) {
+			return false;
+		}
+		if (1 - this.player.progress > CORNER_WINDOW + EPSILON) {
+			return false;
+		}
+		if (this.grid.isTeleport(target.x, target.y)) {
+			return false;
+		}
+		const next = this.targetFor(target, desired);
+		if (!this.grid.isPlayerWalkable(next.x, next.y)) {
+			return false;
+		}
+		this.player.cutCorner(desired, next);
+		this.handleArrival();
+		return true;
 	}
 
 	private updateRecoil(dt: number): void {
@@ -349,7 +404,7 @@ export class PlayerService {
 	}
 
 	private effectiveSpeed(): number {
-		const base = this.player.speed * this.speedModifierValue;
+		const base = this.player.speed * this.speedModifierValue * this.rageValue;
 		if (this.player.isImpulsing) {
 			return base * IMPULSE_SPEED;
 		}

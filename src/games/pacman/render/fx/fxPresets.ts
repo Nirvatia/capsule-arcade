@@ -54,17 +54,22 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 			};
 		}
 		case 'energizer':
+			// the rage strikes (the play stops for a beat under it): a white flash, a shockwave
+			// and a second one, a burst, the screen's edge lit, a hard kick
 			return {
 				...NONE,
+				flashes: [{ x: fx.x, y: fx.y, life: 0.22 }],
 				rings: [
-					wave(fx.x, fx.y, style.accent, 3.2, 0.5),
-					wave(fx.x, fx.y, WHITE, 2.2, 0.4, 0.08, true)
+					wave(fx.x, fx.y, style.accent, 4.2, 0.5),
+					wave(fx.x, fx.y, GOLD, 3.0, 0.45, 0.12, true),
+					wave(fx.x, fx.y, WHITE, 2.0, 0.3)
 				],
 				bursts: [
-					{ x: fx.x, y: fx.y, tint: style.accent, count: 6, speed: 3, particle: style.particle }
+					{ x: fx.x, y: fx.y, tint: style.accent, count: 12, speed: 5, particle: style.particle },
+					{ x: fx.x, y: fx.y, tint: GOLD, count: 8, speed: 6.5, particle: null }
 				],
-				pulse: { tint: style.accent, strength: 0.5 },
-				kick: 0.3
+				pulse: { tint: style.accent, strength: 0.75 },
+				kick: 0.85
 			};
 		case 'fruit':
 			return {

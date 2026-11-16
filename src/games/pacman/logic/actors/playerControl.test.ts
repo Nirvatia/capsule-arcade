@@ -133,7 +133,8 @@ describe('player control', () => {
 		const { player } = makePlayer();
 		player.setDesiredDirection('LEFT');
 		settle(player);
-		player.update(0.1); // 0.6 tile into the next move
+		// 0.3 tile into the next move: past the late turn's reach, short of the next corner's
+		player.update(0.05);
 		const y = player.position.y;
 		player.setDesiredDirection('UP');
 		player.update(STEP);
