@@ -1,9 +1,9 @@
-// Prototype `rage`: the heroes' new forms on their own machinery (roadmap I.4), against today's.
-// Rows: today's hero (0.39 of a tile), direction 1 (shonen × magical girl) and direction 2
-// (elements), both in the nimble form (0.33) and the rage form (0.40). Scenes:
-//   sheet  frame by frame, both heroes: standing, running, the energizer's wind-up, burst and
-//          settling, rage running, biting, standing, cooling down; a season ghost alongside;
-//   maze   all six running the real maze at game speed, the energizer coming and going.
+// Prototype `elements`: the heroes as elements, the everyday (nimble) form first (roadmap I.4):
+// Pac-Man fire, Ms. Pac-Man a nebula, on the heroes' own machinery, beside today's heroes.
+// Scenes:
+//   sheet    frame by frame: standing, running right / left / up / down, a bite, beside a ghost;
+//   seasons  each new hero running on all four seasons' floors, beside the season's ghost;
+//   maze     today's and the new heroes running the real maze at game scale.
 // Query: ?scene=sheet&season=autumn&capture (capture: window.__advance(seconds)).
 import { EventBus } from '../../../src/games/pacman/engine/EventBus';
 import type { PacmanEventMap } from '../../../src/games/pacman/core/Events';
@@ -20,23 +20,19 @@ import type { Hero } from '../../../src/games/pacman/render/actors/hero/Hero';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
 import type { GridLayout } from '../../../src/games/pacman/render/maze/GridView';
-import { CrystalMs, MagicalMs, MoltenPacman, SuperPacman } from './forms';
+import { EmberPacman, NebulaMs } from './forms';
 
 const SEASONS = ['summer', 'autumn', 'winter', 'spring'] as const;
 type Season = (typeof SEASONS)[number];
-const SCENES = ['sheet', 'maze'] as const;
+const SCENES = ['sheet', 'seasons', 'maze'] as const;
 type Scene = (typeof SCENES)[number];
 const KINDS: readonly GhostKind[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
 
-/** The forms: today's hero, and the two directions. */
-const FORMS: ReadonlyArray<{
-	name: string;
-	radius: number;
-	make: (ms: boolean) => Hero;
-}> = [
-	{ name: 'сейчас', radius: 0.39, make: (ms) => (ms ? new MsPacmanHero() : new PacmanHero()) },
-	{ name: '1 · сёнэн / волшебница', radius: 0.33, make: (ms) => (ms ? new MagicalMs() : new SuperPacman()) },
-	{ name: '2 · стихии', radius: 0.33, make: (ms) => (ms ? new CrystalMs() : new MoltenPacman()) }
+const HEROES: ReadonlyArray<{ name: string; radius: number; fresh: boolean; make: () => Hero }> = [
+	{ name: 'Pac-Man сейчас', radius: 0.39, fresh: false, make: () => new PacmanHero() },
+	{ name: 'Pac-Man · огонь', radius: 0.33, fresh: true, make: () => new EmberPacman() },
+	{ name: 'Ms. сейчас', radius: 0.39, fresh: false, make: () => new MsPacmanHero() },
+	{ name: 'Ms. · туманность', radius: 0.33, fresh: true, make: () => new NebulaMs() }
 ];
 
 const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
@@ -54,15 +50,14 @@ let vw = 0;
 let vh = 0;
 let time = 0;
 let world: MeadowWorld;
-let big: MeadowWorld;
-let bigCanvas: HTMLCanvasElement;
+const bigs = new Map<Season, { canvas: HTMLCanvasElement; layout: GridLayout; session: LevelSession }>();
 let session: LevelSession;
-let sheetCanvas: HTMLCanvasElement | null = null;
+let still: HTMLCanvasElement | null = null;
 if (q.has('capture')) document.body.classList.add('capture');
 
-function drawGhost(c: CanvasRenderingContext2D, kind: GhostKind, x: number, y: number, S: number, look = -1): void {
+function drawGhost(c: CanvasRenderingContext2D, kind: GhostKind, x: number, y: number, S: number, look = -1, s: Season = season): void {
 	drawCuteGhost(c, x, y, (S / 25) * 0.78, {
-		shape: SEASON_GHOST[season] ?? 'drop',
+		shape: SEASON_GHOST[s] ?? 'drop',
 		kind,
 		state: 'normal',
 		lookX: look,
@@ -78,34 +73,48 @@ function settle(w: MeadowWorld): void {
 	for (let i = 0; i < 40; i++) w.update(0.1);
 }
 
-function build(): void {
-	const level = SEASONS.indexOf(season) + 1;
-	const data = seasonForLevel(level);
-	const theme = meadowThemeFor(season) as MeadowTheme;
-	world = new MeadowWorld(data.grid, theme);
-	world.resize(vw, vh, D);
-	settle(world);
-	big = new MeadowWorld(data.grid, theme);
-	big.resize(2400, 2200, 1);
-	settle(big);
-	bigCanvas = document.createElement('canvas');
-	bigCanvas.width = 2400;
-	bigCanvas.height = 2200;
-	const bc = bigCanvas.getContext('2d') as CanvasRenderingContext2D;
-	big.drawWorld(bc);
-	big.drawMood(bc);
-	big.drawFood(bc, () => false);
-	session = buildLevelSession({
+function newSession(s: Season): LevelSession {
+	const level = SEASONS.indexOf(s) + 1;
+	return buildLevelSession({
 		events: new EventBus<PacmanEventMap>(),
 		level,
 		profile: 'pacman',
-		season: data,
+		season: seasonForLevel(level),
 		hell: false,
 		secret: false,
 		godMode: true
 	});
+}
+
+/** The season's world drawn big once, for the magnified cells. */
+function bigWorld(s: Season) {
+	let b = bigs.get(s);
+	if (!b) {
+		const level = SEASONS.indexOf(s) + 1;
+		const w = new MeadowWorld(seasonForLevel(level).grid, meadowThemeFor(s) as MeadowTheme);
+		w.resize(1800, 1650, 1);
+		settle(w);
+		const canvas = document.createElement('canvas');
+		canvas.width = 1800;
+		canvas.height = 1650;
+		const bc = canvas.getContext('2d') as CanvasRenderingContext2D;
+		w.drawWorld(bc);
+		w.drawMood(bc);
+		w.drawFood(bc, () => false);
+		b = { canvas, layout: w.layout, session: newSession(s) };
+		bigs.set(s, b);
+	}
+	return b;
+}
+
+function build(): void {
+	const level = SEASONS.indexOf(season) + 1;
+	world = new MeadowWorld(seasonForLevel(level).grid, meadowThemeFor(season) as MeadowTheme);
+	world.resize(vw, vh, D);
+	settle(world);
+	session = newSession(season);
 	runners = makeRunners();
-	sheetCanvas = null;
+	still = null;
 	for (const b of document.querySelectorAll<HTMLButtonElement>('[data-season]')) {
 		b.setAttribute('aria-pressed', String(b.dataset.season === season));
 	}
@@ -144,8 +153,8 @@ $('slow').addEventListener('click', () => {
 const px = (L: GridLayout, tx: number) => L.offsetX + tx * L.tileSize;
 const py = (L: GridLayout, ty: number) => L.offsetY + ty * L.tileSize;
 
-function longestRow(minY = 0): { y: number; x0: number; x1: number } {
-	const g = session.grid;
+function longestRow(sess: LevelSession, minY = 0): { y: number; x0: number; x1: number } {
+	const g = sess.grid;
 	let best = { y: 0, x0: 0, x1: 0 };
 	for (let y = minY; y < g.height; y++) {
 		let start = -1;
@@ -175,115 +184,123 @@ function label(c: CanvasRenderingContext2D, text: string, x: number, y: number, 
 	c.restore();
 }
 
-// ── scene: the sheet ──────────────────────────────────────────────────────────────
-
-interface Shot {
-	readonly name: string;
-	/** Seconds simulated; the energizer comes at `power` (seconds before the end), ends at `off`. */
-	readonly T: number;
-	readonly moving: boolean;
-	readonly power?: number;
-	readonly off?: number;
-	readonly bite?: number;
-	readonly ghost?: boolean;
+/** A magnified cell of season `s`'s world, `cw` px square, a tile `Z` px; returns its centre. */
+function cell(c: CanvasRenderingContext2D, s: Season, x: number, y: number, cw: number, Z: number): [number, number] {
+	const b = bigWorld(s);
+	const row = longestRow(b.session, Math.floor(b.session.grid.height * 0.55));
+	const tx = Math.floor((row.x0 + row.x1) / 2) + 0.5;
+	const ty = row.y + 0.5;
+	const L = b.layout;
+	const k = L.tileSize / Z;
+	c.drawImage(b.canvas, px(L, tx) - (cw / 2) * k, py(L, ty) - (cw / 2) * k, cw * k, cw * k, x, y, cw, cw);
+	return [x + cw / 2, y + cw / 2];
 }
 
-const SHOTS: readonly Shot[] = [
-	{ name: 'стоит', T: 1.6, moving: false },
-	{ name: 'бег', T: 1.6, moving: true },
-	{ name: 'энерджайзер: замах', T: 1.6, moving: true, power: 0.1 },
-	{ name: 'вспышка', T: 1.6, moving: true, power: 0.22 },
-	{ name: '+0.4 с', T: 1.6, moving: true, power: 0.4 },
-	{ name: 'ярость: бег', T: 2.4, moving: true, power: 1.6 },
-	{ name: 'ярость: укус', T: 2.4, moving: true, power: 1.6, bite: 0.1 },
-	{ name: 'ярость стоит', T: 2.4, moving: false, power: 1.6 },
-	{ name: 'остывает', T: 3, moving: true, power: 2.4, off: 0.35 },
-	{ name: 'с призраком', T: 1.6, moving: true, ghost: true },
-	{ name: 'ярость с призраком', T: 2.4, moving: true, power: 1.6, ghost: true }
-];
-
-/** A hero run through a shot: it ends at (x, y), on a tile of `Z` px. */
-function shoot(make: () => Hero, radius: number, shot: Shot, x: number, y: number, Z: number): Hero {
+/** A hero run for `T` seconds (moving along `angle` when `moving`) to end at (x, y). */
+function shoot(make: () => Hero, radius: number, x: number, y: number, Z: number, s: Season, opts: { moving: boolean; angle?: number; bite?: boolean; T?: number }): Hero {
 	const hero = make();
 	hero.setFeel(GAME_FEEL);
 	hero.setRadius(Z * radius);
+	const T = opts.T ?? 1.6;
 	const dt = 1 / 60;
-	const n = Math.round(shot.T / dt);
+	const n = Math.round(T / dt);
+	const a = opts.angle ?? 0;
 	const v = 6 * Z;
 	for (let i = 0; i <= n; i++) {
-		const t = i * dt;
-		const left = shot.T - t;
-		const power = shot.power !== undefined && left <= shot.power && !(shot.off !== undefined && left <= shot.off);
-		if (shot.bite !== undefined && Math.abs(left - shot.bite) < dt / 2) hero.eat();
-		hero.update(i === 0 ? 0 : dt, {
-			x: shot.moving ? x - v * left : x,
-			y,
-			angle: 0,
-			moving: shot.moving,
-			power,
-			ending: false,
-			season,
-			look: null
-		});
+		const left = T - i * dt;
+		if (opts.bite && Math.abs(left - 0.1) < dt / 2) hero.eat();
+		const d = opts.moving ? v * left : 0;
+		hero.update(i === 0 ? 0 : dt, { x: x - Math.cos(a) * d, y: y - Math.sin(a) * d, angle: a, moving: opts.moving, power: false, ending: false, season: s, look: null });
 	}
 	return hero;
 }
 
-function sceneSheet(): void {
-	if (sheetCanvas) {
-		ctx.drawImage(sheetCanvas, 0, 0, vw, vh);
-		return;
+function frameCell(c: CanvasRenderingContext2D, x: number, y: number, cw: number, draw: () => void): void {
+	c.save();
+	c.beginPath();
+	c.roundRect(x, y, cw, cw, 10);
+	c.clip();
+	draw();
+	c.restore();
+	c.strokeStyle = 'rgba(255,230,170,.45)';
+	c.lineWidth = 1.5;
+	c.beginPath();
+	c.roundRect(x, y, cw, cw, 10);
+	c.stroke();
+}
+
+// ── scenes: the sheet and the seasons (static, painted once) ────────────────────────────
+
+const SHOTS: ReadonlyArray<{ name: string; moving: boolean; angle?: number; bite?: boolean; ghost?: boolean }> = [
+	{ name: 'стоит', moving: false },
+	{ name: 'бег →', moving: true },
+	{ name: 'бег ←', moving: true, angle: Math.PI },
+	{ name: 'вверх', moving: true, angle: -Math.PI / 2 },
+	{ name: 'вниз', moving: true, angle: Math.PI / 2 },
+	{ name: 'укус', moving: true, bite: true },
+	{ name: 'с призраком', moving: true, ghost: true }
+];
+
+function paintStill(draw: (g: CanvasRenderingContext2D) => void): void {
+	if (!still) {
+		still = document.createElement('canvas');
+		still.width = Math.round(vw * D);
+		still.height = Math.round(vh * D);
+		const g = still.getContext('2d') as CanvasRenderingContext2D;
+		g.setTransform(D, 0, 0, D, 0, 0);
+		g.fillStyle = '#0d0b12';
+		g.fillRect(0, 0, vw, vh);
+		draw(g);
 	}
-	const c = document.createElement('canvas');
-	c.width = Math.round(vw * D);
-	c.height = Math.round(vh * D);
-	const g = c.getContext('2d') as CanvasRenderingContext2D;
-	g.setTransform(D, 0, 0, D, 0, 0);
-	g.fillStyle = '#0d0b12';
-	g.fillRect(0, 0, vw, vh);
-	const row = longestRow(Math.floor(session.grid.height * 0.55));
-	const tx = Math.floor((row.x0 + row.x1) / 2) + 0.5;
-	const ty = row.y + 0.5;
-	const labelW = 150;
-	const gap = 6;
-	const rows: Array<[number, boolean]> = [];
-	for (const m of [false, true]) for (let f = 0; f < FORMS.length; f++) rows.push([f, m]);
-	const cw = Math.floor(Math.min(120, (vw - labelW - 30 - gap * SHOTS.length) / SHOTS.length, (vh - 90) / rows.length - 8));
-	const rowH = cw + 8;
-	const y0 = Math.max(48, (vh - rows.length * rowH) / 2 + 10);
-	label(g, `Герои на своём материале (${season}): сейчас · направление 1 · направление 2`, vw / 2, y0 - 30, 16);
-	const L = big.layout;
-	rows.forEach(([f, m], r) => {
-		const form = FORMS[f]!;
+	ctx.drawImage(still, 0, 0, vw, vh);
+}
+
+function sceneSheet(g: CanvasRenderingContext2D): void {
+	const labelW = 160;
+	const gap = 8;
+	const cw = Math.floor(Math.min(170, (vw - labelW - 30 - gap * SHOTS.length) / SHOTS.length, (vh - 110) / HEROES.length - 12));
+	const rowH = cw + 12;
+	const y0 = Math.max(56, (vh - HEROES.length * rowH) / 2 + 10);
+	label(g, `Обычная форма: огонь и туманность (${season}), рядом сегодняшние герои`, vw / 2, y0 - 34, 16);
+	HEROES.forEach((h, r) => {
 		const y = y0 + r * rowH;
-		label(g, form.name, 14, y + cw / 2 - 9, 12, 'left');
-		label(g, m ? 'Ms. Pac-Man' : 'Pac-Man', 14, y + cw / 2 + 9, 12, 'left');
+		label(g, h.name, 14, y + cw / 2, 13, 'left');
 		SHOTS.forEach((shot, i) => {
 			const x = 14 + labelW + i * (cw + gap);
-			// the tile is drawn 2.3 cells wide: the hero against a real corridor
-			const Z = cw / 2.3;
-			const k = L.tileSize / Z;
-			g.save();
-			g.beginPath();
-			g.roundRect(x, y, cw, cw, 10);
-			g.clip();
-			g.drawImage(bigCanvas, px(L, tx) - (cw / 2) * k, py(L, ty) - (cw / 2) * k, cw * k, cw * k, x, y, cw, cw);
-			const cx = x + cw / 2 - (shot.ghost ? Z * 0.55 : 0);
-			const cy = y + cw / 2;
-			if (shot.ghost) drawGhost(g, 'BLINKY', x + cw / 2 + Z * 0.6, cy, Z, -1);
-			const hero = shoot(() => form.make(m), form.radius, shot, cx, cy, Z);
-			hero.draw(g);
-			g.restore();
-			g.strokeStyle = 'rgba(255,230,170,.45)';
-			g.lineWidth = 1.5;
-			g.beginPath();
-			g.roundRect(x, y, cw, cw, 10);
-			g.stroke();
-			if (r === 0) label(g, shot.name, x + cw / 2, y - 10, 10);
+			const Z = cw / 2.2;
+			frameCell(g, x, y, cw, () => {
+				const [cx, cy] = cell(g, season, x, y, cw, Z);
+				const hx = cx - (shot.ghost ? Z * 0.55 : 0);
+				if (shot.ghost) drawGhost(g, 'BLINKY', cx + Z * 0.6, cy, Z, -1);
+				shoot(h.make, h.radius, hx, cy, Z, season, shot).draw(g);
+			});
+			if (r === 0) label(g, shot.name, x + cw / 2, y - 11, 11);
 		});
 	});
-	sheetCanvas = c;
-	ctx.drawImage(c, 0, 0, vw, vh);
+}
+
+function sceneSeasons(g: CanvasRenderingContext2D): void {
+	const rows = HEROES.filter((h) => h.fresh);
+	const labelW = 160;
+	const gap = 10;
+	const cw = Math.floor(Math.min(230, (vw - labelW - 30 - gap * 4) / 4, (vh - 120) / rows.length - 14));
+	const rowH = cw + 16;
+	const y0 = Math.max(56, (vh - rows.length * rowH) / 2 + 10);
+	label(g, 'Новые герои на полах всех сезонов, рядом призрак сезона', vw / 2, y0 - 34, 16);
+	rows.forEach((h, r) => {
+		const y = y0 + r * rowH;
+		label(g, h.name, 14, y + cw / 2, 13, 'left');
+		SEASONS.forEach((s, i) => {
+			const x = 14 + labelW + i * (cw + gap);
+			const Z = cw / 2.6;
+			frameCell(g, x, y, cw, () => {
+				const [cx, cy] = cell(g, s, x, y, cw, Z);
+				drawGhost(g, KINDS[i]!, cx + Z * 0.62, cy, Z, -1, s);
+				shoot(h.make, h.radius, cx - Z * 0.55, cy, Z, s, { moving: true }).draw(g);
+			});
+			if (r === 0) label(g, s, x + cw / 2, y - 11, 12);
+		});
+	});
 }
 
 // ── scene: the maze ─────────────────────────────────────────────────────────────────
@@ -296,8 +313,7 @@ const DIRS: ReadonlyArray<[number, number]> = [
 ];
 
 interface Runner {
-	form: number;
-	ms: boolean;
+	who: number;
 	hero: Hero | null;
 	ghost: GhostKind | null;
 	tile: { x: number; y: number };
@@ -318,19 +334,14 @@ function makeRunners(): Runner[] {
 	const free: Array<{ x: number; y: number }> = [];
 	for (let y = 0; y < g.height; y++) for (let x = 0; x < g.width; x++) if (g.tileAt(x, y) === 'DT') free.push({ x, y });
 	const list: Runner[] = [];
-	let i = 0;
-	for (let f = 0; f < FORMS.length; f++) {
-		for (const m of [false, true]) {
-			const hero = FORMS[f]!.make(m);
-			hero.setFeel(GAME_FEEL);
-			list.push({ form: f, ms: m, hero, ghost: null, tile: { ...free[Math.floor(hashN(i + 1) * free.length)]! }, dir: 0, progress: 0, seed: i });
-			i++;
-		}
-	}
-	for (const kind of KINDS) {
-		list.push({ form: -1, ms: false, hero: null, ghost: kind, tile: { ...free[Math.floor(hashN(i + 11) * free.length)]! }, dir: 2, progress: 0, seed: i });
-		i++;
-	}
+	HEROES.forEach((h, i) => {
+		const hero = h.make();
+		hero.setFeel(GAME_FEEL);
+		list.push({ who: i, hero, ghost: null, tile: { ...free[Math.floor(hashN(i + 3) * free.length)]! }, dir: 0, progress: 0, seed: i });
+	});
+	KINDS.forEach((kind, i) => {
+		list.push({ who: -1, hero: null, ghost: kind, tile: { ...free[Math.floor(hashN(i + 17) * free.length)]! }, dir: 2, progress: 0, seed: 10 + i });
+	});
 	return list;
 }
 
@@ -361,11 +372,7 @@ function sceneMaze(dt: number): void {
 	const L = world.layout;
 	const S = L.tileSize;
 	for (const r of runners) {
-		// the energizer: 4.5 s on, 3.5 s off, each on a clock of its own
-		const phase = (time + r.seed * 1.1) % 8;
-		const power = phase > 3.5;
-		const ending = phase > 6.6;
-		step(r, dt, r.ghost ? 5.4 : power ? 7 : 6);
+		step(r, dt, r.ghost ? 5.4 : 6);
 		const [dx, dy] = DIRS[r.dir]!;
 		const x = px(L, r.tile.x + 0.5 + dx * r.progress);
 		const y = py(L, r.tile.y + 0.5 + dy * r.progress);
@@ -373,11 +380,11 @@ function sceneMaze(dt: number): void {
 			drawGhost(ctx, r.ghost, x, y, S, dx || 0);
 			continue;
 		}
-		const hero = r.hero!;
-		hero.setRadius(S * FORMS[r.form]!.radius);
-		hero.update(dt, { x, y, angle: Math.atan2(dy, dx), moving: true, power, ending, season, look: null });
-		hero.draw(ctx);
-		label(ctx, `${r.form === 0 ? 'сейчас' : r.form}${r.ms ? ' Ms' : ''}`, x, y - S * 0.85, 10);
+		const h = HEROES[r.who]!;
+		r.hero!.setRadius(S * h.radius);
+		r.hero!.update(dt, { x, y, angle: Math.atan2(dy, dx), moving: true, power: false, ending: false, season, look: null });
+		r.hero!.draw(ctx);
+		label(ctx, h.name, x, y - S * 0.85, 10);
 	}
 }
 
@@ -390,10 +397,8 @@ function frame(realDt: number): void {
 	ctx.setTransform(D, 0, 0, D, 0, 0);
 	ctx.globalAlpha = 1;
 	ctx.globalCompositeOperation = 'source-over';
-	if (scene === 'sheet') {
-		sceneSheet();
-		return;
-	}
+	if (scene === 'sheet') return paintStill(sceneSheet);
+	if (scene === 'seasons') return paintStill(sceneSeasons);
 	world.drawWorld(ctx);
 	world.drawMood(ctx);
 	world.drawFood(ctx, () => false);

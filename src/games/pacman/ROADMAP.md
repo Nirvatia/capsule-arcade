@@ -85,14 +85,25 @@ all (see Later).
         Next: the feel first, on the current art (stage 2), to see how much of the missing force was
         the art at all; then the art from a reference the owner approves (his mock-up, or one made
         from Claude's written briefs), reproduced in code at the game's level.
-        1b. **The `rage` prototype (built, awaiting the owner's pick;** `node prototypes/pacman/build.mjs
-rage`, `?scene=sheet|maze&season=`): directions 1 and 2 of the second round, on the heroes'
-        own machinery (`prototypes/pacman/rage/forms.ts` subclasses `PacmanHero` / `MsPacmanHero`;
-        `HeroDesign` got two optional knobs, `bands` and `powerScale`, the game's heroes unchanged).
-        The nimble form: 0.33 of a tile, lighter tone bands. The rage: the body to 0.40 and one bold
-        shape: 1, his flame mane, a toothed maw, sparks / her wings of light and a star tiara; 2, his
-        molten cracks and a comet's tail / her rose-quartz facets and a gold crescent. Today's heroes
-        are the first row of the sheet for comparison.
+        1b. The `rage` prototype (second round, on the heroes' own machinery: 1, his flame mane / her
+        wings; 2, his molten core and comet tail / her crystal): rejected too, deleted. The clue the
+        owner took from it: the element works for the heroes (the fiery Pac-Man), and Ms. Pac-Man
+        should be an element as well. Why it keeps coming back (talked through with the owner): the
+        circle with a mouth already reads as a celestial body, the hero's verb is to consume (fire,
+        a star, the black hole of the death), one tile kills details but keeps light, colour and
+        motion, and a stream of fire is the speed the heroes lacked.
+        1c. **The `elements` prototype (built, awaiting the owner's word;** `node prototypes/pacman/
+build.mjs elements`, `?scene=sheet|seasons|maze&season=`): the everyday form first, as the
+        owner asked (the trail and the rage after it). Pac-Man fire: an ember core (a white heat at
+        the heart) in a mantle of anime flames (two tones and an ink line) that rise at rest and
+        stream back along the run, a warm light on the floor, sparks for a trail. Ms. Pac-Man a
+        nebula (the pair "the Sun and a nebula"): a deep violet body with pink, violet and blue
+        clouds drifting inside and stars twinkling, a soft glow and a halo of star dust, her bow a
+        ribbon of light, stars for a trail. Both 0.33 of a tile with lighter tone bands, on
+        `PacmanHero` / `MsPacmanHero` (`elements/forms.ts`); `Hero` got an always-on `drawAura`
+        hook. Next, once the owner approves the look: the flexible trail (a ribbon of fire / of star
+        dust along the hero's path), then the rage (an inferno; her overdrive a supernova with a
+        ring, stars spiralling in as her hypnosis's pull).
    2. The feel, whatever the art: the size, real corner cutting in `PlayerService` (a turn
       pressed early takes the corner on the diagonal; the ghosts cannot), the rage's dash
       (+20-25 % fading to +10 %) and its bite (a stronger hit-stop, the ghost's crunch, the chain

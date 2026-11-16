@@ -855,7 +855,8 @@ export abstract class Hero {
 		);
 		const R = r;
 
-		// behind: what the powered look carries behind it
+		// behind: what the hero always carries (an aura of its own), then the powered look's
+		this.drawAura?.(ctx, R, p);
 		if (p > 0.01) this.drawBehind?.(ctx, R, p * pulse);
 		if (this.ballOn) {
 			this.paintBall(ctx, R, lx, ly, p, pal);
@@ -964,6 +965,8 @@ export abstract class Hero {
 	protected liftFor?(kind: ParticleKind): number;
 	/** How hard a particle kind flutters sideways, body radii per second squared (0 if not given). */
 	protected swirlFor?(kind: ParticleKind): number;
+	/** Frame space, behind the body, always (the hero's own aura); `p` is the powered look, 0..1. */
+	protected drawAura?(ctx: CanvasRenderingContext2D, R: number, p: number): void;
 	/** Frame space, behind the body, while powered (k = look × the end-of-power pulse). */
 	protected drawBehind?(ctx: CanvasRenderingContext2D, R: number, k: number): void;
 	/** Inside the body (the scratch canvas, source-atop): veins, blush, marks. */
