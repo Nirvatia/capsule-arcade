@@ -85,6 +85,14 @@ all (see Later).
         Next: the feel first, on the current art (stage 2), to see how much of the missing force was
         the art at all; then the art from a reference the owner approves (his mock-up, or one made
         from Claude's written briefs), reproduced in code at the game's level.
+        1b. **The `rage` prototype (built, awaiting the owner's pick;** `node prototypes/pacman/build.mjs
+rage`, `?scene=sheet|maze&season=`): directions 1 and 2 of the second round, on the heroes'
+        own machinery (`prototypes/pacman/rage/forms.ts` subclasses `PacmanHero` / `MsPacmanHero`;
+        `HeroDesign` got two optional knobs, `bands` and `powerScale`, the game's heroes unchanged).
+        The nimble form: 0.33 of a tile, lighter tone bands. The rage: the body to 0.40 and one bold
+        shape: 1, his flame mane, a toothed maw, sparks / her wings of light and a star tiara; 2, his
+        molten cracks and a comet's tail / her rose-quartz facets and a gold crescent. Today's heroes
+        are the first row of the sheet for comparison.
    2. The feel, whatever the art: the size, real corner cutting in `PlayerService` (a turn
       pressed early takes the corner on the diagonal; the ghosts cannot), the rage's dash
       (+20-25 % fading to +10 %) and its bite (a stronger hit-stop, the ghost's crunch, the chain

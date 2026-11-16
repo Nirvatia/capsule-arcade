@@ -229,9 +229,10 @@ function celDisc(
 	};
 	ctx.fillStyle = css(pal.bounce);
 	ctx.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
-	band(pal.shadow, 0.12);
-	band(pal.mid, 0.42);
-	band(pal.light, 0.92);
+	const [dShadow, dMid, dLight] = design.bands ?? [0.12, 0.42, 0.92];
+	band(pal.shadow, dShadow);
+	band(pal.mid, dMid);
+	band(pal.light, dLight);
 	// the pale zone and the hard highlight
 	const hx = lx * R * 0.56;
 	const hy = ly * R * 0.56;
@@ -289,6 +290,13 @@ export interface HeroDesign {
 	readonly flare: RGB;
 	/** 'open': the mouth opens all the way round; 'spin': she spins away. */
 	readonly death: 'open' | 'spin';
+	/**
+	 * How far each tone's disc is pushed towards the light (shadow, mid, light), body radii: the
+	 * bigger, the wider the darker crescents left on the far side. Default 0.12, 0.42, 0.92.
+	 */
+	readonly bands?: readonly [number, number, number];
+	/** His size in the powered look, against the calm one (default 1: the same). */
+	readonly powerScale?: number;
 }
 
 export type ParticleKind =
@@ -569,6 +577,7 @@ export abstract class Hero {
 		this.powerOn = s.power;
 		// at rest he breathes; running he keeps his size
 		let sizeTarget = this.moving ? 1 : 1 + 0.015 * Math.sin(this.time * 2.3);
+		sizeTarget *= 1 + ((this.design.powerScale ?? 1) - 1) * this.power;
 		if (this.transform >= 0) {
 			const before = this.transform;
 			this.transform += dt;
