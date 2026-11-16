@@ -3,12 +3,17 @@ import type { GhostKind, GhostModel } from '../../logic/actors/GhostModel';
 import type { GridLayout } from '../maze/GridView';
 import type { HypnosisMode } from '../../logic/rules/HypnosisService';
 import { cuteStateFor, drawCuteGhost, type CuteShape } from './cuteGhost';
+import { drawHeldGhost } from './abilityArt';
+import { ABILITY } from '../../config/abilityConfig';
 
 /** Radians of the stride per tile walked: a full step cycle every ~1.1 tiles. */
 const STRIDE_PER_TILE = 5.7;
 
 /** `disc` is the plain round ghost; the others are the season shapes of `cuteGhost.ts`. */
 export type GhostStyle = 'disc' | CuteShape;
+
+/** A stable small number per ghost (the shock's shake and sprite slots). */
+const KIND_INDEX: Record<GhostKind, number> = { BLINKY: 0, PINKY: 1, INKY: 2, CLYDE: 3 };
 
 export class GhostView {
 	/** The look to draw; the level renderer sets it from the season. */
@@ -19,6 +24,8 @@ export class GhostView {
 	private readonly walked = new Map<GhostKind, { x: number; y: number; distance: number }>();
 	/** The ghosts are hunting, not scattering (set from the service each draw). */
 	private chasing = false;
+	/** Seconds the shock still holds a ghost (0: it moves); the level renderer sets it. */
+	held: ((kind: GhostKind) => number) | null = null;
 
 	draw(
 		ctx: CanvasRenderingContext2D,
@@ -269,6 +276,36 @@ export class GhostView {
 		if (ghost.state === 'lair' || ghost.state === 'exiting') {
 			ctx.globalAlpha = 0.72;
 		}
+		const left = this.held?.(ghost.kind) ?? 0;
+		const step = this.strideOf(ghost);
+		if (left > 0) {
+			// the shock holds it: it stops mid-breath, cold blue, and shakes at the end
+			const t = Math.max(0, ABILITY.shock.seconds - left);
+			const kind = ghost.kind;
+			drawHeldGhost(
+				ctx,
+				(c) =>
+					drawCuteGhost(c, 0, 0, (tileSize / 25) * 0.78, {
+						shape,
+						kind,
+						state,
+						lookX,
+						lookY,
+						time: this.time - t,
+						step,
+						chasing: this.chasing
+					}),
+				x,
+				y,
+				tileSize,
+				t,
+				ABILITY.shock.seconds,
+				ABILITY.shock.shakeSeconds,
+				KIND_INDEX[kind]
+			);
+			ctx.restore();
+			return;
+		}
 		drawCuteGhost(ctx, x, y, (tileSize / 25) * 0.78, {
 			shape,
 			kind: ghost.kind,
@@ -278,7 +315,7 @@ export class GhostView {
 			lookX,
 			lookY,
 			time: this.time,
-			step: this.strideOf(ghost),
+			step,
 			chasing: this.chasing
 		});
 		ctx.restore();

@@ -8,7 +8,7 @@ import type { PlayerDrawOptions } from './actors/playerDrawOptions';
 import { chargePainter } from './actors/hero/heroCharge';
 import { heroSeasonOf } from './actors/hero/heroSeasons';
 import { AbilityView } from './actors/AbilityView';
-import { ABILITY } from '../config/abilityConfig';
+import { SEASON_GHOST } from './actors/cuteGhost';
 import { FruitView } from './items/fruit/FruitView';
 import { EasterEggView } from './items/EasterEggView';
 import { drawBonusLife } from './items/BonusLifeView';
@@ -88,24 +88,47 @@ export class SharedLayers {
 		this.msHeroView.setSeason(season);
 		// Ms. Pac-Man the heroine or Pac-Man the hero, the hell included
 		const view = frame.level.profile === 'ms-pacman' ? this.msHeroView : this.heroView;
-		const abilities = frame.level.abilities;
-		const masked = Boolean(abilities?.masked) && frame.state === 'playing';
 		const ctx = frame.ctx;
-		if (masked) {
-			// PLACEHOLDER: a faded hero in a halo until the `powers` prototype picks the ghost form
-			const left = abilities?.timer ?? 0;
-			const blink = left < ABILITY.mask.blinkSeconds && Math.floor(left * 8) % 2 === 0;
-			ctx.save();
-			ctx.globalAlpha *= blink ? 0.8 : 0.45;
+		const options = { ...this.playerOptions(frame), paused: frame.paused };
+		const drawHero = (c: CanvasRenderingContext2D) =>
+			view.draw(c, player, layout, frame.time, options);
+		const level = frame.level;
+		const show =
+			level.hellMode || level.secretMode
+				? ({ kind: 'none' } as const)
+				: this.abilityView.maskShow(level.abilities, frame.state === 'playing', frame.time);
+		if (show.kind === 'none') {
+			drawHero(ctx);
+			return;
 		}
-		view.draw(ctx, player, layout, frame.time, {
-			...this.playerOptions(frame),
-			paused: frame.paused
-		});
-		if (masked) {
-			ctx.restore();
-			this.abilityView.drawMaskHalo(ctx, player.position, layout, frame.time);
-		}
+		// the mask: the hero as the season's ghost, or turning into it or back
+		const S = layout.tileSize;
+		const p = player.position;
+		const x = layout.offsetX + p.x * S;
+		const y = layout.offsetY + p.y * S;
+		const form = this.abilityView.ghostForm(
+			player,
+			level.profile === 'ms-pacman',
+			SEASON_GHOST[frame.season.name] ?? 'drop',
+			season,
+			frame.time
+		);
+		this.abilityView.drawMasked(
+			ctx,
+			show,
+			form,
+			x,
+			y,
+			S,
+			(c) => {
+				// the hero painted where he stands, moved to the scratch canvas's centre
+				c.save();
+				c.translate(-x, -y);
+				drawHero(c);
+				c.restore();
+			},
+			() => drawHero(ctx)
+		);
 	}
 
 	/** Where the food ahead is pulled to (the hero's mouth), while he plays; else null. */

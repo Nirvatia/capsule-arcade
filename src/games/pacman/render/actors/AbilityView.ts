@@ -1,18 +1,52 @@
 import type { AbilityService } from '../../logic/bonuses/AbilityService';
 import type { GhostService } from '../../logic/actors/GhostService';
+import type { GhostKind } from '../../logic/actors/GhostModel';
+import type { PlayerService } from '../../logic/actors/PlayerService';
 import type { GridLayout } from '../maze/GridView';
 import { ABILITY } from '../../config/abilityConfig';
 import { EchoCloneView } from './EchoCloneView';
+import type { CuteShape } from './cuteGhost';
+import type { HeroSeason } from './hero/heroSeasons';
+import {
+	MORPH_SECONDS,
+	SHOCK_HOP,
+	drawAbilityIcon,
+	drawGhostForm,
+	drawHeldArcs,
+	drawMorph,
+	drawRelease,
+	drawShockArcs
+} from './abilityArt';
+import type { GhostForm } from './abilityArt';
 
-// The abilities on the board. PLACEHOLDER art for the mask and the shock (their tokens, the
-// struck ghosts, the masked hero): the `powers` prototype picks the real looks. The echo keeps
-// its accepted wisps (`EchoCloneView`).
+/** Seconds the smoke of a ghost the shock let go rises. */
+const RELEASE_SECONDS = 0.45;
+/** Radians of the stride per tile the masked hero walks (as the ghosts'). */
+const STRIDE_PER_TILE = 5.7;
+/** The mask's last second blinks this many times a second. */
+const BLINK_RATE = 8;
 
-const SHOCK = 'rgba(190, 232, 255,';
-const MASK = 'rgba(255, 242, 168,';
+/** How the hero shows this frame while the mask is on, comes on or comes off. */
+export type MaskShow =
+	| { readonly kind: 'none' }
+	| { readonly kind: 'form'; readonly peek: boolean }
+	| { readonly kind: 'morph'; readonly k: number; readonly out: boolean };
 
+/**
+ * The abilities on the board (the art is `abilityArt`, picked in the `powers` prototype): the
+ * tokens and the echo's riot under the actors; the shock's arcs, the arcs round the held ghosts
+ * and the smoke of the ones let go over them; the masked hero as the season's ghost, with the
+ * turn into it and back.
+ */
 export class AbilityView {
 	private readonly echoView = new EchoCloneView();
+	/** Where each held ghost was last seen, and when it was let go (render time, or -1). */
+	private readonly held = new Map<GhostKind, { x: number; y: number; freed: number }>();
+	/** The mask as last drawn: on, and when it came off (render time, or -1). */
+	private wasMasked = false;
+	private maskOff = -1;
+	private walked = 0;
+	private lastHero: { x: number; y: number } | null = null;
 
 	/** The token (if one lies on the board) and the echo's riot: under the actors. */
 	drawUnder(
@@ -23,16 +57,30 @@ export class AbilityView {
 	): void {
 		const at = abilities.tokenPosition;
 		if (abilities.phase === 'token' && at) {
+			const left = abilities.tokenTimer;
 			if (abilities.kind === 'echo') {
-				this.echoView.drawToken(ctx, at, abilities.tokenTimer, layout, time);
+				this.echoView.drawToken(ctx, at, left, layout, time);
 			} else {
-				this.drawToken(ctx, abilities, at, layout, time);
+				const S = layout.tileSize;
+				// the last seconds it flickers: take it or lose it
+				const blinking = left < ABILITY.tokenBlinkSeconds && Math.floor(left * 5) % 2 === 0;
+				ctx.save();
+				ctx.globalAlpha *= blinking ? 0.45 : 1;
+				drawAbilityIcon(
+					ctx,
+					abilities.kind,
+					layout.offsetX + at.x * S,
+					layout.offsetY + at.y * S,
+					S,
+					time
+				);
+				ctx.restore();
 			}
 		}
 		this.echoView.draw(ctx, abilities.echo, layout, time);
 	}
 
-	/** The ghosts the shock holds, and the discharge's arcs: over the ghosts. */
+	/** The shock over the ghosts: the discharge, the arcs round the held ones, the release. */
 	drawOver(
 		ctx: CanvasRenderingContext2D,
 		abilities: AbilityService,
@@ -44,169 +92,141 @@ export class AbilityView {
 		if (!Number.isFinite(S) || S <= 0) {
 			return;
 		}
-		ctx.save();
-		ctx.lineCap = 'round';
-		ctx.lineJoin = 'round';
-		for (const ghost of ghosts.list) {
-			const held = ghosts.frozenFor(ghost.kind);
-			if (held <= 0) {
-				continue;
-			}
+		const px = (x: number) => layout.offsetX + x * S;
+		const py = (y: number) => layout.offsetY + y * S;
+		ghosts.list.forEach((ghost, i) => {
+			const left = ghosts.frozenFor(ghost.kind);
 			const p = ghost.position;
-			const x = layout.offsetX + p.x * S;
-			const y = layout.offsetY + p.y * S;
-			const shaking = held < ABILITY.shock.shakeSeconds;
-			this.crackle(ctx, x, y, S * 0.55, time + ghost.kind.length, shaking ? 0.5 : 0.9, S);
-		}
-		const strike = abilities.strike;
-		const age = abilities.strikeAge;
-		if (strike && age < 0.3) {
-			const fade = 1 - age / 0.3;
-			ctx.strokeStyle = `${SHOCK}${0.9 * fade})`;
-			ctx.lineWidth = Math.max(1, S * 0.08);
-			for (const link of strike.links) {
-				const from = link.from < 0 ? strike : strike.links[link.from];
-				if (!from) {
-					continue;
-				}
-				this.bolt(
+			const seen = this.held.get(ghost.kind);
+			if (left > 0) {
+				this.held.set(ghost.kind, { x: p.x, y: p.y, freed: -1 });
+				drawHeldArcs(
 					ctx,
-					layout.offsetX + from.x * S,
-					layout.offsetY + from.y * S,
-					layout.offsetX + link.x * S,
-					layout.offsetY + link.y * S,
+					px(p.x),
+					py(p.y),
 					S,
-					time
+					ABILITY.shock.seconds - left,
+					ABILITY.shock.seconds,
+					ABILITY.shock.shakeSeconds,
+					i
 				);
+				return;
 			}
-		}
-		ctx.restore();
-	}
-
-	/** The masked hero's halo: drawn around the (faded) hero. */
-	drawMaskHalo(
-		ctx: CanvasRenderingContext2D,
-		position: { readonly x: number; readonly y: number },
-		layout: GridLayout,
-		time: number
-	): void {
-		const S = layout.tileSize;
-		const x = layout.offsetX + position.x * S;
-		const y = layout.offsetY + position.y * S;
-		ctx.save();
-		ctx.strokeStyle = `${MASK}${0.55 + 0.25 * Math.sin(time * 6)})`;
-		ctx.lineWidth = Math.max(1, S * 0.06);
-		ctx.setLineDash([S * 0.12, S * 0.1]);
-		ctx.beginPath();
-		ctx.arc(x, y, S * 0.62, 0, Math.PI * 2);
-		ctx.stroke();
-		ctx.restore();
-	}
-
-	private drawToken(
-		ctx: CanvasRenderingContext2D,
-		abilities: AbilityService,
-		at: { readonly x: number; readonly y: number },
-		layout: GridLayout,
-		time: number
-	): void {
-		const S = layout.tileSize;
-		const x = layout.offsetX + at.x * S;
-		const y = layout.offsetY + at.y * S;
-		const left = abilities.tokenTimer;
-		const blinking = left < ABILITY.tokenBlinkSeconds && Math.floor(left * 5) % 2 === 0;
-		const pulse = 0.5 + 0.5 * Math.sin(time * 4);
-		const tint = abilities.kind === 'mask' ? MASK : SHOCK;
-		ctx.save();
-		ctx.globalAlpha = blinking ? 0.45 : 1;
-		ctx.strokeStyle = `${tint}${0.6 + 0.3 * pulse})`;
-		ctx.lineWidth = Math.max(1, S * 0.06);
-		ctx.beginPath();
-		ctx.arc(x, y, S * (0.4 + 0.05 * pulse), 0, Math.PI * 2);
-		ctx.stroke();
-		ctx.fillStyle = `${tint}0.95)`;
-		ctx.strokeStyle = 'rgba(20, 24, 40, 0.9)';
-		ctx.lineWidth = Math.max(1, S * 0.04);
-		if (abilities.kind === 'mask') {
-			// a small ghost: dome, skirt
-			const r = S * 0.2;
-			ctx.beginPath();
-			ctx.arc(x, y - r * 0.2, r, Math.PI, 0);
-			ctx.lineTo(x + r, y + r * 0.9);
-			for (let i = 0; i < 3; i += 1) {
-				const x0 = x + r - ((i + 0.5) * 2 * r) / 3;
-				ctx.lineTo(x0, y + r * 0.55);
-				ctx.lineTo(x + r - ((i + 1) * 2 * r) / 3, y + r * 0.9);
+			if (seen && seen.freed < 0) {
+				seen.freed = time;
 			}
-			ctx.closePath();
-			ctx.fill();
-			ctx.stroke();
-		} else {
-			// a bolt
-			const h = S * 0.24;
-			ctx.beginPath();
-			ctx.moveTo(x + h * 0.25, y - h);
-			ctx.lineTo(x - h * 0.45, y + h * 0.1);
-			ctx.lineTo(x + h * 0.05, y + h * 0.1);
-			ctx.lineTo(x - h * 0.25, y + h);
-			ctx.lineTo(x + h * 0.45, y - h * 0.1);
-			ctx.lineTo(x - h * 0.05, y - h * 0.1);
-			ctx.closePath();
-			ctx.fill();
-			ctx.stroke();
+			if (seen) {
+				const k = (time - seen.freed) / RELEASE_SECONDS;
+				if (k >= 1 || k < 0) {
+					this.held.delete(ghost.kind);
+				} else {
+					drawRelease(ctx, px(seen.x), py(seen.y), S, k, i);
+				}
+			}
+		});
+		const strike = abilities.strike;
+		if (strike && abilities.strikeAge < 0.6) {
+			const hops = strike.links.map((link, i) => {
+				const from = link.from < 0 ? strike : strike.links[link.from];
+				return {
+					x0: px(from?.x ?? strike.x),
+					y0: py(from?.y ?? strike.y),
+					x1: px(link.x),
+					y1: py(link.y),
+					delay: i * SHOCK_HOP
+				};
+			});
+			drawShockArcs(ctx, hops, px(strike.x), py(strike.y), S, abilities.strikeAge);
 		}
-		ctx.restore();
 	}
 
-	/** A ring of short jagged sparks around a held ghost. */
-	private crackle(
+	/**
+	 * How the hero shows now: as himself, as his ghost form (peeking out in the mask's last
+	 * second), or mid-turn. Call once a frame, in play; `time` is the render clock.
+	 */
+	maskShow(abilities: AbilityService | null, playing: boolean, time: number): MaskShow {
+		const masked = Boolean(abilities?.masked) && playing;
+		if (masked && abilities) {
+			this.wasMasked = true;
+			this.maskOff = -1;
+			const left = abilities.timer;
+			const on = abilities.duration - left;
+			if (on < MORPH_SECONDS) {
+				return { kind: 'morph', k: on / MORPH_SECONDS, out: false };
+			}
+			const peek = left < ABILITY.mask.blinkSeconds && Math.floor(left * BLINK_RATE) % 2 === 0;
+			return { kind: 'form', peek };
+		}
+		if (this.wasMasked) {
+			this.wasMasked = false;
+			this.maskOff = playing ? time : -1;
+		}
+		if (this.maskOff >= 0) {
+			const k = (time - this.maskOff) / MORPH_SECONDS;
+			if (k >= 0 && k < 1) {
+				return { kind: 'morph', k, out: true };
+			}
+			this.maskOff = -1;
+		}
+		return { kind: 'none' };
+	}
+
+	/** The ghost form's look this frame: the season's ghost, heading and stride of the hero. */
+	ghostForm(
+		player: PlayerService,
+		ms: boolean,
+		shape: CuteShape,
+		season: HeroSeason,
+		time: number
+	): GhostForm {
+		const p = player.position;
+		if (this.lastHero) {
+			const moved = Math.hypot(p.x - this.lastHero.x, p.y - this.lastHero.y);
+			if (moved < 1.5) this.walked += moved;
+		}
+		this.lastHero = { x: p.x, y: p.y };
+		const facing = player.facing;
+		return {
+			ms,
+			shape,
+			season,
+			lookX: facing === 'LEFT' ? -1 : facing === 'RIGHT' ? 1 : 0,
+			lookY: facing === 'UP' ? -1 : facing === 'DOWN' ? 1 : 0,
+			time,
+			step: this.walked * STRIDE_PER_TILE
+		};
+	}
+
+	/**
+	 * Draws the hero as `show` says, at (x, y) px on a tile of `S` px; `hero(c)` paints him
+	 * centred at (0, 0) of `c` (for the turn), `heroHere()` where he stands (the peek).
+	 */
+	drawMasked(
 		ctx: CanvasRenderingContext2D,
+		show: MaskShow,
+		form: GhostForm,
 		x: number,
 		y: number,
-		r: number,
-		time: number,
-		alpha: number,
-		S: number
-	): void {
-		const frame = Math.floor(time * 20);
-		ctx.strokeStyle = `${SHOCK}${alpha})`;
-		ctx.lineWidth = Math.max(1, S * 0.05);
-		ctx.beginPath();
-		for (let i = 0; i < 6; i += 1) {
-			const a = (i / 6) * Math.PI * 2 + frame * 0.7;
-			const jitter = ((frame * 13 + i * 7) % 5) / 5;
-			ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
-			ctx.lineTo(
-				x + Math.cos(a + 0.25) * r * (1.15 + 0.2 * jitter),
-				y + Math.sin(a + 0.25) * r * (1.15 + 0.2 * jitter)
-			);
-		}
-		ctx.stroke();
-	}
-
-	/** A jagged line from one point to another. */
-	private bolt(
-		ctx: CanvasRenderingContext2D,
-		x0: number,
-		y0: number,
-		x1: number,
-		y1: number,
 		S: number,
-		time: number
+		hero: (c: CanvasRenderingContext2D) => void,
+		heroHere: () => void
 	): void {
-		const n = Math.max(3, Math.round(Math.hypot(x1 - x0, y1 - y0) / (S * 0.5)));
-		const nx = -(y1 - y0);
-		const ny = x1 - x0;
-		const len = Math.hypot(nx, ny) || 1;
-		const frame = Math.floor(time * 30);
-		ctx.beginPath();
-		ctx.moveTo(x0, y0);
-		for (let i = 1; i < n; i += 1) {
-			const t = i / n;
-			const off = ((((frame + i * 17) * 7919) % 100) / 100 - 0.5) * S * 0.5;
-			ctx.lineTo(x0 + (x1 - x0) * t + (nx / len) * off, y0 + (y1 - y0) * t + (ny / len) * off);
+		if (show.kind === 'morph') {
+			drawMorph(ctx, show.k, show.out, x, y, S, hero, form);
+			return;
 		}
-		ctx.lineTo(x1, y1);
-		ctx.stroke();
+		if (show.kind !== 'form') {
+			return;
+		}
+		if (show.peek) {
+			// the mask wears thin: the hero shows through it
+			ctx.save();
+			ctx.globalAlpha *= 0.7;
+			heroHere();
+			ctx.restore();
+			drawGhostForm(ctx, form, x, y, S, 0.25, 0.45);
+			return;
+		}
+		drawGhostForm(ctx, form, x, y, S);
 	}
 }

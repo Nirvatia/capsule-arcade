@@ -333,6 +333,14 @@ const TURTLE: GhostShape = {
 	nose: false
 };
 
+/** The ghost of each season (the mask turns the hero into it too). */
+export const SEASON_GHOST: Readonly<Record<string, CuteShape>> = {
+	spring: 'tulip',
+	summer: 'turtle',
+	autumn: 'hedgehog',
+	winter: 'bunny'
+};
+
 export const GHOST_SHAPES: Record<CuteShape, GhostShape> = {
 	drop: DROP,
 	hedgehog: HEDGEHOG,

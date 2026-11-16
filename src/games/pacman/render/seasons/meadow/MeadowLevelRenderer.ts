@@ -1,4 +1,5 @@
 import { GhostView, type GhostStyle } from '../../actors/GhostView';
+import { SEASON_GHOST } from '../../actors/cuteGhost';
 import type { GridLayout } from '../../maze/GridView';
 import type { SharedLayers } from '../../SharedLayers';
 import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../../RenderFrame';
@@ -20,12 +21,7 @@ const NIGHT_AT = 0.75;
 const GATE_REACH = 1.6;
 /** Gate speed, share of the full slide per second, opening and closing. */
 /** The ghost shape of each season; the others keep the plain disc. */
-const GHOST_STYLES: Readonly<Record<string, GhostStyle>> = {
-	spring: 'tulip',
-	summer: 'turtle',
-	autumn: 'hedgehog',
-	winter: 'bunny'
-};
+const GHOST_STYLES: Readonly<Record<string, GhostStyle>> = SEASON_GHOST;
 /** A world not drawn for this long gives up its baked background (it is baked again in a few frames). */
 const IDLE_BAKE_MS = 3000;
 const GATE_OPEN_RATE = 7;
@@ -142,6 +138,7 @@ export class MeadowLevelRenderer implements LevelRenderer, WorldPreview {
 				const vanish = level.egg?.vanishProgress ?? 0;
 				this.ghostView.style = GHOST_STYLES[frame.season.name] ?? 'disc';
 				this.ghostView.time = frame.time;
+				this.ghostView.held = level.secretMode ? null : (kind) => ghosts.frozenFor(kind);
 				this.ghostView.draw(
 					ctx,
 					ghosts,

@@ -22,6 +22,7 @@
 	} from './seasonArt';
 	import type { Dial, TrailBox } from './seasonArt';
 	import { SEASON_THEMES } from './seasonThemes';
+	import AbilitySlot from './AbilitySlot.svelte';
 	import type { SeasonKey } from './seasonThemes';
 
 	let { snap, scale, onpause }: { snap: HudSnapshot; scale: number; onpause: () => void } =
@@ -54,6 +55,13 @@
 		snap.timer && snap.timer.duration > 0 ? clamp01(snap.timer.remaining / snap.timer.duration) : 0
 	);
 	// the dial shows what runs; an ability waiting in the slot (placeholder until its own art)
+	/** The ability waiting in the slot, or the one running: the dial shows its icon. */
+	const slot = $derived(
+		snap.ability ??
+			(snap.timer && snap.timer.kind !== 'power' && snap.timer.kind !== 'overdrive'
+				? snap.timer.kind
+				: null)
+	);
 	const timerLabel = $derived(
 		snap.timer
 			? $t(snap.timer.kind)
@@ -159,9 +167,15 @@
 			stroke-dashoffset={RING * (1 - ratio)}
 			transform="rotate(-90 {DIAL.cx} {DIAL.cy})"
 		/>
-		<g class:idle={!snap.timer} transform="translate({DIAL.cx} {DIAL.cy - 2}) scale(.44)">
-			<g class="bob">{@html art.energizer}</g>
-		</g>
+		{#if slot}
+			<foreignObject x={DIAL.cx - 26} y={DIAL.cy - 28} width="52" height="52">
+				<AbilitySlot kind={slot} size={52} {scale} />
+			</foreignObject>
+		{:else}
+			<g class:idle={!snap.timer} transform="translate({DIAL.cx} {DIAL.cy - 2}) scale(.44)">
+				<g class="bob">{@html art.energizer}</g>
+			</g>
+		{/if}
 		<text class="lab" x={DIAL.cx} y={DIAL.cy + DIAL.r + 24} font-size="9" text-anchor="middle"
 			>{timerLabel}</text
 		>

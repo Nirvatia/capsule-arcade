@@ -11,9 +11,6 @@ export const GHOST_TINT: Record<GhostKind, number> = {
 export const GOLD = 0xffd84a;
 export const WHITE = 0xffffff;
 const ECHO_BLUE = 0x7fd0ff;
-/** Placeholder tints of the abilities, until the `powers` prototype picks their looks. */
-const SHOCK_TINT = 0xbfe8ff;
-const MASK_TINT = 0xfff2a8;
 
 /** Shockwaves linger a little longer than a plain ring would. */
 const WAVE_STRETCH = 1.15;
@@ -134,24 +131,13 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 				bursts: [{ x: fx.x, y: fx.y, tint: 0x9aa4b0, count: 5, speed: 1.6, particle: null }]
 			};
 		case 'mask':
-			return {
-				...NONE,
-				flashes: [{ x: fx.x, y: fx.y, life: 0.14 }],
-				rings: [wave(fx.x, fx.y, MASK_TINT, fx.on ? 1.6 : 1.1, 0.35)]
-			};
+			// the turn's own puff and flash are the mask's art (`abilityArt`): only a soft light here
+			return { ...NONE, flashes: [{ x: fx.x, y: fx.y, life: 0.12 }] };
 		case 'shock':
+			// the lightning is the shock's art (`abilityArt`): a kick of the screen and the light
 			return {
 				...NONE,
-				flashes: fx.links.map((l) => ({ x: l.x1, y: l.y1, life: 0.18 })),
-				rings: fx.links.map((l) => wave(l.x1, l.y1, SHOCK_TINT, 1.2, 0.3)),
-				streaks: fx.links.map((l) => ({
-					x0: l.x0,
-					y0: l.y0,
-					x1: l.x1,
-					y1: l.y1,
-					tint: SHOCK_TINT,
-					life: 0.35
-				})),
+				flashes: fx.links.map((l) => ({ x: l.x1, y: l.y1, life: 0.14 })),
 				kick: 0.25
 			};
 		case 'near-miss':
