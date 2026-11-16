@@ -1,10 +1,15 @@
-// Prototype `elements`: the heroes as elements, the everyday (nimble) form first (roadmap I.4):
-// Pac-Man fire, Ms. Pac-Man a nebula, on the heroes' own machinery, beside today's heroes.
+// Prototype `elements`: the heroes as elements, the everyday (nimble) form first (roadmap I.4),
+// on the heroes' own machinery, in three variants:
+//   1  fire and a nebula (an ember ball in a mantle of flames; pink clouds inside her);
+//   2  cosmos, from scratch: a sun (corona, prominences) and a galaxy (her bow a nebula);
+//   3  fire and water, from scratch: each hero a drop of its element (a ball with a tail).
 // Scenes:
-//   sheet    frame by frame: standing, running right / left / up / down, a bite, beside a ghost;
-//   seasons  each new hero running on all four seasons' floors, beside the season's ghost;
-//   maze     today's and the new heroes running the real maze at game scale.
-// Query: ?scene=sheet&season=autumn&capture (capture: window.__advance(seconds)).
+//   sheet    one variant frame by frame: standing, running right / left / up / down, a bite,
+//            beside a ghost;
+//   compare  the three variants, a row a hero, in the main frames;
+//   seasons  one variant running on all four seasons' floors, beside the season's ghost;
+//   maze     all six heroes running the real maze at game scale.
+// Query: ?scene=sheet&v=2&season=autumn&capture (capture: window.__advance(seconds)).
 import { EventBus } from '../../../src/games/pacman/engine/EventBus';
 import type { PacmanEventMap } from '../../../src/games/pacman/core/Events';
 import { buildLevelSession } from '../../../src/games/pacman/logic/level/LevelSession';
@@ -17,23 +22,50 @@ import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meado
 import { SEASON_GHOST, drawCuteGhost } from '../../../src/games/pacman/render/actors/cuteGhost';
 import { GAME_FEEL } from '../../../src/games/pacman/render/actors/HeroView';
 import type { Hero } from '../../../src/games/pacman/render/actors/hero/Hero';
-import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
-import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
 import type { GridLayout } from '../../../src/games/pacman/render/maze/GridView';
 import { EmberPacman, NebulaMs } from './forms';
+import { GalaxyMs, SolPacman } from './cosmos';
+import { FlamePacman, WaterMs } from './fireWater';
 
 const SEASONS = ['summer', 'autumn', 'winter', 'spring'] as const;
 type Season = (typeof SEASONS)[number];
-const SCENES = ['sheet', 'seasons', 'maze'] as const;
+const SCENES = ['sheet', 'compare', 'seasons', 'maze'] as const;
 type Scene = (typeof SCENES)[number];
 const KINDS: readonly GhostKind[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
 
-const HEROES: ReadonlyArray<{ name: string; radius: number; fresh: boolean; make: () => Hero }> = [
-	{ name: 'Pac-Man сейчас', radius: 0.39, fresh: false, make: () => new PacmanHero() },
-	{ name: 'Pac-Man · огонь', radius: 0.33, fresh: true, make: () => new EmberPacman() },
-	{ name: 'Ms. сейчас', radius: 0.39, fresh: false, make: () => new MsPacmanHero() },
-	{ name: 'Ms. · туманность', radius: 0.33, fresh: true, make: () => new NebulaMs() }
+interface Pick {
+	readonly name: string;
+	readonly short: string;
+	readonly radius: number;
+	readonly make: () => Hero;
+}
+const VARIANTS: ReadonlyArray<{ id: string; name: string; heroes: readonly [Pick, Pick] }> = [
+	{
+		id: '1',
+		name: '1 · огонь и туманность',
+		heroes: [
+			{ name: '1 · Pac-Man · огонь', short: '1', radius: 0.33, make: () => new EmberPacman() },
+			{ name: '1 · Ms. · туманность', short: '1', radius: 0.33, make: () => new NebulaMs() }
+		]
+	},
+	{
+		id: '2',
+		name: '2 · солнце и галактика',
+		heroes: [
+			{ name: '2 · Pac-Man · солнце', short: '2', radius: 0.33, make: () => new SolPacman() },
+			{ name: '2 · Ms. · галактика', short: '2', radius: 0.33, make: () => new GalaxyMs() }
+		]
+	},
+	{
+		id: '3',
+		name: '3 · огонь и вода',
+		heroes: [
+			{ name: '3 · Pac-Man · пламя', short: '3', radius: 0.32, make: () => new FlamePacman() },
+			{ name: '3 · Ms. · вода', short: '3', radius: 0.32, make: () => new WaterMs() }
+		]
+	}
 ];
+const ALL: readonly Pick[] = VARIANTS.flatMap((v) => v.heroes);
 
 const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
 const view = $<HTMLCanvasElement>('view');
@@ -45,6 +77,8 @@ const pick = <T extends string>(list: readonly T[], v: string | null, f: T): T =
 
 let season: Season = pick(SEASONS, q.get('season'), 'summer');
 let scene: Scene = pick(SCENES, q.get('scene'), 'sheet');
+let variant = pick(['1', '2', '3'] as const, q.get('v'), '2');
+const chosen = () => VARIANTS.find((v) => v.id === variant)!;
 let slow = false;
 let vw = 0;
 let vh = 0;
@@ -121,6 +155,9 @@ function build(): void {
 	for (const b of document.querySelectorAll<HTMLButtonElement>('[data-scene]')) {
 		b.setAttribute('aria-pressed', String(b.dataset.scene === scene));
 	}
+	for (const b of document.querySelectorAll<HTMLButtonElement>('[data-variant]')) {
+		b.setAttribute('aria-pressed', String(b.dataset.variant === variant));
+	}
 }
 
 function layout(): void {
@@ -142,6 +179,12 @@ for (const b of document.querySelectorAll<HTMLButtonElement>('[data-season]')) {
 for (const b of document.querySelectorAll<HTMLButtonElement>('[data-scene]')) {
 	b.addEventListener('click', () => {
 		scene = b.dataset.scene as Scene;
+		build();
+	});
+}
+for (const b of document.querySelectorAll<HTMLButtonElement>('[data-variant]')) {
+	b.addEventListener('click', () => {
+		variant = b.dataset.variant as typeof variant;
 		build();
 	});
 }
@@ -255,17 +298,20 @@ function paintStill(draw: (g: CanvasRenderingContext2D) => void): void {
 	ctx.drawImage(still, 0, 0, vw, vh);
 }
 
-function sceneSheet(g: CanvasRenderingContext2D): void {
-	const labelW = 160;
+/** Rows of heroes by frames: `rows` heroes, `shots` frames, under a title. */
+function sheet(g: CanvasRenderingContext2D, title: string, rows: readonly Pick[], shots: typeof SHOTS, cap: number): void {
+	const labelW = 170;
 	const gap = 8;
-	const cw = Math.floor(Math.min(170, (vw - labelW - 30 - gap * SHOTS.length) / SHOTS.length, (vh - 110) / HEROES.length - 12));
+	const cw = Math.floor(
+		Math.min(cap, (vw - labelW - 30 - gap * shots.length) / shots.length, (vh - 110) / rows.length - 12)
+	);
 	const rowH = cw + 12;
-	const y0 = Math.max(56, (vh - HEROES.length * rowH) / 2 + 10);
-	label(g, `Обычная форма: огонь и туманность (${season}), рядом сегодняшние герои`, vw / 2, y0 - 34, 16);
-	HEROES.forEach((h, r) => {
+	const y0 = Math.max(56, (vh - rows.length * rowH) / 2 + 10);
+	label(g, title, vw / 2, y0 - 34, 16);
+	rows.forEach((h, r) => {
 		const y = y0 + r * rowH;
 		label(g, h.name, 14, y + cw / 2, 13, 'left');
-		SHOTS.forEach((shot, i) => {
+		shots.forEach((shot, i) => {
 			const x = 14 + labelW + i * (cw + gap);
 			const Z = cw / 2.2;
 			frameCell(g, x, y, cw, () => {
@@ -279,14 +325,23 @@ function sceneSheet(g: CanvasRenderingContext2D): void {
 	});
 }
 
+function sceneSheet(g: CanvasRenderingContext2D): void {
+	sheet(g, `Вариант ${chosen().name}: обычная форма (${season})`, chosen().heroes, SHOTS, 210);
+}
+
+function sceneCompare(g: CanvasRenderingContext2D): void {
+	const shots = SHOTS.filter((s) => s.name !== 'бег ←');
+	sheet(g, `Три варианта рядом (${season})`, ALL, shots, 150);
+}
+
 function sceneSeasons(g: CanvasRenderingContext2D): void {
-	const rows = HEROES.filter((h) => h.fresh);
-	const labelW = 160;
+	const rows = chosen().heroes;
+	const labelW = 170;
 	const gap = 10;
-	const cw = Math.floor(Math.min(230, (vw - labelW - 30 - gap * 4) / 4, (vh - 120) / rows.length - 14));
+	const cw = Math.floor(Math.min(240, (vw - labelW - 30 - gap * 4) / 4, (vh - 120) / rows.length - 14));
 	const rowH = cw + 16;
 	const y0 = Math.max(56, (vh - rows.length * rowH) / 2 + 10);
-	label(g, 'Новые герои на полах всех сезонов, рядом призрак сезона', vw / 2, y0 - 34, 16);
+	label(g, `Вариант ${chosen().name} на полах всех сезонов, рядом призрак сезона`, vw / 2, y0 - 34, 16);
 	rows.forEach((h, r) => {
 		const y = y0 + r * rowH;
 		label(g, h.name, 14, y + cw / 2, 13, 'left');
@@ -334,7 +389,7 @@ function makeRunners(): Runner[] {
 	const free: Array<{ x: number; y: number }> = [];
 	for (let y = 0; y < g.height; y++) for (let x = 0; x < g.width; x++) if (g.tileAt(x, y) === 'DT') free.push({ x, y });
 	const list: Runner[] = [];
-	HEROES.forEach((h, i) => {
+	ALL.forEach((h, i) => {
 		const hero = h.make();
 		hero.setFeel(GAME_FEEL);
 		list.push({ who: i, hero, ghost: null, tile: { ...free[Math.floor(hashN(i + 3) * free.length)]! }, dir: 0, progress: 0, seed: i });
@@ -380,11 +435,11 @@ function sceneMaze(dt: number): void {
 			drawGhost(ctx, r.ghost, x, y, S, dx || 0);
 			continue;
 		}
-		const h = HEROES[r.who]!;
+		const h = ALL[r.who]!;
 		r.hero!.setRadius(S * h.radius);
 		r.hero!.update(dt, { x, y, angle: Math.atan2(dy, dx), moving: true, power: false, ending: false, season, look: null });
 		r.hero!.draw(ctx);
-		label(ctx, h.name, x, y - S * 0.85, 10);
+		label(ctx, h.short, x, y - S * 0.85, 10);
 	}
 }
 
@@ -398,6 +453,7 @@ function frame(realDt: number): void {
 	ctx.globalAlpha = 1;
 	ctx.globalCompositeOperation = 'source-over';
 	if (scene === 'sheet') return paintStill(sceneSheet);
+	if (scene === 'compare') return paintStill(sceneCompare);
 	if (scene === 'seasons') return paintStill(sceneSeasons);
 	world.drawWorld(ctx);
 	world.drawMood(ctx);

@@ -93,17 +93,34 @@ all (see Later).
         a star, the black hole of the death), one tile kills details but keeps light, colour and
         motion, and a stream of fire is the speed the heroes lacked.
         1c. **The `elements` prototype (built, awaiting the owner's word;** `node prototypes/pacman/
-build.mjs elements`, `?scene=sheet|seasons|maze&season=`): the everyday form first, as the
-        owner asked (the trail and the rage after it). Pac-Man fire: an ember core (a white heat at
-        the heart) in a mantle of anime flames (two tones and an ink line) that rise at rest and
-        stream back along the run, a warm light on the floor, sparks for a trail. Ms. Pac-Man a
-        nebula (the pair "the Sun and a nebula"): a deep violet body with pink, violet and blue
-        clouds drifting inside and stars twinkling, a soft glow and a halo of star dust, her bow a
-        ribbon of light, stars for a trail. Both 0.33 of a tile with lighter tone bands, on
-        `PacmanHero` / `MsPacmanHero` (`elements/forms.ts`); `Hero` got an always-on `drawAura`
-        hook. Next, once the owner approves the look: the flexible trail (a ribbon of fire / of star
-        dust along the hero's path), then the rage (an inferno; her overdrive a supernova with a
-        ring, stars spiralling in as her hypnosis's pull).
+build.mjs elements`, `?v=1|2|3&scene=sheet|compare|seasons|maze&season=`): the everyday form
+        first, as the owner asked (the trail and the rage after it), in three variants, all on
+        `PacmanHero` / `MsPacmanHero` with the body's paint their own (`Hero` got an always-on
+        `drawAura` hook; `MsPacmanHero` a `drawBow` hook):
+        - 1, fire and a nebula (`elements/forms.ts`; the owner: "looks better", kept as variant 1):
+          an ember core in a mantle of anime flames that rise at rest and stream back along the
+          run; a deep violet body with clouds and stars drifting inside, a halo of star dust, her
+          bow a ribbon of light. 0.33 of a tile.
+        - 2, cosmos, from scratch (`elements/cosmos.ts`): a sun (self-lit radial bands from a
+          white heart to a red limb, their edges boiling; a corona of twelve turning rays,
+          straight and wavy in turn, under one ink line, that the run stretches back into a solar
+          wind; glints of sunlight for a trail) and a galaxy (deep space with a tilted spiral
+          galaxy turning inside, a glowing limb, a pale cloud round her eye so the lashes read;
+          her bow a bipolar nebula: two glowing lobes, a star at the knot). Tried and dropped on
+          the way: soft additive rays (unseen on the floors), prominence loops (read as a
+          teapot's handles), thin rays (a sea urchin); orange rays were too close to autumn's
+          orange hedgehog, so they are gold.
+        - 3, fire and water, from scratch (`elements/fireWater.ts`): each hero a drop of its
+          element, one silhouette and one ink line (the tail painted under the body with its ink
+          and again over the body's ink outside it): flat anime fire running from the body into a
+          flickering tail and two side licks, which rise at rest and sweep back on the run, little
+          flames for a trail; Ms. Pac-Man blue water, cel-shaded under the key light (a hard
+          highlight, the light gathering on the far side, bubbles rising), all but round at rest
+          and drawn out on the run, a water bow, coral lipstick, droplets for a trail. 0.32 of a
+          tile. The rolling ball's meridians are off on variants 2 and 3 (they read as lines on
+          the element).
+        Next, once the owner picks a look: the flexible trail, then the rage (an inferno; her
+        overdrive a supernova or its water/galaxy counterpart).
    2. The feel, whatever the art: the size, real corner cutting in `PlayerService` (a turn
       pressed early takes the corner on the diagonal; the ghosts cannot), the rage's dash
       (+20-25 % fading to +10 %) and its bite (a stronger hit-stop, the ghost's crunch, the chain

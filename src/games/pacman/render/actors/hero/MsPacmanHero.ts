@@ -69,8 +69,8 @@ export const PINK_TINT: MsTint = {
 };
 
 /** Her bow: on top of the head, a little behind, on the head's outline. */
-const BOW_ANGLE = -0.63 * Math.PI;
-const BOW_DISTANCE = 0.95;
+export const BOW_ANGLE = -0.63 * Math.PI;
+export const BOW_DISTANCE = 0.95;
 
 const bowCache = new Map<string, HTMLCanvasElement>();
 /** The painted bow's canvas spans this many head radii either side of the knot. */
@@ -438,7 +438,7 @@ export class MsPacmanHero extends Hero {
 	 * a brow above. It blinks, squints happily after a bite, lifts the brow and puts a star in
 	 * its glint when she is powered, and stays shut while she dies.
 	 */
-	private drawEye(ctx: CanvasRenderingContext2D, R: number, p: number): void {
+	protected drawEye(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		// above the upper lip even with the mouth wide open, clear of the bow; at tile size
 		// (a small radius) the eye grows a little so it still reads
 		const lod = R < 20 ? 1.25 : 1;
@@ -609,8 +609,16 @@ export class MsPacmanHero extends Hero {
 		lx: number,
 		ly: number
 	): void {
+		this.drawBow(ctx, R, p);
+		// the eye last: on her face, in front of the bow
+		this.drawEye(ctx, R, p);
+		drawStarGlint(ctx, R, p, lx, ly);
+	}
+
+	/** The bow on its knot, swaying on its spring (glowing when powered). */
+	protected drawBow(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		const dpr = Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
-		const turn = BOW_ANGLE + Math.PI / 2 + this.bow.value;
+		const turn = this.bowTurn();
 		const scale = 1 + 0.1 * p;
 		ctx.save();
 		ctx.translate(Math.cos(BOW_ANGLE) * R * BOW_DISTANCE, Math.sin(BOW_ANGLE) * R * BOW_DISTANCE);
@@ -627,9 +635,11 @@ export class MsPacmanHero extends Hero {
 		const half = R * BOW_SPAN;
 		ctx.drawImage(paintedBow(R * dpr, this.season, this.tint), -half, -half, half * 2, half * 2);
 		ctx.restore();
-		// the eye last: on her face, in front of the bow
-		this.drawEye(ctx, R, p);
-		drawStarGlint(ctx, R, p, lx, ly);
+	}
+
+	/** The bow's turn on the head, radians: its place on the outline plus the sway. */
+	protected bowTurn(): number {
+		return BOW_ANGLE + Math.PI / 2 + this.bow.value;
 	}
 
 	/** Dust, the season's own things and manga twinkles off the back; hearts and stars on bursts. */

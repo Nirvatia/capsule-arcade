@@ -12,20 +12,11 @@ import { MS_DESIGN, MsPacmanHero } from '../../../src/games/pacman/render/actors
 import type { MsTint } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
 import { css, glow } from '../../../src/games/pacman/render/actors/hero/Hero';
 import type { HeroDesign, Palette, ParticleKind } from '../../../src/games/pacman/render/actors/hero/Hero';
+import { TAU, hash } from './kit';
 
 type Ctx = CanvasRenderingContext2D;
-const TAU = Math.PI * 2;
 
-const NIMBLE_BANDS: readonly [number, number, number] = [0.1, 0.3, 0.64];
-
-/** A repeatable random number in 0..1 for (a, b). */
-function hash(a: number, b = 0): number {
-	let h = Math.imul(a | 0, 0x27d4eb2d) ^ Math.imul((b | 0) + 0x9e3779b9, 0x85ebca6b);
-	h ^= h >>> 15;
-	h = Math.imul(h, 0x2c1b3c6d);
-	h ^= h >>> 12;
-	return ((h >>> 0) % 100000) / 100000;
-}
+export const NIMBLE_BANDS: readonly [number, number, number] = [0.1, 0.3, 0.64];
 
 // ── fire ────────────────────────────────────────────────────────────────────────
 

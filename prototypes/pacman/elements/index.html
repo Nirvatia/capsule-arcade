@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>Pac-Man · Elements</title>
-    <!-- Prototype: the heroes as elements (fire, a nebula), the everyday form, beside today's.
+    <!-- Prototype: the heroes as elements, the everyday form, in three variants.
          Built from the sources: `node prototypes/pacman/build.mjs elements`. -->
     <style>
       html,body{height:100%;margin:0;overflow:hidden;background:#0b0a10}
@@ -19,7 +19,12 @@
   <body>
     <canvas id="view"></canvas>
     <div id="ctl">
+      <button class="bt" data-variant="1">1 · огонь и туманность</button>
+      <button class="bt" data-variant="2">2 · солнце и галактика</button>
+      <button class="bt" data-variant="3">3 · огонь и вода</button>
+      <span class="sep"></span>
       <button class="bt" data-scene="sheet">Кадры</button>
+      <button class="bt" data-scene="compare">Все три</button>
       <button class="bt" data-scene="seasons">Сезоны</button>
       <button class="bt" data-scene="maze">В лабиринте</button>
       <span class="sep"></span>
