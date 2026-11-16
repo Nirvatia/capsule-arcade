@@ -119,8 +119,8 @@ build.mjs elements`, `?v=1|2|3&scene=sheet|compare|seasons|maze&season=`): the e
           and drawn out on the run, a water bow, coral lipstick, droplets for a trail. 0.32 of a
           tile. The rolling ball's meridians are off on variants 2 and 3 (they read as lines on
           the element).
-        Next, once the owner picks a look: the flexible trail, then the rage (an inferno; her
-        overdrive a supernova or its water/galaxy counterpart).
+          Next, once the owner picks a look: the flexible trail, then the rage (an inferno; her
+          overdrive a supernova or its water/galaxy counterpart).
    2. The feel, whatever the art: the size, real corner cutting in `PlayerService` (a turn
       pressed early takes the corner on the diagonal; the ghosts cannot), the rage's dash
       (+20-25 % fading to +10 %) and its bite (a stronger hit-stop, the ghost's crunch, the chain
