@@ -1,218 +1,130 @@
 # Pac-Man — roadmap
 
-What is left to do. The game: `DESIGN.md`. The code: `ARCHITECTURE.md`. What was done and
-why: the git history of `feat/pacman` (every stage ends in a commit that says what it did; the
-long "Done" log that used to live here was dropped, the history has it).
+What is left to do. The game: `DESIGN.md`. The code: `ARCHITECTURE.md`. What was done and why:
+the git history of `feat/pacman` (every stage ends in a commit that says what it did). Done work
+is not logged here; only the open stages and the rules that constrain them.
 
 ## Working agreement
 
-One step per chat. A new chat starts with "read `src/games/pacman/ROADMAP.md`, step N" (for
-example "part II, step 3, TRON"). Claude reads the parts of `DESIGN.md` and `ARCHITECTURE.md`
-the step needs, analyses the code, proposes a plan, waits for approval, works, updates the
-three documents (this plan: delete what is done and add what came up; the design and the
-architecture where they changed) and pushes to `feat/pacman`. New art and new effects start as
-a prototype the owner approves first, in the chat, as screenshots (the built pages are not
-committed; see `ARCHITECTURE.md`, Prototypes), unless the owner says to go straight into the
-game.
+One step per chat. A new chat starts with "read `src/games/pacman/ROADMAP.md`, step N". The
+assistant reads the parts of `DESIGN.md` and `ARCHITECTURE.md` the step needs, analyses the code,
+proposes a plan, waits for approval, works, updates the three documents (this plan: delete what
+is done and add what came up; the design and the architecture where they changed) and pushes to
+`feat/pacman`. New art and new effects start as a prototype the owner approves first, in the
+chat, as screenshots, unless the owner says to go straight into the game.
 
-How the looks are decided: a mock-up first, and only for what defines a world (the world, the
-heroes, the boss, the walls). A candidate comparison is a throwaway page built from the game's
-own sources on the real maze (`node prototypes/pacman/build.mjs <name>`, then published as an
-artifact: strip the document wrapper from the built page; delete the page when the owner has
-chosen), not a hand-drawn picture. Effects inside an accepted language are restyled in one
-pass and shown as frame series, not mock-up by mock-up.
+Prototypes: build and view them yourself via `prototypes/pacman/README.md`
+(`node prototypes/pacman/build.mjs <name>`, then open the built `.html`). A candidate comparison
+is a throwaway page built from the game's own sources on the real maze, published as an artifact
+(strip the document wrapper); delete the page when the owner has chosen. Effects inside an
+accepted language are restyled in one pass and shown as frame series, not mock-up by mock-up.
 
 Every bug fix gets a test that is checked to fail on the old behaviour. Checks before a push:
-`npm run check`, `npm test`, `npx eslint src/games/pacman`, `npx prettier --check` on the
-changed files (the repository-wide `npm run lint` is red for files of other games; leave
-them). A UI change is also looked at in a browser (Playwright against `vite dev`).
+`npm run check`, `npm test`, `npx eslint src/games/pacman`, `npx prettier --check` on the changed
+files (the repository-wide `npm run lint` is red for other games; leave them). A UI change is
+also looked at in a browser (Playwright against `vite dev`).
 
 **All graphics are drawn in code** (Canvas2D / WebGL2). No PNG sprites, no sprite sheets, no
-image pipeline. An owner's mock-up is a picture of the target look that Claude reproduces in
-code; it is never loaded as an asset. Motion, particles and seasonal details are code too.
+image pipeline. An owner's mock-up is a picture of the target look reproduced in code; it is
+never loaded as an asset. Motion, particles and seasonal details are code too.
 
-Token budget: code first, art after the mechanics of its part. The model named per step is a
-suggestion (Opus for the design of a look or a mechanic, Sonnet for the steps).
+Token budget: code first, art after the mechanics of its part.
 
 ## Order
 
-**I** the main game (what is left: the abilities' sounds and tuning, a check on a real phone,
-the owner's play of the new heroes, the seasons' scenes), **II** the boss levels (the hell's polish, then the random boss, then the new
-worlds), **III** the interface of each new boss. The depth and post-processing pass comes last of
-all (see Later).
+**I** the main game (the seasons' scenes first, then abilities' sound/tuning, the heroes' rage
+bite, a real-phone check, the mazes), **II** the boss levels (the hell's polish, the random boss,
+the new worlds), **III** the interface of each new boss. The depth/post-processing pass comes
+last (see Later).
 
 ## Part I. The main game
 
-1. **Music track support** (postponed: the owner is still working out how to generate the
-   music). A looped file (ogg/mp3 from `static/`) per world, under the same volume. The
-   seasons' music is optional; the hell's track is part II, step 1.1.
-2. **Abilities: echo, mask, shock** (Opus High, one chat; the rules are in `DESIGN.md` §5,
-   Abilities). A season level may hold one ability token (or none); the hero carries the taken
-   ability in a slot and spends it with F (the hell's fire key). The echo clone stops being an
-   instant bonus and becomes one of the three.
-   Done: the rules (`DESIGN.md` §5), the mechanics (`AbilityService`), and the art the owner
-   picked in the `powers` prototype (deleted after the pick): the tokens M1 (a gold ghost sheet)
-   and S2 (a plasma ball), the mask as the season's ghost in the hero's colour in a halo kept
-   inside the tile (C), the shock as branching lightning (V1), the slot's icon in the HUD dial
-   (`render/actors/abilityArt.ts`, `AbilityView`, `ui/hud/season/AbilitySlot.svelte`).
-   Left:
-   1. Sounds of their own for the token, a spent ability and a refused press (now borrowed
-      arcade wavs: `credit`, `extend`, a quiet `eat_dot_1`).
-   2. Not yet played by hand: whether 5 s of mask, 3 s of shock and a 6-tile reach feel
-      "modest but worth it"; tune after a few runs (`config/abilityConfig.ts`). Also look at it in
-      play: her magenta ghost form beside Pinky and his gold one beside Clyde at game scale (the
-      halo, her bow and the calm face tell them apart in the prototype).
-3. **Mobile controls: on a real phone.** Done: swipes, the optional pad, the dial as the ability
-   and fire button, tap screens, the page held still, the audio unlocked by the first touch, the
-   touch help (`DESIGN.md` §2). Checked only in Chromium's iPhone emulation (portrait and
-   landscape). Left for a real phone: iOS Safari's audio unlock and pinch, how the swipe's length
-   (`swipeThreshold`) and the pad's size feel under a thumb, the safe areas of a notched screen,
-   and the Auto graphics tier there.
-4. **The heroes' redesign: in the game, the owner's play verdict applied.** The owner found the old
-   heroes bulky (0.39 of a tile), without rage in the energizer, thick to move. Rounds of
-   prototypes (all deleted): `heroes` (a ninja, a jelly, a predator: primitive next to the rest of
-   the art, small accessories turn to noise at one tile, a body must stay inside its tile),
-   `rage` (a flame mane, wings, a molten core: the clue was the element) and `elements` (three
-   variants of the heroes as elements). The owner picked variant 2, cosmos: **Pac-Man a sun, Ms.
-   Pac-Man a galaxy** (`PacmanHero` / `MsPacmanHero`, 0.33 of a tile; the look in `DESIGN.md`
-   §6), her nebula bow a quarter smaller than the old bow and no lipstick (the owner's calls).
-   Done with it:
-   - the feel (the owner's three points): real cornering in `PlayerService` (a turn pressed
-     within 0.4 of a tile of a junction takes it at once and runs the corner on the diagonal;
-     the ghosts cannot; the drawn lean is off), Pac-Man's dash under the energizer (+22 % fading
-     to +10 %; not her overdrive: the balance bot found her dying far more with it, 8 deaths a
-     level to 13), the energizer's blow (a 0.1 s hit-stop for both, a flash, three rings, a
-     burst, a hard kick of the screen);
-   - the art in the game with its states: the rage (his flare: white-hot bands, a faster corona
-     whose rays never reach past their calm reach, short arcs of light between them; her
-     accretion ring and stars spiralling in), the ball, the death, the mask's ghost form (his
-     gold, her violet with the nebula bow), the HUD's hero and life icons and the menu's coins
-     (the game's own hero baked into the coin, `heroPortrait`);
-   - the trails: glints of sunlight, stars (fire in the rage), all outline-free; the season's own
-     particles are no longer shed by the heroes;
-   - the owner's play verdict (four complaints, fixed, each with a test that failed on the old
-     look): the rage corona stays inside the tile (the 1.45-radius cap and arcs instead of long
-     streaks), Ms. Pac-Man burns luminous with a readable eye at tile size while her bow, ball
-     and rage stay as the owner liked them, the trail speaks the element language without beads
-     or outlined stars, and the coins carry the baked heroes themselves. The `hero-review`
-     comparison page is deleted after the pick.
-     Left:
-   1. The bite in the rage: the ghost's crunch, the chain 200-1600 rising with it.
-   2. The balance bot never presses a turn early, so its numbers do not show the cornering; a
-      bot that corners would tell how much easier it makes the levels.
-      Kept: no tongue; Ms. Pac-Man's bow.
-5. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). None is
-   started: the winter prototypes (`winter-scene`, the New Year dressing, and
-   `winter-materials`, the wall materials) were both dropped. Today a season is a palette and a
-   few props on one meadow; the owner wants a whole scene per season, in the maze and in the
-   background, not a recolour. Lessons kept from the dropped winter rounds: the accepted season
-   art (the background, the ground, the pellets, the palette) is the base; top-down only, no
-   pseudo-height; the maze silhouette, the corridor width, the food and the heroes' readability
-   unchanged; the static baked into `MeadowBake` (what is painted over `drawWorld` lies over the
-   baked atmosphere); no new full-screen passes (a settled season: High 3, Medium 1, Low 1). The
-   order: winter (New Year), autumn (Halloween: pumpkins, cobwebs, bats, a gravestone or a
-   lantern, the walls and the ground dressed too), then spring and summer (themes to be decided
-   with the owner). Rules that still hold: the walls and the corridors keep their full width,
-   nothing hangs in the air in the maze, the decor sits on a surface and moves little, and every
-   important thing reads at the size of one tile.
-6. **Mazes**: the owner reworks the weak ones.
+1. **Season scenes: a full setting per season, in code** (the current focus; one season per
+   chat, prototype first). Today a season is one shared meadow recoloured, with a single
+   landmark and per-tile random stickers on the walls; the owner wants each season to read as a
+   distinct place — its own wall material and structure, its own dressed background and props —
+   not a hue shift. Plan and per-season themes are agreed with the owner before code.
+   Rules that hold (kept from the dropped winter rounds and the owner's brief):
+   - top-down only, no pseudo-height; the maze silhouette, the corridor width, the food and the
+     heroes' readability unchanged; graphics never fight the gameplay;
+   - the accepted season base (background, ground, pellets, palette) stays the foundation;
+   - decor sits on a surface, moves little, is composed (edge/aware), not sprinkled noise; every
+     important thing reads at one tile;
+   - the static is baked into `MeadowBake`; no new full-screen passes (settled season: High 3,
+     Medium 1, Low 1).
+   Order: winter (New Year), autumn (Halloween), then spring and summer (themes with the owner).
+2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
+   Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
+   wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"
+   (`config/abilityConfig.ts`); look at her magenta ghost form beside Pinky and his gold one
+   beside Clyde at game scale.
+3. **The heroes: the rage bite and a cornering bot.** Left: the ghost's crunch and the chain
+   200-1600 rising with the rage; a balance bot that presses turns early so its numbers show the
+   cornering. Kept: no tongue; Ms. Pac-Man's bow, ball and rage as the owner likes them.
+4. **Mobile: on a real phone.** Swipes/pad/dial/tap/audio-unlock are in and checked in Chromium
+   iPhone emulation. Left on real hardware: iOS Safari audio unlock and pinch, swipe threshold
+   and pad size under a thumb, notched safe areas, the Auto graphics tier there.
+5. **Mazes**: the owner reworks the weak ones.
+6. **Music track support** (blocked: the owner is working out how to generate the music). A
+   looped ogg/mp3 from `static/` per world under the same volume; the hell's track is part II.
 
 ## Part II. Boss levels
 
-1. **The hell: the polish and what is left** (Opus for a look, Sonnet for the steps). The hell is
-   in the game: the flesh world, the maze of charred iron plates (with a little blood and rust),
-   the heroes, Blinky and the imps, the weapons, the attacks, the light. The look's rules, kept
-   from the owner's rounds: one flesh world with no void; the maze is built of blocks (the owner:
-   walls are best as blocks, living matter does not suit a maze) with no height, face or
-   extrusion, so the corridors keep their full width; the surround is not dimmed (a darker
-   surround makes the maze hang in the air); no bright bone or anything that jumps forward; few
-   bold details on a surface; a slow heartbeat (about 2.5 s) and a calm background; the teleport
-   is the iron gateway (cyan, with chevrons that flow in); the night stays
-   `cord`; the heroes are the season heroes plus the BFG charge. Start from the `hell`
-   prototype (`node prototypes/pacman/build.mjs hell`: "Бой" runs the real fight, the attack
-   buttons force an attack, "Бессмертие" keeps the hero alive, "Фаза 1-3" jump to a phase; query
-   `?ms`, `?zerk`, `?chg`) and the `mood` prototype. Left (the owner: everything else in the
-   hell is done):
-   1. **The hell's music track** (the owner brings it: generated or a free licence).
-   2. **Balance and a polish pass** of the whole fight.
-2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it is
-   the only boss. The selection arrives with the second boss: a `BossCatalog` (id, world, maze,
-   renderer, design page), a seeded pick per boss level (no immediate repeat), the same for
-   Pac-Man and Ms. Pac-Man. A boss world is no longer tied to a level number, so the boss's
-   difficulty is scaled by the level number, not by the world. The dev panel can force a boss.
-3. **Each new boss world** (Opus for the design, Sonnet for the steps): still Pac-Man in a
-   maze, with a different boss, a different mechanic and a different way to play, never a
-   reskin of the hell's fight. Like the hell: `*Bake` + `*World` + a level renderer with
-   `preview()`, a death `style` for the universal transition and a season-turn style
-   (`RenderPipeline.turnStyle`). Each starts with a one-page design (boss, mechanic, rules, how
-   it differs from the others) that the owner approves before code; mechanics on placeholder
-   art first, then the art, all in code. Its interface is part III. The candidates, in the order
-   proposed (each differs from the others in what the player does: the hell is combat):
-   1. **TRON, a neon grid** (the maze is `grid_tron`, no tunnels). The hero leaves a light
-      trail that becomes a wall for a few seconds; the boss rides a light cycle that cuts the
-      maze; the ghosts derez. A spatial puzzle. The best fit for movement on rails.
-   2. **An Alien Isolation style stalker.** Darkness, a flashlight cone, one hunter that cannot
-      be killed, a motion tracker instead of weapons, the vents as tunnels. Stealth, the
-      opposite of the hell. The costliest in light and sound.
-   3. **Sharkboy and Lavagirl: a tide.** A playful tone. The mechanic is the terrain, not a
-      boss bar: water and lava flood the tiles in waves, sharks patrol the water, the safe
-      islands change. Ms. Pac-Man fits. Its palette must stay clear of the hell's reds.
-   4. **A Bomberman style world** (an idea from the old arcades): bombs and blasts along the
-      maze's lines, soft and hard walls. To be thought through with the owner.
-   - Zombies were rejected: a horde with weapons is the hell again.
-   - The owner knows few old arcades: more candidates (Dig Dug, Space Invaders, Frogger) can
-     be offered in a chat before step 3 starts.
+1. **The hell: polish and what is left.** The fight is in the game. Left: the hell's music track
+   (the owner brings it) and a balance/polish pass of the whole fight. Start from the `hell` and
+   `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks, no height or
+   extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
+   heartbeat (~2.5 s); the teleport is the iron gateway; night stays `cord`.
+2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it is the
+   only boss. With the second boss: a `BossCatalog` (id, world, maze, renderer, design page), a
+   seeded pick per boss level (no immediate repeat), the same for both heroes; difficulty scaled
+   by level number, not world; the dev panel can force a boss.
+3. **Each new boss world** (design first, one page the owner approves; mechanics on placeholder
+   art, then art in code). Still Pac-Man in a maze, a different boss/mechanic/way to play, never
+   a reskin of the hell. Like the hell: `*Bake` + `*World` + a level renderer with `preview()`, a
+   death `style` and a season-turn style. Candidates in order:
+   1. **TRON, a neon grid** (`grid_tron`, no tunnels): the hero's light trail becomes a wall, the
+      boss rides a light cycle, ghosts derez. A spatial puzzle.
+   2. **An Alien Isolation stalker**: darkness, a flashlight cone, an unkillable hunter, a motion
+      tracker, vents as tunnels. Stealth. Costliest in light and sound.
+   3. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe
+      islands change. Playful; palette clear of the hell's reds.
+   4. **A Bomberman world**: bombs and blasts along the maze's lines, soft/hard walls. Think
+      through with the owner.
+   - Zombies rejected (a horde with weapons is the hell again). More old-arcade candidates
+     (Dig Dug, Space Invaders, Frogger) can be offered before step 3.
 
 ## Part III. The interface
 
-1. **A skin per boss level.** The hell's is done. Each new boss world has its own interface
-   (the hell's boss box: name, phase, HP with phase marks, the player's HP, weapon, berserk,
-   BFG charge, the reward hint), on the same skeleton. Added as each boss lands.
+1. **A skin per boss level** on the hell's skeleton (boss box: name, phase, HP with marks,
+   player HP, weapon, berserk, BFG charge, reward hint). Added as each boss lands.
 2. The arcade (secret level) keeps its own pixel HUD.
 
 ## Later
 
-**Depth and post-processing** (the very end). More volume with modern 2D techniques, as far as
-WebGL2 over Canvas2D allows (no tessellation shaders in WebGL2):
-
-1. Soft drop shadows for actors and walls; walls with height (a baked height map and a bevel).
-2. Normal maps for walls and bodies drawn in code, so the world lights (energizers, the hell's
-   lights, the neon grid) shade them.
-3. A post-processing stack on `render/common/GlPass`: bloom, colour grading per world, a light
-   vignette, optional chromatic aberration on hits.
+**Depth and post-processing** (the very end), as far as WebGL2 over Canvas2D allows:
+1. Soft drop shadows; walls with height (baked height map + bevel).
+2. Normal maps for walls/bodies so the world lights shade them.
+3. A post stack on `render/common/GlPass`: bloom, per-world grading, vignette, optional
+   chromatic aberration on hits.
 4. A performance budget: everything switchable, measured on real hardware.
 
 ## Known issues
 
-- **Weak graphics.** The owner's report: on PCs with integrated graphics the controls feel
-  sluggish from the start of a level, while the animation stays smooth (a GPU-bound frame
-  queue); the atmosphere was the heaviest layer. Done: a season bakes its settled atmosphere
-  into the background (`ARCHITECTURE.md`, Rules of thumb), so Medium and Low blend one
-  full-screen layer and High three, instead of four; the tiers cap the canvas at DPR 1 / 1.5 / 2.
-  Measured in Chromium without a GPU, winter, 1600x900, day / storm and night, before → after:
-  at DPR 1 High 38 / 34 → 49 / 44 FPS, Medium 50 / 43 → 60 / 60, Low 59 / 57 → 60 / 60; at DPR 2
-  High 12 / 9 → 15 / 13, Medium (2400x1350) 58 / 48. The picture is the same within the noise of
-  the weather particles (High), the swap to the baked copy differs by 0.5 of 255 on average.
-  The graphics setting is in the menu and on the pause screen (Auto by default, `DESIGN.md`
-  §2); in the same browser at DPR 2 Auto goes from High to Medium in the first seconds of play
-  and stays there. Nobody has measured it on a weak PC yet (the owner has none at hand): Auto
-  judges by the frame times, and the report was of smooth frames with late controls, so check
-  there that Auto does step down; if the frame times stay short while the controls lag, feed it
-  the rAF backlog as well. If it still lags there:
-  High's two live maps (the drifting mist costs two passes), a Low that renders below the
-  screen's resolution, then the hell's maze-sized glow layers (`emis` and `glow`, drawn
-  additively twice, four times at night) and the hell's ground; the hell does not bake its
-  atmosphere yet and its quality tiers only cap the DPR. The dev frame meter reads FPS,
-  update/render p95, the rAF backlog and input-to-render latency.
-- Headless Chromium without a GPU runs the hell night at ~20 FPS and the flesh hell's first
-  frame blocks for about a second while `bakeFlesh` paints the world (once per level). Nobody
-  has timed either on real hardware; if the bake shows, spread it over frames.
-- The `hud` prototype does not build: it imports a `GameHud.svelte` that no longer exists (the HUD
-  was split into `SeasonHud`, `SeasonHudStack`, `BossHud`). Fix or delete it when it is next needed.
-- The `collectibles` prototype throws "undefined is not iterable" in a `forEach` while it draws
-  the item row and so never reaches the exit; find it when the prototype is next touched.
-- `Hero.ts` is still large (~960 lines); the sprite-free heroes are one class family, cut what
-  no longer serves.
-- Not checked in play: the hero's death over the black hole, the hell's and Ms. Pac-Man's
-  deaths, a low-end GPU, the hero going through a season tunnel, the hell's night and ash storm
-  over the cord maze.
+- **Weak graphics.** Integrated GPUs feel sluggish controls with smooth frames (GPU-bound frame
+  queue). The settled atmosphere is baked (Medium/Low blend one full-screen layer, High three);
+  tiers cap DPR 1/1.5/2. Measured in Chromium without a GPU: winter High 38→49 FPS (DPR 1),
+  Medium 50→60. Nobody has measured a real weak PC: check Auto steps down there; if frame times
+  stay short while controls lag, feed Auto the rAF backlog. If still lagging: High's two live
+  mist maps, a Low below screen resolution, then the hell's additive glow layers and ground (the
+  hell does not bake its atmosphere yet). The dev frame meter reads FPS, p95, rAF backlog,
+  input-to-render latency.
+- Headless Chromium without a GPU runs the hell night ~20 FPS; the flesh hell's first frame
+  blocks ~1 s in `bakeFlesh`. Untimed on real hardware; if the bake shows, spread it over frames.
+- The `hud` prototype does not build (imports a removed `GameHud.svelte`); fix or delete when
+  next needed.
+- The `collectibles` prototype throws "undefined is not iterable" in the item row; find it when
+  next touched.
+- `Hero.ts` is still large; cut what no longer serves.
+- Not checked in play: the hero's death over the black hole, the hell's and Ms. Pac-Man's deaths,
+  a low-end GPU, a season tunnel, the hell's night and ash storm over the cord maze.
