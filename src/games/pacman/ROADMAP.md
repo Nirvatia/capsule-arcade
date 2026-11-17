@@ -52,7 +52,19 @@ last (see Later).
      important thing reads at one tile;
    - the static is baked into `MeadowBake`; no new full-screen passes (settled season: High 3,
      Medium 1, Low 1).
-   Order: winter (New Year), autumn (Halloween), then spring and summer (themes with the owner).
+   Decided with the owner: start with **winter (New Year)**; spring and summer **dress the same
+   meadow** (keep the accepted base, change the wall material and the props into a full setting,
+   not a new layout). Order: winter, autumn (Halloween), then spring, summer.
+   Winter brief (the candidate to prototype first): snow-capped stone walls with the cap on the
+   lit top/left edge and a faint ice sheen (directional, not random drifts); a snowfield ground
+   and a frozen stream/pond with an ice sheen and a snow rim; composed snow piles at wall bases
+   on the downwind side instead of sprinkled specks; the snowman landmark kept and joined by a
+   small decorated New Year tree; warm window light and a string of lights on the cabins/bridge;
+   falling snow kept. All static baked; corridors, food and heroes untouched.
+   Mechanism: a default-preserving hook so the game keeps today's look until a theme opts in —
+   `MeadowBakeTheme.wall.paint?: (frame) => void` (falls back to `paintWalls`), letting a
+   candidate theme supply its own wall material; the `season-winter` prototype compares current
+   vs candidate on the real maze for the owner's pick.
 2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
    Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
    wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"
