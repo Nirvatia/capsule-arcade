@@ -12,8 +12,7 @@ import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from '.
 import { Hero, Spring, css, glow } from './Hero';
 import type { RGB } from './heroSeasons';
 import {
-	drawSeasonParticle,
-	drawFireSpark,
+	drawEmberGlow,
 	drawFlameDrop,
 	drawStarGlint,
 	particleLift,
@@ -286,10 +285,11 @@ export class MsPacmanHero extends Hero {
 	 */
 	protected decorate(sc: CanvasRenderingContext2D, R: number, p: number): void {
 		const t = this.time;
+		// a luminous galaxy (the owner: she was too dark, the eye barely read)
 		const base = sc.createRadialGradient(-R * 0.1, R * 0.05, 0, -R * 0.1, R * 0.05, R * 1.05);
-		base.addColorStop(0, 'rgb(92,46,168)');
-		base.addColorStop(0.55, 'rgb(52,26,118)');
-		base.addColorStop(1, 'rgb(26,12,66)');
+		base.addColorStop(0, css([152, 98, 238]));
+		base.addColorStop(0.55, css([98, 56, 192]));
+		base.addColorStop(1, css([60, 32, 130]));
 		sc.fillStyle = base;
 		sc.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
 		// the galaxy: tilted, flattened, turning; each arm a stroke that thins outwards
@@ -303,7 +303,7 @@ export class MsPacmanHero extends Hero {
 			const y = Math.sin(a) * r * 0.55;
 			return [gx + x * ct - y * st, gy + x * st + y * ct];
 		};
-		const bright = 1 + 0.6 * p;
+		const bright = 1.35 + 0.6 * p;
 		sc.lineCap = 'round';
 		ARMS.forEach(([broad, lane], arm) => {
 			const steps = 22;
@@ -348,15 +348,15 @@ export class MsPacmanHero extends Hero {
 			}
 		}
 		// a pale cloud round her eye, so the ink of the lashes reads on deep space
-		const face = sc.createRadialGradient(R * 0.3, -R * 0.45, 0, R * 0.3, -R * 0.45, R * 0.5);
-		face.addColorStop(0, 'rgba(255,176,232,.62)');
+		const face = sc.createRadialGradient(R * 0.3, -R * 0.45, 0, R * 0.3, -R * 0.45, R * 0.62);
+		face.addColorStop(0, css([255, 176, 232], 0.88));
 		face.addColorStop(1, 'rgba(255,150,220,0)');
 		sc.fillStyle = face;
 		sc.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
 		// the atmosphere at her limb
 		const limb = sc.createRadialGradient(0, 0, R * 0.7, 0, 0, R);
 		limb.addColorStop(0, 'rgba(150,190,255,0)');
-		limb.addColorStop(0.75, `rgba(176,160,255,${0.5 + 0.2 * p})`);
+		limb.addColorStop(0.75, `rgba(176,160,255,${0.65 + 0.2 * p})`);
 		limb.addColorStop(1, 'rgba(236,206,255,.95)');
 		sc.fillStyle = limb;
 		sc.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
@@ -451,7 +451,7 @@ export class MsPacmanHero extends Hero {
 	private drawEye(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		// above the upper lip even with the mouth wide open, clear of the bow; at tile size
 		// (a small radius) the eye grows a little so it still reads
-		const lod = R < 20 ? 1.25 : 1;
+		const lod = R < 20 ? 1.65 : 1;
 		const ex = R * 0.28;
 		const ey = -R * (0.43 + (lod - 1) * 0.12);
 		const rx = R * 0.17 * lod;
@@ -637,20 +637,19 @@ export class MsPacmanHero extends Hero {
 	}
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
-		if (e.kind === 'ember' && e.hot) {
-			drawFireSpark(ctx, e, s, [255, 140, 220], [255, 236, 250]);
+		if (e.kind === 'ember') {
+			drawEmberGlow(ctx, e, a, s, [255, 150, 230], [255, 230, 250]);
 			return;
 		}
 		if (e.kind === 'flame') {
 			drawFlameDrop(ctx, e, [200, 110, 255], [255, 220, 250]);
 			return;
 		}
-		if (drawSeasonParticle(ctx, e, a, s, this.season)) return;
-		ctx.save();
-		ctx.translate(e.x, e.y);
-		ctx.globalAlpha = a;
-		ctx.lineJoin = 'round';
 		if (e.kind === 'heart') {
+			ctx.save();
+			ctx.translate(e.x, e.y);
+			ctx.globalAlpha = a;
+			ctx.lineJoin = 'round';
 			const h = s * 1.6;
 			ctx.fillStyle = 'rgba(255,90,200,1)';
 			ctx.strokeStyle = css(INK, 0.9);
@@ -661,18 +660,23 @@ export class MsPacmanHero extends Hero {
 			ctx.bezierCurveTo(h * 0.9, -h * 1.1, h * 1.3, h * 0.1, 0, h * 0.9);
 			ctx.fill();
 			ctx.stroke();
-		} else {
-			// a manga twinkle: white (pink-gold in the rage), thinly outlined
-			ctx.rotate(e.spin * (e.max - e.life));
-			ctx.fillStyle = this.power > 0.5 ? css([255, 214, 246]) : 'rgba(255,252,255,1)';
-			ctx.strokeStyle = css([60, 20, 100], 0.85);
-			ctx.lineWidth = Math.max(0.8, s * 0.14);
-			starPath(ctx, 0, 0, s * 1.7, s * 0.4);
-			ctx.fill();
-			ctx.stroke();
+			ctx.restore();
+			return;
 		}
+		// a soft twinkle: white (pink in the rage) in a pale glow, no ink outline
+		ctx.save();
+		ctx.translate(e.x, e.y);
+		ctx.rotate(e.spin * (e.max - e.life));
+		ctx.globalCompositeOperation = 'lighter';
+		ctx.globalAlpha = a * 0.45;
+		const g = s * 1.5;
+		ctx.drawImage(glow([255, 220, 250]), -g, -g, g * 2, g * 2);
+		ctx.globalCompositeOperation = 'source-over';
+		ctx.globalAlpha = a;
+		ctx.fillStyle = this.power > 0.5 ? 'rgb(255,224,246)' : 'rgb(255,252,255)';
+		starPath(ctx, 0, 0, s * 1.6, s * 0.3);
+		ctx.fill();
 		ctx.restore();
-		ctx.globalAlpha = 1;
 	}
 }
 

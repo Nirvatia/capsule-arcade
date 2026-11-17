@@ -4,7 +4,8 @@
  * hung from them on ropes, a chalk board for the hints, a cloth banner, coins with the heroes'
  * faces, round knobs. Static per world; the texts are the component's.
  */
-import { boardArt, heroArt } from '../hud/season/seasonArt';
+import { boardArt } from '../hud/season/seasonArt';
+import { heroImageArt } from '../hud/season/heroPortrait';
 import type { SeasonTheme } from '../hud/season/seasonThemes';
 
 function mul(seed: number): () => number {
@@ -67,7 +68,7 @@ export function chalkArt(t: SeasonTheme, x: number, y: number, w: number, h: num
 	return s;
 }
 
-/** A coin with a hero's face, drawn at the origin (34 units across); lifted and ringed when chosen. */
+/** A coin with the baked hero, drawn at the origin (34 units across); lifted and ringed when chosen. */
 export function coinArt(t: SeasonTheme, ms: boolean, selected: boolean): string {
 	let s = '';
 	if (selected) {
@@ -77,7 +78,7 @@ export function coinArt(t: SeasonTheme, ms: boolean, selected: boolean): string 
 	s += `<circle r="34" fill="${t.shade}" stroke="${t.ink}" stroke-width="4"/>`;
 	s += `<circle r="29" fill="${t.mid}"/>`;
 	s += `<path d="M-24 -8 A26 26 0 0 1 8 -24" fill="none" stroke="${t.light}" stroke-width="4" stroke-linecap="round" opacity=".85"/>`;
-	s += `<g transform="scale(1.15)">${heroArt(ms)}</g>`;
+	s += heroImageArt(ms, t.key, 62);
 	return s;
 }
 

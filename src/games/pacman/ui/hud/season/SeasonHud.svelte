@@ -15,11 +15,11 @@
 		bannerArt,
 		dialArt,
 		emblemArt,
-		heroArt,
 		knobArt,
 		ropesArt,
 		trailArt
 	} from './seasonArt';
+	import { heroImageArt } from './heroPortrait';
 	import { SEASON_THEMES } from './seasonThemes';
 	import AbilitySlot from './AbilitySlot.svelte';
 	import { touchDevice } from '../../controlsSetting';
@@ -149,7 +149,8 @@
 			</g>
 			<g class="sway c" style:--rot=".8deg">
 				{@html art.lives}
-				<g transform="translate(1100 236)"><g class="bob">{@html heroArt(ms)}</g></g>
+				<g transform="translate(1100 236)"><g class="bob">{@html heroImageArt(ms, theme.key)}</g></g
+				>
 				<text class="lab" x="1124" y="223" font-size="9">{$t('lives')}</text>
 				<text class="num" x="1214" y="248" font-size="28" text-anchor="end">×{lives}</text>
 			</g>

@@ -8,7 +8,8 @@
 	import type { HudSnapshot } from '../hud/hudSnapshot';
 	import { t, toggleLang } from '../i18n';
 	import type { ScreenActions } from './screenActions';
-	import { boardArt, heroArt, trailArt } from '../hud/season/seasonArt';
+	import { boardArt, trailArt } from '../hud/season/seasonArt';
+	import { heroImageArt } from '../hud/season/heroPortrait';
 	import { HELL_THEME, SEASON_THEMES, isSeasonKey } from '../hud/season/seasonThemes';
 	import {
 		bannerSpanArt,
@@ -122,7 +123,9 @@
 		<g class="sway" style:--rot="-.8deg">
 			{@html boardArt(theme, 'scr-death', 20, 8, 280, 62, { seed: 5, drop: 14 })}
 		</g>
-		<g transform="translate({lives === 1 ? 54 : 56} 40) scale(.85)">{@html heroArt(ms)}</g>
+		<g transform="translate({lives === 1 ? 54 : 56} 40) scale(.85)"
+			>{@html heroImageArt(ms, theme.key)}</g
+		>
 		{#if lives === 1}
 			<text class="num red" x="188" y="56" font-size="34" text-anchor="middle"
 				>{$t('lastLife').toUpperCase()}</text
@@ -227,7 +230,9 @@
 			{#if screen === 'menu'}
 				<g class="sway" style:--rot="-1deg">
 					{@html boardArt(theme, 'scr-title', 30, 16, 460, 148, { seed: 5, drop: 44 })}
-					<g transform="translate({ms ? 84 : 80} 96) scale(2)">{@html heroArt(ms)}</g>
+					<g transform="translate({ms ? 84 : 80} 96) scale(2)"
+						>{@html heroImageArt(ms, theme.key)}</g
+					>
 					<text class="num" x={ms ? 296 : 290} y="118" font-size={ms ? 62 : 78} text-anchor="middle"
 						>{ms ? 'MS. PAC-MAN' : 'PAC-MAN'}</text
 					>
@@ -516,7 +521,7 @@
 					<g class="lift">
 						<g class="sway hang" style:--rot="-.4deg">
 							{@html plankArt(theme, 'scr-swap', 100, 394, 280, 58, { seed: 8 })}
-							<g transform="translate(138 423) scale(.7)">{@html heroArt(!ms)}</g>
+							<g transform="translate(138 423) scale(.7)">{@html heroImageArt(!ms, theme.key)}</g>
 							<text class="num" x="262" y="434" font-size="26" text-anchor="middle"
 								>{ms ? 'PAC-MAN' : 'MS. PAC-MAN'}</text
 							>

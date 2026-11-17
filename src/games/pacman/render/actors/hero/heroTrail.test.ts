@@ -1,9 +1,15 @@
-import { describe, expect, it } from 'vitest';
-import type { Hero, HeroState } from './Hero';
+import { describe, expect, it, vi } from 'vitest';
+import type { Hero, HeroState, Particle, ParticleKind } from './Hero';
 import { PacmanHero } from './PacmanHero';
 import { MsPacmanHero } from './MsPacmanHero';
 import { SEASON_LOOKS, heroSeasonOf } from './heroSeasons';
 import type { HeroSeason } from './heroSeasons';
+
+// The glow sprite needs a DOM canvas; the paint tests only read strokes and points.
+vi.mock('./Hero', async (importOriginal) => ({
+	...(await importOriginal<typeof import('./Hero')>()),
+	glow: () => ({}) as unknown as HTMLCanvasElement
+}));
 
 const R = 20;
 const DT = 1 / 60;
@@ -194,5 +200,78 @@ describe('the rolling ball', () => {
 			dying: true
 		});
 		expect(hero.ball).toBe(false);
+	});
+});
+
+describe('the trail paint (the element language, no beads)', () => {
+	/** A context that counts strokes and glow sprites and records star points. */
+	function record() {
+		const points: Array<[number, number]> = [];
+		const state: Record<string, unknown> = {};
+		let strokes = 0;
+		let images = 0;
+		const ctx = new Proxy(state, {
+			get: (t, k: string) => {
+				if (k in t) return t[k];
+				if (k === 'stroke') return () => (strokes += 1);
+				if (k === 'drawImage') return () => (images += 1);
+				if (k === 'moveTo' || k === 'lineTo') return (x: number, y: number) => points.push([x, y]);
+				if (k === 'createRadialGradient' || k === 'createLinearGradient')
+					return () => ({ addColorStop: () => {} });
+				return () => {};
+			},
+			set: (t, k: string, v) => {
+				t[k] = v;
+				return true;
+			}
+		}) as unknown as CanvasRenderingContext2D;
+		return { ctx, points, strokes: () => strokes, images: () => images };
+	}
+
+	const piece = (kind: ParticleKind, hot = false): Particle => ({
+		kind,
+		x: 0,
+		y: 0,
+		vx: 0,
+		vy: 0,
+		life: 0.6,
+		max: 1,
+		size: 3,
+		hot,
+		spin: 0
+	});
+
+	class SunProbe extends PacmanHero {
+		paint(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
+			this.drawParticle(ctx, e, a, s);
+		}
+	}
+	class MsProbe extends MsPacmanHero {
+		paint(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
+			this.drawParticle(ctx, e, a, s);
+		}
+	}
+
+	it.each([false, true])('embers are outline-free glowing dots (Ms. Pac-Man: %s)', (ms) => {
+		const rec = record();
+		const hero = ms ? new MsProbe() : new SunProbe();
+		hero.paint(rec.ctx, piece('ember', true), 1, 3);
+		expect(rec.strokes()).toBe(0);
+		expect(rec.images()).toBeGreaterThan(0);
+	});
+
+	it('his glints are thin four-point flares, not stubby stars', () => {
+		const rec = record();
+		new SunProbe().paint(rec.ctx, piece('spark'), 1, 3);
+		const radii = rec.points.map(([x, y]) => Math.hypot(x, y));
+		expect(radii).toHaveLength(8);
+		expect(Math.max(...radii) / Math.min(...radii)).toBeGreaterThanOrEqual(8);
+	});
+
+	it('her stars are soft twinkles without an ink outline', () => {
+		const rec = record();
+		new MsProbe().paint(rec.ctx, piece('star'), 1, 3);
+		expect(rec.strokes()).toBe(0);
+		expect(rec.images()).toBeGreaterThan(0);
 	});
 });

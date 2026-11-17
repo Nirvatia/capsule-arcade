@@ -68,7 +68,7 @@ all (see Later).
    landscape). Left for a real phone: iOS Safari's audio unlock and pinch, how the swipe's length
    (`swipeThreshold`) and the pad's size feel under a thumb, the safe areas of a notched screen,
    and the Auto graphics tier there.
-4. **The heroes' redesign: in the game, awaiting the owner's play.** The owner found the old
+4. **The heroes' redesign: in the game, the owner's play verdict applied.** The owner found the old
    heroes bulky (0.39 of a tile), without rage in the energizer, thick to move. Rounds of
    prototypes (all deleted): `heroes` (a ninja, a jelly, a predator: primitive next to the rest of
    the art, small accessories turn to noise at one tile, a body must stay inside its tile),
@@ -83,16 +83,22 @@ all (see Later).
      to +10 %; not her overdrive: the balance bot found her dying far more with it, 8 deaths a
      level to 13), the energizer's blow (a 0.1 s hit-stop for both, a flash, three rings, a
      burst, a hard kick of the screen);
-   - the art in the game with its states: the rage (his flare: white-hot bands, a bigger and
-     faster corona, streaks of light; her accretion ring and stars spiralling in), the ball,
-     the death, the mask's ghost form (his gold, her violet with the nebula bow), the HUD's
-     hero and life icons and the menu's coins (SVG);
-   - the trails: glints of sunlight, stars (fire in the rage); the season's own particles are
-     no longer shed by the heroes.
+   - the art in the game with its states: the rage (his flare: white-hot bands, a faster corona
+     whose rays never reach past their calm reach, short arcs of light between them; her
+     accretion ring and stars spiralling in), the ball, the death, the mask's ghost form (his
+     gold, her violet with the nebula bow), the HUD's hero and life icons and the menu's coins
+     (the game's own hero baked into the coin, `heroPortrait`);
+   - the trails: glints of sunlight, stars (fire in the rage), all outline-free; the season's own
+     particles are no longer shed by the heroes;
+   - the owner's play verdict (four complaints, fixed, each with a test that failed on the old
+     look): the rage corona stays inside the tile (the 1.45-radius cap and arcs instead of long
+     streaks), Ms. Pac-Man burns luminous with a readable eye at tile size while her bow, ball
+     and rage stay as the owner liked them, the trail speaks the element language without beads
+     or outlined stars, and the coins carry the baked heroes themselves. The `hero-review`
+     comparison page is deleted after the pick.
      Left:
-   1. The owner plays it: the rage looks were designed in the game, without a prototype.
-   2. The bite in the rage: the ghost's crunch, the chain 200-1600 rising with it.
-   3. The balance bot never presses a turn early, so its numbers do not show the cornering; a
+   1. The bite in the rage: the ghost's crunch, the chain 200-1600 rising with it.
+   2. The balance bot never presses a turn early, so its numbers do not show the cornering; a
       bot that corners would tell how much easier it makes the levels.
       Kept: no tongue; Ms. Pac-Man's bow.
 5. **Season scenes, in code** (Opus for the look, one season per chat, prototype first). None is

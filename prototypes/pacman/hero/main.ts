@@ -23,7 +23,7 @@ const q = new URLSearchParams(location.search);
 const POWER_TIME = 6;
 const POWER_ENDING = 1.6;
 /** The hero's body radius in tiles, as in the game (`HeroView`). */
-const RADIUS = 0.39;
+const RADIUS = 0.33;
 const ZOOM = 2.4;
 /** Tiles per second along the corridor. */
 const SPEED = 6;

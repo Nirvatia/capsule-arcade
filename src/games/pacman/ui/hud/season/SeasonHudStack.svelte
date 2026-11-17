@@ -14,12 +14,12 @@
 		boardArt,
 		dialArt,
 		emblemArt,
-		heroArt,
 		knobArt,
 		ringLength,
 		ropesArt,
 		trailArt
 	} from './seasonArt';
+	import { heroImageArt } from './heroPortrait';
 	import type { Dial, TrailBox } from './seasonArt';
 	import { SEASON_THEMES } from './seasonThemes';
 	import AbilitySlot from './AbilitySlot.svelte';
@@ -139,7 +139,9 @@
 		</g>
 		<g class="sway c" style:--rot=".8deg">
 			{@html art.lives}
-			<g transform="translate(257 143) scale(.7)"><g class="bob">{@html heroArt(ms)}</g></g>
+			<g transform="translate(257 143) scale(.7)"
+				><g class="bob">{@html heroImageArt(ms, theme.key)}</g></g
+			>
 			<text class="lab" x="278" y="136" font-size="8">{$t('lives')}</text>
 			<text class="num" x="346" y="154" font-size="22" text-anchor="end">×{lives}</text>
 		</g>

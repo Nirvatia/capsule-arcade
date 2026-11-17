@@ -239,45 +239,6 @@ export function knobArt(t: SeasonTheme): string {
 	return `<circle r="23" fill="${t.mid}" stroke="${t.ink}" stroke-width="4"/><path d="M-17 -8 A19 19 0 0 1 8 -17" fill="none" stroke="${t.light}" stroke-width="4" stroke-linecap="round" opacity=".85"/>`;
 }
 
-/** Twelve rays of a sun in splendour round the origin: straight and short in turn, two tones, ink. */
-function sunRays(r: number, long: number, short: number, ink: string, w: number): string {
-	let s = '';
-	for (let i = 0; i < 12; i += 1) {
-		const a = (i / 12) * Math.PI * 2;
-		const h = (Math.PI / 12) * (i % 2 === 0 ? 0.92 : 0.8);
-		const len = i % 2 === 0 ? long : short;
-		const p = (ang: number, rr: number) =>
-			`${(Math.cos(ang) * rr).toFixed(2)} ${(Math.sin(ang) * rr).toFixed(2)}`;
-		s += `<path d="M${p(a - h, r)} L${p(a, r + len)} L${p(a + h, r)}Z" fill="#ffaa24" stroke="${ink}" stroke-width="${w}" stroke-linejoin="round"/>`;
-		s += `<path d="M${p(a - h * 0.5, r)} L${p(a, r + len * 0.55)} L${p(a + h * 0.5, r)}Z" fill="#ffea82"/>`;
-	}
-	return s;
-}
-
-/** Icons drawn at the origin, roughly 40 units across: the sun (Pac-Man), the galaxy (Ms. Pac-Man). */
-export function heroArt(ms: boolean): string {
-	if (!ms) {
-		return (
-			sunRays(15, 8, 6, '#601808', 2.4) +
-			'<circle r="16" fill="#de4816" stroke="#601808" stroke-width="3"/><circle r="13.6" fill="#fa7e1e"/><circle r="10.6" fill="#ffb836"/><circle r="7" cx="-1" fill="#ffe278"/><circle r="3.6" cx="-1" fill="#fffae0"/>' +
-			'<path d="M1 0 L17 -8 L17 8 Z" fill="#8c220c" stroke="#601808" stroke-width="2.2" stroke-linejoin="round"/>' +
-			'<path d="M-1 -12 L5 -10" stroke="#601808" stroke-width="2" stroke-linecap="round"/><circle cx="2.4" cy="-7.4" r="1.7" fill="#601808"/>'
-		);
-	}
-	const lobe = (sx: number, fill: string) =>
-		`<path d="M0 0 Q${sx * 4.4} -7.4 ${sx * 11.2} -6.8 Q${sx * 15.3} -0.7 ${sx * 11.5} 4.9 Q${sx * 4.6} 4.6 0 0Z" fill="${fill}" stroke="#220a3a" stroke-width="1.6" stroke-linejoin="round"/>`;
-	return (
-		'<circle r="18" fill="#2c1462" stroke="#16062c" stroke-width="3.2"/>' +
-		'<circle r="15.6" fill="none" stroke="#c8a8ff" stroke-width="2.6" opacity=".75"/>' +
-		'<ellipse cx="2" cy="-7" rx="7" ry="5" fill="#ffb0e8" opacity=".45"/>' +
-		'<g transform="translate(-4 3) rotate(-20)"><path d="M0 0 C4 -2 8 0 9 4" fill="none" stroke="#ff7ad6" stroke-width="3" stroke-linecap="round"/><path d="M0 0 C-4 2 -8 0 -9 -4" fill="none" stroke="#7aa2ff" stroke-width="3" stroke-linecap="round"/><circle r="3" fill="#fff6e8"/></g>' +
-		'<circle cx="-11" cy="-4" r="0.9" fill="#fff"/><circle cx="-7" cy="11" r="0.8" fill="#fff"/><circle cx="6" cy="10" r="0.9" fill="#fff"/>' +
-		'<path d="M1 0 L18 -8 L18 8 Z" fill="#10041e" stroke="#16062c" stroke-width="2.2" stroke-linejoin="round"/>' +
-		'<ellipse cx="4" cy="-8" rx="2.6" ry="3.4" fill="#fff"/><ellipse cx="4.8" cy="-7.8" rx="1.5" ry="2.1" fill="#3a1060"/><path d="M1 -11.5 Q4 -13 7 -11" fill="none" stroke="#16062c" stroke-width="1.4" stroke-linecap="round"/>' +
-		`<g transform="translate(-6 -16) rotate(-25)">${lobe(-1, '#c25ae8')}${lobe(1, '#8a7cff')}<path d="M0 -4.2 L1 -1 L4.2 0 L1 1 L0 4.2 L-1 1 L-4.2 0 L-1 -1Z" fill="#fff" stroke="#220a3a" stroke-width=".8"/></g>`
-	);
-}
-
 export const ENERGIZER_ART: Record<SeasonTheme['energizer'], string> = {
 	starfish:
 		'<path d="M0 -34 L9 -11 L34 -10 L14 5 L21 30 L0 16 L-21 30 L-14 5 L-34 -10 L-9 -11Z" fill="#ff8a2a" stroke="#4a1f08" stroke-width="4" stroke-linejoin="round"/><path d="M0 -26 L6 -9 M-24 -8 L-9 -4 M24 -8 L9 -4 M-15 22 L-8 8 M15 22 L8 8" stroke="#ffd08a" stroke-width="3" stroke-linecap="round" fill="none"/><g fill="#ffe0a8"><circle cx="0" cy="-3" r="3"/><circle cx="-16" cy="-8" r="2"/><circle cx="16" cy="-8" r="2"/></g>',

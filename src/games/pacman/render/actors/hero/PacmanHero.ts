@@ -3,8 +3,9 @@
 // edges boiling; round him a corona as a sun in splendour (twelve turning rays, straight and
 // wavy in turn, two tones under one ink line) that the run stretches back into a solar wind,
 // and a warm glow; glints of sunlight for a trail. The rage (the energizer) is a flare: he
-// burns white-hot, the corona grows and spins fast, long streaks of light flicker between its
-// rays and the trail is drops of fire. His minimal eye (a dot under a frowning brow). The
+// burns white-hot and the corona spins fast, but its rays never reach past their calm reach
+// (the owner: the rage spilled over the tile); short arcs of light flicker between the rays
+// and the trail is drops of fire. His minimal eye (a dot under a frowning brow). The
 // machinery (mouth, acting, bites, spring, the energizer's beat, the ball, the death) is the
 // shared Hero; the body's paint is his.
 import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from './Hero';
@@ -12,7 +13,7 @@ import { Hero, css, glow, mix } from './Hero';
 import type { RGB } from './heroSeasons';
 import {
 	INK,
-	drawFireSpark,
+	drawEmberGlow,
 	drawFlameDrop,
 	drawStarGlint,
 	particleLift,
@@ -71,6 +72,8 @@ const CORONA_INNER: readonly [RGB, RGB] = [
 /** The corona's turn, radians per second, calm and in the rage. */
 const SPIN = 0.5;
 const SPIN_RAGE = 3;
+/** The corona's tip never reaches past this (body radii): the rage stays inside the tile. */
+const CORONA_REACH = 1.45;
 
 export const PACMAN_DESIGN: HeroDesign = {
 	id: 'pacman-sun',
@@ -112,7 +115,7 @@ export class PacmanHero extends Hero {
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';
 		ctx.globalAlpha = 0.3 + 0.2 * p + 0.05 * Math.sin(this.time * 7);
-		const g = R * (2.2 + 0.6 * p);
+		const g = R * (1.7 + 0.6 * p);
 		ctx.drawImage(glow([255, 150, 40]), -g, -g, g * 2, g * 2);
 		ctx.restore();
 		this.corona(ctx, R, p);
@@ -139,7 +142,11 @@ export class PacmanHero extends Hero {
 			len *= (1 + 0.55 * p) * (1 + 1.3 * w * back * back) * (1 - 0.55 * w * front);
 			const half = (TAU / N) * (straight ? 0.46 : 0.4);
 			const base = R * 0.97;
-			const tipR = R * 1.02 + len;
+			let tipR = R * 1.02 + len;
+			if (tipR > R * CORONA_REACH) {
+				tipR = R * CORONA_REACH;
+				len = tipR - R * 1.02;
+			}
 			const tx = ca * tipR - w * len * 0.5 * (1 - back);
 			const ty = sa * tipR;
 			const nx = -sa;
@@ -196,8 +203,8 @@ export class PacmanHero extends Hero {
 	}
 
 	/**
-	 * The flare (the rage, `k` its look times the end-of-power pulse): long streaks of white-gold
-	 * light flickering out between the corona's rays.
+	 * The flare (the rage, `k` its look times the end-of-power pulse): short arcs of white-gold
+	 * light flickering between the corona's rays, never reaching past them.
 	 */
 	protected drawBehind(ctx: CanvasRenderingContext2D, R: number, k: number): void {
 		const t = this.time;
@@ -207,21 +214,10 @@ export class PacmanHero extends Hero {
 		for (let i = 0; i < 12; i++) {
 			const a = this.spin * 0.6 + ((i + 0.5) / 12) * TAU;
 			const flick = 0.5 + 0.5 * Math.sin(t * (13 + (i % 4) * 3) + i * 2.1);
-			const len = R * (0.9 + 0.7 * flick) * k;
-			if (len < R * 0.05) continue;
-			const g = ctx.createLinearGradient(
-				Math.cos(a) * R,
-				Math.sin(a) * R,
-				Math.cos(a) * (R + len),
-				Math.sin(a) * (R + len)
-			);
-			g.addColorStop(0, `rgba(255,240,180,${0.8 * k})`);
-			g.addColorStop(1, 'rgba(255,190,80,0)');
-			ctx.strokeStyle = g;
-			ctx.lineWidth = R * (0.08 + 0.06 * flick);
+			ctx.strokeStyle = `rgba(255,240,180,${0.7 * k * flick})`;
+			ctx.lineWidth = R * 0.07;
 			ctx.beginPath();
-			ctx.moveTo(Math.cos(a) * R * 0.95, Math.sin(a) * R * 0.95);
-			ctx.lineTo(Math.cos(a) * (R + len), Math.sin(a) * (R + len));
+			ctx.arc(0, 0, R * (1.08 + 0.1 * flick), a - 0.1, a + 0.1);
 			ctx.stroke();
 		}
 		ctx.restore();
@@ -373,24 +369,23 @@ export class PacmanHero extends Hero {
 
 	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
 		if (e.kind === 'ember') {
-			drawFireSpark(ctx, e, s, [255, 150, 40], [255, 236, 150]);
+			drawEmberGlow(ctx, e, a, s, [255, 170, 60], [255, 236, 170]);
 			return;
 		}
 		if (e.kind === 'flame') {
 			drawFlameDrop(ctx, e, [255, 150, 40], [255, 236, 150]);
 			return;
 		}
-		// a glint of sunlight: a small gold star in a warm glow, shrinking as it fades
+		// a glint of sunlight: a thin warm flare in a soft glow, shrinking as it fades
 		const u = e.life / e.max;
-		const r = s * (0.25 + 0.45 * u);
+		const r = s * (0.3 + 0.5 * u);
 		ctx.save();
-		ctx.globalAlpha = a * 0.6;
 		ctx.globalCompositeOperation = 'lighter';
-		ctx.drawImage(glow([255, 160, 50]), e.x - r * 1.8, e.y - r * 1.8, r * 3.6, r * 3.6);
-		ctx.globalCompositeOperation = 'source-over';
+		ctx.globalAlpha = a * 0.5;
+		ctx.drawImage(glow([255, 180, 70]), e.x - r * 1.6, e.y - r * 1.6, r * 3.2, r * 3.2);
 		ctx.globalAlpha = a;
-		ctx.fillStyle = 'rgb(255,232,150)';
-		starPath(ctx, e.x, e.y, r * 1.4, r * 0.32, e.spin * (e.max - e.life));
+		ctx.fillStyle = 'rgb(255,236,160)';
+		starPath(ctx, e.x, e.y, r * 1.7, r * 0.18, e.spin * (e.max - e.life));
 		ctx.fill();
 		ctx.restore();
 	}

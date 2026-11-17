@@ -1,15 +1,13 @@
-// What both heroes share: the season's particles (and dust), drops and sparks of fire, the
-// little star on the highlight. All drawn in code, in the same outlined style; the colours
-// come from the season (`heroSeasons.ts`).
+// What both heroes share: drops of fire, outline-free embers, the little star on the highlight.
+// All drawn in code; the trail speaks each hero's element language (the owner's review: no
+// beads, no ribbons, no puffs).
 import type { Particle, ParticleKind } from './Hero';
-import { css } from './Hero';
-import { SEASON_LOOKS } from './heroSeasons';
-import type { HeroSeason, RGB } from './heroSeasons';
+import { css, glow } from './Hero';
+import type { RGB } from './heroSeasons';
 
 export const INK: RGB = [38, 14, 12];
 
-const DUST: RGB = [255, 246, 226];
-const DUST_EDGE: RGB = [196, 158, 126];
+const TAU = Math.PI * 2;
 
 /** How big a particle kind is, against the base size. */
 export function particleSize(kind: ParticleKind): number {
@@ -68,28 +66,24 @@ export function particleLift(kind: ParticleKind): number {
 	}
 }
 
-/** A spark of fire while powered: a bead with a bright core and an ink outline, cooling as it ages. */
-export function drawFireSpark(
+/** An ember of the trail: a soft glowing dot without an outline, cooling as it ages. */
+export function drawEmberGlow(
 	ctx: CanvasRenderingContext2D,
 	e: Particle,
+	a: number,
 	s: number,
 	outer: RGB,
-	inner: RGB
+	core: RGB
 ): void {
 	const u = e.life / e.max;
-	const r = s * (0.5 + 0.5 * u);
+	const r = s * (0.4 + 0.5 * u);
 	ctx.save();
-	ctx.globalAlpha = Math.min(1, u * 3);
-	ctx.fillStyle = css(outer);
-	ctx.strokeStyle = css(INK, 0.9);
-	ctx.lineWidth = Math.max(0.8, r * 0.18);
+	ctx.globalCompositeOperation = 'lighter';
+	ctx.globalAlpha = a * 0.9;
+	ctx.drawImage(glow(outer), e.x - r * 2.2, e.y - r * 2.2, r * 4.4, r * 4.4);
+	ctx.fillStyle = css(core, Math.min(1, u * 2));
 	ctx.beginPath();
-	ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
-	ctx.fill();
-	ctx.stroke();
-	ctx.fillStyle = css(inner);
-	ctx.beginPath();
-	ctx.arc(e.x - r * 0.1, e.y - r * 0.1, r * 0.5, 0, Math.PI * 2);
+	ctx.arc(e.x, e.y, r * 0.55, 0, TAU);
 	ctx.fill();
 	ctx.restore();
 }
@@ -132,105 +126,6 @@ export function drawFlameDrop(
 	ctx.fillStyle = css(inner);
 	ctx.fill();
 	ctx.restore();
-}
-
-/**
- * One season particle (dust, petal, leaf, flake, spark, ember) at alpha `a` and size `s`.
- * Returns false for a kind it does not know (the caller draws its own).
- */
-export function drawSeasonParticle(
-	ctx: CanvasRenderingContext2D,
-	e: Particle,
-	a: number,
-	s: number,
-	season: HeroSeason
-): boolean {
-	const look = SEASON_LOOKS[season];
-	if (
-		e.kind !== 'dust' &&
-		e.kind !== 'petal' &&
-		e.kind !== 'leaf' &&
-		e.kind !== 'flake' &&
-		e.kind !== 'spark' &&
-		e.kind !== 'ember'
-	) {
-		return false;
-	}
-	ctx.save();
-	ctx.translate(e.x, e.y);
-	ctx.rotate(e.spin * (e.max - e.life) + e.spin * 2);
-	ctx.globalAlpha = a;
-	ctx.lineJoin = 'round';
-	ctx.lineCap = 'round';
-	switch (e.kind) {
-		case 'dust':
-			ctx.fillStyle = css(DUST);
-			ctx.strokeStyle = css(DUST_EDGE, 0.8);
-			ctx.lineWidth = Math.max(0.8, s * 0.16);
-			ctx.beginPath();
-			ctx.arc(0, 0, s, 0, Math.PI * 2);
-			ctx.fill();
-			ctx.stroke();
-			break;
-		case 'petal': {
-			// a petal flips over and over as it flutters
-			const flip = Math.max(0.2, Math.abs(Math.cos((e.max - e.life) * 8 + (e.lane ?? 0))));
-			ctx.fillStyle = css(look.particleFill);
-			ctx.strokeStyle = css(look.particleEdge);
-			ctx.lineWidth = Math.max(0.8, s * 0.18);
-			ctx.beginPath();
-			ctx.ellipse(0, 0, s, s * 0.62 * flip, 0, 0, Math.PI * 2);
-			ctx.fill();
-			ctx.stroke();
-			break;
-		}
-		case 'leaf':
-			ctx.fillStyle = css(look.particleFill);
-			ctx.strokeStyle = css(look.particleEdge);
-			ctx.lineWidth = Math.max(0.8, s * 0.2);
-			ctx.beginPath();
-			for (let i = 0; i < 10; i++) {
-				const an = (i / 10) * Math.PI * 2 - Math.PI / 2;
-				const r = i % 2 === 0 ? s : s * 0.42;
-				ctx.lineTo(Math.cos(an) * r, Math.sin(an) * r);
-			}
-			ctx.closePath();
-			ctx.fill();
-			ctx.stroke();
-			break;
-		case 'flake':
-			ctx.strokeStyle = css(look.particleEdge);
-			ctx.lineWidth = Math.max(0.8, s * 0.2);
-			ctx.beginPath();
-			for (let i = 0; i < 3; i++) {
-				const an = (i / 3) * Math.PI;
-				ctx.moveTo(Math.cos(an) * s, Math.sin(an) * s);
-				ctx.lineTo(-Math.cos(an) * s, -Math.sin(an) * s);
-			}
-			ctx.stroke();
-			ctx.fillStyle = css(look.particleFill);
-			ctx.beginPath();
-			ctx.arc(0, 0, s * 0.3, 0, Math.PI * 2);
-			ctx.fill();
-			break;
-		default: {
-			// a spark (or an ember in the hell): a round bead with a glint
-			ctx.fillStyle = css(look.particleFill);
-			ctx.strokeStyle = css(look.particleEdge, 0.9);
-			ctx.lineWidth = Math.max(0.8, s * 0.2);
-			ctx.beginPath();
-			ctx.arc(0, 0, s * 0.8, 0, Math.PI * 2);
-			ctx.fill();
-			ctx.stroke();
-			ctx.fillStyle = 'rgba(255,252,230,0.9)';
-			ctx.beginPath();
-			ctx.arc(-s * 0.2, -s * 0.2, s * 0.25, 0, Math.PI * 2);
-			ctx.fill();
-		}
-	}
-	ctx.restore();
-	ctx.globalAlpha = 1;
-	return true;
 }
 
 /** A four-point star path of outer radius `big` and inner radius `small`, centred at (cx, cy). */
