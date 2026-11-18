@@ -157,8 +157,8 @@ export const MS_DESIGN: HeroDesign = {
 	chompRate: 4.8,
 	flare: [240, 200, 255],
 	death: 'spin',
-	bands: [0.1, 0.3, 0.64],
-	powerScale: 1.22
+	// the rage never enlarges her (the owner's pick)
+	bands: [0.1, 0.3, 0.64]
 };
 
 /** The accretion ring of the rage: radii (body radii) and its tilt in her frame. */

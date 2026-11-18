@@ -153,19 +153,24 @@ One meadow world in four seasons, each with its own colours, landmark (hay bale,
 blanket, beach umbrella, snowman + lit fir), meadow decoration, food sprites and weather
 (`render/seasons/<season>/<season>Theme.ts`).
 
-- **Winter is a full New Year place**, not a recolour: its own wall material (snow cap, lip and
-  base drift only on exposed edges, faint ice sheen), composed roof snow planes with firelight
-  in the chimney, window light on the snow and a garland along the ridge, bulbs on the bridge
-  rails, snow-laden fir crowns, a lit New Year fir beside the snowman, frozen stream and pond
-  with skate arcs, snow mounds with footprints, a trodden-snow portal trail. All static
-  (`render/seasons/winter/winterBake.ts`); the blizzard and night stay live.
+- **Winter is a full New Year place**, not a recolour: its own wall material (stone with mortar
+  joints, cracks and specks; snow cap, lip and base shelf only on exposed edges, every snow
+  shape contained in its tile so no corners leak onto the neighbours, bevels clipped), the
+  corridors as a trodden snow path (packed blue-grey snow, white dust, footprints, ice patches)
+  through the shared per-season floor hook, composed roof snow planes with rounded corners and
+  a soft snow ridge bar over the seam, firelight in the chimney, window light on the snow and a
+  garland along the ridge, bulbs on the bridge rails, snow-laden fir crowns, a lit New Year fir
+  beside the snowman, frozen stream and pond with skate arcs, snow mounds with footprints, a
+  trodden-snow portal trail. All static (`render/seasons/winter/winterBake.ts`); the blizzard
+  and night stay live.
 
 - Food stays calm and small: dots about a fifth of a tile with no inner detail;
   energizers differ from dots in shape, colour and size, and never look like food or a
   collectible. Each season has its own: a cherry blossom (spring), a starfish (summer), a
-  jack-o'-lantern (autumn), a snowman (winter); the pellets are a yellow button, a white
-  pebble, an amber bead and an ice drop. All are ink-outlined, in the heroes' cel style
-  (`render/seasons/meadow/seasonFood.ts`).
+  jack-o'-lantern (autumn), a New Year lantern with a star inside (winter); the pellets are a
+  yellow button, a white pebble, an amber bead and a tangerine with a leaf. All are ink-outlined,
+  in the heroes' cel style (`render/seasons/meadow/seasonFood.ts`). The winter HUD follows the
+  same pick: a tangerine food trail and the lantern in the power dial.
 - Food is drawn over the weather and the night, like the actors: it always reads. The
   floor is dark enough for the dots, the lair floor muted so ghosts and the egg read on
   it; the weather stays faint (no big pale blobs over the board).
@@ -311,7 +316,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   the mouth and shrink. No tongue for either hero.
 - Ms. Pac-Man, a galaxy: a luminous sphere of space (the owner: she was too dark, the eye barely read) with a tilted spiral galaxy (pink and blue arms, a white core) turning inside, stars twinkling, an atmosphere glowing at her limb and a pale cloud round her eye; her anime eye (a gradient iris, an ink wing on the lid, a lash and a brow) grows at tile size so it reads, blush, a little fang, no lipstick; her bow a bipolar nebula (two glowing lobes, a star at the knot) on a spring, a quarter smaller than her old bow. The rage (her overdrive): the galaxy spins up and flares, an accretion ring of light circles her (its far half behind her, its near half in front), stars spiral into her, the bow glows, a star in the eye.
 - The heroes' trail is their element's particles shed along the path (his glints of sunlight, her stars; fire in the rage): never lines, ribbons or puffs (they read as sticks, strings and gas), and it bends with a turn. Outline-free (the owner's review): his glints thin warm flares, her stars soft twinkles, the rage's embers glowing dots, no beads or ink outlines.
-- The menu and HUD coins carry the game's own hero baked at rest (`heroPortrait`), never a hand copy that drifts from the game.
+- The menu and HUD coins carry the game's own hero baked at rest (`heroPortrait`), never a hand copy that drifts from the game. The body disc is baked at the scale it is really drawn at (the portrait bakes at 6x, a zoomed board at its own zoom), never at the screen dpr alone: upscaling a small disc blurred the menu icon.
+- The energizer never enlarges the heroes (the owner's pick): the rage is light, colour and motion, not size.
 - Eyes show where an actor is heading.
 - Food is calm (§6); energizers read differently from dots.
 - Boss: harsh and dangerous, changes visibly by phase, fits in one tile.

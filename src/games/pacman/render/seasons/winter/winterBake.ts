@@ -7,7 +7,11 @@ import type { BakeKit } from '../meadow/MeadowTheme';
 import type { WorldDecor } from '../../common/worldDecor';
 import { tileRandom } from '../../common/worldDecor';
 
-/** Snow-capped stone: a cap on the open top, a lip on the open left, a drift at the open base. */
+/**
+ * Snow-capped stone: a cap on the open top, a lip on the open left, a shelf at the open base.
+ * Every snow shape stays inside its tile (the owner: no corners leaking onto the neighbours),
+ * and the stone keeps its joints, cracks and specks so the material is not flat.
+ */
 export function paintSnowWalls(f: MeadowFrame): void {
 	const { P, R: rows, C: cols, isW, b, vis, lin, blob, rp, RS } = f;
 	const W = P.wall;
@@ -30,9 +34,9 @@ export function paintSnowWalls(f: MeadowFrame): void {
 	};
 	b.save();
 	b.shadowColor = W.shadow;
-	b.shadowBlur = 7 * RS;
-	b.shadowOffsetX = 2 * RS;
-	b.shadowOffsetY = 3 * RS;
+	b.shadowBlur = 2.4 * RS;
+	b.shadowOffsetX = 0.7 * RS;
+	b.shadowOffsetY = RS;
 	b.fillStyle = W.base;
 	for (const [r, c] of WL) {
 		wsh(r, c, 0, -0.4, 8, false);
@@ -52,38 +56,84 @@ export function paintSnowWalls(f: MeadowFrame): void {
 		b.clip();
 		b.fillStyle = lin(x, y, x + T, y + T, 'rgba(190,225,255,.22)', 'rgba(255,255,255,0)');
 		b.fillRect(x, y, T, T);
-		// snow sits only on exposed edges, never sprinkled per tile like stickers
+		// stone material: mortar joints, an occasional crack, specks
+		b.strokeStyle = W.joints;
+		b.lineWidth = 1;
+		const jy = y + T * (0.34 + 0.12 * k());
+		const jy2 = y + T * (0.68 + 0.1 * k());
+		b.beginPath();
+		b.moveTo(x, jy);
+		b.lineTo(x + T, jy);
+		b.moveTo(x, jy2);
+		b.lineTo(x + T, jy2);
+		const jx = x + T * (0.25 + 0.5 * k());
+		b.moveTo(jx, jy);
+		b.lineTo(jx, jy2);
+		b.stroke();
+		if (v > 0.78) {
+			b.strokeStyle = W.crack;
+			b.beginPath();
+			let cx = x + T * (0.2 + 0.6 * k());
+			let cy = y + T * (0.45 + 0.3 * k());
+			b.moveTo(cx, cy);
+			for (let i = 0; i < 3; i++) {
+				cx += T * (0.08 + 0.1 * k()) * (k() < 0.5 ? -1 : 1);
+				cy += T * 0.09;
+				b.lineTo(cx, cy);
+			}
+			b.stroke();
+		}
+		for (let i = 0; i < 5; i++)
+			blob(
+				x + T * 0.5 + k() * T * 0.44,
+				y + T * 0.55 + k() * T * 0.38,
+				0.6 + k() * 0.9,
+				0.4 + k() * 0.6,
+				W.specks[(k() * 2) | 0],
+				k() * 3
+			);
+		// snow sits only on exposed edges, contained in the tile, thickness varies per stone
 		if (!isW(r - 1, c)) {
+			const d = T * (0.32 + 0.1 * k());
 			b.fillStyle = lin(x, y, x, y + T * 0.7, '#ffffff', '#dfe9f4');
 			b.beginPath();
-			b.moveTo(x - 1, y - 1);
-			b.lineTo(x + T + 1, y - 1);
-			b.lineTo(x + T + 1, y + T * 0.36);
-			for (let xx = x + T; xx >= x - 1; xx -= T / 5)
-				b.lineTo(xx, y + T * (0.44 + 0.08 * Math.sin(xx * 0.33 + r * 1.7)));
+			b.moveTo(x, y);
+			b.lineTo(x + T, y);
+			b.lineTo(x + T, y + d * 0.8);
+			for (let xx = x + T; xx >= x; xx -= T / 5)
+				b.lineTo(xx, y + d + T * 0.06 * Math.sin(xx * 0.33 + r * 1.7));
 			b.closePath();
 			b.fill();
 		}
 		if (!isW(r, c - 1)) {
 			b.fillStyle = 'rgba(255,255,255,.85)';
-			b.fillRect(x - 1, y - 1, T * 0.16, T * 0.62);
+			b.beginPath();
+			b.moveTo(x, y);
+			b.lineTo(x + T * 0.15, y);
+			b.lineTo(x + T * 0.13, y + T * 0.55);
+			b.quadraticCurveTo(x + T * 0.1, y + T * 0.62, x, y + T * 0.6);
+			b.closePath();
+			b.fill();
 		}
-		// a few specks only on the exposed stone
-		for (let i = 0; i < 3; i++)
-			blob(
-				x + T * 0.5 + k() * T * 0.42,
-				y + T * 0.62 + k() * T * 0.3,
-				0.6 + k() * 0.8,
-				0.4 + k() * 0.5,
-				W.specks[(k() * 2) | 0],
-				k() * 3
-			);
-		b.restore();
-		// a composed drift spilling onto the ground where the wall ends
+		// a snow shelf piled at the base, inside the tile: no spill, no corners
 		if (!isW(r + 1, c)) {
-			blob(x + T * 0.5, y + T * 0.98, T * 0.5, T * 0.12, '#ffffff', 0);
-			blob(x + T * 0.3, y + T * 1.02, T * 0.3, T * 0.09, '#e8f1f9', 0);
+			b.fillStyle = lin(x, y + T * 0.8, x, y + T, '#ffffff', '#dfe9f4');
+			b.beginPath();
+			b.moveTo(x, y + T);
+			b.lineTo(x, y + T * 0.88);
+			for (let xx = x; xx <= x + T; xx += T / 5)
+				b.lineTo(xx, y + T * (0.86 + 0.05 * Math.sin(xx * 0.4 + c)));
+			b.lineTo(x + T, y + T);
+			b.closePath();
+			b.fill();
+			blob(x + T * (0.3 + 0.4 * k()), y + T * 0.9, T * 0.16, T * 0.06, '#ffffff', 0);
 		}
+		b.restore();
+		// bevel strokes, clipped so nothing draws outside the tile
+		b.save();
+		b.beginPath();
+		b.rect(x, y, T, T);
+		b.clip();
 		b.strokeStyle = W.light;
 		b.lineWidth = 2;
 		b.save();
@@ -98,9 +148,10 @@ export function paintSnowWalls(f: MeadowFrame): void {
 		wsh(r, c, 0.6, 0.6, 8, false);
 		b.stroke();
 		b.restore();
+		b.restore();
 		if (v > 0.97) {
 			const px = x + 5 + k() * (T - 10);
-			const py = y + 4 + k() * (T * 0.3);
+			const py = y + 4 + k() * (T * 0.25);
 			b.strokeStyle = 'rgba(255,255,255,.9)';
 			b.lineWidth = 1;
 			b.beginPath();
@@ -110,6 +161,57 @@ export function paintSnowWalls(f: MeadowFrame): void {
 			b.lineTo(px, py + 2);
 			b.stroke();
 		}
+	}
+}
+
+/**
+ * The corridors as a trodden snow path: packed blue-grey snow, dusted white, footprints and
+ * ice patches (the owner: the old transparent grey fills were not a winter floor).
+ */
+export function paintSnowFloor(f: MeadowFrame, x: number, y: number, k: () => number): void {
+	const { b, lin, blob } = f;
+	const base = ['#879bb1', '#8093a9', '#8ea2b8'][(k() * 3) | 0];
+	b.fillStyle = base;
+	b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
+	b.fillStyle = lin(x, y, x, y + T, 'rgba(255,255,255,.16)', 'rgba(40,60,90,.12)');
+	b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
+	for (let i = 0; i < 2; i++)
+		blob(
+			x + k() * T,
+			y + k() * T,
+			2.5 + k() * 3.5,
+			1.2 + k() * 1.6,
+			'rgba(255,255,255,.22)',
+			k() * 3
+		);
+	for (let i = 0; i < 3; i++)
+		blob(
+			x + k() * T,
+			y + k() * T,
+			0.6 + k() * 1.2,
+			0.5 + k() * 0.8,
+			['#a9bcd0', '#5f7391', '#c6d6e6'][(k() * 3) | 0],
+			k() * 3
+		);
+	if (k() < 0.55) {
+		const a = k() * 6.28;
+		const dx = Math.cos(a) * 2.2;
+		const dy = Math.sin(a) * 2.2;
+		const fx = x + T * (0.3 + 0.4 * k());
+		const fy = y + T * (0.3 + 0.4 * k());
+		b.fillStyle = 'rgba(50,75,110,.3)';
+		b.beginPath();
+		b.ellipse(fx - dx, fy - dy, 1.1, 1.7, a, 0, 7);
+		b.fill();
+		b.beginPath();
+		b.ellipse(fx + dx, fy + dy, 1.1, 1.7, a, 0, 7);
+		b.fill();
+	}
+	if (k() > 0.82) {
+		b.fillStyle = lin(x, y, x + T, y + T, 'rgba(225,242,255,.3)', 'rgba(225,242,255,0)');
+		b.beginPath();
+		b.ellipse(x + T * 0.5, y + T * 0.5, T * 0.34, T * 0.22, k() * 3, 0, 7);
+		b.fill();
 	}
 }
 
@@ -144,16 +246,19 @@ export function paintWinterAfter(f: MeadowFrame): void {
 		const X = o.x - ow / 2;
 		const Y = o.y - oh / 2;
 		if (o.k === 'cabin') {
-			// composed snow planes on the two roof slopes instead of scattered blobs
+			// composed snow planes on the two roof slopes, rounded where they meet the eave,
+			// and a soft snow ridge bar over the seam: nothing joins at a sharp angle
 			b.save();
-			rp(X + 1, Y + 1, ow - 2, oh - 2, [3, 3, 3, 3]);
+			rp(X + 1, Y + 1, ow - 2, oh - 2, [4, 4, 4, 4]);
 			b.clip();
 			b.fillStyle = lin(X, Y, X, o.y, '#ffffff', '#e4edf6');
 			b.beginPath();
 			b.moveTo(X + 3, o.y);
-			b.lineTo(X + 3, Y + 3);
-			for (let xx = X + 3; xx <= X + ow - 3; xx += 6)
-				b.lineTo(xx, Y + 3 + Math.sin(xx * 0.35 + o.x) * 1.6);
+			b.lineTo(X + 3, Y + 7);
+			b.quadraticCurveTo(X + 3, Y + 3, X + 7, Y + 3);
+			for (let xx = X + 7; xx <= X + ow - 7; xx += 6)
+				b.lineTo(xx, Y + 3 + Math.sin(xx * 0.35 + o.x) * 1.4);
+			b.quadraticCurveTo(X + ow - 3, Y + 3, X + ow - 3, Y + 7);
 			b.lineTo(X + ow - 3, o.y);
 			b.closePath();
 			b.fill();
@@ -161,23 +266,21 @@ export function paintWinterAfter(f: MeadowFrame): void {
 			b.beginPath();
 			b.moveTo(X + 3, o.y);
 			b.lineTo(X + ow - 3, o.y);
-			b.lineTo(X + ow - 3, Y + oh - 3);
-			for (let xx = X + ow - 3; xx >= X + 3; xx -= 6)
-				b.lineTo(xx, Y + oh - 3 + Math.sin(xx * 0.3 + o.y) * 1.6);
+			b.lineTo(X + ow - 3, Y + oh - 7);
+			b.quadraticCurveTo(X + ow - 3, Y + oh - 3, X + ow - 7, Y + oh - 3);
+			for (let xx = X + ow - 7; xx >= X + 7; xx -= 6)
+				b.lineTo(xx, Y + oh - 3 + Math.sin(xx * 0.3 + o.y) * 1.4);
+			b.quadraticCurveTo(X + 3, Y + oh - 3, X + 3, Y + oh - 7);
 			b.closePath();
 			b.fill();
-			b.lineCap = 'round';
-			b.strokeStyle = P.cabin.ridge;
-			b.lineWidth = 4;
-			b.beginPath();
-			b.moveTo(X + 3, o.y);
-			b.lineTo(X + ow - 3, o.y);
-			b.stroke();
+			b.fillStyle = lin(X, o.y - 3, X, o.y + 3, '#ffffff', '#e0eaf4');
+			rp(X + 2, o.y - 2.6, ow - 4, 5.2, [2.6, 2.6, 2.6, 2.6]);
+			b.fill();
 			b.strokeStyle = P.cabin.ridgeShadow;
 			b.lineWidth = 1;
 			b.beginPath();
-			b.moveTo(X + 3, o.y + 2.8);
-			b.lineTo(X + ow - 3, o.y + 2.8);
+			b.moveTo(X + 4, o.y + 3.4);
+			b.lineTo(X + ow - 4, o.y + 3.4);
 			b.stroke();
 			b.restore();
 			// firelight in the chimney mouth (the cabin is seen from above)
@@ -211,7 +314,7 @@ export function paintWinterAfter(f: MeadowFrame): void {
 			for (let i = 0; i <= 10; i++) {
 				const t = i / 10;
 				const x = X + 4 + t * (ow - 8);
-				const y = o.y + 6 + Math.sin(t * Math.PI) * 3;
+				const y = o.y + 7 + Math.sin(t * Math.PI) * 3;
 				if (i) b.lineTo(x, y);
 				else b.moveTo(x, y);
 			}
@@ -219,7 +322,7 @@ export function paintWinterAfter(f: MeadowFrame): void {
 			const cols = ['#ffd98a', '#ff9a6b', '#9fd8ff'];
 			for (let i = 0; i <= 10; i++) {
 				const t = i / 10;
-				bulb(X + 4 + t * (ow - 8), o.y + 6 + Math.sin(t * Math.PI) * 3, cols[i % 3]);
+				bulb(X + 4 + t * (ow - 8), o.y + 7 + Math.sin(t * Math.PI) * 3, cols[i % 3]);
 			}
 		} else if (o.k === 'bridge') {
 			const bx = o.x - 26;

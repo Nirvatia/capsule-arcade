@@ -191,52 +191,56 @@ export const autumnPellet = pellet((c) => {
 	shine(c, -0.9, -1, 0.9, 0.6, -0.5);
 });
 
-/** Winter: a snowman in a scarf and a top hat. */
-export const snowman = energizer((c) => {
-	stroke(c, -5.6, 3, -10.6, -0.4, INK, 2.6);
-	stroke(c, -5.6, 3, -10.6, -0.4, '#8a5a2a', 1.1);
-	stroke(c, 5.6, 3, 10.6, -0.4, INK, 2.6);
-	stroke(c, 5.6, 3, 10.6, -0.4, '#8a5a2a', 1.1);
-	circle(c, 0, 5.4, 6.3);
-	paint(c, '#f6faff');
-	circle(c, 0, -4.4, 4.9);
-	paint(c, '#f6faff');
-	c.fillStyle = 'rgba(120,160,220,.28)';
+/** Winter: a New Year lantern with a star inside, warm against the blue night. */
+export const winterLantern = energizer((c) => {
 	c.beginPath();
-	c.ellipse(3, 6.4, 3, 4.6, 0.2, 0, TAU);
-	c.fill();
+	c.arc(0, -9.6, 2.2, Math.PI, 0);
+	c.strokeStyle = INK;
+	c.lineWidth = 1.6;
+	c.lineCap = 'round';
+	c.stroke();
 	c.beginPath();
-	c.roundRect(-5.2, -0.8, 10.4, 2.8, 1.3);
-	paint(c, '#e8403a', 1.2);
-	c.beginPath();
-	c.roundRect(1.4, 1, 2.8, 4.8, 1.2);
-	paint(c, '#e8403a', 1.1);
-	c.beginPath();
-	c.roundRect(-3.4, -12.4, 6.8, 4.6, 1.2);
+	c.roundRect(-4.2, -10, 8.4, 3, 1.2);
 	paint(c, '#2f3040', 1.2);
+	const g = c.createLinearGradient(0, -7, 0, 8);
+	g.addColorStop(0, '#ffe9a8');
+	g.addColorStop(1, '#ffb84a');
 	c.beginPath();
-	c.roundRect(-5.2, -8.8, 10.4, 1.9, 0.9);
-	paint(c, '#2f3040', 1.1);
-	c.fillStyle = INK;
-	circle(c, -1.8, -4.8, 0.85);
-	c.fill();
-	circle(c, 1.8, -4.8, 0.85);
-	c.fill();
-	circle(c, 0, 3.6, 0.8);
-	c.fill();
-	circle(c, 0, 6.8, 0.8);
-	c.fill();
+	c.roundRect(-6, -7, 12, 15, 3);
+	paint(c, g, 1.5);
+	c.strokeStyle = 'rgba(36,20,24,.5)';
+	c.lineWidth = 0.9;
 	c.beginPath();
-	c.moveTo(0, -3.9);
-	c.lineTo(4, -3);
-	c.lineTo(0, -2.4);
+	c.moveTo(-2.6, -7);
+	c.lineTo(-2.6, 8);
+	c.moveTo(2.6, -7);
+	c.lineTo(2.6, 8);
+	c.stroke();
+	c.fillStyle = '#ff9a4d';
+	c.beginPath();
+	for (let i = 0; i < 10; i++) {
+		const a = (i * Math.PI) / 5 - Math.PI / 2;
+		const r = i % 2 ? 1.5 : 3.4;
+		const px = Math.cos(a) * r;
+		const py = 0.6 + Math.sin(a) * r;
+		if (i) c.lineTo(px, py);
+		else c.moveTo(px, py);
+	}
 	c.closePath();
-	paint(c, '#ff8a1f', 0.9);
+	c.fill();
+	c.beginPath();
+	c.roundRect(-4.2, 8, 8.4, 2.6, 1.2);
+	paint(c, '#2f3040', 1.1);
+	shine(c, -3.4, -3.4, 1.1, 2, 0.3);
 });
 
-/** Winter pellet: a small ice drop. */
+/** Winter pellet: a tangerine with a leaf, the New Year table's fruit. */
 export const winterPellet = pellet((c) => {
-	circle(c, 0, 0, 2.7);
-	paint(c, '#cfeaff', 1);
-	shine(c, -0.9, -1, 0.9, 0.6, -0.5);
+	circle(c, 0, 0.2, 2.8);
+	paint(c, '#ff8a1f', 1);
+	c.beginPath();
+	c.ellipse(1.1, -2.5, 1.3, 0.7, -0.5, 0, TAU);
+	paint(c, '#5c8a2a', 0.7);
+	stroke(c, 0, -2.4, 0.3, -3.1, '#7a4a10', 0.7);
+	shine(c, -0.9, -0.8, 0.9, 0.6, -0.5);
 });

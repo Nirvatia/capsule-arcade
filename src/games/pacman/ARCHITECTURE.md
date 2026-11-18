@@ -44,7 +44,8 @@ render/
   SharedLayers     Pac-Man, Ms. Pac-Man and the bonuses (every level)
   seasons/meadow/  MeadowBake (static world: a frame + one function per layer; decor and
                    walls in meadowBakeDecor / meadowBakeWalls; a theme may opt into its own
-                   wall material via wall.paint and a final static layer via after) +
+                   wall material via wall.paint, its own path floor via floor.paint (per cell;
+                   lair and portals stay shared) and a final static layer via after) +
                    MeadowWorld (live layer) + MeadowLevelRenderer, driven by a MeadowTheme
                    per season (seasons/<season>/<season>Theme.ts; winter's setting painters
                    live in seasons/winter/winterBake.ts)
@@ -74,7 +75,9 @@ audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), Arca
 ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the HUD of the
              four season worlds, `SeasonHud` in the side margins and `SeasonHudStack` in two bands
              on a taller screen, over `seasonArt` and `seasonThemes`; `BossHud`, the boss levels' one, over
-             `hellArt`; ArcadeHud; hudSnapshot, hudFrame; the coins and life icons bake the real hero via `heroPortrait`), screens/ (`WorldScreens` over `screenArt` for the
+             `hellArt`; ArcadeHud; hudSnapshot, hudFrame; the coins and life icons bake the real hero via `heroPortrait`,
+             whose body disc follows the bake's own scale (`Hero.composeBody` reads the ctx transform, capped 6x) so a
+             portrait never upscales a screen-dpr disc), screens/ (`WorldScreens` over `screenArt` for the
              seasons and the hell; `GameScreens`, the older cards, for the arcade),
              debug/ (dev panel and log), MuteButton (a knob, bottom left, and the volume slider beside it), i18n;
              the graphics setting is a plank under the menu and the pause screen (a button on the arcade's pause card)

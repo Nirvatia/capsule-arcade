@@ -1,10 +1,12 @@
 // Winter as a full New Year place (the owner's pick over the palette-swap meadow): snow-capped
-// walls, composed roof snow, lit cabins and garlands, snow-laden firs, frozen water; ice-drop
-// pellets and snowman energizers, a blizzard, a blue night. The static setting lives in winterBake.
+// stone walls with joints, a trodden snow path, composed roof snow, lit cabins and garlands,
+// snow-laden firs, frozen water; tangerine pellets and lantern energizers, a blizzard, a blue
+// night. The static setting lives in winterBake.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
 import {
 	drawWinterLandmark,
 	paintIceExtras,
+	paintSnowFloor,
 	paintSnowPatch,
 	paintSnowWalls,
 	paintWinterAfter
@@ -17,7 +19,7 @@ import {
 	tinted,
 	washTexture
 } from '../meadow/meadowSprites';
-import { snowman, winterPellet } from '../meadow/seasonFood';
+import { winterLantern, winterPellet } from '../meadow/seasonFood';
 import { ICE_PALETTE } from '../../transitions/decay/LevelDecay';
 
 const fog = lazy(() =>
@@ -61,7 +63,8 @@ export const winterTheme: MeadowTheme = {
 		lair: { base: '#2f3846', tiles: ['#56637a', '#515e73', '#5b6880'] },
 		floor: {
 			tiles: ['#566274', '#515d6f', '#5b6779'],
-			specks: ['#6a768a', '#3a4452', '#7a869a']
+			specks: ['#6a768a', '#3a4452', '#7a869a'],
+			paint: paintSnowFloor
 		},
 		portal: {
 			trail: (a) => `rgba(140,160,190,${a * 0.4})`,
@@ -74,12 +77,12 @@ export const winterTheme: MeadowTheme = {
 		wall: {
 			base: '#6a7684',
 			moss: ['#4f7f66', '#2f5a4a'],
-			top: ['#cfd9e4', '#d6dde6', '#c4d0dd'],
-			bottom: ['#93a1b3', '#9aa6b6', '#8b99ac'],
+			top: ['#b9c6d6', '#c2cdd9', '#aebccd'],
+			bottom: ['#7e8ca0', '#8794a8', '#75839a'],
 			mossSpecks: ['#8fb8a2', '#2a4f40', '#e8f2f8'],
 			specks: ['rgba(255,255,255,.5)', 'rgba(60,75,95,.3)'],
-			crack: 'rgba(70,85,100,.15)',
-			joints: 'rgba(70,85,105,.12)',
+			crack: 'rgba(50,65,90,.25)',
+			joints: 'rgba(50,65,90,.22)',
 			drifts: ['#f4f9fd', '#ffffff'],
 			light: 'rgba(255,255,255,.5)',
 			dark: 'rgba(40,55,80,.3)',
@@ -106,9 +109,9 @@ export const winterTheme: MeadowTheme = {
 	live: {
 		pellet: { texture: winterPellet, size: 10 },
 		energizer: {
-			texture: snowman,
+			texture: winterLantern,
 			size: 26,
-			glow: 0x9fd8ff,
+			glow: 0xffb84a,
 			glowSize: (64 * 0.95) / 3,
 			motion: 'sway'
 		},
@@ -179,7 +182,7 @@ export const winterTheme: MeadowTheme = {
 				[1, 'rgba(12,22,44,.5)']
 			])
 		),
-		lights: { energizer: 0x7fd8ff, portal: 0x9fd8ff },
+		lights: { energizer: 0xffc04a, portal: 0x9fd8ff },
 		chimneySmoke: true
 	},
 	decay: ICE_PALETTE

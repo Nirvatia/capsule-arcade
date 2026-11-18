@@ -892,7 +892,7 @@ export abstract class Hero {
 			ctx.fill();
 			ctx.restore();
 		}
-		const body = this.composeBody(R, lx, ly, p, pulse, mu, md, bend);
+		const body = this.composeBody(ctx, R, lx, ly, p, pulse, mu, md, bend);
 		ctx.drawImage(body.canvas, -body.half, -body.half, body.half * 2, body.half * 2);
 		if (this.feel.sphere) this.paintMeridians(ctx, R, outline);
 		this.over?.(ctx, R, {
@@ -1019,6 +1019,7 @@ export abstract class Hero {
 	 * image draws and Porter-Duff operations: no clipping, no blend modes, no gradients.
 	 */
 	private composeBody(
+		ctx: CanvasRenderingContext2D,
 		R: number,
 		lx: number,
 		ly: number,
@@ -1028,7 +1029,12 @@ export abstract class Hero {
 		md: number,
 		bend: number
 	): { canvas: HTMLCanvasElement; half: number } {
-		const dpr = Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
+		// the disc is baked at the scale it is really drawn at (the menu portrait bakes at 6x,
+		// a zoomed board at its own zoom), never at the screen dpr alone: upscaling blurs it
+		const m = ctx.getTransform();
+		const dpr = m
+			? Math.min(6, Math.hypot(m.a, m.b))
+			: Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
 		const disc = bodyDisc(this.design, R * dpr, Math.atan2(ly, lx), p, this.season);
 		const size = disc.width;
 		if (!this.scratch || this.scratch.width !== size) {

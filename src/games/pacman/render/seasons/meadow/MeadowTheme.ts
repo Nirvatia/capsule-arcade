@@ -59,7 +59,12 @@ export interface MeadowBakeTheme {
 	};
 	readonly rock: Four;
 	readonly lair: { readonly base: string; readonly tiles: Three };
-	readonly floor: { readonly tiles: Three; readonly specks: Three };
+	readonly floor: {
+		readonly tiles: Three;
+		readonly specks: Three;
+		/** A season's own path material per cell; falls back to the shared tiles+specks. */
+		readonly paint?: (f: MeadowFrame, x: number, y: number, k: () => number) => void;
+	};
 	readonly portal: {
 		/** Worn path leading away from the portal, by alpha. */
 		readonly trail: (alpha: number) => string;

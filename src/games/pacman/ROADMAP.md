@@ -63,11 +63,24 @@ last (see Later).
      garland along the ridge, bulbs on the bridge rails; snow-laden fir crowns; the snowman
      landmark joined by a lit New Year fir; snow mounds with footprints instead of flower
      stickers; a trodden-snow portal trail. All static baked (`winter/winterBake.ts`, tested in
-     `winterBake.test.ts`); corridors, food, heroes and the live blizzard untouched.
+     `winterBake.test.ts`).
+     **Winter polish round 2 shipped** (the owner's nine-point review, prototype
+     `winter-polish` picked whole): every snow shape contained in its wall tile (no corners
+     leaking onto neighbours), bevels clipped; the stone keeps mortar joints, cracks and specks
+     (it had read flat); the corridors are a trodden snow path with footprints and ice patches
+     instead of the old transparent grey fills; roof snow planes meet round under a soft snow
+     ridge bar (no sharp-angle seam); the food is a tangerine and the energizer a New Year
+     lantern with a star inside (the winter HUD trail and power dial follow); the heroes are
+     never enlarged by the energizer; the menu portrait bakes its body disc at the bake scale
+     (6x) instead of the screen dpr, which had upscaled a 42 px disc into blur. The live
+     blizzard stays as it was (the owner's pick).
      Mechanism: default-preserving hooks so a season opts into its own setting —
-     `MeadowBakeTheme.wall.paint?: (frame) => void` (falls back to `paintWalls`) and
+     `MeadowBakeTheme.wall.paint?: (frame) => void` (falls back to `paintWalls`),
+     `MeadowBakeTheme.floor.paint?: (frame, x, y, k) => void` (per path cell, falls back to the
+     shared tiles and specks; lair and portals stay shared) and
      `MeadowBakeTheme.after?: (frame) => void` (a final static layer over the bake). The
-     `season-winter` comparison prototype served the pick and was deleted after it.
+     `season-winter` and `winter-polish` comparison prototypes served the picks and were
+     deleted after them.
 2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
    Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
    wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"
