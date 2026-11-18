@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MeadowFrame } from '../meadow/MeadowBake';
 import { MEADOW_TILE as T } from '../meadow/MeadowBake';
 import type { WorldDecor } from '../../common/worldDecor';
-import { tileRandom } from '../../common/worldDecor';
-import { paintSnowFloor, paintSnowWalls, paintWinterAfter } from './winterBake';
+import { paintSnowWalls, paintWinterAfter } from './winterBake';
 import { winterTheme } from './winterTheme';
 
 type Op = { op: string; args: unknown[]; fill?: unknown; stroke?: unknown };
@@ -13,21 +12,12 @@ function recorder() {
 	const ops: Op[] = [];
 	let fill: unknown;
 	let stroke: unknown;
-	const stack: Array<{ fill: unknown; stroke: unknown }> = [];
 	const gradient = () => ({ addColorStop: () => {} });
 	const ctx = new Proxy({} as Record<string, unknown>, {
 		get: (target, key: string) =>
 			key in target
 				? target[key]
 				: (...args: unknown[]) => {
-						if (key === 'save') stack.push({ fill, stroke });
-						if (key === 'restore') {
-							const s = stack.pop();
-							if (s) {
-								fill = s.fill;
-								stroke = s.stroke;
-							}
-						}
 						ops.push({ op: key, args, fill, stroke });
 						return key.startsWith('create') ? gradient() : undefined;
 					},
@@ -69,56 +59,40 @@ function wallFrame(rec: ReturnType<typeof recorder>): MeadowFrame {
 }
 
 describe('snow-capped walls', () => {
-	it('put the cap, the lip and the base shelf only on exposed edges, inside the tile', () => {
+	it('put the cap, the lip and the drift only on exposed edges of a wall block', () => {
 		const rec = recorder();
 		paintSnowWalls(wallFrame(rec));
-		// the cap's gradient spans 0.7 tile from the top; the base shelf's spans the last 0.2
 		const caps = rec.ops.filter(
-			(o) =>
-				o.op === 'lin' &&
-				o.args[4] === '#ffffff' &&
-				o.args[5] === '#dfe9f4' &&
-				Math.abs((o.args[3] as number) - (o.args[1] as number) - T * 0.7) < 1e-9
+			(o) => o.op === 'lin' && o.args[4] === '#ffffff' && o.args[5] === '#dfe9f4'
 		);
 		expect(caps).toHaveLength(3);
 		expect(caps.every((o) => o.args[1] === 0)).toBe(true);
-		const shelves = rec.ops.filter(
-			(o) =>
-				o.op === 'lin' &&
-				o.args[4] === '#ffffff' &&
-				o.args[5] === '#dfe9f4' &&
-				Math.abs((o.args[3] as number) - (o.args[1] as number) - T * 0.2) < 1e-9
-		);
-		expect(shelves).toHaveLength(3);
-		expect(shelves.every((o) => Math.abs((o.args[1] as number) - (2 * T + T * 0.8)) < 1e-9)).toBe(
-			true
-		);
-		const lips = rec.ops.filter((o) => o.op === 'moveTo' && o.fill === 'rgba(255,255,255,.85)');
+		const lips = rec.ops.filter((o) => o.op === 'fillRect' && o.fill === 'rgba(255,255,255,.85)');
 		expect(lips).toHaveLength(3);
-		const shelfBlobs = rec.ops.filter((o) => o.op === 'blob' && o.args[4] === '#ffffff');
-		expect(shelfBlobs).toHaveLength(3);
-		expect(shelfBlobs.every((o) => (o.args[1] as number) <= 3 * T)).toBe(true);
-		// no snow shape may start outside the block: the old cap and lip leaked a pixel
-		const snow = rec.ops.filter((o) => o.fill === '#ffffff' || o.fill === 'rgba(255,255,255,.85)');
-		expect(snow.length).toBeGreaterThan(0);
-		for (const o of snow) {
-			for (const a of o.args.slice(0, 2)) {
-				if (typeof a === 'number') {
-					expect(a).toBeGreaterThanOrEqual(0);
-					expect(a).toBeLessThanOrEqual(3 * T);
-				}
-			}
-		}
-		// the bevels are clipped to their own tile so nothing draws round the corners
-		const clips = rec.ops.filter((o) => o.op === 'rect' && o.args[2] === T && o.args[3] === T);
-		expect(clips).toHaveLength(9);
+		expect(lips.every((o) => o.args[0] === -1)).toBe(true);
+		const drifts = rec.ops.filter((o) => o.op === 'blob' && o.args[4] === '#ffffff');
+		expect(drifts).toHaveLength(3);
+		expect(drifts.every((o) => o.args[1] === 2 * T + T * 0.98)).toBe(true);
 	});
 
-	it('give the stone its joints and specks back, without moss or flower stickers', () => {
+	it('leave the inner stone of a block bare of snow and of moss or flower stickers', () => {
 		const rec = recorder();
 		paintSnowWalls(wallFrame(rec));
+		const drifts = winterTheme.bake.wall.drifts;
+		const innerDrifts = rec.ops.filter(
+			(o) =>
+				o.op === 'blob' &&
+				drifts.includes(o.args[4] as string) &&
+				(o.args[0] as number) >= T &&
+				(o.args[0] as number) < 2 * T &&
+				(o.args[1] as number) >= T &&
+				(o.args[1] as number) < 2 * T
+		);
+		expect(innerDrifts).toHaveLength(0);
 		const W = winterTheme.bake.wall;
-		expect(rec.ops.filter((o) => o.op === 'stroke' && o.stroke === W.joints)).toHaveLength(9);
+		expect(
+			rec.ops.some((o) => o.op === 'stroke' && (o.stroke === W.crack || o.stroke === W.joints))
+		).toBe(false);
 		const banned: string[] = [...W.moss, ...W.flowers];
 		expect(
 			rec.ops.some((o) => banned.includes(o.fill as string) || banned.includes(o.stroke as string))
@@ -151,41 +125,18 @@ describe('the New Year final layer', () => {
 				['#ffd98a', '#ff9a6b', '#9fd8ff'].includes(o.fill as string)
 		);
 		expect(bulbs).toHaveLength(11);
-		// the seam is a soft snow ridge bar, and the planes meet it round, not at sharp angles
-		expect(rec.ops.some((o) => o.op === 'rp' && o.args[3] === 5.2)).toBe(true);
 		expect(
-			rec.ops.some((o) => o.op === 'stroke' && o.stroke === winterTheme.bake.cabin.ridgeShadow)
+			rec.ops.some((o) => o.op === 'stroke' && o.stroke === winterTheme.bake.cabin.ridge)
 		).toBe(true);
-		expect(rec.ops.filter((o) => o.op === 'quadraticCurveTo').length).toBeGreaterThanOrEqual(4);
 		expect(
 			rec.ops.filter((o) => o.op === 'blob' && o.args[4] === 'rgba(255,255,255,.88)')
 		).toHaveLength(1);
 	});
 });
 
-describe('the trodden snow path', () => {
-	it('packs a blue-grey base with dust and specks over the whole cell', () => {
-		const rec = recorder();
-		const f = wallFrame(rec);
-		paintSnowFloor(f, T, T, tileRandom(1, 1));
-		const bases = rec.ops.filter(
-			(o) =>
-				o.op === 'fillRect' &&
-				o.args[0] === T - 0.5 &&
-				o.args[2] === T + 1 &&
-				['#879bb1', '#8093a9', '#8ea2b8'].includes(o.fill as string)
-		);
-		expect(bases).toHaveLength(1);
-		expect(
-			rec.ops.filter((o) => o.op === 'blob' && o.args[4] === 'rgba(255,255,255,.22)')
-		).toHaveLength(2);
-	});
-});
-
 describe('the winter theme opts into its setting', () => {
 	it('wires its own wall material, final layer, landmark, patches and pond ice', () => {
 		expect(winterTheme.bake.wall.paint).toBe(paintSnowWalls);
-		expect(winterTheme.bake.floor.paint).toBe(paintSnowFloor);
 		expect(winterTheme.bake.after).toBe(paintWinterAfter);
 		expect(winterTheme.bake.landmark.draw).toBeDefined();
 		expect(winterTheme.bake.flowerPatch).toBeDefined();

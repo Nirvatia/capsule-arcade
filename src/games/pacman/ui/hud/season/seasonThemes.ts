@@ -29,7 +29,7 @@ export interface SeasonTheme {
 	readonly emblem: 'sun' | 'leaf' | 'flake' | 'flower' | 'skull';
 	/** A bone rim round the boards (the hell's). */
 	readonly edge?: string;
-	readonly energizer: 'starfish' | 'pumpkin' | 'lantern' | 'blossom';
+	readonly energizer: 'starfish' | 'pumpkin' | 'snowman' | 'blossom';
 }
 
 export const SEASON_THEMES: Record<SeasonKey, SeasonTheme> = {
@@ -88,13 +88,13 @@ export const SEASON_THEMES: Record<SeasonKey, SeasonTheme> = {
 		label: '#dff2ff',
 		cloth: '#d44a54',
 		clothShade: '#8e2a34',
-		ring: '#ffc04a',
-		pellet: '#ff8a1f',
-		pelletInk: '#241418',
+		ring: '#bfeaff',
+		pellet: '#cfeeff',
+		pelletInk: '#2d5878',
 		rope: '#d8e8f2',
 		post: '#8fb0cc',
 		emblem: 'flake',
-		energizer: 'lantern'
+		energizer: 'snowman'
 	},
 	spring: {
 		key: 'spring',

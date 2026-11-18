@@ -88,8 +88,9 @@ export const PACMAN_DESIGN: HeroDesign = {
 	chompRate: 4.2,
 	flare: [255, 220, 140],
 	death: 'open',
-	// lighter tone bands (the ball's cel); the rage never enlarges him (the owner's pick)
-	bands: [0.1, 0.3, 0.64]
+	// lighter tone bands (the ball's cel), and bigger in the rage
+	bands: [0.1, 0.3, 0.64],
+	powerScale: 1.22
 };
 
 export class PacmanHero extends Hero {

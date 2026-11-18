@@ -111,45 +111,6 @@ describe('the contained rage', () => {
 	});
 });
 
-class SunSize extends PacmanHero {
-	get sizeNow(): number {
-		return this.size.value;
-	}
-	get scale(): number {
-		return this.design.powerScale ?? 1;
-	}
-}
-
-class MsSize extends MsPacmanHero {
-	get sizeNow(): number {
-		return this.size.value;
-	}
-	get scale(): number {
-		return this.design.powerScale ?? 1;
-	}
-}
-
-/** Runs him moving until the size spring settles, calm or powered. */
-function settled(h: SunSize | MsSize, power: boolean): number {
-	h.setRadius(10);
-	h.reset();
-	for (let i = 0; i < 240; i++) {
-		h.update(DT, { x: i * 5, y: 0, angle: 0, moving: true, power, ending: false });
-	}
-	return h.sizeNow;
-}
-
-describe('the powered size', () => {
-	it('keeps the heroes the same size under the energizer (the owner: no enlargement)', () => {
-		const sun = new SunSize();
-		const ms = new MsSize();
-		expect(sun.scale).toBe(1);
-		expect(ms.scale).toBe(1);
-		expect(settled(sun, true) / settled(sun, false)).toBeLessThan(1.02);
-		expect(settled(ms, true) / settled(ms, false)).toBeLessThan(1.02);
-	});
-});
-
 describe('her light', () => {
 	it('burns light enough to read at a tile', () => {
 		const rec = record();

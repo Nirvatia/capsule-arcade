@@ -259,21 +259,17 @@ function paintMazeFloor(f: MeadowFrame): void {
 				blob(x + k() * T, y + k() * T, 3, 1.4, 'rgba(255,255,255,.18)', 0);
 				continue;
 			}
-			if (P.floor.paint) {
-				P.floor.paint(f, x, y, k);
-			} else {
-				b.fillStyle = P.floor.tiles[(k() * 3) | 0];
-				b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
-				for (let i = 0; i < 3; i++) {
-					blob(
-						x + k() * T,
-						y + k() * T,
-						0.6 + k() * 1.4,
-						0.5 + k(),
-						P.floor.specks[(k() * 3) | 0],
-						k() * 3
-					);
-				}
+			b.fillStyle = P.floor.tiles[(k() * 3) | 0];
+			b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
+			for (let i = 0; i < 3; i++) {
+				blob(
+					x + k() * T,
+					y + k() * T,
+					0.6 + k() * 1.4,
+					0.5 + k(),
+					P.floor.specks[(k() * 3) | 0],
+					k() * 3
+				);
 			}
 			// the lair gate is live (MeadowWorld.drawGates): it slides open for the Easter egg
 			if (isTeleportToken(t)) {
