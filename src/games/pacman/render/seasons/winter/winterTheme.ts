@@ -11,7 +11,7 @@ import {
 } from '../meadow/meadowSprites';
 import { bauble, winterPellet } from '../meadow/seasonFood';
 import { paintWalls } from '../meadow/meadowBakeWalls';
-import { T } from '../meadow/MeadowBake';
+import { LAIR, T } from '../meadow/MeadowBake';
 import { ICE_PALETTE } from '../../transitions/decay/LevelDecay';
 
 const fog = lazy(() =>
@@ -52,17 +52,32 @@ export const winterTheme: MeadowTheme = {
 		},
 		rock: ['#b9c4d0', '#6f7d8d', '#ffffff', '#e8f1f9'],
 		// The lair is a frozen crust: muted ice a step lighter than the corridor floor, a
-		// glossy sheen, thin cracks, trapped air. The ghosts and the Easter egg must read
-		// on it, so no bright spots. `base`/`tiles` stay as the no-hook fallback.
+		// glossy sheen, thin cracks, trapped air. Edge cells melt into the corridor slate so
+		// there is no hard rim at the opening. The ghosts and the Easter egg must read on
+		// it, so no bright spots. `base`/`tiles` stay as the no-hook fallback.
 		lair: {
-			base: '#7b93a6',
-			tiles: ['#7b93a6', '#758ea1', '#8199ac'],
-			paint: (f, { x, y, k }) => {
-				const { b, blob } = f;
-				b.fillStyle = '#7b93a6';
+			base: '#66788a',
+			tiles: ['#66788a', '#607284', '#6c7e90'],
+			paint: (f, { r, c, x, y, k }) => {
+				const { S, b, blob } = f;
+				// a cell touching the corridor takes the corridor's slate: a soft shoreline
+				let edge = false;
+				for (const [dr, dc] of [
+					[0, -1],
+					[0, 1],
+					[-1, 0],
+					[1, 0]
+				] as const) {
+					const n = S[r + dr]?.[c + dc];
+					if (n && n !== 'WL' && n !== 'ES' && !LAIR.has(n)) {
+						edge = true;
+					}
+				}
+				const dim = edge ? 0.55 : 1;
+				b.fillStyle = edge ? '#576475' : '#66788a';
 				b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
-				blob(x + k() * T, y + k() * T, 5 + k() * 4, 3 + k() * 2.5, 'rgba(214,232,244,.28)', k());
-				blob(x + k() * T, y + k() * T, 3.5 + k() * 3, 2 + k() * 1.5, 'rgba(232,244,252,.2)', k());
+				blob(x + k() * T, y + k() * T, 5 + k() * 4, 3 + k() * 2.5, `rgba(214,232,244,${0.28 * dim})`, k());
+				blob(x + k() * T, y + k() * T, 3.5 + k() * 3, 2 + k() * 1.5, `rgba(232,244,252,${0.2 * dim})`, k());
 				// the old tile seams, frozen over
 				b.strokeStyle = 'rgba(240,248,255,.13)';
 				b.lineWidth = 0.8;
@@ -102,7 +117,7 @@ export const winterTheme: MeadowTheme = {
 				const { P, S, b, blob } = f;
 				b.fillStyle = '#525d6e';
 				b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
-				for (let i = 0; i < 3; i++) {
+				for (let i = 0; i < 2; i++) {
 					blob(
 						x + k() * T,
 						y + k() * T,
@@ -147,7 +162,7 @@ export const winterTheme: MeadowTheme = {
 					[-1, 0],
 					[1, 0]
 				] as const) {
-					if (S[r + dr]?.[c + dc] !== 'WL') {
+					if (S[r + dr]?.[c + dc] !== 'WL' || k() >= 0.65) {
 						continue;
 					}
 					for (let i = 0; i < 2; i++) {
@@ -240,9 +255,9 @@ export const winterTheme: MeadowTheme = {
 		pellet: { texture: winterPellet, size: 10 },
 		energizer: {
 			texture: bauble,
-			size: 26,
+			size: 19.5,
 			glow: 0x9fd8ff,
-			glowSize: (64 * 0.95) / 3,
+			glowSize: ((64 * 0.95) / 3) * 0.75,
 			motion: 'sway'
 		},
 		portal: { glow: 0xa8d8ff, deep: 0x0a2a58 },

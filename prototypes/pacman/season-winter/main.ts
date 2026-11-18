@@ -120,8 +120,8 @@ const regions: Region[] = [
 ];
 
 const boards = [
-	{ cv: cur, name: 'СЕЙЧАС', en: snowman },
-	{ cv: cand, name: 'КАНДИДАТ', en: bauble }
+	{ cv: cur, name: 'СЕЙЧАС', en: snowman, enSize: 26 },
+	{ cv: cand, name: 'КАНДИДАТ', en: bauble, enSize: winterTheme.live.energizer.size }
 ];
 
 let vw = 0;
@@ -143,7 +143,14 @@ function label(text: string, x: number, y: number, align: CanvasTextAlign = 'cen
 }
 
 /** A row of pellets with one energizer across the corridor region, same cells both columns. */
-function drawRegionFood(rg: Region, ix: number, iy: number, z: number, en: () => HTMLCanvasElement): void {
+function drawRegionFood(
+	rg: Region,
+	ix: number,
+	iy: number,
+	z: number,
+	en: () => HTMLCanvasElement,
+	enSize: number
+): void {
 	const pellet = winterPellet();
 	const enIm = en();
 	ctx.imageSmoothingEnabled = false;
@@ -157,7 +164,7 @@ function drawRegionFood(rg: Region, ix: number, iy: number, z: number, en: () =>
 		const sx = ix + (wx - rg.rx) * z;
 		const sy = iy + (wy - rg.ry) * z;
 		if (i === 4) {
-			const s = 26 * z;
+			const s = enSize * z;
 			ctx.drawImage(enIm, sx - s / 2, sy - s / 2, s, s);
 		} else {
 			const s = 10 * z;
@@ -201,7 +208,7 @@ function frame(): void {
 			ctx.lineWidth = 1;
 			ctx.strokeRect(ix - 0.5, iy - 0.5, iw + 1, ih + 1);
 			if (rg.food) {
-				drawRegionFood(rg, ix, iy, z, bd.en);
+				drawRegionFood(rg, ix, iy, z, bd.en, bd.enSize);
 			}
 		});
 	});
@@ -213,7 +220,7 @@ function frame(): void {
 	const items: Array<{ im: () => HTMLCanvasElement; u: number; name: string }> = [
 		{ im: winterPellet, u: 10, name: 'капля' },
 		{ im: snowman, u: 26, name: 'снеговик' },
-		{ im: bauble, u: 26, name: 'шар' }
+		{ im: bauble, u: winterTheme.live.energizer.size, name: 'шар' }
 	];
 	const cellW = Math.min(140, (vw - 80) / 6);
 	items.forEach((it, i) => {
