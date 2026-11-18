@@ -43,11 +43,9 @@ render/
   RenderFrame      frame data + the LevelRenderer / WorldPreview interfaces
   SharedLayers     Pac-Man, Ms. Pac-Man and the bonuses (every level)
   seasons/meadow/  MeadowBake (static world: a frame + one function per layer; decor and
-                   walls in meadowBakeDecor / meadowBakeWalls; a theme may opt into its own
-                   wall material via wall.paint and a final static layer via after) +
-                   MeadowWorld (live layer) + MeadowLevelRenderer, driven by a MeadowTheme
-                   per season (seasons/<season>/<season>Theme.ts; winter's setting painters
-                   live in seasons/winter/winterBake.ts)
+                   walls in meadowBakeDecor / meadowBakeWalls) + MeadowWorld (live layer) +
+                   MeadowLevelRenderer, driven by a MeadowTheme per season
+                   (seasons/<season>/<season>Theme.ts)
   doom/            DoomLevelRenderer, the flesh hell: DoomWorld (camera, mood) over a scene
                    baked once (fleshBake, with fleshNoise) and moved by the heartbeat
                    (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX

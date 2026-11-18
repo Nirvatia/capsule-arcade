@@ -40,11 +40,10 @@ last (see Later).
 ## Part I. The main game
 
 1. **Season scenes: a full setting per season, in code** (the current focus; one season per
-   chat, prototype first). The meadow seasons share one bake; winter now carries its own
-   setting (below), the others still read as recolours with per-tile random stickers on the
-   walls. The owner wants each season to read as a distinct place — its own wall material and
-   structure, its own dressed background and props — not a hue shift. Plan and per-season
-   themes are agreed with the owner before code.
+   chat, prototype first). Today a season is one shared meadow recoloured, with a single
+   landmark and per-tile random stickers on the walls; the owner wants each season to read as a
+   distinct place — its own wall material and structure, its own dressed background and props —
+   not a hue shift. Plan and per-season themes are agreed with the owner before code.
    Rules that hold (kept from the dropped winter rounds and the owner's brief):
    - top-down only, no pseudo-height; the maze silhouette, the corridor width, the food and the
      heroes' readability unchanged; graphics never fight the gameplay;
@@ -53,21 +52,19 @@ last (see Later).
      important thing reads at one tile;
    - the static is baked into `MeadowBake`; no new full-screen passes (settled season: High 3,
      Medium 1, Low 1).
-     Decided with the owner: spring and summer **dress the same meadow** (keep the accepted base,
-     change the wall material and the props into a full setting, not a new layout). Order:
-     **winter done**, next autumn (Halloween), then spring, summer.
-     **Winter (New Year) shipped**, the owner picked the candidate over the palette-swap:
-     snow-capped stone walls with cap, lip and base drift only on exposed edges plus a faint ice
-     sheen; snowfield ground; frozen stream and pond with an ice sheen and skate arcs; composed
-     roof snow planes on the cabins with firelight in the chimney, window light on the snow and a
-     garland along the ridge, bulbs on the bridge rails; snow-laden fir crowns; the snowman
-     landmark joined by a lit New Year fir; snow mounds with footprints instead of flower
-     stickers; a trodden-snow portal trail. All static baked (`winter/winterBake.ts`, tested in
-     `winterBake.test.ts`); corridors, food, heroes and the live blizzard untouched.
-     Mechanism: default-preserving hooks so a season opts into its own setting —
-     `MeadowBakeTheme.wall.paint?: (frame) => void` (falls back to `paintWalls`) and
-     `MeadowBakeTheme.after?: (frame) => void` (a final static layer over the bake). The
-     `season-winter` comparison prototype served the pick and was deleted after it.
+   Decided with the owner: start with **winter (New Year)**; spring and summer **dress the same
+   meadow** (keep the accepted base, change the wall material and the props into a full setting,
+   not a new layout). Order: winter, autumn (Halloween), then spring, summer.
+   Winter brief (the candidate to prototype first): snow-capped stone walls with the cap on the
+   lit top/left edge and a faint ice sheen (directional, not random drifts); a snowfield ground
+   and a frozen stream/pond with an ice sheen and a snow rim; composed snow piles at wall bases
+   on the downwind side instead of sprinkled specks; the snowman landmark kept and joined by a
+   small decorated New Year tree; warm window light and a string of lights on the cabins/bridge;
+   falling snow kept. All static baked; corridors, food and heroes untouched.
+   Mechanism: a default-preserving hook so the game keeps today's look until a theme opts in —
+   `MeadowBakeTheme.wall.paint?: (frame) => void` (falls back to `paintWalls`), letting a
+   candidate theme supply its own wall material; the `season-winter` prototype compares current
+   vs candidate on the real maze for the owner's pick.
 2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
    Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
    wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"
@@ -118,7 +115,6 @@ last (see Later).
 ## Later
 
 **Depth and post-processing** (the very end), as far as WebGL2 over Canvas2D allows:
-
 1. Soft drop shadows; walls with height (baked height map + bevel).
 2. Normal maps for walls/bodies so the world lights shade them.
 3. A post stack on `render/common/GlPass`: bloom, per-world grading, vignette, optional

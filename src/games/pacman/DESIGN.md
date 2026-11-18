@@ -150,15 +150,8 @@ in the right situation.
 ## 6. Seasons
 
 One meadow world in four seasons, each with its own colours, landmark (hay bale, picnic
-blanket, beach umbrella, snowman + lit fir), meadow decoration, food sprites and weather
+blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
 (`render/seasons/<season>/<season>Theme.ts`).
-
-- **Winter is a full New Year place**, not a recolour: its own wall material (snow cap, lip and
-  base drift only on exposed edges, faint ice sheen), composed roof snow planes with firelight
-  in the chimney, window light on the snow and a garland along the ridge, bulbs on the bridge
-  rails, snow-laden fir crowns, a lit New Year fir beside the snowman, frozen stream and pond
-  with skate arcs, snow mounds with footprints, a trodden-snow portal trail. All static
-  (`render/seasons/winter/winterBake.ts`); the blizzard and night stay live.
 
 - Food stays calm and small: dots about a fifth of a tile with no inner detail;
   energizers differ from dots in shape, colour and size, and never look like food or a

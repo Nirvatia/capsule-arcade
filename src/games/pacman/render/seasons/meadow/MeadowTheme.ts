@@ -3,7 +3,6 @@
 // one landmark, a few decorations, the food sprites and the weather. A theme holds those.
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 import type { WorldDecor as MeadowDecor } from '../../common/worldDecor';
-import type { MeadowFrame } from './MeadowBake';
 
 /** Drawing helpers of the bake, shared with the theme hooks (same seeded stream). */
 export interface BakeKit {
@@ -84,8 +83,6 @@ export interface MeadowBakeTheme {
 		readonly dark: string;
 		readonly flowers: Three;
 		readonly shadow: string;
-		/** A season's own wall material; falls back to the shared `paintWalls`. */
-		readonly paint?: (f: MeadowFrame) => void;
 	};
 	readonly edgeGrass: Three;
 	readonly trees: {
@@ -105,8 +102,6 @@ export interface MeadowBakeTheme {
 	readonly flowerPatch: (k: BakeKit, o: MeadowDecor) => void;
 	/** Lily pads, floating leaves… drawn inside the pond, after its highlight. */
 	readonly pondExtras?: (k: BakeKit, o: MeadowDecor) => void;
-	/** A final static layer over the whole bake (string lights, window glow…); optional. */
-	readonly after?: (f: MeadowFrame) => void;
 }
 
 /** One kind of wind-blown particle of the weather layer, in screen space. */

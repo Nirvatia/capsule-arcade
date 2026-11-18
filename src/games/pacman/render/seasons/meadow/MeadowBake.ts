@@ -34,9 +34,8 @@ export function bakeMeadow(
 	paintStream(f);
 	paintDecor(f);
 	paintMazeFloor(f);
-	(P.wall.paint ?? paintWalls)(f);
+	paintWalls(f);
 	paintTreeCrowns(f);
-	P.after?.(f);
 	paintWorldEdge(f);
 	return f.cv;
 }

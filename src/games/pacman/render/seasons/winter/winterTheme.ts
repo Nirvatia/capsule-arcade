@@ -1,14 +1,6 @@
-// Winter as a full New Year place (the owner's pick over the palette-swap meadow): snow-capped
-// walls, composed roof snow, lit cabins and garlands, snow-laden firs, frozen water; ice-drop
-// pellets and snowman energizers, a blizzard, a blue night. The static setting lives in winterBake.
+// Winter, from the owner's CLAUDE_GRID_WINTER mock-up: snowy meadow, frozen stream,
+// snowmen, ice-drop pellets and snowman energizers, a blizzard, a blue night.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
-import {
-	drawWinterLandmark,
-	paintIceExtras,
-	paintSnowPatch,
-	paintSnowWalls,
-	paintWinterAfter
-} from './winterBake';
 import {
 	glowTexture,
 	lazy,
@@ -34,18 +26,18 @@ export const winterTheme: MeadowTheme = {
 	name: 'winter',
 	bake: {
 		bg: '#c9d8e8',
-		groundCenter: '#f7fbfe',
-		groundBlobs: ['rgba(255,255,255,.5)', 'rgba(120,150,200,.08)'],
-		grass: ['#ffffff88', '#dfe9f488', '#c9d6e688', '#ffffff66'],
-		curls: 'rgba(160,185,225,.3)',
-		stream: ['rgba(90,120,160,.35)', '#e8f2fa', '#cfe4f2', 'rgba(220,240,252,.8)'],
+		groundCenter: '#f2f7fc',
+		groundBlobs: ['rgba(255,255,255,.4)', 'rgba(90,120,170,.06)'],
+		grass: ['#9aa888aa', '#b8c0a488', '#6f7f66aa', '#ffffff66'],
+		curls: 'rgba(150,175,215,.28)',
+		stream: ['rgba(70,95,130,.35)', '#dbe9f3', '#b4d6e8', 'rgba(150,200,225,.6)'],
 		shadow: '50,70,110',
 		bush: ['#ffffff', '#a9bfd6'],
 		pond: {
-			sand: '#f6fafd',
-			water: ['#f2fafe', '#bcd8ea'],
-			rim: 'rgba(90,130,170,.4)',
-			highlight: 'rgba(255,255,255,.9)',
+			sand: '#f4f9fd',
+			water: ['#eaf6fd', '#8fc3de'],
+			rim: 'rgba(60,100,140,.35)',
+			highlight: 'rgba(255,255,255,.85)',
 			stones: '#ffffff'
 		},
 		bridge: { caps: '#f4f9fd', middle: 'rgba(255,255,255,.9)' },
@@ -64,44 +56,73 @@ export const winterTheme: MeadowTheme = {
 			specks: ['#6a768a', '#3a4452', '#7a869a']
 		},
 		portal: {
-			trail: (a) => `rgba(140,160,190,${a * 0.4})`,
-			grass: ['#e6eef6', '#c9d6e6', '#ffffff'],
+			trail: (a) => `rgba(86,98,116,${a * 0.55})`,
+			grass: ['#b9c4a6', '#8a9a7a', '#e8eef2'],
 			plate: ['#aeb9c6', '#6c7a8c'],
 			core: ['#d8f4ff', '#4f9fd8', '#1b2d52'],
 			ring: '#9fe3ff',
 			corners: '#f4f9fd'
 		},
 		wall: {
-			base: '#6a7684',
+			base: '#5d6a62',
 			moss: ['#4f7f66', '#2f5a4a'],
-			top: ['#cfd9e4', '#d6dde6', '#c4d0dd'],
-			bottom: ['#93a1b3', '#9aa6b6', '#8b99ac'],
+			top: ['#a3afbf', '#a9b0bd', '#9aa8b8'],
+			bottom: ['#7a8799', '#838c9a', '#74869a'],
 			mossSpecks: ['#8fb8a2', '#2a4f40', '#e8f2f8'],
-			specks: ['rgba(255,255,255,.5)', 'rgba(60,75,95,.3)'],
-			crack: 'rgba(70,85,100,.15)',
-			joints: 'rgba(70,85,105,.12)',
+			specks: ['rgba(255,255,255,.4)', 'rgba(40,55,48,.3)'],
+			crack: 'rgba(50,65,58,.22)',
+			joints: 'rgba(45,60,72,.17)',
 			drifts: ['#f4f9fd', '#ffffff'],
-			light: 'rgba(255,255,255,.5)',
-			dark: 'rgba(40,55,80,.3)',
-			flowers: ['#bfe0f5', '#ffffff', '#9fd0ea'],
-			shadow: 'rgba(30,40,70,.45)',
-			paint: paintSnowWalls
+			light: 'rgba(255,255,240,.4)',
+			dark: 'rgba(30,45,38,.32)',
+			flowers: ['#d9333a', '#ff6b6b', '#ffffff'],
+			shadow: 'rgba(30,40,70,.45)'
 		},
 		edgeGrass: ['#b9c4a6', '#8a9a7a', '#e8eef2'],
 		trees: {
-			accent: ['#ffffff', '#dcebe2', '#3f6f5b'],
+			accent: ['#ffffff', '#9fbfae', '#3b6a58'],
 			plain: ['#f4f9fd', '#b4c8d8', '#5a7a8e'],
-			accentDots: ['rgba(255,255,255,.9)', 'rgba(47,90,72,.5)'],
+			accentDots: ['rgba(255,255,255,.85)', 'rgba(40,90,70,.5)'],
 			plainDots: ['rgba(255,255,255,.8)', 'rgba(70,95,115,.45)'],
 			drifts: 'rgba(255,255,255,.55)'
 		},
 		landmark: {
 			ex: [1.8, 1.6],
-			draw: drawWinterLandmark
+			// a snowman with a red scarf, seen from above
+			draw: ({ b, blob, sph, shade }, o) => {
+				const r = o.r ?? 0;
+				blob(o.x + r * 0.5, o.y + r * 0.6, r * 1.15, r * 0.8, shade(0.32), 0);
+				b.strokeStyle = '#5a4028';
+				b.lineWidth = 1.6;
+				b.beginPath();
+				b.moveTo(o.x - r * 0.9, o.y - r * 0.1);
+				b.lineTo(o.x + r * 0.9, o.y + r * 0.1);
+				b.stroke();
+				sph(o.x, o.y + r * 0.2, r, '#ffffff', '#b4c9de');
+				sph(o.x - r * 0.1, o.y - r * 0.55, r * 0.62, '#ffffff', '#bfd2e4');
+				b.strokeStyle = '#d9333a';
+				b.lineWidth = 2.4;
+				b.beginPath();
+				b.arc(o.x - r * 0.1, o.y - r * 0.55, r * 0.58, 0.3, 2.9);
+				b.stroke();
+				blob(o.x - r * 0.1, o.y - r * 0.55, r * 0.34, r * 0.34, '#2b3340', 0);
+				blob(o.x - r * 0.1, o.y - r * 0.58, r * 0.2, r * 0.2, '#4a5566', 0);
+			}
 		},
-		flowerPatch: paintSnowPatch,
-		pondExtras: paintIceExtras,
-		after: paintWinterAfter
+		flowerPatch: ({ rr, pick, fl5 }, o) => {
+			const c = o.c ?? 0;
+			const cl =
+				c < 0.3
+					? ['#ffffff', '#e8f2fb']
+					: c < 0.55
+						? ['#c9dcef', '#e8f2fb']
+						: c < 0.8
+							? ['#d9333a', '#ff6b6b']
+							: ['#f4d4d8', '#ffffff'];
+			for (let i = 0; i < (o.n ?? 0); i++) {
+				fl5(o.x + rr(-16, 16), o.y + rr(-12, 12), rr(2, 3), pick(cl), '#ffcf4d');
+			}
+		}
 	},
 	live: {
 		pellet: { texture: winterPellet, size: 10 },
