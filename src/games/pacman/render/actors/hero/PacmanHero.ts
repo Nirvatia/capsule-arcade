@@ -1,13 +1,13 @@
 // Pac-Man, the hero: a sun (the owner's pick of the `elements` prototype, variant 2). Self-lit,
 // so the key light never shades him: hard radial bands from a white heart to a red limb, their
-// edges boiling; round him a corona as a sun in splendour (twelve turning rays, straight and
-// wavy in turn, two tones under one ink line) that the run stretches back into a solar wind,
-// and a warm glow; glints of sunlight for a trail. The rage (the energizer) is a flare: he
-// burns white-hot and the corona spins fast, but its rays never reach past their calm reach
-// (the owner: the rage spilled over the tile); short arcs of light flicker between the rays
-// and the trail is drops of fire. His minimal eye (a dot under a frowning brow). The
-// machinery (mouth, acting, bites, spring, the energizer's beat, the ball, the death) is the
-// shared Hero; the body's paint is his.
+// edges boiling; round him a corona as a sun in splendour (ten turning rays, every one a waving
+// flame prominence — straight spikes read as a hedgehog's, the owner's review — two tones under
+// one thin ink line) that the run stretches back into a solar wind, and a warm glow; glints of
+// sunlight for a calm trail. The rage (the energizer) is a flare: he burns white-hot and the
+// corona spins fast, but its rays never reach past their calm reach (the owner: the rage spilled
+// over the tile); short arcs of light flicker between the rays and the trail is drops of fire.
+// His minimal eye (a dot under a frowning brow). The machinery (mouth, acting, bites, spring,
+// the energizer's beat, the ball, the death) is the shared Hero; the body's paint is his.
 import type { HeroDesign, MouthInside, Palette, Particle, ParticleKind } from './Hero';
 import { Hero, css, glow, mix } from './Hero';
 import type { RGB } from './heroSeasons';
@@ -88,9 +88,8 @@ export const PACMAN_DESIGN: HeroDesign = {
 	chompRate: 4.2,
 	flare: [255, 220, 140],
 	death: 'open',
-	// lighter tone bands (the ball's cel), and bigger in the rage
-	bands: [0.1, 0.3, 0.64],
-	powerScale: 1.22
+	// lighter tone bands (the ball's cel); the rage never grows him (the owner's review)
+	bands: [0.1, 0.3, 0.64]
 };
 
 export class PacmanHero extends Hero {
@@ -122,25 +121,25 @@ export class PacmanHero extends Hero {
 	}
 
 	/**
-	 * The corona as a sun in splendour: twelve rays turning round him, straight and wavy in
-	 * turn, two tones under one ink line. The run stretches the rays on his back and bends them
-	 * back into a solar wind, and shortens the ones ahead; the rage makes them longer and hotter.
+	 * The corona as a sun in splendour: ten turning rays, every one a waving flame prominence
+	 * (the owner's review: straight spikes read as a hedgehog's), two tones under one thin ink
+	 * line, rounded tips. The run stretches the rays on his back and bends them back into a
+	 * solar wind, and shortens the ones ahead; the rage makes them longer and hotter.
 	 */
 	private corona(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		const t = this.time;
 		const w = this.sweep;
-		const N = 12;
+		const N = 10;
 		const shapes: Array<(inset: number) => void> = [];
 		for (let i = 0; i < N; i++) {
 			const a = this.spin + (i / N) * TAU;
-			const straight = i % 2 === 0;
 			const ca = Math.cos(a);
 			const sa = Math.sin(a);
 			const back = Math.max(0, -ca);
 			const front = Math.max(0, ca);
-			let len = R * (straight ? 0.42 : 0.32) * (0.92 + 0.08 * Math.sin(t * (7 + 6 * p) + i * 1.3));
+			let len = R * 0.34 * (0.92 + 0.08 * Math.sin(t * (7 + 6 * p) + i * 1.3));
 			len *= (1 + 0.55 * p) * (1 + 1.3 * w * back * back) * (1 - 0.55 * w * front);
-			const half = (TAU / N) * (straight ? 0.46 : 0.4);
+			const half = (TAU / N) * 0.42;
 			const base = R * 0.97;
 			let tipR = R * 1.02 + len;
 			if (tipR > R * CORONA_REACH) {
@@ -151,7 +150,7 @@ export class PacmanHero extends Hero {
 			const ty = sa * tipR;
 			const nx = -sa;
 			const ny = ca;
-			const sway = straight ? 0 : Math.sin(t * 6 + i) * 0.2;
+			const sway = Math.sin(t * 6 + i) * 0.2;
 			shapes.push((inset) => {
 				const h = half * (1 - inset * 0.55);
 				const k = 1 - inset * 0.5;
@@ -165,21 +164,14 @@ export class PacmanHero extends Hero {
 				const along = (x0: number, y0: number, f: number, off: number) =>
 					[x0 + (ex - x0) * f + nx * off, y0 + (ey - y0) * f + ny * off] as const;
 				ctx.moveTo(b0x, b0y);
-				if (straight) {
-					const [m0x, m0y] = along(b0x, b0y, 0.5, W * 0.12);
-					const [m1x, m1y] = along(b1x, b1y, 0.5, -W * 0.12);
-					ctx.quadraticCurveTo(m0x, m0y, ex, ey);
-					ctx.quadraticCurveTo(m1x, m1y, b1x, b1y);
-				} else {
-					// a wavy ray: both edges swing the same way, a flame laid along the ray
-					const o = W * (0.8 + sway);
-					const [c0x, c0y] = along(b0x, b0y, 0.33, o);
-					const [c1x, c1y] = along(b0x, b0y, 0.66, -o);
-					const [d1x, d1y] = along(b1x, b1y, 0.66, -o);
-					const [d0x, d0y] = along(b1x, b1y, 0.33, o);
-					ctx.bezierCurveTo(c0x, c0y, c1x, c1y, ex, ey);
-					ctx.bezierCurveTo(d1x, d1y, d0x, d0y, b1x, b1y);
-				}
+				// a waving ray: both edges swing the same way, a flame laid along the ray
+				const o = W * (0.8 + sway);
+				const [c0x, c0y] = along(b0x, b0y, 0.33, o);
+				const [c1x, c1y] = along(b0x, b0y, 0.66, -o);
+				const [d1x, d1y] = along(b1x, b1y, 0.66, -o);
+				const [d0x, d0y] = along(b1x, b1y, 0.33, o);
+				ctx.bezierCurveTo(c0x, c0y, c1x, c1y, ex, ey);
+				ctx.bezierCurveTo(d1x, d1y, d0x, d0y, b1x, b1y);
 				ctx.closePath();
 			});
 		}
@@ -191,7 +183,7 @@ export class PacmanHero extends Hero {
 		ctx.lineJoin = 'round';
 		all(0);
 		ctx.strokeStyle = CORONA_INK;
-		ctx.lineWidth = R * 0.12;
+		ctx.lineWidth = R * 0.09;
 		ctx.stroke();
 		all(0);
 		ctx.fillStyle = css(mix(CORONA_OUTER[0], CORONA_OUTER[1], p));
@@ -352,7 +344,7 @@ export class PacmanHero extends Hero {
 
 	/** Glints of sunlight for a trail; fire in the rage and rolled into a ball. */
 	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
-		return moment === 'trail' && (this.power > 0.5 || this.ball) ? 'ember' : 'spark';
+		return moment === 'trail' && (this.powerOn || this.ball) ? 'ember' : 'spark';
 	}
 
 	protected sizeFor(kind: ParticleKind): number {

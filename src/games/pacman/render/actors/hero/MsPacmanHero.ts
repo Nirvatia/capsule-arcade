@@ -25,11 +25,11 @@ const TAU = Math.PI * 2;
 
 /** Under her own paint (only the ball and the flash show it); the ink is her outline. */
 const CALM: Palette = {
-	light: [120, 80, 210],
-	mid: [70, 40, 150],
-	shadow: [40, 20, 100],
-	deep: [20, 10, 50],
-	bounce: [130, 60, 200],
+	light: [152, 108, 228],
+	mid: [100, 62, 184],
+	shadow: [64, 36, 136],
+	deep: [38, 20, 84],
+	bounce: [150, 76, 212],
 	ink: [22, 6, 44],
 	highlight: [255, 255, 255],
 	rim: [180, 200, 255]
@@ -46,8 +46,8 @@ const AWOKEN: Palette = {
 };
 
 const INSIDE: MouthInside = {
-	mid: [40, 12, 70],
-	deep: [16, 4, 34]
+	mid: [64, 22, 104],
+	deep: [32, 12, 60]
 };
 
 const INK: RGB = [22, 6, 44];
@@ -157,8 +157,7 @@ export const MS_DESIGN: HeroDesign = {
 	chompRate: 4.8,
 	flare: [240, 200, 255],
 	death: 'spin',
-	bands: [0.1, 0.3, 0.64],
-	powerScale: 1.22
+	bands: [0.1, 0.3, 0.64]
 };
 
 /** The accretion ring of the rage: radii (body radii) and its tilt in her frame. */
@@ -285,11 +284,12 @@ export class MsPacmanHero extends Hero {
 	 */
 	protected decorate(sc: CanvasRenderingContext2D, R: number, p: number): void {
 		const t = this.time;
-		// a luminous galaxy (the owner: she was too dark, the eye barely read)
+		// a luminous galaxy (the owner: she was too dark and read creepy — the space stays
+		// violet but lit, the deep tones pushed to the lower rim only)
 		const base = sc.createRadialGradient(-R * 0.1, R * 0.05, 0, -R * 0.1, R * 0.05, R * 1.05);
-		base.addColorStop(0, css([152, 98, 238]));
-		base.addColorStop(0.55, css([98, 56, 192]));
-		base.addColorStop(1, css([60, 32, 130]));
+		base.addColorStop(0, css([186, 132, 244]));
+		base.addColorStop(0.55, css([138, 86, 212]));
+		base.addColorStop(1, css([90, 54, 162]));
 		sc.fillStyle = base;
 		sc.fillRect(-R * 1.2, -R * 1.2, R * 2.4, R * 2.4);
 		// the galaxy: tilted, flattened, turning; each arm a stroke that thins outwards
@@ -614,12 +614,12 @@ export class MsPacmanHero extends Hero {
 		drawStarGlint(ctx, R, p, lx, ly);
 	}
 
-	/** Stars for a trail (fire and stars in the rage); hearts and stars on bursts. */
+	/** Stars for a trail; only the rage's embers while it runs; hearts and stars on bursts. */
 	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
 		const r = this.random();
 		if (moment === 'trail') {
 			if (this.ball) return r < 0.5 ? 'heart' : 'star';
-			return this.power > 0.5 && r < 0.4 ? 'ember' : 'star';
+			return this.powerOn ? 'ember' : 'star';
 		}
 		return r < 0.45 ? 'heart' : 'star';
 	}

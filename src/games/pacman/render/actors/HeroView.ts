@@ -53,7 +53,9 @@ export const GAME_FEEL: PlayerFeel = {
 	smear: true,
 	bump: true,
 	puff: true,
-	sphere: true,
+	// the rolling meridians read as flickering white lines on the sun and the galaxy
+	// (the owner's review): off in the game, the switch stays for the feel prototype
+	sphere: false,
 	lean: false,
 	shadow: true,
 	suck: true

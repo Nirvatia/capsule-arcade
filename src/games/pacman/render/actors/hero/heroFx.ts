@@ -66,7 +66,8 @@ export function particleLift(kind: ParticleKind): number {
 	}
 }
 
-/** An ember of the trail: a soft glowing dot without an outline, cooling as it ages. */
+/** An ember of the trail: a soft glowing dot without an outline, cooling as it ages, with a
+ * short comet tail against its motion. */
 export function drawEmberGlow(
 	ctx: CanvasRenderingContext2D,
 	e: Particle,
@@ -79,6 +80,18 @@ export function drawEmberGlow(
 	const r = s * (0.4 + 0.5 * u);
 	ctx.save();
 	ctx.globalCompositeOperation = 'lighter';
+	// the tail: a fading streak backwards along the velocity
+	const sp = Math.hypot(e.vx, e.vy);
+	if (sp > r * 6) {
+		const tail = Math.min(r * 3, sp * 0.09);
+		ctx.strokeStyle = css(outer, 0.5 * a);
+		ctx.lineWidth = r * 0.55;
+		ctx.lineCap = 'round';
+		ctx.beginPath();
+		ctx.moveTo(e.x, e.y);
+		ctx.lineTo(e.x - (e.vx / sp) * tail, e.y - (e.vy / sp) * tail);
+		ctx.stroke();
+	}
 	ctx.globalAlpha = a * 0.9;
 	ctx.drawImage(glow(outer), e.x - r * 2.2, e.y - r * 2.2, r * 4.4, r * 4.4);
 	ctx.fillStyle = css(core, Math.min(1, u * 2));

@@ -295,8 +295,6 @@ export interface HeroDesign {
 	 * bigger, the wider the darker crescents left on the far side. Default 0.12, 0.42, 0.92.
 	 */
 	readonly bands?: readonly [number, number, number];
-	/** His size in the powered look, against the calm one (default 1: the same). */
-	readonly powerScale?: number;
 }
 
 export type ParticleKind =
@@ -349,7 +347,8 @@ export abstract class Hero {
 	protected season: HeroSeason = 'summer';
 	/** The awoken look, 0..1. */
 	protected power = 0;
-	private powerOn = false;
+	/** The energizer runs (from the wind-up to the end): the trail speaks its language. */
+	protected powerOn = false;
 	private ending = false;
 	/** Seconds since the energizer was taken (the wind-up and burst), or -1. */
 	private transform = -1;
@@ -575,9 +574,9 @@ export abstract class Hero {
 		// the energizer: wind-up, burst, then the look eases in; easing out slowly at the end
 		if (s.power && !this.powerOn) this.transform = 0;
 		this.powerOn = s.power;
-		// at rest he breathes; running he keeps his size
+		// at rest he breathes; running he keeps his size. The energizer never grows him (the
+		// owner's review): only the transform's wind-up and burst beat the size spring.
 		let sizeTarget = this.moving ? 1 : 1 + 0.015 * Math.sin(this.time * 2.3);
-		sizeTarget *= 1 + ((this.design.powerScale ?? 1) - 1) * this.power;
 		if (this.transform >= 0) {
 			const before = this.transform;
 			this.transform += dt;
@@ -603,15 +602,10 @@ export abstract class Hero {
 			Math.sign((awake ? 1 : 0) - this.power) *
 			Math.min(Math.abs((awake ? 1 : 0) - this.power), dt * rate);
 
-		// the jaws
+		// the jaws: the chomp is the mouth only (the owner's review: the body must not pulse on
+		// every close); a real bite below still punches the body
 		if (this.moving) {
-			const before = this.chomp % 1;
 			this.chomp += dt * this.design.chompRate * (1 + 0.25 * this.power);
-			const after = this.chomp % 1;
-			// the bite closes at 0.75 of the cycle: a little punch, felt more than seen
-			if (before < 0.75 && after >= 0.75) {
-				this.size.velocity -= 0.5;
-			}
 		} else if (this.snap < 0 && this.bite < 0 && this.time > this.nextSnap) {
 			this.snap = 0;
 			this.snaps += 1;
@@ -845,8 +839,8 @@ export abstract class Hero {
 		// a turn smears him along the new heading for a moment; a wall squashes him against it
 		const sm = this.smearT > 0 ? Math.sin((this.smearT / SMEAR_TIME) * Math.PI) : 0;
 		const bu = this.bumpT > 0 ? Math.sin((this.bumpT / BUMP_TIME) * Math.PI) : 0;
-		const along = 1 + 0.22 * sm - 0.2 * bu;
-		const across = 1 - 0.12 * sm + 0.12 * bu;
+		const along = 1 + 0.1 * sm - 0.2 * bu;
+		const across = 1 - 0.05 * sm + 0.12 * bu;
 		// (the frame faces +x: the bump pushes him a little into the wall ahead)
 		if (bu > 0) ctx.translate(r * 0.12 * bu, 0);
 		ctx.scale(
