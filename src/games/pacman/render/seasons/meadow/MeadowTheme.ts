@@ -3,6 +3,18 @@
 // one landmark, a few decorations, the food sprites and the weather. A theme holds those.
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 import type { WorldDecor as MeadowDecor } from '../../common/worldDecor';
+import type { MeadowFrame } from './MeadowBake';
+
+/** One path cell handed to a season's own path painter (the shared bake calls it per cell). */
+export interface MeadowPathCell {
+	readonly r: number;
+	readonly c: number;
+	readonly t: string;
+	readonly x: number;
+	readonly y: number;
+	/** The cell's seeded stream (`tileRandom(r, c)`), shared with the default paint. */
+	readonly k: () => number;
+}
 
 /** Drawing helpers of the bake, shared with the theme hooks (same seeded stream). */
 export interface BakeKit {
@@ -57,8 +69,18 @@ export interface MeadowBakeTheme {
 		readonly chimneyCap: string;
 	};
 	readonly rock: Four;
-	readonly lair: { readonly base: string; readonly tiles: Three };
-	readonly floor: { readonly tiles: Three; readonly specks: Three };
+	readonly lair: {
+		readonly base: string;
+		readonly tiles: Three;
+		/** A season's own lair-floor paint (default: base with quarter tiles and a sheen). */
+		readonly paint?: (f: MeadowFrame, cell: MeadowPathCell) => void;
+	};
+	readonly floor: {
+		readonly tiles: Three;
+		readonly specks: Three;
+		/** A season's own path-cell paint (default: one of `tiles` with specks). */
+		readonly paint?: (f: MeadowFrame, cell: MeadowPathCell) => void;
+	};
 	readonly portal: {
 		/** Worn path leading away from the portal, by alpha. */
 		readonly trail: (alpha: number) => string;
@@ -83,6 +105,8 @@ export interface MeadowBakeTheme {
 		readonly dark: string;
 		readonly flowers: Three;
 		readonly shadow: string;
+		/** A season's own wall painter (default: `paintWalls`, the shared mossy stone). */
+		readonly paint?: (f: MeadowFrame) => void;
 	};
 	readonly edgeGrass: Three;
 	readonly trees: {

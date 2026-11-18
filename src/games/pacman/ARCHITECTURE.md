@@ -45,7 +45,9 @@ render/
   seasons/meadow/  MeadowBake (static world: a frame + one function per layer; decor and
                    walls in meadowBakeDecor / meadowBakeWalls) + MeadowWorld (live layer) +
                    MeadowLevelRenderer, driven by a MeadowTheme per season
-                   (seasons/<season>/<season>Theme.ts)
+                   (seasons/<season>/<season>Theme.ts). A theme may opt into its own wall /
+                   floor / lair paint through MeadowBakeTheme hooks; without them the shared
+                   painters render, so a season that does not opt in is unchanged.
   doom/            DoomLevelRenderer, the flesh hell: DoomWorld (camera, mood) over a scene
                    baked once (fleshBake, with fleshNoise) and moved by the heartbeat
                    (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX

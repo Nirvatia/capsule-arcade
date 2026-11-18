@@ -2,8 +2,23 @@ import { tileRandom } from '../../common/worldDecor';
 import type { MeadowFrame } from './MeadowBake';
 import { T, LAIR } from './MeadowBake';
 
+/**
+ * Where the snow lies on the wall blocks. `drifts` (every season today): random patches
+ * anywhere on the block face. `caps` (winter): a trim on the lit top/left rim of the
+ * silhouette, full caps on lone blocks, base drifts on the lee side — never on the face.
+ */
+export type WallSnow = 'drifts' | 'caps';
+
+export interface WallPaintOpts {
+	readonly snow?: WallSnow;
+	/** The soft drop shadow under the blocks as [blur, dx, dy] in world units. */
+	readonly shadow?: readonly [number, number, number];
+}
+
 /** Walls: seen strictly from above. A rounded moss bed with loose stone blocks set into it. */
-export function paintWalls(f: MeadowFrame): void {
+export function paintWalls(f: MeadowFrame, opts: WallPaintOpts = {}): void {
+	const snow = opts.snow ?? 'drifts';
+	const [shBlur, shDx, shDy] = opts.shadow ?? [7, 2, 3];
 	const { S, P, RS, R, C, isW, b, vis, lin, blob, rp } = f;
 	const WL: Array<[number, number]> = [];
 	for (let r = 0; r < R; r++) {
@@ -56,9 +71,9 @@ export function paintWalls(f: MeadowFrame): void {
 	}
 	b.save();
 	b.shadowColor = W.shadow;
-	b.shadowBlur = 7 * RS;
-	b.shadowOffsetX = 2 * RS;
-	b.shadowOffsetY = 3 * RS;
+	b.shadowBlur = shBlur * RS;
+	b.shadowOffsetX = shDx * RS;
+	b.shadowOffsetY = shDy * RS;
 	b.fillStyle = W.base;
 	for (const [r, c] of WL) {
 		wsh(r, c, 0, -0.4, 8, false);
@@ -126,16 +141,20 @@ export function paintWalls(f: MeadowFrame): void {
 			b.moveTo(x + (o1 ? T * 0.68 : T * 0.32), y + T / 2);
 			b.lineTo(x + (o1 ? T * 0.68 : T * 0.32), y + T);
 			b.stroke();
-			const n = v < 0.3 ? 2 : 1;
-			for (let i = 0; i < n; i++) {
-				blob(
-					x + k() * T * 0.7 + 3,
-					y + k() * T * 0.55 + 3,
-					5 + k() * 4,
-					3 + k() * 2.5,
-					W.drifts[0]
-				);
-				blob(x + k() * T * 0.8, y + k() * T * 0.6, 3 + k() * 3, 1.5 + k() * 1.5, W.drifts[1]);
+			if (snow === 'drifts') {
+				const n = v < 0.3 ? 2 : 1;
+				for (let i = 0; i < n; i++) {
+					blob(
+						x + k() * T * 0.7 + 3,
+						y + k() * T * 0.55 + 3,
+						5 + k() * 4,
+						3 + k() * 2.5,
+						W.drifts[0]
+					);
+					blob(x + k() * T * 0.8, y + k() * T * 0.6, 3 + k() * 3, 1.5 + k() * 1.5, W.drifts[1]);
+				}
+			} else {
+				paintSnowCaps(f, r, c, x, y, k, W);
 			}
 		}
 		b.strokeStyle = W.light;
@@ -180,5 +199,52 @@ export function paintWalls(f: MeadowFrame): void {
 				b.stroke();
 			}
 		}
+	}
+}
+
+/**
+ * Winter snow on the wall blocks (runs clipped to the block face): a trim on the lit top/left
+ * rim of the silhouette, a full cap on lone blocks and run ends, a small wind-driven drift at
+ * the base on the lee (right/down) side. The block face itself stays stone.
+ */
+function paintSnowCaps(
+	f: MeadowFrame,
+	r: number,
+	c: number,
+	x: number,
+	y: number,
+	k: () => number,
+	W: MeadowFrame['P']['wall']
+): void {
+	const { isW, blob } = f;
+	const up = isW(r - 1, c);
+	const lf = isW(r, c - 1);
+	const dn = isW(r + 1, c);
+	const rt = isW(r, c + 1);
+	const snow = W.drifts;
+	// a trim along the exposed top/left rim: wind from the up-left lays snow there only
+	if (!up) {
+		for (let i = 0; i < 3; i++) {
+			blob(x + 3.5 + i * 7 + k() * 2.5, y + 1.6 + k() * 1.6, 4.5 + k() * 2, 2 + k() * 1, snow[i % 2], 0);
+		}
+	}
+	if (!lf) {
+		for (let i = 0; i < 3; i++) {
+			blob(x + 1.6 + k() * 1.6, y + 3.5 + i * 7 + k() * 2.5, 2 + k() * 1, 4.5 + k() * 2, snow[(i + 1) % 2], 0);
+		}
+	}
+	// a lone block or a run's end collects a full cap, stone peeking at the bottom-right
+	const open = Number(!up) + Number(!dn) + Number(!lf) + Number(!rt);
+	if (open >= 3) {
+		for (let i = 0; i < 5; i++) {
+			blob(x + 2 + k() * T * 0.65, y + 1 + k() * T * 0.45, 6 + k() * 3.5, 4 + k() * 2, snow[0], k());
+		}
+	}
+	// a drift at the base where the lee side meets the floor
+	if (!rt && k() < 0.4) {
+		blob(x + T - 2 - k() * 2, y + 4 + k() * (T - 8), 3 + k() * 2, 1.4 + k() * 0.8, snow[1], 0);
+	}
+	if (!dn && k() < 0.4) {
+		blob(x + 4 + k() * (T - 8), y + T - 2 - k() * 2, 1.4 + k() * 0.8, 3 + k() * 2, snow[1], 0);
 	}
 }

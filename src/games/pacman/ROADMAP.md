@@ -60,11 +60,21 @@ last (see Later).
    and a frozen stream/pond with an ice sheen and a snow rim; composed snow piles at wall bases
    on the downwind side instead of sprinkled specks; the snowman landmark kept and joined by a
    small decorated New Year tree; warm window light and a string of lights on the cabins/bridge;
-   falling snow kept. All static baked; corridors, food and heroes untouched.
-   Mechanism: a default-preserving hook so the game keeps today's look until a theme opts in —
-   `MeadowBakeTheme.wall.paint?: (frame) => void` (falls back to `paintWalls`), letting a
-   candidate theme supply its own wall material; the `season-winter` prototype compares current
-   vs candidate on the real maze for the owner's pick.
+   falling snow kept. All static baked.
+   Done in the game (owner's pick from the `season-winter` prototype, 2026-11-18): the walls —
+   same stone, seams and moss, the snow lies on the lit top/left rim of the silhouette, full
+   caps on lone blocks, base drifts on the lee side, never across the face; a deeper soft drop
+   shadow under the blocks; the corridor floor — one flat slate, no per-tile shade steps, with
+   quiet frost (an ice streak along the run, a rare frozen puddle, frost specks at wall bases);
+   the lair — a frozen crust, a step lighter than the corridor, sheen and thin cracks; the
+   energizer — a Christmas bauble (the snowman stays the meadow landmark). Mechanism: opt-in
+   hooks with the shared painters as fallback — `MeadowBakeTheme.wall.paint` (whole painter),
+   `.floor.paint` and `.lair.paint` (per cell) — other seasons render byte-identical; the
+   default-preserving rule from the brief is kept in code and tested (`meadowBake.test.ts`).
+   Left from the brief: the decorated New Year tree by the snowman, warm window light and the
+   string of lights on the cabins/bridge. Corridor floors were "untouched" in the brief; the
+   owner asked for a winter floor of their own — flat and quiet, nothing that reads at a
+   glance while playing.
 2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
    Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
    wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"

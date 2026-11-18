@@ -9,7 +9,9 @@ import {
 	tinted,
 	washTexture
 } from '../meadow/meadowSprites';
-import { snowman, winterPellet } from '../meadow/seasonFood';
+import { bauble, winterPellet } from '../meadow/seasonFood';
+import { paintWalls } from '../meadow/meadowBakeWalls';
+import { T } from '../meadow/MeadowBake';
 import { ICE_PALETTE } from '../../transitions/decay/LevelDecay';
 
 const fog = lazy(() =>
@@ -49,11 +51,118 @@ export const winterTheme: MeadowTheme = {
 			chimneyCap: '#f4f9fd'
 		},
 		rock: ['#b9c4d0', '#6f7d8d', '#ffffff', '#e8f1f9'],
-		// muted (owner's review): the ghosts and the Easter egg must read on the lair floor
-		lair: { base: '#2f3846', tiles: ['#56637a', '#515e73', '#5b6880'] },
+		// The lair is a frozen crust: muted ice a step lighter than the corridor floor, a
+		// glossy sheen, thin cracks, trapped air. The ghosts and the Easter egg must read
+		// on it, so no bright spots. `base`/`tiles` stay as the no-hook fallback.
+		lair: {
+			base: '#7b93a6',
+			tiles: ['#7b93a6', '#758ea1', '#8199ac'],
+			paint: (f, { x, y, k }) => {
+				const { b, blob } = f;
+				b.fillStyle = '#7b93a6';
+				b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
+				blob(x + k() * T, y + k() * T, 5 + k() * 4, 3 + k() * 2.5, 'rgba(214,232,244,.28)', k());
+				blob(x + k() * T, y + k() * T, 3.5 + k() * 3, 2 + k() * 1.5, 'rgba(232,244,252,.2)', k());
+				// the old tile seams, frozen over
+				b.strokeStyle = 'rgba(240,248,255,.13)';
+				b.lineWidth = 0.8;
+				b.beginPath();
+				b.moveTo(x, y + T / 2);
+				b.lineTo(x + T, y + T / 2);
+				b.moveTo(x + T / 2, y);
+				b.lineTo(x + T / 2, y + T);
+				b.stroke();
+				// thin cracks
+				if (k() < 0.35) {
+					b.strokeStyle = 'rgba(46,66,86,.38)';
+					b.lineWidth = 0.9;
+					const cx = x + 3 + k() * (T - 6);
+					const cy = y + 3 + k() * (T - 6);
+					b.beginPath();
+					b.moveTo(cx, cy);
+					b.lineTo(cx + (k() - 0.5) * 10, cy + 3 + k() * 6);
+					b.lineTo(cx + (k() - 0.5) * 14, cy + 8 + k() * 8);
+					b.stroke();
+				}
+				// trapped air bubbles
+				for (let i = 0; i < 2; i++) {
+					if (k() < 0.5) {
+						blob(x + k() * T, y + k() * T, 0.7 + k() * 0.6, 0.6 + k() * 0.5, 'rgba(238,248,254,.5)', 0);
+					}
+				}
+			}
+		},
 		floor: {
 			tiles: ['#566274', '#515d6f', '#5b6779'],
-			specks: ['#6a768a', '#3a4452', '#7a869a']
+			specks: ['#6a768a', '#3a4452', '#7a869a'],
+			// winter floor: one flat slate (no per-tile shade steps, a corridor reads as one
+			// continuous floor), quiet frost: an ice streak along the run, a rare frozen
+			// puddle, frost specks at a neighbouring wall base. All below the food.
+			paint: (f, { r, c, x, y, k }) => {
+				const { P, S, b, blob } = f;
+				b.fillStyle = '#525d6e';
+				b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
+				for (let i = 0; i < 3; i++) {
+					blob(
+						x + k() * T,
+						y + k() * T,
+						0.6 + k() * 1.4,
+						0.5 + k(),
+						P.floor.specks[(k() * 3) | 0],
+						k() * 3
+					);
+				}
+				const open = (rr: number, cc: number) => {
+					const t = S[rr]?.[cc];
+					return !!t && t !== 'WL' && t !== 'ES';
+				};
+				if (k() < 0.14) {
+					b.strokeStyle = 'rgba(205,228,248,.26)';
+					b.lineWidth = 1;
+					b.beginPath();
+					if (open(r, c - 1) || open(r, c + 1)) {
+						const yy = y + 5 + k() * (T - 10);
+						b.moveTo(x + 3 + k() * 5, yy);
+						b.lineTo(x + T - 3 - k() * 5, yy);
+					} else {
+						const xx = x + 5 + k() * (T - 10);
+						b.moveTo(xx, y + 3 + k() * 5);
+						b.lineTo(xx, y + T - 3 - k() * 5);
+					}
+					b.stroke();
+				}
+				if (k() < 0.03) {
+					blob(
+						x + 5 + k() * (T - 10),
+						y + 5 + k() * (T - 10),
+						5.5 + k() * 3,
+						3.5 + k() * 2,
+						'rgba(188,218,240,.16)',
+						k()
+					);
+				}
+				for (const [dr, dc] of [
+					[0, -1],
+					[0, 1],
+					[-1, 0],
+					[1, 0]
+				] as const) {
+					if (S[r + dr]?.[c + dc] !== 'WL') {
+						continue;
+					}
+					for (let i = 0; i < 2; i++) {
+						const t = k();
+						blob(
+							dc ? x + (dc > 0 ? T - 2 - k() * 1.5 : 2 + k() * 1.5) : x + 3 + t * (T - 6),
+							dr ? y + (dr > 0 ? T - 2 - k() * 1.5 : 2 + k() * 1.5) : y + 3 + t * (T - 6),
+							0.8 + k() * 0.7,
+							0.6 + k() * 0.5,
+							'rgba(228,240,250,.5)',
+							0
+						);
+					}
+				}
+			}
 		},
 		portal: {
 			trail: (a) => `rgba(86,98,116,${a * 0.55})`,
@@ -76,7 +185,10 @@ export const winterTheme: MeadowTheme = {
 			light: 'rgba(255,255,240,.4)',
 			dark: 'rgba(30,45,38,.32)',
 			flowers: ['#d9333a', '#ff6b6b', '#ffffff'],
-			shadow: 'rgba(30,40,70,.45)'
+			shadow: 'rgba(30,40,70,.45)',
+			// winter walls: same stone, the snow lies on the rims and caps, not across the
+			// face; a deeper soft shadow under the blocks for depth
+			paint: (f) => paintWalls(f, { snow: 'caps', shadow: [11, 2.5, 4.5] })
 		},
 		edgeGrass: ['#b9c4a6', '#8a9a7a', '#e8eef2'],
 		trees: {
@@ -127,7 +239,7 @@ export const winterTheme: MeadowTheme = {
 	live: {
 		pellet: { texture: winterPellet, size: 10 },
 		energizer: {
-			texture: snowman,
+			texture: bauble,
 			size: 26,
 			glow: 0x9fd8ff,
 			glowSize: (64 * 0.95) / 3,

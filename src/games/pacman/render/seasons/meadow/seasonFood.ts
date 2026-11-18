@@ -234,6 +234,33 @@ export const snowman = energizer((c) => {
 	paint(c, '#ff8a1f', 0.9);
 });
 
+/** Winter: a Christmas bauble, a red glass ball with a gold band, a cap and a loop. */
+export const bauble = energizer((c) => {
+	c.beginPath();
+	c.arc(0, -10.4, 2, 0, TAU);
+	paint(c, '#c8a03a', 1);
+	c.beginPath();
+	c.roundRect(-3, -9.2, 6, 3.4, 1.2);
+	paint(c, '#d8b04a', 1);
+	circle(c, 0, 1.4, 9.6);
+	paint(c, '#e8403a');
+	c.save();
+	c.beginPath();
+	c.arc(0, 1.4, 9.4, 0, TAU);
+	c.clip();
+	c.strokeStyle = '#f0c04a';
+	c.lineWidth = 2.4;
+	c.beginPath();
+	c.moveTo(-9.5, 5.2);
+	c.quadraticCurveTo(0, 1.6, 9.5, 5.2);
+	c.stroke();
+	c.restore();
+	shine(c, -3.4, -2.2, 2.2, 1.5, -0.5);
+	c.fillStyle = 'rgba(255,255,255,.85)';
+	circle(c, 2.6, 4.8, 0.8);
+	c.fill();
+});
+
 /** Winter pellet: a small ice drop. */
 export const winterPellet = pellet((c) => {
 	circle(c, 0, 0, 2.7);

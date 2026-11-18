@@ -34,7 +34,7 @@ export function bakeMeadow(
 	paintStream(f);
 	paintDecor(f);
 	paintMazeFloor(f);
-	paintWalls(f);
+	(P.wall.paint ?? paintWalls)(f);
 	paintTreeCrowns(f);
 	paintWorldEdge(f);
 	return f.cv;
@@ -231,6 +231,39 @@ function paintStream(f: MeadowFrame): void {
 	}
 }
 
+/** The default path cell: one of `floor.tiles` with a few specks. */
+function paintPathCell(f: MeadowFrame, x: number, y: number, k: () => number): void {
+	const { P, b, blob } = f;
+	b.fillStyle = P.floor.tiles[(k() * 3) | 0];
+	b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
+	for (let i = 0; i < 3; i++) {
+		blob(
+			x + k() * T,
+			y + k() * T,
+			0.6 + k() * 1.4,
+			0.5 + k(),
+			P.floor.specks[(k() * 3) | 0],
+			k() * 3
+		);
+	}
+}
+
+/** The default lair cell: base with quarter tiles and a faint sheen. */
+function paintLairCell(f: MeadowFrame, x: number, y: number, k: () => number): void {
+	const { P, b, blob, rp } = f;
+	b.fillStyle = P.lair.base;
+	b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
+	for (let i = 0; i < 2; i++) {
+		for (let j = 0; j < 2; j++) {
+			b.fillStyle = P.lair.tiles[(k() * 3) | 0];
+			rp(x + (i * T) / 2 + 1, y + (j * T) / 2 + 1, T / 2 - 2, T / 2 - 2, [3, 3, 3, 3]);
+			b.fill();
+		}
+	}
+	// a faint sheen only: a bright spot would hide what stands in the lair
+	blob(x + k() * T, y + k() * T, 3, 1.4, 'rgba(255,255,255,.18)', 0);
+}
+
 /** Path cells, lair floor, gate, portal rings. */
 function paintMazeFloor(f: MeadowFrame): void {
 	const { S, P, R, C, b, vis, rnd, rr, pick, shade, lin, blob, rp } = f;
@@ -245,30 +278,17 @@ function paintMazeFloor(f: MeadowFrame): void {
 			}
 			const k = tileRandom(r, c);
 			if (LAIR.has(t)) {
-				b.fillStyle = P.lair.base;
-				b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
-				for (let i = 0; i < 2; i++) {
-					for (let j = 0; j < 2; j++) {
-						b.fillStyle = P.lair.tiles[(k() * 3) | 0];
-						rp(x + (i * T) / 2 + 1, y + (j * T) / 2 + 1, T / 2 - 2, T / 2 - 2, [3, 3, 3, 3]);
-						b.fill();
-					}
+				if (P.lair.paint) {
+					P.lair.paint(f, { r, c, t, x, y, k });
+				} else {
+					paintLairCell(f, x, y, k);
 				}
-				// a faint sheen only: a bright spot would hide what stands in the lair
-				blob(x + k() * T, y + k() * T, 3, 1.4, 'rgba(255,255,255,.18)', 0);
 				continue;
 			}
-			b.fillStyle = P.floor.tiles[(k() * 3) | 0];
-			b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
-			for (let i = 0; i < 3; i++) {
-				blob(
-					x + k() * T,
-					y + k() * T,
-					0.6 + k() * 1.4,
-					0.5 + k(),
-					P.floor.specks[(k() * 3) | 0],
-					k() * 3
-				);
+			if (P.floor.paint) {
+				P.floor.paint(f, { r, c, t, x, y, k });
+			} else {
+				paintPathCell(f, x, y, k);
 			}
 			// the lair gate is live (MeadowWorld.drawGates): it slides open for the Easter egg
 			if (isTeleportToken(t)) {

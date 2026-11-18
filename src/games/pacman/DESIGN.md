@@ -156,12 +156,18 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
 - Food stays calm and small: dots about a fifth of a tile with no inner detail;
   energizers differ from dots in shape, colour and size, and never look like food or a
   collectible. Each season has its own: a cherry blossom (spring), a starfish (summer), a
-  jack-o'-lantern (autumn), a snowman (winter); the pellets are a yellow button, a white
+  jack-o'-lantern (autumn), a Christmas bauble (winter); the pellets are a yellow button, a white
   pebble, an amber bead and an ice drop. All are ink-outlined, in the heroes' cel style
   (`render/seasons/meadow/seasonFood.ts`).
 - Food is drawn over the weather and the night, like the actors: it always reads. The
   floor is dark enough for the dots, the lair floor muted so ghosts and the egg read on
   it; the weather stays faint (no big pale blobs over the board).
+- A season dresses the maze itself through opt-in bake hooks on its theme
+  (`MeadowBakeTheme.wall.paint` for the whole wall painter, `.floor.paint` and
+  `.lair.paint` per cell): winter lays snow on the walls' lit rims and caps, never across
+  the stone faces, gives the corridor floor one flat slate with quiet frost, and makes
+  the lair a frozen crust. Without the hooks the shared painters render unchanged.
+  The snowman stays the winter landmark on the meadow; the bauble is the board's energizer.
 - **Weather** rises at 50 % of the dots eaten (spring petal wind, summer heat shimmer,
   autumn rain, winter blizzard); **night** falls at 75 %.
 - Gameplay tuning (`SeasonCatalog.seasonModifiers`): spring power 6.5 s; summer fruit
