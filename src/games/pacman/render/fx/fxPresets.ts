@@ -49,7 +49,7 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 					wave(fx.x, fx.y, style.accent, 1.1, 0.35, 0.06, true)
 				],
 				bursts: [{ x: fx.x, y: fx.y, tint, count: 12, speed: 5.5, particle: null }],
-				popups: [{ x: fx.x, y: fx.y, text: String(fx.points), tint: style.accent }],
+				popups: [{ x: fx.x, y: fx.y, text: `+${fx.points}`, tint: style.accent }],
 				kick: 0.55
 			};
 		}
@@ -78,14 +78,14 @@ export function recipeFor(fx: PacmanFx, style: FxStyle): FxRecipe {
 				bursts: [
 					{ x: fx.x, y: fx.y, tint: style.accent, count: 10, speed: 3.5, particle: style.particle }
 				],
-				popups: [{ x: fx.x, y: fx.y, text: String(fx.points), tint: style.accent }]
+				popups: [{ x: fx.x, y: fx.y, text: `+${fx.points}`, tint: style.accent }]
 			};
 		case 'egg':
 			return {
 				...NONE,
 				rings: [wave(fx.x, fx.y, GOLD, 2.4, 0.5)],
 				bursts: [{ x: fx.x, y: fx.y, tint: GOLD, count: 16, speed: 4.5, particle: null }],
-				popups: [{ x: fx.x, y: fx.y, text: String(fx.points), tint: GOLD }],
+				popups: [{ x: fx.x, y: fx.y, text: `+${fx.points}`, tint: GOLD }],
 				pulse: { tint: GOLD, strength: 0.6 },
 				kick: 0.35
 			};

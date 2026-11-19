@@ -12,7 +12,7 @@ import type { Hero, HeroFeel, OverPainter } from './hero/Hero';
 import { NO_FEEL } from './hero/Hero';
 import type { HeroSeason } from './hero/heroSeasons';
 
-/** The hero's radius in tiles (the nimble heroes: the sun and the galaxy). */
+/** The hero's radius in tiles (the nimble heroes: the sun and the pearl star). */
 const RADIUS = 0.33;
 
 function facingAngle(facing: string | null, fallback: number): number {
@@ -53,7 +53,7 @@ export const GAME_FEEL: PlayerFeel = {
 	smear: true,
 	bump: true,
 	puff: true,
-	// the rolling meridians read as flickering white lines on the sun and the galaxy
+	// the rolling meridians read as flickering white lines on the sun and the pearl star
 	// (the owner's review): off in the game, the switch stays for the feel prototype
 	sphere: false,
 	lean: false,

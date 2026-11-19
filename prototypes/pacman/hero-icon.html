@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Pac-Man · Классические иконки без пикселей</title>
+    <style>
+      *{box-sizing:border-box}
+      html,body{min-height:100%;margin:0}
+      body{background:radial-gradient(circle at 25% 0,#20283a 0,#10141e 44%,#090c12 100%);color:#f5f1df;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+      .wrap{width:min(1220px,100%);margin:auto;padding:28px 30px 24px}
+      header{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:22px}
+      .eyebrow{margin:0 0 7px;color:#ffea00;font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase}
+      h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.8px}
+      .subtitle{margin:8px 0 0;color:#aeb8c9;font-size:14px}
+      .badge{border:1px solid #3b4558;border-radius:999px;padding:8px 13px;color:#bdc7d7;font-size:11px;font-weight:700;letter-spacing:1.2px;white-space:nowrap}
+      .layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(380px,.75fr);gap:22px;align-items:stretch}
+      .panel{border:1px solid #303949;border-radius:22px;background:rgba(20,25,36,.88);box-shadow:0 22px 60px rgba(0,0,0,.22);overflow:hidden}
+      .panel-title{display:flex;align-items:center;justify-content:space-between;padding:17px 22px;border-bottom:1px solid #303949;color:#cbd3df;font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase}
+      .panel-title span:last-child{color:#78859a;letter-spacing:.5px;font-weight:600;text-transform:none}
+      .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:20px 24px 12px}
+      .hero{text-align:center;min-width:0}
+      .hero canvas{display:block;width:220px;height:220px;max-width:100%;margin:0 auto}
+      .hero h2{margin:0;color:#fff7cf;font-size:19px;letter-spacing:.3px}
+      .hero p{margin:5px 0 0;color:#8996aa;font-size:12px}
+      .swatches{display:flex;justify-content:center;gap:10px;margin-top:12px}
+      .swatch{display:grid;place-items:center;width:42px;height:42px;border-radius:11px;border:1px solid rgba(255,255,255,.12)}
+      .swatch:nth-child(1){background:#0b0e14}.swatch:nth-child(2){background:#cf9a58}.swatch:nth-child(3){background:#a9c8e0}
+      .swatch canvas{width:34px;height:34px}
+      .comparison{margin:10px 24px 22px;border-top:1px solid #303949;padding-top:16px}
+      .comparison-head,.comparison-row{display:grid;grid-template-columns:1fr 86px 86px;align-items:center;gap:12px}
+      .comparison-head{padding:0 8px 8px;color:#78859a;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+      .comparison-head span:not(:first-child){text-align:center}
+      .comparison-row{border-radius:12px;padding:7px 8px;background:#181e2a}
+      .comparison-row+.comparison-row{margin-top:7px}
+      .comparison-row.new{background:rgba(255,234,0,.055);box-shadow:inset 0 0 0 1px rgba(255,234,0,.18)}
+      .comparison-row strong{font-size:12px;font-weight:650;color:#b9c3d1}
+      .comparison-row.new strong{color:#fff4a8}
+      .mini-pair{display:flex;align-items:center;justify-content:center;gap:5px;height:62px}
+      .mini-pair.hud{height:62px}
+      .mini-pair canvas{display:block;width:62px;height:62px}
+      .mini-pair.hud canvas{width:34px;height:34px}
+      .menu-panel{display:flex;flex-direction:column}
+      #menu-wrap{display:grid;place-items:center;flex:1;padding:12px 18px 18px;background:radial-gradient(circle at 50% 36%,rgba(207,154,88,.08),transparent 64%)}
+      #menu-preview{display:block;width:100%;max-width:440px;height:auto;overflow:visible;filter:drop-shadow(0 16px 22px rgba(0,0,0,.25))}
+      #menu-preview .num{font-family:"Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;font-weight:900;fill:url(#menu-num);stroke:#3a230d;stroke-width:.17em;paint-order:stroke;stroke-linejoin:round}
+      #menu-preview .lab{font-family:"Trebuchet MS",system-ui,sans-serif;font-weight:700;letter-spacing:2.4px;fill:#fff0c4;stroke:#2a1a0c;stroke-width:3.2px;paint-order:stroke;stroke-linejoin:round}
+      footer{display:flex;justify-content:space-between;gap:20px;margin-top:17px;color:#7f8b9e;font-size:11px;line-height:1.5}
+      .features{display:flex;gap:16px;flex-wrap:wrap}.features span::before{content:"";display:inline-block;width:5px;height:5px;margin:0 7px 2px 0;border-radius:50%;background:#ffea00}
+      @media(max-width:900px){.layout{grid-template-columns:1fr}.wrap{padding:20px}.pair{padding-inline:12px}.hero canvas{width:190px;height:190px}header{align-items:start}.badge{display:none}}
+      @media(max-width:520px){.pair{gap:0;padding-inline:4px}.hero canvas{width:155px;height:155px}.comparison{margin-inline:12px}.comparison-head,.comparison-row{grid-template-columns:1fr 72px 72px;gap:5px}footer{display:block}.features{margin-bottom:8px}}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <p class="eyebrow">Arcade originals · vector redraw</p>
+          <h1>Классика без пикселей</h1>
+          <p class="subtitle">Pac-Man · 1980 &nbsp;/&nbsp; Ms. Pac-Man · 1982</p>
+        </div>
+        <div class="badge">ПРОТОТИП · ИГРА НЕ ИЗМЕНЕНА</div>
+      </header>
+      <main class="layout">
+        <section class="panel">
+          <div class="panel-title"><span>Предлагаемая пара</span><span>плоский цвет · сглаженные кривые</span></div>
+          <div class="pair">
+            <article class="hero">
+              <canvas data-icon data-kind="new" data-ms="false" data-size="220" aria-label="Предлагаемый Pac-Man"></canvas>
+              <h2>PAC-MAN</h2>
+              <p>Только силуэт и рот, без глаза</p>
+              <div class="swatches">
+                <div class="swatch"><canvas data-icon data-kind="new" data-ms="false" data-size="34"></canvas></div>
+                <div class="swatch"><canvas data-icon data-kind="new" data-ms="false" data-size="34"></canvas></div>
+                <div class="swatch"><canvas data-icon data-kind="new" data-ms="false" data-size="34"></canvas></div>
+              </div>
+            </article>
+            <article class="hero">
+              <canvas data-icon data-kind="new" data-ms="true" data-size="220" aria-label="Предлагаемая Ms. Pac-Man"></canvas>
+              <h2>MS. PAC-MAN</h2>
+              <p>Бант, глаз, губы и родинка</p>
+              <div class="swatches">
+                <div class="swatch"><canvas data-icon data-kind="new" data-ms="true" data-size="34"></canvas></div>
+                <div class="swatch"><canvas data-icon data-kind="new" data-ms="true" data-size="34"></canvas></div>
+                <div class="swatch"><canvas data-icon data-kind="new" data-ms="true" data-size="34"></canvas></div>
+              </div>
+            </article>
+          </div>
+          <div class="comparison">
+            <div class="comparison-head"><span>Версия</span><span>Меню · 62</span><span>HUD · 34</span></div>
+            <div class="comparison-row">
+              <strong>Сейчас</strong>
+              <div class="mini-pair"><canvas data-icon data-kind="current" data-ms="false" data-size="62"></canvas><canvas data-icon data-kind="current" data-ms="true" data-size="62"></canvas></div>
+              <div class="mini-pair hud"><canvas data-icon data-kind="current" data-ms="false" data-size="34"></canvas><canvas data-icon data-kind="current" data-ms="true" data-size="34"></canvas></div>
+            </div>
+            <div class="comparison-row new">
+              <strong>Предлагаю</strong>
+              <div class="mini-pair"><canvas data-icon data-kind="new" data-ms="false" data-size="62"></canvas><canvas data-icon data-kind="new" data-ms="true" data-size="62"></canvas></div>
+              <div class="mini-pair hud"><canvas data-icon data-kind="new" data-ms="false" data-size="34"></canvas><canvas data-icon data-kind="new" data-ms="true" data-size="34"></canvas></div>
+            </div>
+          </div>
+        </section>
+        <section class="panel menu-panel">
+          <div class="panel-title"><span>В меню</span><span>реальные доски и монеты игры</span></div>
+          <div id="menu-wrap"><svg id="menu-preview" viewBox="0 0 520 480" role="img" aria-label="Меню с предлагаемыми иконками"></svg></div>
+        </section>
+      </main>
+      <footer>
+        <div class="features"><span>Без растровых спрайтов</span><span>Прозрачный рот</span><span>Без обводки и градиентов</span></div>
+        <span>После утверждения иконки будут перенесены в игру</span>
+      </footer>
+    </div>
+    <script>
+(function() {
+	//#region src/games/pacman/ui/hud/season/heroIcon.ts
+	var TAU$1 = Math.PI * 2;
+	var YELLOW$1 = "#ffea00";
+	var BOW = "#f02020";
+	var BOW_KNOT = "#2038e0";
+	var LIPS = "#f02020";
+	var EYE = "#18102a";
+	var SHADOW_BLUE = "#2038e0";
+	/** The classic icon baked crisp into a data URL, `size` css px across. */
+	function classicIcon(ms) {
+		const scale = 6;
+		const size = 80;
+		const c = document.createElement("canvas");
+		c.width = c.height = 480;
+		const x = c.getContext("2d");
+		x.scale(scale, scale);
+		x.translate(size / 2, size / 2);
+		paintClassic(x, size / 2 - 2, ms);
+		return c.toDataURL();
+	}
+	/** The sprite, centred at (0, 0), `R` the ball's radius in the icon's units. Facing right. */
+	function paintClassic(ctx, R, ms) {
+		const MOUTH = .87;
+		ctx.fillStyle = YELLOW$1;
+		ctx.beginPath();
+		ctx.arc(0, 0, R, 0, TAU$1);
+		ctx.fill();
+		ctx.globalCompositeOperation = "destination-out";
+		ctx.beginPath();
+		ctx.moveTo(Math.cos(MOUTH) * R, -Math.sin(MOUTH) * R);
+		ctx.lineTo(0, 0);
+		ctx.lineTo(Math.cos(MOUTH) * R, Math.sin(MOUTH) * R);
+		ctx.closePath();
+		ctx.fill();
+		ctx.globalCompositeOperation = "source-over";
+		if (!ms) return;
+		ctx.fillStyle = LIPS;
+		for (const s of [-1, 1]) {
+			const cx = Math.cos(MOUTH) * R;
+			const cy = s * Math.sin(MOUTH) * R;
+			ctx.save();
+			ctx.translate(cx, cy);
+			ctx.rotate(s * (MOUTH - Math.PI / 2));
+			ctx.beginPath();
+			ctx.moveTo(-R * .05, -R * .09);
+			ctx.lineTo(R * .24, 0);
+			ctx.lineTo(-R * .05, R * .09);
+			ctx.closePath();
+			ctx.fill();
+			ctx.restore();
+		}
+		ctx.fillStyle = EYE;
+		ctx.beginPath();
+		ctx.ellipse(R * .28, -R * .3, R * .11, R * .09, -.25, 0, TAU$1);
+		ctx.fill();
+		ctx.fillStyle = SHADOW_BLUE;
+		ctx.fillRect(R * .34, -R * .44, R * .09, R * .09);
+		ctx.save();
+		ctx.translate(-R * .12, -R * .86);
+		ctx.rotate(.1);
+		const lobe = (s) => {
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(s * R * .4, -R * .3);
+			ctx.lineTo(s * R * .44, R * .08);
+			ctx.closePath();
+			ctx.fillStyle = BOW;
+			ctx.fill();
+		};
+		lobe(-1);
+		lobe(1);
+		ctx.fillStyle = BOW_KNOT;
+		ctx.fillRect(-R * .11, -R * .14, R * .22, R * .22);
+		ctx.restore();
+	}
+	//#endregion
+	//#region src/games/pacman/ui/hud/season/seasonArt.ts
+	function mul(seed) {
+		let s = seed >>> 0;
+		return () => {
+			s = s + 1831565813 >>> 0;
+			let t = s;
+			t = Math.imul(t ^ t >>> 15, t | 1);
+			t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+			return ((t ^ t >>> 14) >>> 0) / 4294967296;
+		};
+	}
+	/** A rounded rectangle with slightly uneven corners, as a path. */
+	function rr(x, y, w, h, r, j, seed) {
+		const q = mul(seed);
+		const a = () => (q() - .5) * j;
+		return [
+			"M",
+			x + r + a(),
+			y + a(),
+			"H",
+			x + w - r + a(),
+			"Q",
+			x + w + a(),
+			y + a(),
+			x + w + a(),
+			y + r + a(),
+			"V",
+			y + h - r + a(),
+			"Q",
+			x + w + a(),
+			y + h + a(),
+			x + w - r + a(),
+			y + h + a(),
+			"H",
+			x + r + a(),
+			"Q",
+			x + a(),
+			y + h + a(),
+			x + a(),
+			y + h - r + a(),
+			"V",
+			y + r + a(),
+			"Q",
+			x + a(),
+			y + a(),
+			x + r + a(),
+			y + a(),
+			"Z"
+		].join(" ");
+	}
+	var shadow = (cx, cy, rx, ry, o = .3) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#000" opacity="${o}"/>`;
+	function material(t, x, y, w, h, seed) {
+		const q = mul(seed + 7);
+		let s = "";
+		if (t.key === "hell") {
+			for (let v = 0; v < 4; v += 1) {
+				const vx = x + 18 + q() * (w - 36);
+				const vy = y + 6 + q() * (h - 12);
+				s += `<path d="M${vx} ${vy} q18 ${q() * 16 - 8} 36 ${q() * 20 - 10} t34 ${q() * 12 - 6}" fill="none" stroke="#c0282a" stroke-width="2" opacity=".6"/>`;
+			}
+			return s;
+		}
+		if (t.key === "winter") {
+			for (let i = 0; i < 3; i += 1) {
+				const fx = x + 30 + q() * (w - 80);
+				const fy = y + 10 + q() * (h * .5);
+				s += `<path d="M${fx} ${fy} l26 -14 l8 6 l-26 14 z" fill="#fff" opacity=".55"/>`;
+			}
+			return s;
+		}
+		for (let g = 0; g < 4; g += 1) {
+			const gy = y + h * (.2 + g * .2) + q() * 5;
+			s += `<path d="M${x + 8} ${gy} q${w * .25} ${q() * 7 - 3.5} ${w * .5} 0 t${w * .5 - 16} ${q() * 5 - 2.5}" fill="none" stroke="${t.grain}" stroke-width="2" opacity=".42"/>`;
+		}
+		return s;
+	}
+	/** A signboard on two stakes: its ground shadow, stakes, cel-banded board, ink line and glint. */
+	function boardArt$1(t, name, x, y, w, h, o = {}) {
+		const seed = o.seed ?? 3;
+		const drop = o.drop ?? 40;
+		const d = rr(x, y, w, h, o.r ?? 14, o.j ?? 5, seed);
+		const cid = `shud-${t.key}-${name}`;
+		let s = "";
+		if (o.posts !== false) {
+			const py2 = y + h + drop;
+			s += shadow(x + w / 2 + 12, py2 + 4, w * .5, 9, .28);
+			for (const px of [x + w * .2, x + w * .8]) {
+				s += `<rect x="${px - 7}" y="${y + h - 8}" width="14" height="${drop + 8}" rx="4" fill="${t.post}" stroke="${t.ink}" stroke-width="3"/>`;
+				s += `<rect x="${px - 4}" y="${y + h - 6}" width="4" height="${drop + 4}" fill="#fff" opacity=".22"/>`;
+				if (t.key === "winter") s += `<ellipse cx="${px}" cy="${py2 + 2}" rx="22" ry="8" fill="#fff" stroke="${t.ink}" stroke-width="2.5"/>`;
+			}
+		}
+		if (t.edge) s += `<path d="${d}" fill="none" stroke="${t.ink}" stroke-width="13" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${t.edge}" stroke-width="8" stroke-linejoin="round"/>`;
+		s += `<path d="${d}" fill="${t.mid}"/>`;
+		s += `<clipPath id="${cid}"><path d="${d}"/></clipPath><g clip-path="url(#${cid})">`;
+		s += `<ellipse cx="${x + w * .3}" cy="${y + h * .12}" rx="${w * .62}" ry="${h * .4}" fill="${t.light}" opacity=".85"/>`;
+		s += `<rect x="${x}" y="${y + h * .74}" width="${w}" height="${h * .3}" fill="${t.shade}" opacity=".9"/>`;
+		s += material(t, x, y, w, h, seed);
+		s += "</g>";
+		s += `<path d="${d}" fill="none" stroke="${t.ink}" stroke-width="4.5" stroke-linejoin="round"/>`;
+		s += `<path d="M${x + 14} ${y + 7} H${x + w * .55}" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".5"/>`;
+		if (!t.edge) for (const nx of [x + 12, x + w - 12]) s += `<circle cx="${nx}" cy="${y + 13}" r="3.2" fill="${t.ink}" opacity=".75"/>`;
+		return s;
+	}
+	(() => {
+		let p = "";
+		for (let i = 0; i < 5; i += 1) p += `<ellipse cx="0" cy="-20" rx="14" ry="18" transform="rotate(${i * 72})" fill="#ffb3d2" stroke="#4a1d36" stroke-width="4"/>`;
+		return `${p}<circle r="9" fill="#ffe45a" stroke="#4a1d36" stroke-width="3"/><g stroke="#c2487a" stroke-width="2" stroke-linecap="round"><path d="M0 -4 V-12"/><path d="M4 -1 L10 -4"/><path d="M-4 -1 L-10 -4"/></g>`;
+	})();
+	(() => {
+		let r = "";
+		for (let i = 0; i < 8; i += 1) r += `<path d="M0 -26 L5 -17 H-5Z" transform="rotate(${i * 45})" fill="#ffd34a" stroke="#6a3a05" stroke-width="2.4" stroke-linejoin="round"/>`;
+		return `${r}<circle r="15" fill="#ffc22a" stroke="#6a3a05" stroke-width="3.4"/><ellipse cx="-5" cy="-6" rx="5" ry="3" fill="#fff" opacity=".6"/>`;
+	})(), (() => {
+		let r = "";
+		for (let i = 0; i < 6; i += 1) r += `<g transform="rotate(${i * 60})"><path d="M0 0 V-26 M-7 -18 L0 -12 L7 -18" stroke="#e8f8ff" stroke-width="4" stroke-linecap="round" fill="none"/></g>`;
+		return `<circle r="29" fill="#4a7aa8" opacity=".55"/>${r}<circle r="5" fill="#fff"/>`;
+	})(), (() => {
+		let p = "";
+		for (let i = 0; i < 5; i += 1) p += `<ellipse cx="0" cy="-15" rx="9" ry="12" transform="rotate(${i * 72})" fill="#ff9ec7" stroke="#4a1d36" stroke-width="3"/>`;
+		return `${p}<circle r="7" fill="#ffe45a" stroke="#4a1d36" stroke-width="2.6"/>`;
+	})();
+	//#endregion
+	//#region src/games/pacman/ui/hud/season/heroPortrait.ts
+	var cache = /* @__PURE__ */ new Map();
+	/**
+	* The hero's icon baked crisp into a data URL. `season` stays in the signature (the callers
+	* pass their world's season); the classic sprite is the same in every world.
+	*/
+	function heroPortrait(ms, season) {
+		const key = ms ? "ms" : "pac";
+		const hit = cache.get(key);
+		if (hit) return hit;
+		const url = classicIcon(ms);
+		cache.set(key, url);
+		return url;
+	}
+	/** The baked hero as an SVG image centred at the origin, `size` units across. */
+	function heroImageArt(ms, season, size = 75) {
+		return `<image href="${heroPortrait(ms, season)}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>`;
+	}
+	//#endregion
+	//#region src/games/pacman/ui/screens/screenArt.ts
+	/**
+	* The shapes of the screens (menu, ready, pause, death, game over) as SVG markup, in the same
+	* family as the season HUD (`../hud/season/seasonArt`): signboards on stakes, plank buttons
+	* hung from them on ropes, a chalk board for the hints, a cloth banner, coins with the heroes'
+	* faces, round knobs. Static per world; the texts are the component's.
+	*/
+	/** Two ropes from the lower edge of one thing to the upper edge of the next. */
+	function ropesArt$1(t, from, to) {
+		const d = `M${from.left} ${from.y} L${to.left} ${to.y} M${from.right} ${from.y} L${to.right} ${to.y}`;
+		return `<path d="${d}" stroke="${t.rope}" stroke-width="3.6" stroke-linecap="round"/><path d="${d}" stroke="${t.ink}" stroke-width="1.2" opacity=".6"/>`;
+	}
+	/** A plank button: a board with no stakes, hung by its ropes. */
+	function plankArt$1(t, id, x, y, w, h, o = {}) {
+		let s = "";
+		s += boardArt$1(t, id, x, y, w, h, {
+			seed: o.seed ?? 4,
+			posts: false,
+			r: Math.min(14, h / 3),
+			j: 3
+		});
+		return s;
+	}
+	/** A coin with the baked hero, drawn at the origin (34 units across); lifted and ringed when chosen. */
+	function coinArt$1(t, ms, selected) {
+		let s = "";
+		if (selected) {
+			s += `<circle r="44" fill="${t.ring}" opacity=".22"/>`;
+			s += `<circle r="40" fill="none" stroke="${t.ring}" stroke-width="3.4"/>`;
+		}
+		s += `<circle r="34" fill="${t.shade}" stroke="${t.ink}" stroke-width="4"/>`;
+		s += `<circle r="29" fill="${t.mid}"/>`;
+		s += `<path d="M-24 -8 A26 26 0 0 1 8 -24" fill="none" stroke="${t.light}" stroke-width="4" stroke-linecap="round" opacity=".85"/>`;
+		s += heroImageArt(ms, t.key, 62);
+		return s;
+	}
+	//#endregion
+	//#region prototypes/pacman/hero-icon/menuArt.ts
+	var theme = {
+		summer: {
+			key: "summer",
+			ink: "#2a1a0c",
+			light: "#f2c98a",
+			mid: "#cf9a58",
+			shade: "#8f5f2d",
+			grain: "#7a4a1f",
+			numTop: "#ffffff",
+			num: "#fff6d8",
+			numInk: "#3a230d",
+			label: "#fff0c4",
+			cloth: "#3fb6c9",
+			clothShade: "#23808f",
+			ring: "#ffd86a",
+			pellet: "#fff7e6",
+			pelletInk: "#6b5a3a",
+			rope: "#e9d7a5",
+			post: "#b88548",
+			emblem: "sun",
+			energizer: "starfish"
+		},
+		autumn: {
+			key: "autumn",
+			ink: "#241008",
+			light: "#d28a4a",
+			mid: "#9a5a2c",
+			shade: "#5a3016",
+			grain: "#40200d",
+			numTop: "#fff6dc",
+			num: "#ffe9bd",
+			numInk: "#2a1208",
+			label: "#ffd89a",
+			cloth: "#c8461f",
+			clothShade: "#8a2c12",
+			ring: "#ffb24a",
+			pellet: "#ffc65a",
+			pelletInk: "#5a3410",
+			rope: "#c9a463",
+			post: "#7a4a24",
+			emblem: "leaf",
+			energizer: "pumpkin"
+		},
+		winter: {
+			key: "winter",
+			ink: "#10202c",
+			light: "#e8f4ff",
+			mid: "#a9c8e0",
+			shade: "#6a8fb0",
+			grain: "#ffffff",
+			numTop: "#f2fbff",
+			num: "#ffffff",
+			numInk: "#1d3a52",
+			label: "#dff2ff",
+			cloth: "#d44a54",
+			clothShade: "#8e2a34",
+			ring: "#bfeaff",
+			pellet: "#cfeeff",
+			pelletInk: "#2d5878",
+			rope: "#d8e8f2",
+			post: "#8fb0cc",
+			emblem: "flake",
+			energizer: "snowman"
+		},
+		spring: {
+			key: "spring",
+			ink: "#2a1520",
+			light: "#f6dcc0",
+			mid: "#d7a98a",
+			shade: "#9a6a52",
+			grain: "#8a5a44",
+			numTop: "#ffffff",
+			num: "#fff4f8",
+			numInk: "#4a1d36",
+			label: "#ffe3ee",
+			cloth: "#ef7fb0",
+			clothShade: "#b24a80",
+			ring: "#ffc2dc",
+			pellet: "#ffe45a",
+			pelletInk: "#6a5410",
+			rope: "#f2d9a8",
+			post: "#c99978",
+			emblem: "flower",
+			energizer: "blossom"
+		}
+	}.summer;
+	function boardArt(id, x, y, w, h, seed) {
+		return boardArt$1(theme, id, x, y, w, h, {
+			seed,
+			posts: id === "title"
+		});
+	}
+	function coinArt(ms, selected) {
+		return coinArt$1(theme, ms, selected);
+	}
+	function plankArt(id, x, y, w, h, seed) {
+		return plankArt$1(theme, id, x, y, w, h, {
+			seed,
+			primary: true
+		});
+	}
+	function ropesArt(left, right, y, toLeft, toRight, toY) {
+		return ropesArt$1(theme, {
+			left,
+			right,
+			y
+		}, {
+			left: toLeft,
+			right: toRight,
+			y: toY
+		});
+	}
+	//#endregion
+	//#region prototypes/pacman/hero-icon/vectorIcon.ts
+	var TAU = Math.PI * 2;
+	var YELLOW = "#ffea00";
+	var RED = "#ed1c24";
+	var BLUE = "#2545d8";
+	var INK = "#171326";
+	function paintVectorClassic(ctx, R, ms) {
+		const mouth = Math.PI / 4;
+		ctx.fillStyle = YELLOW;
+		ctx.beginPath();
+		ctx.arc(0, 0, R, 0, TAU);
+		ctx.fill();
+		ctx.globalCompositeOperation = "destination-out";
+		ctx.beginPath();
+		ctx.moveTo(0, 0);
+		ctx.lineTo(Math.cos(mouth) * R, -Math.sin(mouth) * R);
+		ctx.arc(0, 0, R, -mouth, mouth);
+		ctx.closePath();
+		ctx.fill();
+		ctx.globalCompositeOperation = "source-over";
+		if (!ms) return;
+		ctx.fillStyle = RED;
+		for (const side of [-1, 1]) {
+			ctx.save();
+			ctx.translate(Math.cos(mouth) * R, side * Math.sin(mouth) * R);
+			ctx.rotate(side * (mouth - Math.PI / 2));
+			ctx.beginPath();
+			ctx.moveTo(-R * .12, 0);
+			ctx.quadraticCurveTo(R * .01, -R * .12, R * .18, 0);
+			ctx.quadraticCurveTo(R * .02, R * .11, -R * .12, 0);
+			ctx.fill();
+			ctx.restore();
+		}
+		ctx.strokeStyle = BLUE;
+		ctx.lineWidth = R * .1;
+		ctx.lineCap = "round";
+		ctx.beginPath();
+		ctx.moveTo(R * .05, -R * .55);
+		ctx.quadraticCurveTo(R * .18, -R * .65, R * .32, -R * .52);
+		ctx.stroke();
+		ctx.fillStyle = INK;
+		ctx.beginPath();
+		ctx.ellipse(R * .16, -R * .46, R * .075, R * .105, -.18, 0, TAU);
+		ctx.fill();
+		ctx.strokeStyle = INK;
+		ctx.lineWidth = R * .045;
+		ctx.beginPath();
+		ctx.moveTo(R * .21, -R * .54);
+		ctx.lineTo(R * .3, -R * .65);
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.arc(-R * .4, R * .3, R * .06, 0, TAU);
+		ctx.fill();
+		ctx.save();
+		ctx.translate(-R * .13, -R * .88);
+		ctx.rotate(.08);
+		ctx.fillStyle = RED;
+		for (const side of [-1, 1]) {
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.bezierCurveTo(side * R * .12, -R * .3, side * R * .42, -R * .38, side * R * .46, -R * .12);
+			ctx.bezierCurveTo(side * R * .5, R * .08, side * R * .16, R * .13, 0, R * .04);
+			ctx.closePath();
+			ctx.fill();
+		}
+		ctx.fillStyle = BLUE;
+		ctx.beginPath();
+		ctx.ellipse(0, -R * .01, R * .12, R * .11, 0, 0, TAU);
+		ctx.fill();
+		ctx.restore();
+	}
+	function vectorIcon(ms) {
+		const scale = 8;
+		const size = 80;
+		const canvas = document.createElement("canvas");
+		canvas.width = canvas.height = 640;
+		const ctx = canvas.getContext("2d");
+		ctx.scale(scale, scale);
+		ctx.translate(size / 2, size * (ms ? .54 : .5));
+		paintVectorClassic(ctx, size * (ms ? .42 : .46), ms);
+		return canvas.toDataURL();
+	}
+	//#endregion
+	//#region prototypes/pacman/hero-icon/main.ts
+	function drawIcon(canvas) {
+		const size = Number(canvas.dataset.size);
+		const ms = canvas.dataset.ms === "true";
+		const proposed = canvas.dataset.kind === "new";
+		const scale = 6;
+		canvas.width = canvas.height = size * scale;
+		const ctx = canvas.getContext("2d");
+		ctx.scale(scale, scale);
+		ctx.translate(size / 2, size * (proposed && ms ? .54 : .5));
+		const radius = size * (proposed ? ms ? .42 : .46 : .475);
+		if (proposed) paintVectorClassic(ctx, radius, ms);
+		else paintClassic(ctx, radius, ms);
+	}
+	for (const canvas of document.querySelectorAll("canvas[data-icon]")) drawIcon(canvas);
+	var imageArt = (ms, size = 75) => `<image href="${vectorIcon(ms)}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>`;
+	var candidateCoin = (ms, selected) => coinArt(ms, selected).replace(/<image[^>]*\/>/, imageArt(ms, 62));
+	var previewMs = new URLSearchParams(window.location.search).has("ms");
+	var title = boardArt("title", 30, 16, 460, 148, 5) + `<g transform="translate(98 92) scale(1.25)">${imageArt(previewMs)}</g><text class="num" x="315" y="112" font-size="${previewMs ? 44 : 60}" text-anchor="middle">${previewMs ? "MS. PAC-MAN" : "PAC-MAN"}</text>`;
+	var high = ropesArt(190, 330, 160, 196, 324, 196) + boardArt("high", 150, 196, 220, 44, 11) + "<text class=\"lab\" x=\"168\" y=\"224\" font-size=\"12\">HIGH</text><text class=\"num\" x=\"352\" y=\"230\" font-size=\"26\" text-anchor=\"end\">48 900</text>";
+	var log = "<rect x=\"140\" y=\"326\" width=\"240\" height=\"26\" rx=\"13\" fill=\"#cf9a58\" stroke=\"#2a1a0c\" stroke-width=\"4\"/><rect x=\"148\" y=\"330\" width=\"224\" height=\"8\" rx=\"4\" fill=\"#f2c98a\" opacity=\".8\"/><rect x=\"148\" y=\"342\" width=\"224\" height=\"6\" rx=\"3\" fill=\"#8f5f2d\" opacity=\".8\"/>";
+	var coins = `<g transform="translate(205 ${previewMs ? 292 : 282})">${candidateCoin(false, !previewMs)}</g><g transform="translate(315 ${previewMs ? 282 : 292})">${candidateCoin(true, previewMs)}</g><text class="lab" x="205" y="380" font-size="11" text-anchor="middle">PAC-MAN</text><text class="lab" x="315" y="380" font-size="11" text-anchor="middle">MS. PAC-MAN</text>`;
+	var start = plankArt("start", 110, 396, 300, 76, 4) + "<text class=\"num\" x=\"260\" y=\"452\" font-size=\"46\" text-anchor=\"middle\">START</text>";
+	document.querySelector("#menu-preview").innerHTML = "<defs><linearGradient id=\"menu-num\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#fff\"/><stop offset=\"1\" stop-color=\"#fff6d8\"/></linearGradient></defs>" + title + high + ropesArt(62, 458, 168, 118, 402, 392) + log + coins + start;
+	//#endregion
+})();
+
+    </script>
+  </body>
+</html>

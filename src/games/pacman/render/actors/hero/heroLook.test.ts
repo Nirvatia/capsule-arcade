@@ -79,8 +79,11 @@ class MsProbe extends MsPacmanHero {
 	paint(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		this.decorate(ctx, R, p);
 	}
-	worn(ctx: CanvasRenderingContext2D, R: number, p: number): void {
-		this.drawWorn(ctx, R, p, 0, -1);
+	lashes(ctx: CanvasRenderingContext2D, R: number): void {
+		this.drawLashes(ctx, R, 0);
+	}
+	ballPaint(ctx: CanvasRenderingContext2D, R: number): void {
+		this.paintBallPattern(ctx, R);
 	}
 }
 
@@ -111,25 +114,30 @@ describe('the contained rage', () => {
 	});
 });
 
-describe('her light', () => {
-	it('burns light enough to read at a tile', () => {
+describe('her pearl star', () => {
+	it('has a white centre that reads at a tile', () => {
 		const rec = record();
 		new MsProbe().paint(rec.ctx, 10, 0);
 		const base = rec.grads.find(
-			(g) => g.args[2] === 0 && Math.abs(g.args[0] + 1) < 0.01 && g.args[5] > 9
+			(g) => g.args[2] === 0 && g.args[5] > 9 && g.stops[0]?.[1] === '#ffffff'
 		);
 		expect(base).toBeDefined();
-		const m = /rgba?\((\d+),(\d+),(\d+)/.exec(base?.stops[0][1] ?? '');
-		expect(m).not.toBeNull();
-		const lum = 0.2126 * Number(m?.[1]) + 0.7152 * Number(m?.[2]) + 0.0722 * Number(m?.[3]);
-		expect(lum).toBeGreaterThanOrEqual(100);
 	});
 
-	it('grows the eye at tile size so it reads', () => {
+	it('grows the lash mark at tile size without an eye white', () => {
 		const rec = record();
-		new MsProbe().worn(rec.ctx, 10, 0);
-		const white = rec.ellipses.filter((e) => e.fill === 'rgba(255,250,252,1)');
-		expect(white.length).toBeGreaterThan(0);
-		expect(Math.max(...white.map((e) => e.rx))).toBeGreaterThanOrEqual(2.5);
+		new MsProbe().lashes(rec.ctx, 10);
+		expect(rec.ellipses).toHaveLength(0);
+		const xs = rec.points.map(([x]) => x);
+		expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(6.5);
+	});
+
+	it('draws the teleport as one expanding spiral, not concentric arcs', () => {
+		const rec = record();
+		new MsProbe().ballPaint(rec.ctx, 10);
+		const radii = rec.points.slice(0, 65).map(([x, y]) => Math.hypot(x, y));
+		expect(radii[0]).toBeLessThan(1);
+		expect(radii[64]).toBeGreaterThan(8);
+		for (let i = 1; i < 65; i++) expect(radii[i]).toBeGreaterThan(radii[i - 1]);
 	});
 });

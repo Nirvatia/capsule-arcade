@@ -136,8 +136,8 @@ export function drawAir(
 		ctx.stroke();
 		ctx.globalCompositeOperation = 'source-over';
 	}
-	const font = Math.max(10, Math.round(S * 0.62));
-	ctx.font = `900 ${font}px "Trebuchet MS", "Segoe UI", system-ui, sans-serif`;
+	const font = Math.max(10, Math.round(S * 0.68));
+	ctx.font = `400 ${font}px "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif`;
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 	ctx.lineJoin = 'round';
@@ -157,7 +157,11 @@ export function drawAir(
 		ctx.strokeStyle = 'rgba(20,12,6,.85)';
 		ctx.strokeText(p.text, 0, 0);
 		ctx.shadowBlur = 0;
-		ctx.fillStyle = '#ffffff';
+		const fill = ctx.createLinearGradient(0, -font * 0.55, 0, font * 0.55);
+		fill.addColorStop(0, '#fffbe8');
+		fill.addColorStop(0.55, '#ffe588');
+		fill.addColorStop(1, '#ffbd3f');
+		ctx.fillStyle = fill;
 		ctx.fillText(p.text, 0, 0);
 		ctx.restore();
 	}

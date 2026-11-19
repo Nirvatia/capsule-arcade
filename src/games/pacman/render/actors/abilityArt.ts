@@ -1,7 +1,7 @@
 // The abilities' art, picked by the owner in the `powers` prototype, all in code in the heroes'
 // ink-outlined cel style:
-// - the tokens (the board and the HUD slot): the mask a little gold ghost sheet (M1), the shock a
-//   plasma ball (S2); the echo keeps its wisp (`EchoCloneView`);
+// - the tokens (the board and the HUD slot): the mask a little gold ghost sheet (M1), the shock an
+//   electric ball with a bold bolt and three contacts; the echo keeps its wisp (`EchoCloneView`);
 // - the mask: the hero as the season's ghost in his own colour (his gold, her magenta, her bow),
 //   in a halo of his colour that stays inside the tile (C); the turn into it and back (a
 //   squash, a white flash, a puff of smoke and sparkles, a pop with an overshoot);
@@ -9,7 +9,7 @@
 //   cold blue with arcs crawling round it, a shake at the end and a puff of smoke on release.
 import { drawCuteGhost } from './cuteGhost';
 import type { CuteShape, Palette } from './cuteGhost';
-import { drawNebulaBow } from './hero/MsPacmanHero';
+import { drawPearlBow } from './hero/MsPacmanHero';
 import type { HeroSeason } from './hero/heroSeasons';
 
 type Ctx = CanvasRenderingContext2D;
@@ -185,8 +185,8 @@ export function drawAbilityIcon(
 		tokenHalo(c, x, y, S, '255,206,84', t);
 		iconSheet(c, x, y + bob, S);
 	} else {
-		tokenHalo(c, x, y, S, '150,170,255', t);
-		iconOrb(c, x, y + bob, S, t);
+		tokenHalo(c, x, y, S, '80,190,255', t);
+		iconOrb(c, x, y + bob, S);
 	}
 	c.restore();
 }
@@ -225,44 +225,66 @@ function iconSheet(c: Ctx, x: number, y: number, S: number): void {
 	c.fill();
 }
 
-/** S2: a plasma ball: dark glass, arcs from the core to the rim, a bright core. */
-function iconOrb(c: Ctx, x: number, y: number, S: number, t: number): void {
-	const r = S * 0.25;
-	const g = c.createRadialGradient(x, y, r * 0.1, x, y, r);
-	g.addColorStop(0, '#3b3f9e');
-	g.addColorStop(0.7, '#1c1f5a');
-	g.addColorStop(1, '#10123a');
-	c.beginPath();
-	c.arc(x, y, r, 0, TAU);
-	c.fillStyle = g;
-	c.fill();
-	c.save();
-	c.clip();
-	c.globalCompositeOperation = 'lighter';
-	const frame = Math.floor(t * 14);
-	for (let i = 0; i < 4; i++) {
-		const a = hash(frame, i) * TAU;
-		const pts = boltPoints(x, y, x + Math.cos(a) * r, y + Math.sin(a) * r, frame * 7 + i, 3, 0.35);
-		strokePath(c, pts, 'rgba(160,140,255,.55)', S * 0.07);
-		strokePath(c, pts, 'rgba(235,230,255,.95)', S * 0.022);
+/** The shock: a dark electric ball, one bold bolt and three contacts for the chained targets. */
+function iconOrb(c: Ctx, x: number, y: number, S: number): void {
+	const ink = '#10152e';
+	const contacts = [-Math.PI / 2, Math.PI / 6, (Math.PI * 5) / 6];
+	for (const a of contacts) {
+		c.strokeStyle = ink;
+		c.lineWidth = Math.max(1, S * 0.09);
+		c.beginPath();
+		c.moveTo(x + Math.cos(a) * S * 0.23, y + Math.sin(a) * S * 0.23);
+		c.lineTo(x + Math.cos(a) * S * 0.35, y + Math.sin(a) * S * 0.35);
+		c.stroke();
+		c.strokeStyle = '#a8f3ff';
+		c.lineWidth = Math.max(1, S * 0.04);
+		c.stroke();
 	}
-	const core = c.createRadialGradient(x, y, 0, x, y, r * 0.45);
-	core.addColorStop(0, 'rgba(255,255,255,1)');
-	core.addColorStop(0.4, 'rgba(200,190,255,.7)');
-	core.addColorStop(1, 'rgba(120,110,255,0)');
-	c.fillStyle = core;
-	c.fillRect(x - r, y - r, r * 2, r * 2);
-	c.restore();
+
+	const r = S * 0.265;
+	const g = c.createRadialGradient(x - r * 0.3, y - r * 0.35, 0, x, y, r);
+	g.addColorStop(0, '#294b91');
+	g.addColorStop(0.58, '#172b60');
+	g.addColorStop(1, '#0b1233');
+	c.fillStyle = g;
 	c.beginPath();
 	c.arc(x, y, r, 0, TAU);
-	c.strokeStyle = INK;
-	c.lineWidth = Math.max(1, S * 0.05);
+	c.fill();
+	c.strokeStyle = ink;
+	c.lineWidth = Math.max(1, S * 0.055);
 	c.stroke();
+	c.strokeStyle = 'rgba(150,220,255,.8)';
+	c.lineWidth = Math.max(1, S * 0.025);
 	c.beginPath();
-	c.arc(x, y, r * 0.78, Math.PI * 1.1, Math.PI * 1.45);
-	c.strokeStyle = 'rgba(255,255,255,.75)';
-	c.lineWidth = Math.max(1, S * 0.03);
+	c.arc(x, y, r * 0.82, Math.PI * 1.08, Math.PI * 1.42);
 	c.stroke();
+
+	const k = 0.78;
+	c.beginPath();
+	c.moveTo(x + S * 0.04 * k, y - S * 0.24 * k);
+	c.lineTo(x - S * 0.15 * k, y + S * 0.025 * k);
+	c.lineTo(x - S * 0.015 * k, y + S * 0.025 * k);
+	c.lineTo(x - S * 0.07 * k, y + S * 0.24 * k);
+	c.lineTo(x + S * 0.18 * k, y - S * 0.07 * k);
+	c.lineTo(x + S * 0.035 * k, y - S * 0.07 * k);
+	c.closePath();
+	c.fillStyle = '#f4fcff';
+	c.strokeStyle = ink;
+	c.lineWidth = Math.max(1, S * 0.035 * k);
+	c.fill();
+	c.stroke();
+
+	for (const a of contacts) {
+		const nx = x + Math.cos(a) * S * 0.36;
+		const ny = y + Math.sin(a) * S * 0.36;
+		c.fillStyle = '#e9ffff';
+		c.strokeStyle = ink;
+		c.lineWidth = Math.max(1, S * 0.03);
+		c.beginPath();
+		c.arc(nx, ny, S * 0.055, 0, TAU);
+		c.fill();
+		c.stroke();
+	}
 }
 
 // ── the mask: the hero's ghost form ─────────────────────────────────────────────
@@ -297,11 +319,11 @@ function paintForm(c: Ctx, f: GhostForm, S: number): void {
 		palette: OWN[f.ms ? 'ms' : 'pac'].body
 	});
 	if (f.ms) {
-		// her nebula bow on the ghost's head, tipped the way she wears it
+		// her pearl bow on the ghost's head, tipped the way she wears it
 		c.save();
 		c.translate(-S * 0.2, -S * 0.36);
 		c.rotate(-0.45);
-		drawNebulaBow(c, S * 0.39, f.time, 0);
+		drawPearlBow(c, S * 0.39, f.time, 0);
 		c.restore();
 	}
 }

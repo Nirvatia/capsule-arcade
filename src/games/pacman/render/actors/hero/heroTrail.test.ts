@@ -252,11 +252,11 @@ describe('the trail paint (the element language, no beads)', () => {
 		}
 	}
 
-	it.each([false, true])('embers are outline-free glowing dots (Ms. Pac-Man: %s)', (ms) => {
+	it.each([false, true])('embers glow, with one comet streak only for Ms. Pac-Man: %s', (ms) => {
 		const rec = record();
 		const hero = ms ? new MsProbe() : new SunProbe();
 		hero.paint(rec.ctx, piece('ember', true), 1, 3);
-		expect(rec.strokes()).toBe(0);
+		expect(rec.strokes()).toBe(ms ? 1 : 0);
 		expect(rec.images()).toBeGreaterThan(0);
 	});
 

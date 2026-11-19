@@ -59,7 +59,7 @@ render/
   transitions/decay/       the death black hole: field (Dijkstra), timeline (pure clock), WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
   transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
-  actors/ (hero/: the shared Hero, PacmanHero (the sun), MsPacmanHero (the galaxy, `drawNebulaBow` shared with the mask's ghost form), heroSeasons (the season's colours), heroFx (fire drops, outline-free embers, the highlight star); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
+  actors/ (hero/: the shared Hero, PacmanHero (the sun), MsPacmanHero (the pearl star, `drawPearlBow` shared with the mask's ghost form), heroSeasons (the season's colours), heroFx (fire drops, outline-free embers, the highlight star); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
   common/          textures, GlPass (every WebGL2 pass), moodBuffer (a world's atmosphere and
                    night in two small maps, a shade and a light, drawn over the screen, over a
                    part of it or into a baked background), renderQuality (the quality tiers' DPR
@@ -74,8 +74,10 @@ audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth), Arca
 ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the HUD of the
              four season worlds, `SeasonHud` in the side margins and `SeasonHudStack` in two bands
              on a taller screen, over `seasonArt` and `seasonThemes`; `BossHud`, the boss levels' one, over
-             `hellArt`; ArcadeHud; hudSnapshot, hudFrame; the coins and life icons bake the real hero via `heroPortrait`), screens/ (`WorldScreens` over `screenArt` for the
-             seasons and the hell; `GameScreens`, the older cards, for the arcade),
+             `hellArt`; ArcadeHud; hudSnapshot, hudFrame; the coins and life icons bake the real hero via `heroPortrait`,
+             with the Lives board's icon geometry shared in `livesLayout`), screens/ (`WorldScreens` over `screenArt` for the
+             seasons and the hell; `GameScreens`, the older cards, for the arcade; both pause screens'
+             Game Select button uses `goto(resolve('/'))`),
              debug/ (dev panel and log), MuteButton (a knob, bottom left, and the volume slider beside it), i18n;
              the graphics setting is a plank under the menu and the pause screen (a button on the arcade's pause card)
 ```
@@ -150,7 +152,8 @@ ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the
   READY) or `director.startLevelInPlace(route)` (no fade: after the season turn, and
   between arcade rounds).
 - The HUD and the screens are Svelte, fed by one `HudSnapshot` built every frame
-  (`ui/hud/hudSnapshot`); the canvas draws no text overlay.
+  (`ui/hud/hudSnapshot`). Gameplay score pop-ups are the exception: `render/fx/fxDraw` draws
+  them on the canvas in the HUD's Lilita One.
 
 ## Game flow
 
@@ -190,7 +193,8 @@ counts the hero on the junction (its food eaten) and keeps where he really is as
 that every step on the new axis shrinks as much, so he runs the corner on the diagonal (the
 arcade's cornering; not into a tunnel's pad). `CombatService` sets Pac-Man's rage speed each
 frame (`RAGE`, `rageSpeed` in `config/actorConfig`: +22 % fading to +10 % with the power; not
-her overdrive, not the arcade) and a hit-stop of `RAGE.impactStop` as an energizer strikes.
+her overdrive, not the arcade). Taking an energizer never stops play; only eating a ghost has
+its separate hit-stop.
 Tests: `logic/actors/playerControl.test.ts`, `logic/actors/playerCorner.test.ts`.
 
 Touch (`core/touchInput.ts`): `InputController` listens to the window's pointer events (not

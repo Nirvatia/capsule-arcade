@@ -1,5 +1,5 @@
 <script lang="ts">
-	/** A life: Pac-Man's sun, or Ms. Pac-Man's galaxy with her nebula bow. */
+	/** A life: Pac-Man's sun, or Ms. Pac-Man's pearl star with her raspberry bow. */
 	let { ms = false, size = 18 }: { ms?: boolean; size?: number } = $props();
 	const rays = Array.from({ length: 8 }, (_, i) => i * 45);
 	// the mouth is cut out of the body, so the icon sits on any background
@@ -16,20 +16,20 @@
 	</defs>
 	{#if ms}
 		<g mask="url(#{mouth})">
-			<circle cx="12" cy="13" r="9.5" fill="#2c1462" stroke="#c8a8ff" stroke-width="1.4" />
+			<circle cx="12" cy="13" r="9.5" fill="#eef4ff" stroke="#66759a" stroke-width="1.4" />
 			<path
-				d="M10 15 C12 11 16 12 15 15 M10 15 C8 18 5 16 6 13"
+				d="M12 13 C15 10 18 12 16 15 C14 18 8 17 8 13 C8 9 14 8 17 10"
 				fill="none"
-				stroke="#ff7ad6"
-				stroke-width="1.6"
+				stroke="#b8c8e2"
+				stroke-width="1.3"
 				stroke-linecap="round"
 			/>
-			<circle cx="10.5" cy="14.5" r="1.6" fill="#fff6e8" />
+			<circle cx="12" cy="13" r="1.2" fill="#fff" />
 		</g>
 		<path
 			d="M7 4 L2.5 1.5 L3 7 Z M7 4 L11.5 1.5 L11 7 Z"
-			fill="#c25ae8"
-			stroke="#fff"
+			fill="#f34c83"
+			stroke="#2c2242"
 			stroke-width="0.6"
 		/>
 		<circle cx="7" cy="4.2" r="1.3" fill="#fff" />

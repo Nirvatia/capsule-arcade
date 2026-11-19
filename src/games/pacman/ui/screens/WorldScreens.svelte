@@ -5,6 +5,8 @@
 	focus, so the arrows keep steering; the keys work as before. The secret level keeps the
 	older `GameScreens`. -->
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import type { HudSnapshot } from '../hud/hudSnapshot';
 	import { t, toggleLang } from '../i18n';
 	import type { ScreenActions } from './screenActions';
@@ -54,7 +56,7 @@
 	const SIZE = {
 		menu: { w: 520, h: 668 },
 		ready: { w: 540, h: 356 },
-		pause: { w: 460, h: 456 },
+		pause: { w: 460, h: 520 },
 		over: { w: 480, h: 552 }
 	} as const;
 	const VEIL = { menu: 0.4, ready: 0.18, pause: 0.5, over: 0.55 } as const;
@@ -104,6 +106,7 @@
 	const worldName = $derived($t(`world_${snap.world}`).toUpperCase());
 	/** The graphics plank names the setting; a click goes to the next one. */
 	const graphicsLabel = $derived(`${$t('graphics')}: ${$t(`gfx_${$graphics}`)}`);
+	const gameSelect = () => void goto(resolve('/'));
 	/** On a touch screen the control scheme's plank stands beside it (swipes, or the pad too). */
 	const controlsLabel = $derived(`${$t('controls')}: ${$t(`ctl_${$controls}`)}`);
 </script>
@@ -230,10 +233,8 @@
 			{#if screen === 'menu'}
 				<g class="sway" style:--rot="-1deg">
 					{@html boardArt(theme, 'scr-title', 30, 16, 460, 148, { seed: 5, drop: 44 })}
-					<g transform="translate({ms ? 84 : 80} 96) scale(2)"
-						>{@html heroImageArt(ms, theme.key)}</g
-					>
-					<text class="num" x={ms ? 296 : 290} y="118" font-size={ms ? 62 : 78} text-anchor="middle"
+					<g transform="translate(98 92) scale(1.25)">{@html heroImageArt(ms, theme.key)}</g>
+					<text class="num" x="315" y="112" font-size={ms ? 44 : 60} text-anchor="middle"
 						>{ms ? 'MS. PAC-MAN' : 'PAC-MAN'}</text
 					>
 				</g>
@@ -420,12 +421,26 @@
 					'hang b'
 				)}
 				{@render knob(408, 362, langLabel, 18, $t('language'), toggleLang)}
+				{@render ropes(140, 320, 384, 140, 320, 404)}
+				{@render plank(
+					'scr-games',
+					100,
+					404,
+					260,
+					40,
+					$t('gameSelect'),
+					22,
+					gameSelect,
+					false,
+					10,
+					'hang'
+				)}
 				{#if $touchDevice}
-					{@render ropes(90, 370, 384, 90, 370, 404)}
+					{@render ropes(90, 370, 444, 90, 370, 464)}
 					{@render plank(
 						'scr-gfx',
 						14,
-						404,
+						464,
 						210,
 						40,
 						graphicsLabel,
@@ -438,7 +453,7 @@
 					{@render plank(
 						'scr-ctl',
 						236,
-						404,
+						464,
 						210,
 						40,
 						controlsLabel,
@@ -449,11 +464,11 @@
 						'hang b'
 					)}
 				{:else}
-					{@render ropes(140, 320, 384, 140, 320, 404)}
+					{@render ropes(140, 320, 444, 140, 320, 464)}
 					{@render plank(
 						'scr-gfx',
 						110,
-						404,
+						464,
 						240,
 						40,
 						graphicsLabel,

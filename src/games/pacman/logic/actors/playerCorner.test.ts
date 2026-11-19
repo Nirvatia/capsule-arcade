@@ -90,7 +90,7 @@ describe('the rage', () => {
 	});
 
 	for (const profile of ['pacman', 'ms-pacman'] as const) {
-		it(`an energizer (${profile}) strikes with a hit-stop; Pac-Man dashes`, () => {
+		it(`an energizer (${profile}) does not stop play; Pac-Man dashes`, () => {
 			const session = buildLevelSession({
 				events: new EventBus<PacmanEventMap>(),
 				level: 1,
@@ -109,7 +109,7 @@ describe('the rage', () => {
 			expect(player.rageSpeed).toBe(1);
 			progress.collectAt(at!.x, at!.y);
 			combat.update(1 / 60);
-			expect(combat.consumeHitStop()).toBeCloseTo(RAGE.impactStop);
+			expect(combat.consumeHitStop()).toBe(0);
 			if (profile === 'pacman') expect(player.rageSpeed).toBeGreaterThan(RAGE.dashStart - 0.01);
 			else expect(player.rageSpeed).toBe(1);
 			// it fades and ends with the power

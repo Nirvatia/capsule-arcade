@@ -35,9 +35,9 @@ describe('recipeFor', () => {
 
 	it('shows the points of a ghost, a fruit and an egg, and 1UP for a life', () => {
 		const text = (fx: PacmanFx) => recipeFor(fx, style).popups.map((p) => p.text);
-		expect(text(EVERY_EVENT[0])).toEqual(['200']);
-		expect(text(EVERY_EVENT[2])).toEqual(['500']);
-		expect(text(EVERY_EVENT[3])).toEqual(['1000']);
+		expect(text(EVERY_EVENT[0])).toEqual(['+200']);
+		expect(text(EVERY_EVENT[2])).toEqual(['+500']);
+		expect(text(EVERY_EVENT[3])).toEqual(['+1000']);
 		expect(text(EVERY_EVENT[4])).toEqual(['1UP']);
 		expect(text(EVERY_EVENT[1])).toEqual([]);
 	});

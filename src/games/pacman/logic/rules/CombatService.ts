@@ -11,7 +11,7 @@ import { SCORE_TABLE } from '../../config/scoreConfig';
 import { NearMissTracker, classicContact, msContact } from './ghostContact';
 import { debugLog } from '../debug/debugLog';
 import { ARCADE } from '../../config/arcadeConfig';
-import { RAGE, rageSpeed } from '../../config/actorConfig';
+import { rageSpeed } from '../../config/actorConfig';
 
 const DEFAULT_POWER_DURATION = 6;
 /** Gameplay freezes this long when a ghost is eaten, so the bite lands. */
@@ -414,8 +414,6 @@ export class CombatService {
 	}
 
 	private activatePower(): void {
-		// the energizer strikes: the play stops for a beat (the hero's own beat, the ring)
-		this.hitStopValue = Math.max(this.hitStopValue, RAGE.impactStop);
 		if (this.rulesProfile === 'ms-pacman') {
 			this.hypnosis.startOverdrive(this.ghosts);
 			this.events.emit('audio:cue', { cue: 'power-start' });

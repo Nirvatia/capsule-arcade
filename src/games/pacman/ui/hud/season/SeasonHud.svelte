@@ -20,6 +20,7 @@
 		trailArt
 	} from './seasonArt';
 	import { heroImageArt } from './heroPortrait';
+	import { LIVES_ICON } from './livesLayout';
 	import { SEASON_THEMES } from './seasonThemes';
 	import AbilitySlot from './AbilitySlot.svelte';
 	import { touchDevice } from '../../controlsSetting';
@@ -149,7 +150,10 @@
 			</g>
 			<g class="sway c" style:--rot=".8deg">
 				{@html art.lives}
-				<g transform="translate(1100 236)"><g class="bob">{@html heroImageArt(ms, theme.key)}</g></g
+				<g
+					transform="translate({LIVES_ICON.side.x} {LIVES_ICON.side.y}) scale({LIVES_ICON.side
+						.scale})"
+					><g class="bob">{@html heroImageArt(ms, theme.key, LIVES_ICON.side.size)}</g></g
 				>
 				<text class="lab" x="1124" y="223" font-size="9">{$t('lives')}</text>
 				<text class="num" x="1214" y="248" font-size="28" text-anchor="end">×{lives}</text>

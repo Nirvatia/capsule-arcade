@@ -14,13 +14,12 @@ export const CORNER_WINDOW = 0.4;
 /**
  * The rage. `dashStart` / `dashEnd`: Pac-Man's speed under the energizer, a factor on his
  * own, as it begins and as it runs out (the season levels only; the arcade keeps its own
- * speeds, Ms. Pac-Man's overdrive none: the balance bot found her dying far more). `impactStop`:
- * the seconds the play freezes as an energizer strikes (both heroes), so it lands like a blow.
+ * speeds, Ms. Pac-Man's overdrive none: the balance bot found her dying far more). Taking an
+ * energizer never stops play; only eating a ghost has its own separate hit-stop.
  */
 export const RAGE = {
 	dashStart: 1.22,
-	dashEnd: 1.1,
-	impactStop: 0.1
+	dashEnd: 1.1
 } as const;
 
 /** The rage's speed factor with `left` of it to run (1 as it starts, 0 at its end). */

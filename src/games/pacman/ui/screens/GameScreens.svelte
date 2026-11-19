@@ -1,6 +1,8 @@
 <!-- Menu, ready, pause and game over, over the game. Buttons never keep focus, so the
 	arrows keep steering. On the secret level the titles take the arcade look. -->
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { touchDevice } from '../controlsSetting';
 	import type { HudSnapshot } from '../hud/hudSnapshot';
 	import { t, toggleLang } from '../i18n';
@@ -29,6 +31,7 @@
 	const arcade = $derived(snap.world === 'secret');
 	const record = $derived(snap.score > 0 && snap.score >= snap.highScore);
 	const fmt = (n: number) => Math.max(0, Math.floor(n)).toLocaleString('en-US');
+	const gameSelect = () => void goto(resolve('/'));
 </script>
 
 <div class="screens" class:arcade style:--accent={ACCENT[snap.world]}>
@@ -42,6 +45,7 @@
 				>
 				<button type="button" tabindex={-1} onclick={act(actions.restart)}>{$t('restart')}</button>
 				<button type="button" tabindex={-1} onclick={act(actions.menu)}>{$t('menu')}</button>
+				<button type="button" tabindex={-1} onclick={act(gameSelect)}>{$t('gameSelect')}</button>
 				<button type="button" tabindex={-1} class="ghost" onclick={act(toggleLang)}
 					>{$t('language')}</button
 				>

@@ -26,6 +26,7 @@
 		ropesArt
 	} from './seasonArt';
 	import { heroImageArt } from './heroPortrait';
+	import { LIVES_ICON } from './livesLayout';
 	import type { Dial } from './seasonArt';
 	import { HELL_THEME } from './seasonThemes';
 	import { BERSERK_RING, WEAPON_ART, heartArt, railArt } from './hellArt';
@@ -323,8 +324,10 @@
 				</g>
 				<g class="sway c" style:--rot=".8deg">
 					{@html art.sLives}
-					<g transform="translate(1100 236)"
-						><g class="bob">{@html heroImageArt(ms, theme.key)}</g></g
+					<g
+						transform="translate({LIVES_ICON.side.x} {LIVES_ICON.side.y}) scale({LIVES_ICON.side
+							.scale})"
+						><g class="bob">{@html heroImageArt(ms, theme.key, LIVES_ICON.side.size)}</g></g
 					>
 					<text class="lab" x="1124" y="223" font-size="9">{$t('lives')}</text>
 					<text class="num" x="1214" y="248" font-size="28" text-anchor="end">×{lives}</text>
@@ -376,8 +379,10 @@
 				</g>
 				<g class="sway c" style:--rot=".8deg">
 					{@html art.kLives}
-					<g transform="translate(257 143) scale(.7)"
-						><g class="bob">{@html heroImageArt(ms, theme.key)}</g></g
+					<g
+						transform="translate({LIVES_ICON.stack.x} {LIVES_ICON.stack.y}) scale({LIVES_ICON.stack
+							.scale})"
+						><g class="bob">{@html heroImageArt(ms, theme.key, LIVES_ICON.stack.size)}</g></g
 					>
 					<text class="lab" x="278" y="136" font-size="8">{$t('lives')}</text>
 					<text class="num" x="346" y="154" font-size="22" text-anchor="end">×{lives}</text>

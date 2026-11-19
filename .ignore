@@ -1,3 +1,16 @@
+# Keep repository-wide discovery focused on Pac-Man.
 src/games/tetris/
 src/games/snake/
 src/games/simon/
+
+# Generated and third-party trees. Explicit reads still work when a task needs them.
+node_modules/
+.svelte-kit/
+build/
+dist/
+
+# Work with the small prototype sources, not the bundled pages.
+/prototypes/pacman/**.html
+
+# Dependency versions are read deliberately, not found through broad searches.
+**/package-lock.json
