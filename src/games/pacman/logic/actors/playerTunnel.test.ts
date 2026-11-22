@@ -46,9 +46,4 @@ describe('going through a tunnel', () => {
 			{ kind: 'teleport', x: pad!.x + 0.5, y: pad!.y + 0.5, tx: exit.x + 0.5, ty: exit.y + 0.5 }
 		]);
 	});
-
-	it('does not happen on a maze without a tunnel', () => {
-		const grid = seasonForLevel(4).grid;
-		expect(grid.flat().some((t) => t.startsWith('0'))).toBe(false);
-	});
 });

@@ -106,19 +106,19 @@ last (see Later).
    art, then art in code). Still Pac-Man in a maze, a different boss/mechanic/way to play, never
    a reskin of the hell. Like the hell: `*Bake` + `*World` + a level renderer with `preview()`, a
    death `style` and a season-turn style; every element but the heroes has art of its own.
-   1. **The station** (the current focus; `DESIGN.md` §7a, awaiting the owner's approval). It
+   1. **The station** (the current focus; `DESIGN.md` §7a). It
       replaced TRON (dropped with its `grid_tron`). Steps, one per chat:
-      1. The design page approved; `grid_station` drafted with the owner.
-      2. The look: a prototype on the real maze (the dark station, the flashlight cone, ghost,
-         cocoon and hunter, the tracker, the three phases' light), two or three candidates as
-         screenshots.
-      3. The feel: a greybox playable prototype of darkness, light, noise, sight and the tracker
+      1. The look: the `station` prototype on `grid_station` (the dark deck, the flashlight
+         cone, ghost, cocoon and hunter, the tracker, the three phases' light) is built and
+         awaits the owner's review. The hunter is drawn upright like every actor of the game,
+         the ghost's silhouette hardened into chitin. The maze is a draft the owner may rework.
+      2. The feel: a greybox playable prototype of darkness, light, noise, sight and the tracker
          (the tracker's place decided here).
-      4. `BossCatalog` and the mechanics in the game on placeholder art (`logic/station/`,
+      3. `BossCatalog` and the mechanics in the game on placeholder art (`logic/station/`,
          tests for the hunter's senses and states, the metamorphosis clock, vents, fairness).
-      5. The art in code (`render/station/`), the caught transition and the world turn.
-      6. Sound (sources open: the owner's samples or synthesised).
-      7. The boss HUD's skin (part III).
+      4. The art in code (`render/station/`), the caught transition and the world turn.
+      5. Sound (sources open: the owner's samples or synthesised).
+      6. The boss HUD's skin (part III).
          Cost: light and sound carry the play here; the darkness and the cone go through
          `moodBuffer` / the light map, not a new full-screen layer.
    2. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe

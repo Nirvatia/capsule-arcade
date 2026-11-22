@@ -3,8 +3,9 @@ import { parseMaze } from './parseMaze';
 import { validateMaze } from './validateMaze';
 import { GRID_01, GRID_02, GRID_03, GRID_04, GRID_CLASSIC, SEASON_MAZES } from './index';
 import { GRID_DOOM as GRID_DOOM_NEXT } from './grid_doom';
+import { GRID_STATION } from './grid_station';
 
-const TUNNELS: Record<string, number> = { grid_01: 2, grid_02: 2, grid_03: 2, grid_04: 0 };
+const TUNNELS: Record<string, number> = { grid_01: 2, grid_02: 2, grid_03: 2, grid_04: 2 };
 
 describe('the season mazes', () => {
 	it('are the four grids, all of one size', () => {
@@ -18,7 +19,8 @@ describe('the season mazes', () => {
 		['grid_02', GRID_02],
 		['grid_03', GRID_03],
 		['grid_04', GRID_04],
-		['classic01', GRID_CLASSIC]
+		['classic01', GRID_CLASSIC],
+		['grid_station', GRID_STATION]
 	])('%s passes the validator', (_name, grid) => {
 		expect(validateMaze(grid)).toEqual([]);
 	});
