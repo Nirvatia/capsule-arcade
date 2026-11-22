@@ -213,77 +213,66 @@ pads, and no ghosts but their lord.
 
 ## 7a. The station (boss level)
 
-The second boss world, a horror level: an abandoned research station in the dark, taken over by a
-living nest. Working name "the station" (code id `station`); the owner names it. The mood is that
-of slow industrial sci-fi horror; nothing else is borrowed from the films and games of that genre:
-no names, no ship, no creature design. Our creature grows out of our own ghost. Like the hell it
-is a full world of its own. The hell is combat; on the station nothing can be killed: the hero
-holds the creatures off with light and runs. No stealth (the owner's call after playing it: a
-hero who never stops cannot hide). Numbers are starting points, tuned in `config/stationConfig.ts`.
+The second boss world, a horror level: an abandoned research station in the dark, overrun by a
+swarm from a living nest. Working name "the station" (code id `station`); the owner names it.
+The mood is industrial sci-fi horror with the swarm of the underground in mind: a narrow corridor,
+the rustle, a wave, and fire the only way out; nothing is borrowed from the films and games of
+that genre. The hell is a fight with a boss; the station has no boss: it is an escape at full
+speed (the owner's call). Rewritten after the owner played two versions: the four ghosts moving
+on rails broke the horror, the darkness hid the walls, the background and the enemies, and
+stealth does not fit a hero who never stops. Numbers are starting points, in
+`config/stationConfig.ts`.
 
 - **Place in the run**: a boss level. `BossCatalog` picks the boss of every 5th level (the hell
   or the station), the same for both heroes.
 - **Heroes**: both get a look of their own for the station (prototyped first, the owner
-  approves). Controls are unchanged. Both play with the station's kit only: no energizer scare,
-  no overdrive or hypnosis, no season abilities, no fruit, no Easter egg.
-- **Health**: 3 HP. A touch costs one, and time runs back for the hero: he is pulled back along
-  his own trail by about 2 s of running (in about 0.6 s, everything else frozen, a video tape's
-  rewind over the screen), the one that touched him flees, and he has 1.5 s of grace. At 0 HP he
-  is caught: the run goes on to the next level without losing a life and without the reward.
-- **The flashlight**: a cone along the hero's heading (about 6.5 tiles, about 50°) that walls
-  stop, and a small halo round him. A wraith or a hunter in the beam turns and flees while lit and
-  a moment after, a little faster than the hero and harmless while it flees, so the beam opens
-  the way ahead and the danger comes from behind and the sides. Creatures are never fully hidden by the dark: a silhouette and the
-  slit of their colour always show, the light shows the rest.
-- **Flares** lie where the energizers would be. Picked up, one bursts: everything within about
-  6 tiles flees for 5 s and cannot hurt while it flees. Nothing is eaten.
-- **The super flare**: one per level, the season levels' carried slot used here (the token, the
-  dial, `F` / `Shift`). It appears when phase 3 begins. Spent, it burns a blinding beam down the
-  corridor ahead (about 12 tiles, 6 s): everything in it flees and nothing enters it, a corridor
-  cut to the hatch.
-- **Speeds**: the wraiths about 0.8 of the hero's speed, the hunters about 0.95 (1.0 in phase 3),
-  fleeing about 0.9. They chase like the ghosts (each with its own target), use the side tunnels
-  and the vents.
-- **Ghosts into hunters (the level's clock)**: the four ghosts start as pale wraiths. At 20, 40,
-  60 and 80 % of the dots eaten (and at most 40 s after the previous one) the next ghost (Blinky,
-  Pinky, Inky, Clyde) stops where it is and wraps itself in a cocoon that beats for 6 s; it hurts
-  on touch and blocks the corridor. The beam on a cocoon holds the hatching back. Then a hunter
-  hatches, with a trace of the ghost's colour.
-- **Three phases**, each with its own rules (the boss HUD's pips):
-  1. Power (0-40 %): the lamps are lit, the wraiths slow and in plain sight; the first cocoon.
-     The level teaches itself here.
-  2. Blackout (40-80 %): the power fails, only red emergency lamps at some junctions; the first
-     hunters are out and the flashlight becomes the tool; under a red lamp everything shows from
-     afar.
-  3. Nest (80 %+): the fourth hunter. The dots no longer matter: an escape hatch opens far from
-     the hero and a heart in a med pod far from both (the hell's rule: taking either ends the
-     level as a win, the heart also gives +1 life). The hunters speed up; the super flare appears.
-     The level ends in a run.
-- **Vents**: the side tunnels as on the season mazes; the other vent pairs sit in dead-end pockets,
-  so the hero only enters one on purpose, and their grilles glow so they read from afar. Hunters
-  use them too; a vent rattles and glows 1.5 s before one comes out, never next to the hero.
-- **Motion tracker**: a pulse from the hero every 1.5 s; whatever moves within about 10 tiles
-  blips as the front passes. Its place (round the hero or on the HUD's dial) is decided in play.
+  approves). Controls and the hero's speed are unchanged. The station's kit only: no energizer
+  scare, no overdrive or hypnosis, no season abilities, no fruit, no Easter egg.
+- **The swarm** replaces the ghosts: thousands of insects that pour out of the nest (the lair)
+  and the vents and flow through the corridors like a liquid, fill dead ends, round corners and
+  draw back from light in a wave. It is a density over the corridors drawn as living bugs; it
+  flows toward the hero, a surge of it is faster than he is, so the only escape is toward light,
+  not just away. The bugs are bright (wet chitin, a sick glow), so the worst thing on screen is
+  the easiest to see, and a corridor full of them reads as a corridor.
+- **The torch**: the hero carries fire, a circle of light round him (about 2.5 tiles) that the
+  swarm parts round as he runs. It burns down; every dot eaten feeds it, so the classic route
+  of eating becomes survival: stop, or run into corridors already eaten, and the light dies. The
+  swarm pressing round the fire shrinks its circle. `F` / `Shift` drops it: it keeps burning
+  where it lies (an island of light that holds a corridor), and the hero runs dark until he
+  takes it back or reaches a beacon.
+- **Health**: a bar. Inside the swarm out of the light it drains fast (about a second in a thick
+  one); at none the hero is caught: the run goes on to the next level without losing a life and
+  without the reward (the hell's rule). The rewind of the previous design goes: the swarm wears
+  the hero down, it does not strike.
+- **The four beacons** in the corners, where the energizers would be, are the level's stages in
+  place of phases. Lit by the hero (he runs into one), a beacon burns for good, pushes the swarm
+  out of its quarter of the station and fills the torch. Each changes the map: the lit part
+  grows, the swarm gathers in the dark that is left, angrier and thicker, and new vents open.
+  After the fourth the nest breaks out through its door, a wave fills the station and an escape
+  hatch opens far from the hero: the level ends in a run to it. The dots are fuel and score; the
+  level is not won by eating them all.
+- **Vents**: the side tunnels as on the season mazes; the other vent pairs sit in dead-end pockets
+  of the outer wall (entered only on purpose), their grilles glow so they read from afar. The
+  swarm comes out of them; a vent rattles and glows before it does.
+- **Readable in the dark**: walls and floor differ without the light: the floor keeps a faint
+  light of its own (emergency marking, a wet sheen), the walls a lighter top and their safety
+  edge. The surround keeps its own light (rooms where the power still works, the storm in the
+  window), so the station round the maze is seen; the vignette stays light.
 - **Safe for the eyes**: nothing flashes faster than three times a second, no full-screen flash;
-  lamps fade down and up slowly, the storm's lightning is soft.
-- **Direction rule**: the wraiths show it with their eyes, the hunters with the slit on the
-  leading edge of their head-shield.
-- **The HUD**: the station's own, in its horror style, on the boss HUD's skeleton (HP, the
-  phase pips, the slot with the super flare).
+  lamps fade down and up slowly, the storm's lightning swells.
+- **The HUD**: the station's own, in its horror style, on the boss HUD's skeleton (the health
+  bar, the torch's fuel, the beacons lit).
 - **Art** (all in code; the owner's pick: style B of the `station` prototype): a quarantine lab
   that something got out of. Massive scorched bulkheads with claw gouges, blood and soot, a
-  continuous dim edge round every block (the maze must stay readable in every phase) with
-  broken light strips as accents; heavy deck plates with blood dragged toward the nest; round the
-  maze specimen tanks (one burst), a hull breach the nest pours out of, the dead crew, a window
-  in the deck onto the storm of the planet below. The nest's resin grows over it phase by phase
-  (the game's "organic and alive" lives in the nest). No toy outlines: the food is the nest's
-  spores, the ghosts screaming wraiths, the cocoon a husk with a face pressed from inside, the
-  hunter a creature made for the top-down view, one tile in size, not a humanoid. A cold, sick
-  grade, scanlines, grain. The hell's look rules hold: walls as blocks, no height; nothing bright
-  jumps forward; everything reads at one tile, lit and in the dark.
-- **Sound** carries half the level: the tracker's beep, the hunters' breath and steps, the vent
-  rattle, the hero's heartbeat when one is close, the lamps' buzz. Samples the owner brings or
-  synthesised like the arcade's: open.
+  continuous edge round every block; heavy deck plates with blood dragged toward the nest; round
+  the maze specimen tanks (one burst), a hull breach the nest pours out of, the dead crew, a
+  window in the deck onto the storm of the planet below. The nest's resin grows over the station
+  beacon by beacon; its door is a real blast door the swarm breaks at the end. No toy outlines:
+  the food is the nest's spores, the swarm bright, wet insects. A cold, sick grade, scanlines,
+  grain. The hell's look rules hold: walls as blocks, no height; everything reads at one tile.
+- **Sound** carries half the level: the swarm's rustle swelling with its density near the hero,
+  the fire's crackle, the vent rattle, the hero's heartbeat when the light is low. Samples the
+  owner brings or synthesised: open.
 - **Maze**: its own `grid_station`: long corridors with blind corners, the side tunnels and vent
   pairs in dead-end pockets, the lair as the nest.
 
@@ -467,8 +456,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 Each new boss level is still Pac-Man in a maze, but with its own boss, mechanic and way to play;
 the hell is combat, so the others must not be. The order proposed (`ROADMAP.md`, part II, step 3):
 
-- **The station** (§7a): designed; darkness, a flashlight, ghosts that turn into unkillable
-  hunters, a motion tracker, vents. Stealth.
+- **The station** (§7a): in the game; a swarm, a torch fed by the dots, four beacons, an escape.
 - **Sharkboy and Lavagirl**: a tide of water and lava floods the tiles in waves, sharks patrol the
   water. Terrain, a playful tone, clear of the hell's reds.
 - **A Bomberman style world**: blasts along the maze's lines. To be thought through.

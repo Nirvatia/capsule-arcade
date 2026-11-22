@@ -114,28 +114,26 @@ last (see Later).
       In the game (2026-11-22): `BossCatalog` picks the hell or the station per boss level
       (seeded, no repeat; the dev panel's Hell / Station / Boss: auto force it);
       `render/station/` draws the station (style B). The level still plays by the season
-      rules with unkillable wraiths, and the metamorphosis is only drawn.
-      The owner played it (2026-11-22) and redesigned the rules (`DESIGN.md` §7a): no stealth;
-      the beam makes creatures flee; flares burst and scare; a super flare on `F` in phase 3;
-      3 HP with a rewind on a hit; cocoons kept; three phases with rules of their own, the third
-      a run to the hatch; vents in dead-end pockets; slower creatures; safe for the eyes. Steps:
-      The rules are in (2026-11-22, `logic/station/StationService`, `config/stationConfig.ts`,
-      tests in `stationRules.test.ts`): no abilities, fruit or egg; one contour on the walls;
-      nothing flashes (lamps dim and come back slowly, the nest's red pulses slowly, the
-      lightning swells); the corner vents in outer-wall pockets, glowing; HP 3 with the rewind
-      along the hero's trail and a tape-rewind overlay; the beam and the flares make creatures
-      flee (faster than the hero, harmless meanwhile); the wraiths and hunters' paces; the
-      metamorphosis through cocoons (the beam holds a cocoon back) by dots or by the clock; the
-      phases by the metamorphoses begun; the nest offers the hatch and the heart and the super
-      flare (carried, `F` burns a corridor). Left for the owner's play: the numbers; the
-      hunters' rattle before they leave a vent; the red lamps' "seen from afar"; the tracker's
-      place; the season HUD still shows (step 1); the hatch is the hell's exit art.
-      1. The station's horror HUD (part III's boss HUD skeleton: HP, the phase pips, the slot).
-      2. Both heroes' station look: a prototype first, the owner approves.
-      3. The caught transition and the world turn; the hatch's own art.
-      4. Sound (sources open: the owner's samples or synthesised).
-         Cost: light and sound carry the play here; the darkness and the cone go through the
-         light map, not a new full-screen layer.
+      rules with unkillable wraiths.
+      The owner played the ghost version twice and redesigned the level (2026-11-22,
+      `DESIGN.md` §7a): **a swarm** instead of the ghosts, a **torch** fed by the dots instead
+      of the flashlight, **four beacons** that change the map instead of phases, no boss, an
+      escape at the end. What is in the game from the ghost version (`StationService`: HP and
+      the rewind, the beam, flares, cocoons, the super flare) is replaced step by step; the
+      fixes stay (no season kit, one wall contour, nothing flashing, vents in pockets).
+      1. **The swarm prototype** (next): a playable page on the real maze and the station's
+         look (the hero on the keys, the torch and its fuel, the swarm's flow, its draw-back
+         from light and its surge, a dropped torch, the beacons, the health bar), so the owner
+         feels it before it goes in. The swarm's simulation is game code (`logic/station/`,
+         tested) from the start.
+      2. The swarm rules in the game in place of the ghosts and `StationService`'s ghost parts;
+         walls and floor readable in the dark; the surround's own light; the nest's door.
+      3. The station's horror HUD (health, fuel, beacons).
+      4. Both heroes' station look: a prototype first, the owner approves.
+      5. The caught transition and the world turn; the hatch's own art.
+      6. Sound (sources open: the owner's samples or synthesised).
+         Cost: light, the swarm and sound carry the play here; the dark and the torch go through
+         the light map, the swarm's bugs are cached sprites, not a new full-screen layer.
    2. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe
       islands change. Playful; palette clear of the hell's reds.
    3. **A Bomberman world**: bombs and blasts along the maze's lines, soft/hard walls. Think
