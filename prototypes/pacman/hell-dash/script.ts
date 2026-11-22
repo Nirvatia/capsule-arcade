@@ -5,7 +5,7 @@
 // The game's numbers (`logic/doom/DoomBalance`): telegraph 0.7/0.6/0.5 s, recover 0.8/0.7/0.6 s,
 // dash speed = 2 x chase, chase = 0.8/0.857/0.914 x the player's base (6 tiles/s by default).
 import type { DoomStateName, DoomShape } from '../../../src/games/pacman/logic/doom/DoomBossModel';
-import { smoothstep } from './trail';
+import { smoothstep } from '../common/trail';
 
 export const MORPH_IN = 0.25;
 export const MORPH_OUT = 0.28;

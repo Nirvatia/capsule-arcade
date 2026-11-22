@@ -1,363 +1,394 @@
-// Candidates for the heroes' art (prototype, nothing in the game changes until the owner picks).
-// Pac-Man: the corona without the hedgehog's quills, and one trail language, the sun's.
-//   Why a hedgehog: ten separate tongues stand round the disc with gaps at their roots, so the
-//   silhouette is a ring of spikes. All three candidates grow from one continuous ring of fire.
-//   A  flame ring: no rays at all, one boiling fire edge that streams back when he runs
-//   B  sun emblem: eight soft rays, long and short in turn, set on a ring (the classic sun)
-//   C  pinwheel: seven curved tongues all bent the way the corona turns
-//   Trail ("solar wind"): only embers, cooling white-gold, gold, orange, red, brown as they age,
-//   streaming straight back (no flutter, no stars) with a short comet tail, and thin plasma
-//   filaments that leave the corona's back and tie it to the trail.
-// Ms. Pac-Man: her white stays; two sets of small details.
-//   A  beauty mark and a pearl earring    B  a curl under the bow and a twinkle on the lash
-import type { HeroDesign, OverPainter, Particle, ParticleKind } from '../../../src/games/pacman/render/actors/hero/Hero';
-import { css, glow, mix } from '../../../src/games/pacman/render/actors/hero/Hero';
+// Pac-Man as a real sun (the owner's "mad experiment"): the game's disc and wedge mouth, his eye and
+// his look where he goes stay; the madness is in the corona, the light, the particles, the motion.
+//   The star itself: the accepted radial bands (white heart, red limb) now alive: granulation
+//   cells that boil, two sunspots that ride the turning star and fade at the limb, faculae.
+//   Prominences: two or three arches of red plasma standing on the limb, each born, swelling and
+//   gone over a few seconds (slow, never a flicker).
+//   The corona grows from ONE ring of fire (a single closed outline under one ink line, never
+//   separate quills, which read as a hedgehog), in three forms the owner liked:
+//     ring      the ring's edge boils into flame tongues that merge
+//     emblem    eight soft rays, long and short in turn, set on the ring (the classic sun)
+//     pinwheel  the ring cut into curved blades swept one way, turning
+//   Running, the solar wind blows it back: the edge on his back stretches and its tips bend back,
+//   and the wind's direction lags a turn by ~0.2 s, so a corner visibly swings the corona round.
+//   Everything stays inside the game's reach (1.45 body radii, `CORONA_REACH`): the run and the
+//   rage stretch the shape, never past it. The glow ends there too.
+//   One trail, the solar wind: embers streaming back and cooling white-gold, gold, orange, red,
+//   brown; particles only (DESIGN 12: never ribbons), no stars, nothing rises (seen from above). The rage (energizer): white-hot, the prominences erupt into big loops,
+//   the corona turns fast, the embers run hot.
+import type { Particle, ParticleKind } from '../../../src/games/pacman/render/actors/hero/Hero';
+import { css, mix } from '../../../src/games/pacman/render/actors/hero/Hero';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import type { RGB } from '../../../src/games/pacman/render/actors/hero/heroSeasons';
 
 const TAU = Math.PI * 2;
-export type CoronaKind = 'A' | 'B' | 'C';
-
+export type Corona = 'ring' | 'emblem' | 'pinwheel';
+/** The game's reach (body radii): nothing of the corona or its glow goes past it. */
+export const REACH = 1.45;
+const INK = 'rgb(96,24,8)';
 const OUTER: readonly [RGB, RGB] = [
-	[255, 170, 36],
-	[255, 226, 120]
+	[240, 104, 22],
+	[255, 214, 110]
 ];
 const INNER: readonly [RGB, RGB] = [
-	[255, 234, 130],
-	[255, 255, 236]
+	[255, 214, 96],
+	[255, 252, 226]
 ];
-const INK = 'rgb(96,24,8)';
-/** The corona never reaches past this (body radii): the rage stays inside the tile. */
-const REACH = 1.45;
+const ss = (e0: number, e1: number, x: number) => {
+	const k = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+	return k * k * (3 - 2 * k);
+};
+const hash = (i: number, k = 0) => {
+	const v = Math.sin(i * 127.1 + k * 311.7) * 43758.5453;
+	return v - Math.floor(v);
+};
 
-export class SunPacman extends PacmanHero {
-	private mySweep = 0;
-	private mySpin = 0;
+/** Granulation cells and faculae, fixed points on the disc (body radii). */
+const CELLS = Array.from({ length: 46 }, (_, i) => {
+	const r = Math.sqrt((i + 0.5) / 46) * 0.95;
+	const a = i * 2.39996;
+	return { x: Math.cos(a) * r, y: Math.sin(a) * r, s: 0.09 + 0.05 * hash(i, 1), ph: hash(i, 2) * TAU };
+});
 
-	constructor(private readonly kind: CoronaKind) {
+export class SunHero extends PacmanHero {
+	/** Where the solar wind blows, a world unit vector (eased), and how hard, 0..1. */
+	private windX = -1;
+	private windY = 0;
+	private windK = 0;
+	private turnSpin = 0;
+	private lastX = NaN;
+	private lastY = NaN;
+	private bitePulse = 0;
+	/** The star's own turn (sunspots ride it), radians. */
+	private rot = 0;
+	/** For the measuring scripts: draw the corona and the body only. */
+	bare = false;
+
+	constructor(readonly kind: Corona) {
 		super();
 	}
 
 	protected afterUpdate(dt: number): void {
 		super.afterUpdate(dt);
-		this.mySweep += ((this.moving ? 1 : 0) - this.mySweep) * Math.min(1, dt * 5);
-		this.mySpin += dt * (this.kind === 'C' ? 0.9 : 0.5) * (1 + 4 * this.power);
+		const vx = Number.isNaN(this.lastX) ? 0 : this.x - this.lastX;
+		const vy = Number.isNaN(this.lastY) ? 0 : this.y - this.lastY;
+		this.lastX = this.x;
+		this.lastY = this.y;
+		const v = Math.hypot(vx, vy);
+		if (v > 0.01 && this.moving) {
+			// the wind turns towards his back with a lag, so a corner swings it round
+			const k = Math.min(1, dt * 9);
+			this.windX += (-vx / v - this.windX) * k;
+			this.windY += (-vy / v - this.windY) * k;
+			const l = Math.hypot(this.windX, this.windY) || 1;
+			this.windX /= l;
+			this.windY /= l;
+		}
+		this.windK += ((this.moving ? 1 : 0) - this.windK) * Math.min(1, dt * 5);
+		this.turnSpin += dt * (this.kind === 'pinwheel' ? 1.1 : 0.45) * (1 + 3.5 * this.power);
+		this.rot += dt * 0.12;
+		this.bitePulse = Math.max(0, this.bitePulse - dt / 0.3);
 	}
 
-	protected get designOf(): HeroDesign {
-		return this.design;
+	protected onBite(): void {
+		this.bitePulse = 1;
 	}
 
-	/** A warm glow, the corona, then the plasma filaments of the back. */
+	protected resetLooks(): void {
+		super.resetLooks();
+		this.windK = 0;
+	}
+
+	/** The wind in the frame (the frame turns with him and flips for left). */
+	private windInFrame(): { x: number; y: number } {
+		const ca = Math.cos(this.angle);
+		const sa = Math.sin(this.angle);
+		return { x: this.windX * ca + this.windY * sa, y: (-this.windX * sa + this.windY * ca) * this.flip };
+	}
+
 	protected drawAura(ctx: CanvasRenderingContext2D, R: number, p: number): void {
+		// a warm glow that ends at the reach (the game's spills to 1.7-2.3 radii)
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';
-		ctx.globalAlpha = 0.3 + 0.2 * p + 0.05 * Math.sin(this.time * 2);
-		const g = R * (1.7 + 0.6 * p);
-		ctx.drawImage(glow([255, 150, 40]), -g, -g, g * 2, g * 2);
+		const g = ctx.createRadialGradient(0, 0, R * 0.8, 0, 0, R * REACH);
+		g.addColorStop(0, `rgba(255,150,40,${0.42 + 0.2 * p})`);
+		g.addColorStop(0.5, `rgba(255,120,30,${0.16 + 0.1 * p})`);
+		g.addColorStop(1, 'rgba(255,110,30,0)');
+		ctx.fillStyle = g;
+		ctx.beginPath();
+		ctx.arc(0, 0, R * REACH, 0, TAU);
+		ctx.fill();
 		ctx.restore();
-		if (this.kind === 'A') this.flameRing(ctx, R, p);
-		else if (this.kind === 'B') this.emblem(ctx, R, p);
-		else this.pinwheel(ctx, R, p);
-		this.filaments(ctx, R, p);
+		this.corona(ctx, R, p);
+		this.prominences(ctx, R, p);
 	}
 
-	/** Fills a path made by `build` in the corona's two tones under one thin ink line. */
-	private paint(ctx: CanvasRenderingContext2D, R: number, p: number, build: () => void): void {
+	/** Where the corona's edge is at frame angle `a`: radius before the wind. */
+	private edge(a: number, R: number, p: number): number {
+		const t = this.time;
+		const s = this.turnSpin;
+		const grow = 1 + 0.4 * p - 0.25 * this.bitePulse;
+		if (this.kind === 'ring') {
+			// seven big tongues licking round a thick ring: narrow peaks, wide round valleys, the
+			// peaks curling as the phase wanders; one continuous edge
+			const w = 0.5 + 0.5 * Math.sin(7 * a + s * 2.2 + 0.9 * Math.sin(2 * a - t * 1.6));
+			const f = Math.pow(w, 2.6);
+			return R * (1.13 + (0.03 + 0.3 * f) * grow + 0.015 * Math.sin(19 * a - t * 5));
+		}
+		if (this.kind === 'emblem') {
+			// the heraldic sun: eight rays on a ring, long straight ones and short wavy ones
+			const N = 8;
+			let bump = 0;
+			for (let i = 0; i < N; i += 1) {
+				const c = s + (i / N) * TAU;
+				const d = Math.abs((((a - c + Math.PI) % TAU) + TAU) % TAU - Math.PI);
+				const longRay = i % 2 === 0;
+				const h = (TAU / N) * (longRay ? 0.26 : 0.2);
+				if (d < h) {
+					const k = 1 - d / h;
+					const len = longRay ? 0.33 : 0.2 * (1 + 0.15 * Math.sin(t * 5 + i));
+					bump = Math.max(bump, len * k);
+				}
+			}
+			return R * (1.12 + bump * grow);
+		}
+		// pinwheel: six blades swept one way (a slow concave rise, a quick fall), turning
+		const N = 6;
+		const u = ((((a + s) * N) / TAU) % 1 + 1) % 1;
+		const blade = u < 0.86 ? Math.pow(u / 0.86, 2.2) : 1 - ss(0.86, 1, u);
+		return R * (1.1 + (0.02 + 0.33 * blade) * grow);
+	}
+
+	/** The corona: one outline, two tones under one ink line, blown back by the wind. */
+	private corona(ctx: CanvasRenderingContext2D, R: number, p: number): void {
+		const wind = this.windInFrame();
+		const wk = this.windK;
+		const N = 180;
+		const pts: Array<[number, number]> = [];
+		for (let j = 0; j < N; j += 1) {
+			const a = (j / N) * TAU;
+			const ca = Math.cos(a);
+			const sa = Math.sin(a);
+			let r = this.edge(a, R, p);
+			const dot = ca * wind.x + sa * wind.y;
+			const back = Math.max(0, dot);
+			const front = Math.max(0, -dot);
+			const len = r - R * 1.1;
+			r = R * 1.1 + len * (1 + 1.5 * wk * back * back) * (1 - 0.45 * wk * front);
+			// the tips bend back in the wind
+			const bend = (r - R * 1.1) * 0.45 * wk * (1 - back);
+			let x = ca * r + wind.x * bend;
+			let y = sa * r + wind.y * bend;
+			// the outline's ink (half its width) must stay inside the reach too
+			const cap = R * (REACH - 0.045);
+			const d = Math.hypot(x, y);
+			if (d > cap) {
+				x *= cap / d;
+				y *= cap / d;
+			}
+			pts.push([x, y]);
+		}
+		const path = (k: number) => {
+			ctx.beginPath();
+			pts.forEach(([x, y], i) => {
+				// the inner tone: the same outline pulled towards the ring
+				const d = Math.hypot(x, y);
+				const r = R * 1.02 + (d - R * 1.02) * k;
+				const px = (x / d) * r;
+				const py = (y / d) * r;
+				if (i === 0) ctx.moveTo(px, py);
+				else ctx.lineTo(px, py);
+			});
+			ctx.closePath();
+		};
 		ctx.save();
 		ctx.lineJoin = 'round';
-		build();
+		path(1);
 		ctx.strokeStyle = INK;
-		ctx.lineWidth = R * 0.09;
+		ctx.lineWidth = R * 0.08;
 		ctx.stroke();
-		build();
 		ctx.fillStyle = css(mix(OUTER[0], OUTER[1], p));
 		ctx.fill();
-		ctx.scale(0.88, 0.88);
-		build();
+		path(this.kind === 'emblem' ? 0.62 : 0.5);
 		ctx.fillStyle = css(mix(INNER[0], INNER[1], p));
 		ctx.fill();
+		// the ring itself, the root everything grows from: a hot band under one ink line
+		ctx.strokeStyle = css(mix([255, 196, 70], [255, 248, 210], p));
+		ctx.lineWidth = R * 0.1;
+		ctx.beginPath();
+		ctx.arc(0, 0, R * 1.06, 0, TAU);
+		ctx.stroke();
 		ctx.restore();
 	}
 
-	private reach(len: number, R: number): number {
-		return Math.min(R * REACH, R * 1.0 + len);
-	}
-
-	/** A: one boiling edge of fire round the disc; longer on his back when he runs. */
-	private flameRing(ctx: CanvasRenderingContext2D, R: number, p: number): void {
-		const t = this.time;
-		const w = this.mySweep;
-		this.paint(ctx, R, p, () => {
-			ctx.beginPath();
-			const N = 140;
-			for (let j = 0; j <= N; j += 1) {
-				const a = (j / N) * TAU;
-				const ca = Math.cos(a);
-				const back = Math.max(0, -ca);
-				const front = Math.max(0, ca);
-				const f = (Math.sin(a * 5 - t * 3.4 + this.mySpin) + 0.6 * Math.sin(a * 9 + t * 5.1) + 0.5 * Math.sin(a * 3 + t * 2.2)) / 2.1;
-				let len = R * (0.09 + 0.16 * (0.5 + 0.5 * f)) * (1 + 0.55 * p) * (1 + 1.5 * w * back * back) * (1 - 0.5 * w * front);
-				len = Math.max(0, len);
-				const r = this.reach(len, R);
-				const x = ca * r - w * len * 0.4 * (1 - back);
-				const y = Math.sin(a) * r;
-				if (j === 0) ctx.moveTo(x, y);
-				else ctx.lineTo(x, y);
-			}
-			ctx.closePath();
-		});
-	}
-
-	/** B: a ring and eight soft rays, long and short in turn, each swaying a little. */
-	private emblem(ctx: CanvasRenderingContext2D, R: number, p: number): void {
-		const t = this.time;
-		const w = this.mySweep;
-		const N = 8;
-		this.paint(ctx, R, p, () => {
-			ctx.beginPath();
-			ctx.arc(0, 0, R * 1.08, 0, TAU);
-			ctx.closePath();
-			for (let i = 0; i < N; i += 1) {
-				const a = this.mySpin + (i / N) * TAU;
-				const ca = Math.cos(a);
-				const sa = Math.sin(a);
-				const back = Math.max(0, -ca);
-				const front = Math.max(0, ca);
-				const longRay = i % 2 === 0;
-				let len = R * (longRay ? 0.34 : 0.17) * (0.94 + 0.06 * Math.sin(t * 4 + i)) * (1 + 0.5 * p) * (1 + 1.2 * w * back * back) * (1 - 0.5 * w * front);
-				len = Math.max(R * 0.05, len);
-				const tipR = this.reach(len, R) + R * 0.06;
-				const half = (TAU / N) * 0.3;
-				const base = R * 1.06;
-				const sway = Math.sin(t * 3 + i * 1.7) * 0.18;
-				const tx = ca * tipR - w * len * 0.4 * (1 - back);
-				const ty = sa * tipR;
-				const nx = -sa;
-				const ny = ca;
-				const b0 = [Math.cos(a - half) * base, Math.sin(a - half) * base] as const;
-				const b1 = [Math.cos(a + half) * base, Math.sin(a + half) * base] as const;
-				const o = R * (0.09 + sway * 0.1);
-				ctx.moveTo(b0[0], b0[1]);
-				ctx.bezierCurveTo(b0[0] + (tx - b0[0]) * 0.35 + nx * o, b0[1] + (ty - b0[1]) * 0.35 + ny * o, tx + (b0[0] - tx) * 0.3 - nx * o, ty + (b0[1] - ty) * 0.3 - ny * o, tx, ty);
-				ctx.bezierCurveTo(tx + (b1[0] - tx) * 0.3 - nx * o, ty + (b1[1] - ty) * 0.3 - ny * o, b1[0] + (tx - b1[0]) * 0.35 + nx * o, b1[1] + (ty - b1[1]) * 0.35 + ny * o, b1[0], b1[1]);
-				ctx.closePath();
-			}
-		});
-	}
-
-	/** C: seven curved tongues, each bent the way the corona turns, rooted in a ring. */
-	private pinwheel(ctx: CanvasRenderingContext2D, R: number, p: number): void {
-		const w = this.mySweep;
-		const t = this.time;
-		const N = 7;
-		this.paint(ctx, R, p, () => {
-			ctx.beginPath();
-			ctx.arc(0, 0, R * 1.06, 0, TAU);
-			ctx.closePath();
-			for (let i = 0; i < N; i += 1) {
-				const a = this.mySpin + (i / N) * TAU;
-				const ca = Math.cos(a);
-				const back = Math.max(0, -ca);
-				const front = Math.max(0, ca);
-				let len = R * 0.4 * (0.94 + 0.06 * Math.sin(t * 4 + i * 1.3)) * (1 + 0.5 * p) * (1 + 1.1 * w * back * back) * (1 - 0.5 * w * front);
-				len = Math.max(R * 0.06, len);
-				const tipR = this.reach(len, R) + R * 0.05;
-				const curl = 0.62 + 0.1 * Math.sin(t * 3 + i);
-				const half = (TAU / N) * 0.46;
-				const base = R * 1.05;
-				const at = (ang: number, r: number) => [Math.cos(ang) * r, Math.sin(ang) * r] as const;
-				const b0 = at(a - half, base);
-				const tip = at(a + curl, tipR);
-				const c0 = at(a - half * 0.2 + curl * 0.2, base + (tipR - base) * 0.55);
-				const c1 = at(a + half * 0.9 + curl * 0.55, base + (tipR - base) * 0.35);
-				const b1 = at(a + half, base);
-				ctx.moveTo(b0[0], b0[1]);
-				ctx.quadraticCurveTo(c0[0], c0[1], tip[0], tip[1]);
-				ctx.quadraticCurveTo(c1[0], c1[1], b1[0], b1[1]);
-				ctx.closePath();
-			}
-		});
-	}
-
-	/** Thin plasma filaments leaving the corona's back while he runs: they tie it to the trail. */
-	private filaments(ctx: CanvasRenderingContext2D, R: number, p: number): void {
-		const w = this.mySweep;
-		if (w < 0.05) return;
+	/**
+	 * Arches of plasma standing on the limb, over the corona: thick, soft, red-orange, two at a
+	 * time, each born, swelling and gone over a few seconds (slow, never a flicker). In the rage
+	 * they erupt hotter and taller, still under the reach.
+	 */
+	private prominences(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		const t = this.time;
 		ctx.save();
-		ctx.globalCompositeOperation = 'lighter';
 		ctx.lineCap = 'round';
-		for (let i = 0; i < 5; i += 1) {
-			const a = Math.PI + (i - 2) * 0.34;
-			const len = R * (0.9 + 0.7 * ((i * 37) % 10) / 10) * w * (1 + 0.5 * p);
-			const x0 = Math.cos(a) * R * 1.12;
-			const y0 = Math.sin(a) * R * 1.12;
-			const sway = Math.sin(t * 5 + i * 2) * R * 0.18;
-			const g = ctx.createLinearGradient(x0, y0, x0 - len, y0);
-			g.addColorStop(0, 'rgba(255,214,120,.55)');
-			g.addColorStop(1, 'rgba(255,120,40,0)');
-			ctx.strokeStyle = g;
+		for (let i = 0; i < 2; i += 1) {
+			const life = 3.4 + i * 0.9;
+			const cyc = (t + i * 1.7) / life;
+			const gen = Math.floor(cyc);
+			const k = cyc - gen;
+			// a new place each time, never on his face (the upper front, where the eye is)
+			const a = Math.PI * (0.35 + 1.3 * hash(gen * 7 + i, 5));
+			const span = 0.2 + 0.1 * hash(gen * 7 + i, 6);
+			const env = ss(0, 0.3, k) * (1 - ss(0.65, 1, k));
+			if (env < 0.01) continue;
+			const top = Math.min(R * (REACH - 0.08), R * (1.22 + 0.1 * hash(gen + i, 8) + 0.1 * p) * (0.92 + 0.08 * env));
+			const foot = R * 1.0;
+			const x0 = Math.cos(a - span) * foot;
+			const y0 = Math.sin(a - span) * foot;
+			const x1 = Math.cos(a + span) * foot;
+			const y1 = Math.sin(a + span) * foot;
+			const cx = Math.cos(a) * (2 * top - foot * Math.cos(span));
+			const cy = Math.sin(a) * (2 * top - foot * Math.cos(span));
+			const arch = () => {
+				ctx.beginPath();
+				ctx.moveTo(x0, y0);
+				ctx.quadraticCurveTo(cx, cy, x1, y1);
+			};
+			arch();
+			ctx.strokeStyle = css(mix([214, 56, 30], [255, 150, 70], p), 0.85 * env);
+			ctx.lineWidth = R * 0.15;
+			ctx.stroke();
+			arch();
+			ctx.strokeStyle = css(mix([255, 128, 70], [255, 232, 170], p), 0.9 * env);
 			ctx.lineWidth = R * 0.07;
-			ctx.beginPath();
-			ctx.moveTo(x0, y0);
-			ctx.quadraticCurveTo(x0 - len * 0.5, y0 + sway, x0 - len, y0 + sway * 0.4);
 			ctx.stroke();
 		}
 		ctx.restore();
 	}
 
-	// --------------------------------------------------------------- the solar-wind trail
+	/** The rage: no flicker; the eruptions are in the prominences, the light in the bands. */
+	protected drawBehind(): void {
+		// (the game's flickering arcs between the rays are left out)
+	}
 
-	protected particleFor(moment: 'trail' | 'burst' | 'death'): ParticleKind {
-		return moment === 'trail' ? 'ember' : super.particleFor(moment);
-	}
-	protected sizeFor(kind: ParticleKind): number {
-		return kind === 'ember' ? 2.3 : super.sizeFor(kind);
-	}
-	protected liftFor(kind: ParticleKind): number {
-		return kind === 'ember' ? 0 : super.liftFor(kind);
-	}
-	protected swirlFor(kind: ParticleKind): number {
-		return kind === 'ember' ? 0 : super.swirlFor(kind);
-	}
-	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
-		if (e.kind === 'ember') solarMote(ctx, e, a, s);
-		else super.drawParticle(ctx, e, a, s);
-	}
-}
-
-const STOPS: ReadonlyArray<readonly [number, RGB]> = [
-	[1, [255, 228, 150]],
-	[0.7, [255, 188, 78]],
-	[0.4, [255, 128, 40]],
-	[0.18, [208, 64, 26]],
-	[0, [96, 28, 14]]
-];
-function heat(u: number): RGB {
-	for (let i = 1; i < STOPS.length; i += 1) {
-		if (u >= STOPS[i][0]) {
-			const [u1, c1] = STOPS[i - 1];
-			const [u0, c0] = STOPS[i];
-			return mix(c0, c1, (u - u0) / (u1 - u0));
+	/**
+	 * The star: the game's bands, then a slow boil (soft brighter and darker patches drifting, not
+	 * cells with edges), faculae near the limb, and a small pair of sunspots riding the turn low
+	 * on his back, away from the eye (a dark spot by the eye reads as a second eye).
+	 */
+	protected decorate(sc: CanvasRenderingContext2D, R: number, p: number): void {
+		super.decorate(sc, R, p);
+		const t = this.time;
+		for (let i = 0; i < CELLS.length; i += 1) {
+			const c = CELLS[i];
+			const b = Math.sin(t * 0.9 + c.ph);
+			const x = (c.x + 0.04 * Math.sin(t * 0.5 + c.ph)) * R;
+			const y = (c.y + 0.04 * Math.cos(t * 0.6 + c.ph)) * R;
+			const r = c.s * R * 1.5;
+			const g = sc.createRadialGradient(x, y, 0, x, y, r);
+			const col: RGB = b > 0 ? mix([255, 246, 200], [255, 255, 245], p) : [190, 70, 16];
+			g.addColorStop(0, css(col, Math.abs(b) * (b > 0 ? 0.22 : 0.13) * (1 - 0.5 * p)));
+			g.addColorStop(1, css(col, 0));
+			sc.fillStyle = g;
+			sc.fillRect(x - r, y - r, r * 2, r * 2);
 		}
+		// one sunspot group near the limb on his back: a soft penumbra, a small umbra, riding the
+		// turn and foreshortened at the limb (low contrast: two sharp dots read as a face)
+		const lon = -1.0 + 0.5 * Math.sin(this.rot);
+		const lat = 0.35;
+		const z = Math.cos(lon) * Math.cos(lat);
+		const x = Math.sin(lon) * Math.cos(lat) * R * 0.95;
+		const y = Math.sin(lat) * R * 0.95;
+		const vis = ss(0.05, 0.4, z) * (1 - 0.7 * p);
+		sc.save();
+		sc.translate(x, y);
+		sc.rotate(Math.atan2(y, x));
+		sc.scale(Math.max(0.3, z), 1);
+		const g = sc.createRadialGradient(0, 0, 0, 0, 0, R * 0.2);
+		g.addColorStop(0, `rgba(110,34,10,${0.75 * vis})`);
+		g.addColorStop(0.35, `rgba(150,50,14,${0.5 * vis})`);
+		g.addColorStop(1, 'rgba(170,60,16,0)');
+		sc.fillStyle = g;
+		sc.beginPath();
+		sc.ellipse(0, 0, R * 0.2, R * 0.14, 0.4, 0, TAU);
+		sc.fill();
+		sc.restore();
 	}
-	return STOPS[STOPS.length - 1][1];
-}
 
-/** One mote of the solar wind: it cools as it ages and leaves a short tail along its way. */
-function solarMote(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
-	const u = e.life / e.max;
-	const col = heat(u);
-	const r = s * (0.35 + 0.55 * u);
-	ctx.save();
-	ctx.globalCompositeOperation = 'lighter';
-	const sp = Math.hypot(e.vx, e.vy);
-	if (sp > r * 4) {
-		const tail = Math.min(r * 5, sp * 0.1);
-		ctx.strokeStyle = css(col, 0.55 * a);
-		ctx.lineWidth = r * 0.7;
+	/** His eye (the game's: a dot under a frowning brow), no star on the highlight. */
+	protected drawWorn(ctx: CanvasRenderingContext2D, R: number): void {
+		if (!this.feel.eye) return;
+		const ex = R * 0.16;
+		const ey = -R * 0.5;
+		const ink = 'rgb(96,24,8)';
+		ctx.strokeStyle = ink;
 		ctx.lineCap = 'round';
+		ctx.lineWidth = Math.max(1.2, R * 0.075);
 		ctx.beginPath();
-		ctx.moveTo(e.x, e.y);
-		ctx.lineTo(e.x - (e.vx / sp) * tail, e.y - (e.vy / sp) * tail);
+		ctx.moveTo(ex - R * 0.16, ey - R * 0.3);
+		ctx.lineTo(ex + R * 0.15, ey - R * 0.19);
 		ctx.stroke();
-	}
-	ctx.globalAlpha = a * 0.7;
-	ctx.drawImage(glow(col), e.x - r * 2.4, e.y - r * 2.4, r * 4.8, r * 4.8);
-	ctx.globalAlpha = a;
-	ctx.fillStyle = css(heat(Math.min(1, u + 0.12)));
-	ctx.beginPath();
-	ctx.arc(e.x, e.y, r * 0.6, 0, TAU);
-	ctx.fill();
-	ctx.restore();
-}
-
-// ------------------------------------------------------------------- Ms. Pac-Man's details
-
-const MS_INK = 'rgba(44,34,66,.9)';
-
-/** A: a beauty mark on the lower cheek, a pearl stud on the back rim at the ear. */
-export const msClassic: OverPainter = (ctx, R, cut) => {
-	ctx.save();
-	cut.outline(ctx);
-	ctx.clip();
-	ctx.fillStyle = MS_INK;
-	ctx.beginPath();
-	ctx.arc(R * 0.3, R * 0.3, R * 0.06, 0, TAU);
-	ctx.fill();
-	ctx.fillStyle = 'rgba(255,255,255,.9)';
-	ctx.beginPath();
-	ctx.arc(R * 0.285, R * 0.28, R * 0.018, 0, TAU);
-	ctx.fill();
-	ctx.restore();
-	// the stud sits on the rim at the back (the ear), with a small gold drop under it
-	const ex = -R * 0.97;
-	const ey = R * 0.12;
-	ctx.strokeStyle = '#d9b46a';
-	ctx.lineWidth = Math.max(1, R * 0.05);
-	ctx.lineCap = 'round';
-	ctx.beginPath();
-	ctx.moveTo(ex, ey);
-	ctx.lineTo(ex - R * 0.02, ey + R * 0.2);
-	ctx.stroke();
-	for (const [rr, col] of [
-		[R * 0.115, MS_INK],
-		[R * 0.09, '#f4f6ff']
-	] as const) {
-		ctx.fillStyle = col;
+		ctx.fillStyle = ink;
 		ctx.beginPath();
-		ctx.arc(ex - R * 0.02, ey + R * 0.28, rr, 0, TAU);
+		ctx.arc(ex + this.gazeX * R * 0.04, ey + R * 0.04 + this.gazeY * R * 0.05, Math.max(1.3, R * 0.085), 0, TAU);
 		ctx.fill();
 	}
-	ctx.fillStyle = 'rgba(255,255,255,1)';
-	ctx.beginPath();
-	ctx.arc(ex - R * 0.05, ey + R * 0.25, R * 0.03, 0, TAU);
-	ctx.fill();
-};
 
-/** B: a lock of hair curling off the back of her head, a pink sparkle above the eye. */
-export const msGlam: OverPainter = (ctx, R, cut) => {
-	ctx.save();
-	const cx = -R * 0.98;
-	const cy = -R * 0.5;
-	ctx.lineCap = 'round';
-	ctx.lineJoin = 'round';
-	for (const [lw, col] of [
-		[R * 0.14, MS_INK],
-		[R * 0.08, '#7a52c4']
-	] as const) {
-		ctx.strokeStyle = col;
-		ctx.lineWidth = lw;
-		ctx.beginPath();
-		for (let i = 0; i <= 26; i += 1) {
-			const a = 0.6 + i * 0.4;
-			const r = R * (0.15 - 0.005 * i);
-			const x = cx + Math.cos(a) * r - i * R * 0.004;
-			const y = cy + Math.sin(a) * r + i * R * 0.012;
-			if (i === 0) ctx.moveTo(x, y);
-			else ctx.lineTo(x, y);
+	protected particleFor(): ParticleKind {
+		return 'ember';
+	}
+
+	protected sizeFor(): number {
+		return 1.6;
+	}
+
+	/** Nothing rises: seen from above, embers only stream back and slow. */
+	protected liftFor(): number {
+		return 0;
+	}
+
+	protected swirlFor(): number {
+		return 0.6;
+	}
+
+	/** An ember cooling as it ages: white-gold, gold, orange, red, brown; a drop of fire is a streak of the same. */
+	protected drawParticle(ctx: CanvasRenderingContext2D, e: Particle, a: number, s: number): void {
+		if (this.bare) return;
+		const u = e.life / e.max;
+		const heat = e.hot ? Math.min(1, u * 1.25) : u;
+		const col: RGB =
+			heat > 0.75
+				? mix([255, 214, 110], [255, 248, 220], (heat - 0.75) / 0.25)
+				: heat > 0.5
+					? mix([250, 140, 40], [255, 214, 110], (heat - 0.5) / 0.25)
+					: heat > 0.25
+						? mix([190, 52, 20], [250, 140, 40], (heat - 0.25) / 0.25)
+						: mix([88, 40, 30], [190, 52, 20], heat / 0.25);
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		ctx.globalAlpha = a * 0.45 * heat;
+		const g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, s * 2.4);
+		g.addColorStop(0, css(col));
+		g.addColorStop(1, css(col, 0));
+		ctx.fillStyle = g;
+		ctx.fillRect(e.x - s * 2.4, e.y - s * 2.4, s * 4.8, s * 4.8);
+		ctx.globalCompositeOperation = 'source-over';
+		ctx.globalAlpha = a;
+		ctx.fillStyle = css(col);
+		if (e.kind === 'flame' && e.ang !== undefined) {
+			// a drop of fire in the rage: the same ember with two smaller, cooler ones behind it
+			const L = (e.len ?? s * 3) * 0.22;
+			for (let k = 0; k < 3; k += 1) {
+				ctx.globalAlpha = a * (1 - k * 0.3);
+				ctx.fillStyle = css(mix(col, [200, 60, 20], k * 0.3));
+				ctx.beginPath();
+				ctx.arc(e.x - Math.cos(e.ang) * L * k, e.y - Math.sin(e.ang) * L * k, s * 0.3 * (1 - k * 0.25), 0, TAU);
+				ctx.fill();
+			}
+		} else {
+			ctx.beginPath();
+			ctx.arc(e.x, e.y, s * 0.55, 0, TAU);
+			ctx.fill();
 		}
-		ctx.stroke();
+		ctx.restore();
 	}
-	ctx.restore();
-	// a four-point sparkle in pink with an ink edge, so it reads on her white
-	const k = 0.8 + 0.2 * Math.sin(cut.time * 2.1);
-	const tx = R * 0.68;
-	const ty = -R * 0.62;
-	ctx.save();
-	ctx.beginPath();
-	for (let i = 0; i < 8; i += 1) {
-		const a = (i / 8) * TAU - Math.PI / 2;
-		const r = i % 2 === 0 ? R * 0.17 * k : R * 0.04;
-		ctx.lineTo(tx + Math.cos(a) * r, ty + Math.sin(a) * r);
-	}
-	ctx.closePath();
-	ctx.lineJoin = 'round';
-	ctx.strokeStyle = MS_INK;
-	ctx.lineWidth = Math.max(1, R * 0.045);
-	ctx.stroke();
-	ctx.fillStyle = '#ff7fb6';
-	ctx.fill();
-	ctx.restore();
-};
+}

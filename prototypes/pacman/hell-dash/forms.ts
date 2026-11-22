@@ -26,8 +26,8 @@ import { IRON_HORN, drawHelm } from '../../../src/games/pacman/render/doom/bossA
 import type { GridLayout } from '../../../src/games/pacman/render/maze/GridView';
 import type { Beat, Round } from './script';
 import { beat, timing } from './script';
-import type { RibbonPoint, Sample, TrailSpec } from './trail';
-import { hash, motes, ribbon, sampleGrid, smoothstep } from './trail';
+import type { RibbonPoint, Sample, TrailSpec } from '../common/trail';
+import { hash, motes, ribbon, sampleGrid, smoothstep } from '../common/trail';
 
 export type Variant = 'now' | 'A1' | 'A2' | 'B1' | 'B2';
 export const VARIANTS: ReadonlyArray<{ id: Variant; name: string }> = [
