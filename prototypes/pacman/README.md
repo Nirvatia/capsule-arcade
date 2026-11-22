@@ -56,7 +56,7 @@ Most pages read the query string and/or show buttons. Common ones:
 | `echo` | the echo bonus wisps on a season world |
 | `easter-egg` | the easter egg |
 | `arcade` | the secret arcade level |
-| `station` | the station boss level's look on `grid_station`: three phases, a magnified view, the actors' gallery (`?phase=1-3&mode=scene|zoom|gallery&t=<s>`) |
+| `station` | the station's actors from `render/station/`, large and at game scale (`?t=<s>` freezes time); the station itself: the game, dev panel → Station |
 | `hud` | **broken** — imports a `GameHud.svelte` that no longer exists; fix or delete when next needed |
 | `collectibles` | **broken** — throws in the item row; find it when next touched |
 

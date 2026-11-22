@@ -5,6 +5,7 @@ import type { LevelLoader } from '../logic/level/LevelLoader';
 import { SharedLayers } from './SharedLayers';
 import { ArcadeLevelRenderer } from './arcade/ArcadeLevelRenderer';
 import { DoomLevelRenderer } from './doom/DoomLevelRenderer';
+import { StationLevelRenderer } from './station/StationLevelRenderer';
 import { MeadowLevelRenderer } from './seasons/meadow/MeadowLevelRenderer';
 import { meadowThemeFor } from './seasons/meadow/meadowThemes';
 import { EMBER_PALETTE, ICE_PALETTE, LevelDecay } from './transitions/decay/LevelDecay';
@@ -38,6 +39,8 @@ const EGG_LIGHT = 0xffd6ec;
 
 /** Light of the season turn into a season; into a boss world it takes the boss palette. */
 const SEASON_LIGHT = { light: 0xffe3a0, gap: 0xfff4d6 };
+/** The station's turn: the pale green of its photoluminescent paint. */
+const STATION_LIGHT = { light: 0xbfe9c9, gap: 0xe8fff0 };
 
 /**
  * Owns the canvas (HiDPI sizing, render clock) and hands each frame to the renderer of the
@@ -56,6 +59,7 @@ export class RenderPipeline {
 	private readonly arcadeRenderer = new ArcadeLevelRenderer();
 	private readonly meadowRenderer: MeadowLevelRenderer;
 	private readonly doomRenderer: DoomLevelRenderer;
+	private readonly stationRenderer: StationLevelRenderer;
 	private readonly decay = new LevelDecay();
 	private readonly turn = new SeasonTurn();
 	private readonly shift = new ArcadeShift();
@@ -96,7 +100,7 @@ export class RenderPipeline {
 		// gameplay effects on the season levels (the hell and the arcade have their own)
 		const unsubscribeFx = events
 			? events.on('fx:event', (fx) => {
-					if (!this.level.secretMode && !this.level.hellMode) {
+					if (!this.level.secretMode && !this.level.hellMode && !this.level.stationMode) {
 						this.meadowRenderer.spawnFx(fx);
 					}
 				})
@@ -107,6 +111,7 @@ export class RenderPipeline {
 		};
 		this.meadowRenderer = new MeadowLevelRenderer(shared, meadowThemeFor);
 		this.doomRenderer = new DoomLevelRenderer(shared);
+		this.stationRenderer = new StationLevelRenderer(shared);
 		this.canvas = document.createElement('canvas');
 		this.canvas.style.display = 'block';
 		container.appendChild(this.canvas);
@@ -308,6 +313,7 @@ export class RenderPipeline {
 		}
 		this.quality = quality;
 		this.meadowRenderer.setQuality(quality);
+		this.stationRenderer.setQuality(quality);
 	}
 
 	get renderQuality(): RenderQuality {
@@ -354,6 +360,9 @@ export class RenderPipeline {
 		if (next.hell) {
 			return this.doomRenderer;
 		}
+		if (next.station) {
+			return this.stationRenderer;
+		}
 		return this.meadowRenderer.handles(next.season.name) ? this.meadowRenderer : null;
 	}
 
@@ -366,6 +375,11 @@ export class RenderPipeline {
 		if (next.hell) {
 			const ember = glowTexture(EMBER_PALETTE.wisp);
 			return { light: EMBER_PALETTE.rim, gap: EMBER_PALETTE.warm, particle: () => ember };
+		}
+		if (next.station) {
+			// the station is entered by the cold light of its safety paint
+			const spore = glowTexture(STATION_LIGHT.light);
+			return { ...STATION_LIGHT, particle: () => spore };
 		}
 		const theme = meadowThemeFor(next.season.name);
 		return {
@@ -386,6 +400,9 @@ export class RenderPipeline {
 	private rendererFor(): LevelRenderer {
 		if (this.level.hellMode) {
 			return this.doomRenderer;
+		}
+		if (this.level.stationMode) {
+			return this.stationRenderer;
 		}
 		if (this.level.secretMode) {
 			return this.arcadeRenderer;

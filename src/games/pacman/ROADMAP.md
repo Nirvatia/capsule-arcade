@@ -97,11 +97,9 @@ last (see Later).
    `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks, no height or
    extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
    heartbeat (~2.5 s); the teleport is the iron gateway; night stays `cord`.
-2. **A random boss on every 5th level, for both heroes** (the owner's decision: built together
-   with the station, not after it). A `BossCatalog` (id, world, maze, renderer, design page), a
-   seeded pick per boss level (no immediate repeat), the same for both heroes; difficulty scaled
-   by level number, not world; the dev panel can force a boss. Until the station is playable the
-   catalog holds the hell alone.
+2. **A random boss on every 5th level, for both heroes**: in (`logic/level/BossCatalog`, the
+   hell and the station). Left: difficulty scaled by level number, not world, once the station
+   has its rules.
 3. **Each new boss world** (design first, one page the owner approves; mechanics on placeholder
    art, then art in code). Still Pac-Man in a maze, a different boss/mechanic/way to play, never
    a reskin of the hell. Like the hell: `*Bake` + `*World` + a level renderer with `preview()`, a
@@ -113,31 +111,26 @@ last (see Later).
       trails, specimen tanks, the hull breach, the dead crew, the floor viewport onto the storm,
       spores for food, wraiths for ghosts, the husk with a face for the cocoon, a cold grade,
       scanlines, grain). Style A is dropped. No new mock-up: the rest is tuned in the game.
-      1. **The world in the game** (next). `BossCatalog` (the hell and the station, seeded,
-         no immediate repeat, forced from the dev panel) and the route; `render/station/`
-         ported from the prototype's style B only (bake, world, level renderer with
-         `preview()`); the prototype's style A and the page go once the port stands. Until
-         step 2 the level plays by the season rules with the ghosts as unkillable wraiths.
-         The owner's fixes, done in the port:
-         - the hunters are **not humanoid**: a creature made for the top-down view, one tile in
-           size;
-         - the walls need a **continuous contour** that keeps the maze readable in all three
-           phases (the broken neon cut it up, worse in phases 2 and 3): a dim edge that is
-           always on, the broken strip only as brighter accents, and more contrast between
-           wall and floor;
-         - the wraiths' glitch reads as a head cut off: make it whole-body and subtler (the
-           owner may keep the cut as a feature: show both);
-         - **performance**: the prototype still lags. A settled frame keeps to the seasons'
-           budget: the baked base and glow scaled to the screen once, the light map small and
-           multiplied once with the vignette and grade folded into it, grain on High only;
-           measured with the dev frame meter.
-      2. The mechanics (`logic/station/`): the metamorphosis clock, the hunters' senses and
-         states, vents, flares, the tracker (its place decided in play), the phases by dots,
-         the hell's HP and reward, fairness; tests. The greybox feel prototype is dropped:
-         tuned in the game.
-      3. The caught transition and the world turn.
-      4. Sound (sources open: the owner's samples or synthesised).
-      5. The boss HUD's skin (part III).
+      In the game (2026-11-22): `BossCatalog` picks the hell or the station per boss level
+      (seeded, no repeat; the dev panel's Hell / Station / Boss: auto force it);
+      `render/station/` draws the station (style B) with the owner's fixes: top-down hunters
+      one tile in size, a continuous photoluminescent edge round every wall (readable in all
+      three phases) with the broken strip as accents and lighter walls, the wraiths' glitch a
+      whole-body slip (`WRAITH_GLITCH`, `cut` kept to compare), and the frame budget (scene,
+      dark and glow are three full-screen layers; bloom and grain on High; headless without a
+      GPU ~40 fps, the hell ~30 there). Until step 1 below the level plays by the season rules
+      with unkillable wraiths (an energizer frightens nobody), and the metamorphosis is only
+      drawn: a ghost past its share of the dots (20 % each) is drawn as a hunter.
+      Left from the port, for the owner's play: the flashlight's beam may want more light; the
+      season HUD (winter) and the season fruit still show on the station until its own HUD
+      (step 4) and rules (step 1); the death is the winter black hole until step 2.
+      1. The mechanics (`logic/station/`): the metamorphosis clock (the cocoon), the hunters'
+         senses and states, vents, flares, the tracker (its place decided in play), the phases
+         by dots, the hell's HP and reward, no fruit, fairness; tests. The greybox feel
+         prototype is dropped: tuned in the game.
+      2. The caught transition and the world turn.
+      3. Sound (sources open: the owner's samples or synthesised).
+      4. The boss HUD's skin (part III).
          Cost: light and sound carry the play here; the darkness and the cone go through the
          light map, not a new full-screen layer.
    2. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe

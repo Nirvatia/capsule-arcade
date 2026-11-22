@@ -20,10 +20,11 @@ config/      gridConfig (tile tokens, level constants), mazes/ (one file per maz
              (the echo's riot), hypnosisConfig (the overdrive and the
              hypnosis: times, the feeder's threshold, the hunter's speed)
 logic/
-  level/     LevelLoader (the run: level number, profile, secret / hell routing, arcade
+  level/     LevelLoader (the run: level number, profile, secret / boss routing, arcade
              round and tries, carry-over), LevelSession (all services of one level, built
              together, never partial), SeasonCatalog (season and maze of a season level, per-season
-             modifiers), MazeCycle (the order the four mazes come in),
+             modifiers), MazeCycle (the order the four mazes come in), BossCatalog (which
+             boss a boss level gets: the hell or the station, seeded per run, no repeat),
              LevelProgress, ScoreModel
   maze/      GridModel, GridService, SpawnLocator, LairExit
   actors/    Player*, Ghost*, ghostTargets (scatter, chase, flight), ghostRoutes (routes by
@@ -51,6 +52,14 @@ render/
   doom/            DoomLevelRenderer, the flesh hell: DoomWorld (camera, mood) over a scene
                    baked once (fleshBake, with fleshNoise) and moved by the heartbeat
                    (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX
+  station/         the station (style B): StationBake (the scene baked once at a scale fitted
+                   to the screen, in layers: base, the surround's glow, the walls' safety edge
+                   and light strip, the resin per phase; painted by stationPaint / stationMarks /
+                   stationProps / stationSurround / stationMaze / stationWalls), StationWorld
+                   (camera, the layers scaled to the screen once, the dark: stationLight's small
+                   light map with the vignette and grade folded in, the glow, grain on High),
+                   StationLevelRenderer (+ preview), actors: stationFood (spores, flares),
+                   stationWraith, stationHunter (hunter, cocoon), stationTracker
   arcade/          the secret level: pixel sprites, maze bake, view, CRT pass, intermission,
                    ArcadeLevelRenderer
   fx/              LevelFx (gameplay effects on the season levels: it plays and ages the
@@ -321,5 +330,5 @@ the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arca
 `level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
 `easter-egg` (the lair code's reward played by the real
 services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`, `heroCharge`), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale), `station` (the station boss level's look on `grid_station`: the baked deck, the light map with the flashlight cast against the walls, the actors; its painters become `render/station/` once the owner approves); `winter-decay.html` is an older standalone page.
+`MsPacmanHero`, `heroCharge`), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale), `station` (the station's actors drawn by the game's own `render/station/` painters, large and at game scale: wraiths with both glitch looks, hunters, cocoon, spores, flares); `winter-decay.html` is an older standalone page.
 ```
