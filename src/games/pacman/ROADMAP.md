@@ -121,11 +121,13 @@ last (see Later).
       escape at the end. What is in the game from the ghost version (`StationService`: HP and
       the rewind, the beam, flares, cocoons, the super flare) is replaced step by step; the
       fixes stay (no season kit, one wall contour, nothing flashing, vents in pockets).
-      1. **The swarm prototype** (next): a playable page on the real maze and the station's
-         look (the hero on the keys, the torch and its fuel, the swarm's flow, its draw-back
-         from light and its surge, a dropped torch, the beacons, the health bar), so the owner
-         feels it before it goes in. The swarm's simulation is game code (`logic/station/`,
-         tested) from the start.
+      1. **The swarm prototype**: built (`prototypes/pacman/swarm`), awaits the owner's play.
+         The swarm is game code from the start: `logic/station/SwarmField` (a density over the
+         corridors that pours from the nest and the vents, spreads, flows toward the hero, never
+         enters light and is pushed out of it; tested) and `render/station/stationSwarm` (the
+         bugs as cached sprites streaming along the flow, the swarm's glow as one scaled density
+         map). The torch, its fuel, the health, the beacons and the escape are in the page for
+         the feel, with every number in its `TUNE`.
       2. The swarm rules in the game in place of the ghosts and `StationService`'s ghost parts;
          walls and floor readable in the dark; the surround's own light; the nest's door.
       3. The station's horror HUD (health, fuel, beacons).

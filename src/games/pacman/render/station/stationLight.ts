@@ -18,8 +18,8 @@ export interface StationLights {
 	readonly time: number;
 	/** The hero (tile coordinates) and the heading of the flashlight, or null (no hero). */
 	readonly hero: { readonly x: number; readonly y: number; readonly angle: number } | null;
-	/** Burning flares, tile coordinates. */
-	readonly flares: readonly Point[];
+	/** Fires: the torch, a dropped torch, the beacons; tile coordinates, radius in tiles. */
+	readonly flares: ReadonlyArray<Point & { readonly r?: number }>;
 	/** The super flare's beam, tile centres. */
 	readonly beam: readonly Point[];
 	/** A wall or the void at tile (x, y): it stops the flashlight. */
@@ -216,8 +216,9 @@ export function buildLightMap(
 	}
 	for (const p of lights.flares) {
 		const fl = 0.85 + 0.15 * Math.sin(t * 31) * Math.sin(t * 17);
-		light(c, sx(p.x), sy(p.y), S * 3.4 * fl, '255,96,110', 0.95);
-		light(c, sx(p.x), sy(p.y), S * 1.2, '255,220,225', 0.6);
+		const r = p.r ?? 3.4;
+		light(c, sx(p.x), sy(p.y), S * r * fl, '255,150,90', 0.95);
+		light(c, sx(p.x), sy(p.y), S * r * 0.35, '255,230,200', 0.6);
 	}
 	for (const p of lights.beam) {
 		light(c, sx(p.x), sy(p.y), S * 1.6, '255,244,226', 0.6);
