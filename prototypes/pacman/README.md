@@ -58,6 +58,7 @@ Most pages read the query string and/or show buttons. Common ones:
 | `arcade` | the secret arcade level |
 | `hounds` | the station's hound pack to play (the owner's pick over the fluid swarm): the same maze, look, torch, beacons and escape as `swarm`, the pack from `logic/station/HoundPack`; R restarts (`?high` for High) |
 | `swarm` | the station's swarm to play: the real maze and look, the hero on the keys, the torch fed by the dots, the swarm (`logic/station/SwarmField`), F drops / takes the torch, the four beacons, the escape; R restarts (`?high` for the High setting) |
+| `creatures` | candidate bodies for the station's hounds (insects without walking legs: wasp, larva, moth; drones: quad, tracked bot, delta) beside the current arrowhead, in the four states, plus the heroes' station look (A: survivor with the torch, B: suit with a helmet lamp); `?v=maze` puts them on the real station maze in the dark; `?h=now\|a\|b` the heroes' look there; `?t=<s>` freezes time. Throwaway: delete when the owner has chosen |
 | `station` | the station's actors from `render/station/`, large and at game scale (`?t=<s>` freezes time); the station itself: the game, dev panel → Station |
 | `hud` | **broken** — imports a `GameHud.svelte` that no longer exists; fix or delete when next needed |
 | `collectibles` | **broken** — throws in the item row; find it when next touched |
