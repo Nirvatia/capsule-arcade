@@ -113,24 +113,22 @@ last (see Later).
       scanlines, grain). Style A is dropped. No new mock-up: the rest is tuned in the game.
       In the game (2026-11-22): `BossCatalog` picks the hell or the station per boss level
       (seeded, no repeat; the dev panel's Hell / Station / Boss: auto force it);
-      `render/station/` draws the station (style B) with the owner's fixes: top-down hunters
-      one tile in size, a continuous photoluminescent edge round every wall (readable in all
-      three phases) with the broken strip as accents and lighter walls, the wraiths' glitch a
-      whole-body slip (`WRAITH_GLITCH`, `cut` kept to compare), and the frame budget (scene,
-      dark and glow are three full-screen layers; bloom and grain on High; headless without a
-      GPU ~40 fps, the hell ~30 there). Until step 1 below the level plays by the season rules
-      with unkillable wraiths (an energizer frightens nobody), and the metamorphosis is only
-      drawn: a ghost past its share of the dots (20 % each) is drawn as a hunter.
-      Left from the port, for the owner's play: the flashlight's beam may want more light; the
-      season HUD (winter) and the season fruit still show on the station until its own HUD
-      (step 4) and rules (step 1); the death is the winter black hole until step 2.
-      1. The mechanics (`logic/station/`): the metamorphosis clock (the cocoon), the hunters'
-         senses and states, vents, flares, the tracker (its place decided in play), the phases
-         by dots, the hell's HP and reward, no fruit, fairness; tests. The greybox feel
-         prototype is dropped: tuned in the game.
-      2. The caught transition and the world turn.
-      3. Sound (sources open: the owner's samples or synthesised).
-      4. The boss HUD's skin (part III).
+      `render/station/` draws the station (style B). The level still plays by the season
+      rules with unkillable wraiths, and the metamorphosis is only drawn.
+      The owner played it (2026-11-22) and redesigned the rules (`DESIGN.md` §7a): no stealth;
+      the beam makes creatures flee; flares burst and scare; a super flare on `F` in phase 3;
+      3 HP with a rewind on a hit; cocoons kept; three phases with rules of their own, the third
+      a run to the hatch; vents in dead-end pockets; slower creatures; safe for the eyes. Steps:
+      1. **The rules** (next): first the fixes (no abilities, fruit or egg on the station; one
+         contour on the walls instead of three lines; nothing flashing faster than 3 Hz; the
+         diagonal vents moved into dead-end pockets of `grid_station`, glowing), then
+         `logic/station/` (HP and the rewind, the beam's scare, the flares' burst, the speeds,
+         the metamorphosis and the cocoons, the phases, the hatch and the heart, the super
+         flare in the slot, the hunters in the vents), `config/stationConfig.ts`; tests.
+      2. The station's horror HUD (part III's boss HUD skeleton).
+      3. Both heroes' station look: a prototype first, the owner approves.
+      4. The caught transition and the world turn.
+      5. Sound (sources open: the owner's samples or synthesised).
          Cost: light and sound carry the play here; the darkness and the cone go through the
          light map, not a new full-screen layer.
    2. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe
