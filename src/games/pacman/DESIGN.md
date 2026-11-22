@@ -232,8 +232,8 @@ hero who never stops cannot hide). Numbers are starting points, tuned in `config
   is caught: the run goes on to the next level without losing a life and without the reward.
 - **The flashlight**: a cone along the hero's heading (about 6.5 tiles, about 50°) that walls
   stop, and a small halo round him. A wraith or a hunter in the beam turns and flees while lit and
-  a moment after; it still hurts on touch, so the beam opens the way ahead and the danger comes
-  from behind and the sides. Creatures are never fully hidden by the dark: a silhouette and the
+  a moment after, a little faster than the hero and harmless while it flees, so the beam opens
+  the way ahead and the danger comes from behind and the sides. Creatures are never fully hidden by the dark: a silhouette and the
   slit of their colour always show, the light shows the rest.
 - **Flares** lie where the energizers would be. Picked up, one bursts: everything within about
   6 tiles flees for 5 s and cannot hurt while it flees. Nothing is eaten.

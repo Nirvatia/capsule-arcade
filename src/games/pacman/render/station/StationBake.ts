@@ -19,8 +19,6 @@ export interface StationBake {
 	readonly glow: HTMLCanvasElement;
 	/** The walls' photoluminescent edge: continuous, lit in every phase. */
 	readonly edge: HTMLCanvasElement;
-	/** The walls' light strip, lit in broken stretches. */
-	readonly strip: HTMLCanvasElement;
 	readonly lamps: readonly Lamp[];
 	/** The nest's resin of `phase`, a transparent layer over the base. */
 	resin(phase: Phase): HTMLCanvasElement;
@@ -40,11 +38,10 @@ export function bakeStation(grid: GridMatrix, k: number): StationBake {
 	const [base, c] = frameCanvas(scale);
 	const [glow, gl] = frameCanvas(scale);
 	const [edge, ed] = frameCanvas(scale);
-	const [strip, st] = frameCanvas(scale);
 	paintDeck(c);
 	paintSurround(c, gl, grid);
 	paintCorridors(c, grid);
-	paintWalls(c, ed, st, grid);
+	paintWalls(c, ed, grid);
 	paintVents(c, grid);
 	paintNest(c, gl, grid);
 	const resins = new Map<Phase, HTMLCanvasElement>();
@@ -53,7 +50,6 @@ export function bakeStation(grid: GridMatrix, k: number): StationBake {
 		base,
 		glow,
 		edge,
-		strip,
 		lamps: stationLamps(grid),
 		resin(phase: Phase): HTMLCanvasElement {
 			const hit = resins.get(phase);

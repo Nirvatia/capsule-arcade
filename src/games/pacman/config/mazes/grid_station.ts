@@ -1,13 +1,14 @@
 import { parseMaze } from './parseMaze';
 
 // The station (boss level, DESIGN.md §7a): long corridors and blind corners, the lair is the nest;
-// three vent pairs: 0A at the side edges, 0B and 0C cross the station corner to corner.
+// the side tunnels 0A; vents 0B and 0C in dead-end pockets of the outer wall (entered only on
+// purpose), each top pocket paired with a bottom one so the hero comes out still running.
 export const GRID_STATION = parseMaze('grid_station', [
 	'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES',
-	'ES WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
+	'ES WL WL WL WL WL 0B WL WL WL WL WL WL WL WL WL WL WL 0C WL WL WL WL WL ES',
 	'ES WL EU DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT EU WL ES',
 	'ES WL DT WL WL WL DT WL WL WL WL DT WL DT WL WL WL WL DT WL WL WL DT WL ES',
-	'ES WL DT WL 0B DT DT DT DT DT WL DT DT DT WL DT DT DT DT DT 0C WL DT WL ES',
+	'ES WL DT WL DT DT DT DT DT DT WL DT DT DT WL DT DT DT DT DT DT WL DT WL ES',
 	'ES WL DT WL DT WL WL WL WL DT WL DT WL DT WL DT WL WL WL WL DT WL DT WL ES',
 	'ES WL DT DT DT WL DT DT DT DT WL DT WL DT WL DT DT DT DT WL DT DT DT WL ES',
 	'ES WL WL WL DT WL DT WL WL DT WL DT WL DT WL DT WL WL DT WL DT WL WL WL ES',
@@ -25,9 +26,9 @@ export const GRID_STATION = parseMaze('grid_station', [
 	'ES WL WL WL DT WL DT WL WL DT WL DT WL DT WL DT WL WL DT WL DT WL WL WL ES',
 	'ES WL DT DT DT WL DT DT DT DT WL DT PM DT WL DT DT DT DT WL DT DT DT WL ES',
 	'ES WL DT WL DT WL WL WL WL DT WL DT WL DT WL DT WL WL WL WL DT WL DT WL ES',
-	'ES WL DT WL 0C DT DT DT DT DT WL DT DT DT WL DT DT DT DT DT 0B WL DT WL ES',
+	'ES WL DT WL DT DT DT DT DT DT WL DT DT DT WL DT DT DT DT DT DT WL DT WL ES',
 	'ES WL DT WL WL WL DT WL WL WL WL DT WL DT WL WL WL WL DT WL WL WL DT WL ES',
 	'ES WL EU DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT EU WL ES',
-	'ES WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
+	'ES WL WL WL WL WL 0C WL WL WL WL WL WL WL WL WL WL WL 0B WL WL WL WL WL ES',
 	'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES'
 ]);

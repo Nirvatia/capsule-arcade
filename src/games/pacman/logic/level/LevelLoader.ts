@@ -1,4 +1,5 @@
 import type { GridService } from '../maze/GridService';
+import type { StationService } from '../station/StationService';
 import type { PlayerService } from '../actors/PlayerService';
 import type { GhostService } from '../actors/GhostService';
 import type { LevelProgress } from './LevelProgress';
@@ -191,6 +192,11 @@ export class LevelLoader {
 
 	get doom(): DoomAbilityService | null {
 		return this.sessionValue?.doom?.abilities ?? null;
+	}
+
+	/** The station's rules, on the station level only. */
+	get stationRules(): StationService | null {
+		return this.sessionValue?.stationRules ?? null;
 	}
 
 	get bossReward(): BossRewardService | null {

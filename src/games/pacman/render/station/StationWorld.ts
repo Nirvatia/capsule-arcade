@@ -8,7 +8,7 @@ import { boardPlacement } from '../common/boardScale';
 import type { RenderQuality } from '../common/renderQuality';
 import { WORLD_TILE } from '../common/worldDecor';
 import type { GridLayout } from '../maze/GridView';
-import { context, makeCanvas, tint } from '../doom/fleshNoise';
+import { context, makeCanvas } from '../doom/fleshNoise';
 import type { StationBake } from './StationBake';
 import { bakeStation } from './StationBake';
 import type { Phase } from './stationPaint';
@@ -33,9 +33,8 @@ export class StationWorld {
 	private wy = 0;
 	/** The scene of the current phase at the screen's size (with its scanlines). */
 	private baseView: { phase: Phase; canvas: HTMLCanvasElement } | null = null;
-	/** What glows by itself, per phase and strobe state, at the screen's size. */
+	/** What glows by itself, per phase, at the screen's size. */
 	private readonly glowViews = new Map<string, HTMLCanvasElement>();
-	private redStrip: HTMLCanvasElement | null = null;
 	private lightMap: HTMLCanvasElement | null = null;
 	private soft: HTMLCanvasElement | null = null;
 	private bloom: HTMLCanvasElement | null = null;
@@ -85,7 +84,6 @@ export class StationWorld {
 		const wanted = Math.round(((WORLD_TILE * this.sc * dpr) / T) * 4) / 4;
 		if (this.bake && wanted > this.bake.k * 1.3) {
 			this.bake = null;
-			this.redStrip = null;
 		}
 	}
 
@@ -140,22 +138,19 @@ export class StationWorld {
 	}
 
 	/**
-	 * What glows by itself over the dark: the surround's lamps, the walls' safety edge (always),
-	 * the light strip (cold in power, red in failure, strobing in the nest).
+	 * What glows by itself over the dark: the surround's lamps and the walls' safety edge, one
+	 * continuous line round every block, lit in every phase. Nothing here blinks.
 	 */
 	drawGlow(ctx: CanvasRenderingContext2D, phase: Phase, time: number): void {
-		const strobe = phase === 3 && time % 1.3 < 0.18;
-		const key = phase === 3 ? (strobe ? '3on' : '3off') : String(phase);
+		const key = String(phase);
 		let view = this.glowViews.get(key);
 		if (!view) {
-			view = this.glowAtScreen(phase, phase !== 3 || strobe);
+			view = this.glowAtScreen(phase);
 			this.glowViews.set(key, view);
 		}
-		const flick =
-			phase === 1 ? flicker(0.7, time * 2.3) : phase === 2 ? 0.85 + 0.15 * Math.sin(time * 3) : 1;
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';
-		ctx.globalAlpha = 0.72 + 0.28 * flick;
+		ctx.globalAlpha = 0.88 + 0.08 * Math.sin(time * 0.8);
 		ctx.drawImage(view, 0, 0, this.vw, this.vh);
 		ctx.restore();
 	}
@@ -230,25 +225,15 @@ export class StationWorld {
 		return c;
 	}
 
-	private glowAtScreen(phase: Phase, stripOn: boolean): HTMLCanvasElement {
+	private glowAtScreen(phase: Phase): HTMLCanvasElement {
 		const bake = this.ensureBake();
 		const r = this.sceneRect();
 		const [c, x] = this.screenCanvas();
 		x.globalCompositeOperation = 'lighter';
 		x.globalAlpha = phase === 1 ? 1 : 0.55;
 		x.drawImage(bake.glow, r.x, r.y, r.w, r.h);
-		x.globalAlpha = 0.6;
+		x.globalAlpha = 0.7;
 		x.drawImage(bake.edge, r.x, r.y, r.w, r.h);
-		if (stripOn) {
-			if (phase === 1) {
-				x.globalAlpha = 0.65;
-				x.drawImage(bake.strip, r.x, r.y, r.w, r.h);
-			} else {
-				this.redStrip ??= tint(bake.strip, '#ff2a1f');
-				x.globalAlpha = phase === 2 ? 0.45 : 0.7;
-				x.drawImage(this.redStrip, r.x, r.y, r.w, r.h);
-			}
-		}
 		return c;
 	}
 
@@ -276,11 +261,4 @@ export class StationWorld {
 		this.post = c;
 		return c;
 	}
-}
-
-/** Mostly on, now and then a stutter (a dying light). */
-function flicker(seed: number, t: number): number {
-	const k =
-		Math.sin(t * 13 + seed * 50) * Math.sin(t * 7.3 + seed * 20) * Math.sin(t * 2.1 + seed * 9);
-	return k > 0.55 ? 0.15 : 1;
 }

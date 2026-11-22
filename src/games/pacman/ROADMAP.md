@@ -119,16 +119,21 @@ last (see Later).
       the beam makes creatures flee; flares burst and scare; a super flare on `F` in phase 3;
       3 HP with a rewind on a hit; cocoons kept; three phases with rules of their own, the third
       a run to the hatch; vents in dead-end pockets; slower creatures; safe for the eyes. Steps:
-      1. **The rules** (next): first the fixes (no abilities, fruit or egg on the station; one
-         contour on the walls instead of three lines; nothing flashing faster than 3 Hz; the
-         diagonal vents moved into dead-end pockets of `grid_station`, glowing), then
-         `logic/station/` (HP and the rewind, the beam's scare, the flares' burst, the speeds,
-         the metamorphosis and the cocoons, the phases, the hatch and the heart, the super
-         flare in the slot, the hunters in the vents), `config/stationConfig.ts`; tests.
-      2. The station's horror HUD (part III's boss HUD skeleton).
-      3. Both heroes' station look: a prototype first, the owner approves.
-      4. The caught transition and the world turn.
-      5. Sound (sources open: the owner's samples or synthesised).
+      The rules are in (2026-11-22, `logic/station/StationService`, `config/stationConfig.ts`,
+      tests in `stationRules.test.ts`): no abilities, fruit or egg; one contour on the walls;
+      nothing flashes (lamps dim and come back slowly, the nest's red pulses slowly, the
+      lightning swells); the corner vents in outer-wall pockets, glowing; HP 3 with the rewind
+      along the hero's trail and a tape-rewind overlay; the beam and the flares make creatures
+      flee (faster than the hero, harmless meanwhile); the wraiths and hunters' paces; the
+      metamorphosis through cocoons (the beam holds a cocoon back) by dots or by the clock; the
+      phases by the metamorphoses begun; the nest offers the hatch and the heart and the super
+      flare (carried, `F` burns a corridor). Left for the owner's play: the numbers; the
+      hunters' rattle before they leave a vent; the red lamps' "seen from afar"; the tracker's
+      place; the season HUD still shows (step 1); the hatch is the hell's exit art.
+      1. The station's horror HUD (part III's boss HUD skeleton: HP, the phase pips, the slot).
+      2. Both heroes' station look: a prototype first, the owner approves.
+      3. The caught transition and the world turn; the hatch's own art.
+      4. Sound (sources open: the owner's samples or synthesised).
          Cost: light and sound carry the play here; the darkness and the cone go through the
          light map, not a new full-screen layer.
    2. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe

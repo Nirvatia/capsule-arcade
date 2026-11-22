@@ -34,6 +34,9 @@ logic/
              (Ms. Pac-Man overdrive and hypnosis: feeder / hunter, guides the ghost), LairCodeService
   bonuses/   fruit, Easter egg, AbilityService (the season levels' abilities: the token, the
              slot, the F key, the mask, the shock; it owns the EchoCloneService riot), boss reward
+  station/   the station's rules: StationService (HP and the rewind, the beam's and the flares'
+             scare, the paces, the metamorphosis and the cocoons, the phases, the super flare),
+             stationBeam (the flashlight cone and the super flare's corridor as the rules see them)
   doom/      the hell: DoomBossService (the boss's state machine), DoomArena (hazards,
              seals, void, pull, corruption, echo, shake), DoomMinionSwarm, DoomAttackPlanner
              (which attack, fair or not), DoomTargeting (tile picks), weapons, pickups

@@ -56,6 +56,10 @@ export class GhostService {
 	private powerActiveValue = false;
 	private msOverdriveValue = false;
 	private speedModifierValue = 1;
+	/** The station: each ghost's own pace (a wraith or a hunter), over the common modifier. */
+	private readonly kindSpeed = new Map<GhostKind, number>();
+	/** A frightened ghost's pace, a share of its base speed (the station's run faster). */
+	private fleeFactor = 0.6;
 	/** The level's waves (seconds) and how much faster the ghosts leave the lair (the ramp). */
 	private scatterTime = SCATTER_TIME;
 	private chaseTime = CHASE_TIME;
@@ -155,6 +159,24 @@ export class GhostService {
 		this.chaseTime = chase;
 		this.exitScale = exitScale;
 		this.resetWaves();
+	}
+
+	/** The station: `kind` walks at `factor` of its base speed (with the common modifier). */
+	setKindSpeed(kind: GhostKind, factor: number): void {
+		if (!Number.isFinite(factor) || factor <= 0) {
+			console.error('GhostService.setKindSpeed', 'invalid factor', { kind, factor });
+			return;
+		}
+		this.kindSpeed.set(kind, factor);
+	}
+
+	/** A frightened ghost's pace, a share of its base speed (0.6 on the season levels). */
+	setFleeFactor(factor: number): void {
+		if (!Number.isFinite(factor) || factor <= 0) {
+			console.error('GhostService.setFleeFactor', 'invalid factor', factor);
+			return;
+		}
+		this.fleeFactor = factor;
 	}
 
 	get speedModifier(): number {
@@ -453,9 +475,9 @@ export class GhostService {
 			return ghost.speed * 1.2;
 		}
 		if (ghost.state === 'frightened') {
-			return ghost.speed * 0.6;
+			return ghost.speed * this.fleeFactor;
 		}
-		return ghost.speed * this.speedModifierValue;
+		return ghost.speed * this.speedModifierValue * (this.kindSpeed.get(ghost.kind) ?? 1);
 	}
 
 	private handleArrival(ghost: GhostModel): boolean {

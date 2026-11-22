@@ -33,6 +33,8 @@ export class FruitService {
 	private spawnedCountValue = 0;
 	/** The arcade round's fruit; null: by level and hero (`fruitForLevel`). */
 	private kindOverride: FruitKind | null = null;
+	/** No fruit at all on this level (the station). */
+	private disabled = false;
 
 	constructor(
 		profile: GameProfile,
@@ -105,6 +107,14 @@ export class FruitService {
 		this.fruitDurationValue = value;
 	}
 
+	/** False: no fruit ever appears on this level (the station). */
+	setEnabled(value: boolean): void {
+		this.disabled = !value;
+		if (this.disabled) {
+			this.reset();
+		}
+	}
+
 	/** Every fruit of this level is `kind` (the arcade's fruit of the round). */
 	setKind(kind: FruitKind | null): void {
 		this.kindOverride = kind;
@@ -124,6 +134,9 @@ export class FruitService {
 		}
 		if (!player) {
 			console.error('FruitService.update', 'missing player service');
+			return;
+		}
+		if (this.disabled) {
 			return;
 		}
 		if (this.activeKindValue) {

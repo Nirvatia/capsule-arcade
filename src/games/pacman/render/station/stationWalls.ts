@@ -1,10 +1,9 @@
 // The station's walls (style B): massive bulkheads, one recessed plate to a tile, with bolts,
-// stencils, soot, claw gouges, blood and rust; a heavy chamfer round every island. Two lights of
-// their own, baked apart so the phases can treat them apart: the photoluminescent safety edge,
-// a continuous line round every island that keeps the maze readable in every phase, and the
-// light strip that mostly died, lit in broken stretches.
+// stencils, soot, claw gouges, blood and rust. One line round every island, nothing more (the
+// owner found a second one hurt the reading): the photoluminescent safety edge, continuous,
+// lit in every phase, baked apart so it glows over the dark.
 import type { GridMatrix } from '../../config/gridConfig';
-import { blur, edgeOf, fbm, rng } from '../doom/fleshNoise';
+import { blur, fbm, rng } from '../doom/fleshNoise';
 import {
 	FRAME,
 	MX,
@@ -12,24 +11,18 @@ import {
 	T,
 	fill,
 	isWall,
-	layer,
 	minus,
 	morph,
 	paintInto,
 	put,
-	sk,
 	wallMask
 } from './stationPaint';
 import { bloodSmear, clawMarks, hexBolt, scorch } from './stationMarks';
 
-/**
- * Paints the walls into `c`, their safety edge into `edge` and their light strip into `strip`
- * (both drawn over the dark by `StationWorld`, tinted and dimmed per phase).
- */
+/** Paints the walls into `c` and their safety edge into `edge` (drawn over the dark). */
 export function paintWalls(
 	c: CanvasRenderingContext2D,
 	edge: CanvasRenderingContext2D,
-	strip: CanvasRenderingContext2D,
 	g: GridMatrix
 ): void {
 	const r = rng(231);
@@ -116,22 +109,6 @@ export function paintWalls(
 			}
 		})
 	);
-	// a heavy chamfer round every island
-	put(c, paintInto(edgeOf(mask, 2.5 * sk(), 2.5 * sk()), fill('rgba(190,205,198,.28)')));
-	put(c, paintInto(edgeOf(mask, -3 * sk(), -3 * sk()), fill('rgba(0,0,0,.7)')));
-	// the light strip: a dead slot, lit only in broken stretches
-	const band = minus(morph(mask, 3, false), morph(mask, 4.4, false));
-	put(c, paintInto(band, fill('rgba(4,5,5,.95)')));
-	const [segs, sg] = layer();
-	sg.fillStyle = '#fff';
-	for (let i = 0; i < 260; i += 1) {
-		const x = MX + r() * 25 * T;
-		const y = MY + r() * 27 * T;
-		const len = 20 + r() * 70;
-		sg.fillRect(x - len / 2, y - len / 2, len, len);
-	}
-	const live = paintInto(band, (p) => put(p, segs));
-	put(strip, paintInto(live, fill('#dff3e4')));
 	// the safety edge: photoluminescent paint on every island's very rim, never broken, glowing
 	// without power, so the maze stays readable in every phase
 	const rim = minus(morph(mask, 0.5, false), morph(mask, 1.9, false));

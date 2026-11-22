@@ -166,3 +166,24 @@ export class NearMissTracker {
 		});
 	}
 }
+
+/**
+ * The station's rules: nothing is eaten and a fleeing (frightened) creature never hurts; the
+ * first hunting one within contact distance (a cocoon is one standing still) is the touch.
+ */
+export function stationContact(player: Point, ghosts: readonly GhostModel[]): GhostModel | null {
+	if (!finite(player)) {
+		console.error('ghostContact.stationContact', 'invalid player position', player);
+		return null;
+	}
+	for (const ghost of ghosts) {
+		if (ghost.state !== 'active' && ghost.state !== 'enraged') {
+			continue;
+		}
+		const at = ghost.position;
+		if (finite(at) && distanceSq(player, at) <= ACTOR_CONTACT_DISTANCE_SQ) {
+			return ghost;
+		}
+	}
+	return null;
+}

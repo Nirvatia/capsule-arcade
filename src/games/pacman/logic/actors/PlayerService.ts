@@ -151,6 +151,11 @@ export class PlayerService {
 		this.player.grantInvulnerability(seconds);
 	}
 
+	/** Puts the hero on `tile` at once, at rest (the station's rewind walks him back with it). */
+	placeAt(tile: { readonly x: number; readonly y: number }): void {
+		this.player.teleportTo({ x: tile.x, y: tile.y });
+	}
+
 	startRecoilBackward(tiles: number): void {
 		if (this.isRecoiling || this.isDashing) {
 			return;

@@ -14,6 +14,7 @@ import { AbilityService } from '../bonuses/AbilityService';
 import { DoomBossService } from '../doom/DoomBossService';
 import { DoomAbilityService } from '../doom/DoomAbilityService';
 import { BossRewardService } from '../bonuses/BossRewardService';
+import { StationService } from '../station/StationService';
 import type { GameProfile } from '../rules/HypnosisService';
 import type { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
@@ -54,6 +55,8 @@ export interface LevelSession {
 	readonly lairCode: LairCodeService;
 	/** Present on the hell level only. */
 	readonly doom: DoomSession | null;
+	/** The station's rules, on the station level only. */
+	readonly stationRules: StationService | null;
 	/** Boss levels only: the bonus life and the exit offered when the boss dies. */
 	readonly bossReward: BossRewardService | null;
 }
@@ -111,6 +114,14 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 	combat.setProfile(profile);
 	combat.setHellMode(hell);
 	combat.setStationMode(station);
+	let stationRules: StationService | null = null;
+	if (station) {
+		// the station's own kit only: no fruit, no abilities, no egg (PlayingState skips them)
+		fruit.setEnabled(false);
+		stationRules = new StationService(grid, ghosts, player, progress, locator, events);
+		const rules = stationRules;
+		combat.setStationHit((ghost) => rules.hit(ghost));
+	}
 	const mods = seasonModifiers(season.name);
 	fruit.setFruitDuration(mods.fruitDuration);
 	if (secret) {
@@ -156,7 +167,8 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		abilities,
 		lairCode,
 		doom,
-		bossReward: hell ? new BossRewardService(grid, events) : null
+		stationRules,
+		bossReward: hell || station ? new BossRewardService(grid, events) : null
 	};
 }
 
@@ -173,6 +185,7 @@ export function resetLevelSession(session: LevelSession): void {
 	session.doom?.boss.reset();
 	session.doom?.abilities.reset();
 	session.bossReward?.reset();
+	session.stationRules?.reset();
 	session.lairCode.reset();
 }
 
@@ -188,5 +201,6 @@ export function resetForNextLevel(session: LevelSession): void {
 	session.doom?.boss.reset();
 	session.doom?.abilities.reset();
 	session.bossReward?.reset();
+	session.stationRules?.reset();
 	session.combat.nextLevel();
 }

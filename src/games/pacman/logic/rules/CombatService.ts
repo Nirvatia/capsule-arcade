@@ -8,7 +8,7 @@ import type { EventBus } from '../../engine/EventBus';
 import type { GameProfile, HypnosisService } from './HypnosisService';
 import type { LairCodeService } from './LairCodeService';
 import { SCORE_TABLE } from '../../config/scoreConfig';
-import { NearMissTracker, classicContact, msContact } from './ghostContact';
+import { NearMissTracker, classicContact, msContact, stationContact } from './ghostContact';
 import { debugLog } from '../debug/debugLog';
 import { ARCADE } from '../../config/arcadeConfig';
 import { rageSpeed } from '../../config/actorConfig';
@@ -36,6 +36,8 @@ export class CombatService {
 	private hellModeValue = false;
 	/** The station: nothing can be killed there, an energizer frightens nobody. */
 	private stationModeValue = false;
+	/** The station's rules take a touch (HP and the rewind) instead of a death. */
+	private stationHit: ((ghost: GhostModel) => void) | null = null;
 	private hellDefeatValue = false;
 	private profileValue: GameProfile = 'pacman';
 	private resultValue: PacmanGameResult = 'none';
@@ -222,6 +224,11 @@ export class CombatService {
 		return this.stationModeValue;
 	}
 
+	/** The station: a touch goes to `handler` (the station's rules), never to a death. */
+	setStationHit(handler: ((ghost: GhostModel) => void) | null): void {
+		this.stationHit = handler;
+	}
+
 	reset(): void {
 		this.livesValue = 3;
 		this.deathsValue = 0;
@@ -263,7 +270,8 @@ export class CombatService {
 			return;
 		}
 
-		if (this.progress.remainingDots <= 0) {
+		// the station ends at its hatch, not with the last dot
+		if (this.progress.remainingDots <= 0 && !this.stationModeValue) {
 			this.completeLevel();
 			return;
 		}
@@ -442,6 +450,17 @@ export class CombatService {
 
 	private checkCollisions(): void {
 		const position = this.player.position;
+		if (this.stationModeValue) {
+			// the station: nothing is eaten, a fleeing creature cannot hurt, a hunting one costs HP
+			if (this.player.isInvulnerable) {
+				return;
+			}
+			const ghost = stationContact(position, this.ghosts.list);
+			if (ghost) {
+				this.stationHit?.(ghost);
+			}
+			return;
+		}
 		const untouchable = this.player.isInvulnerable || Boolean(this.shield?.shieldsHero);
 		const contact =
 			this.rulesProfile === 'ms-pacman'

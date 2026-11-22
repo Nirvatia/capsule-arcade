@@ -1,5 +1,5 @@
 // The station's light map (DESIGN.md §7a, style B): the phase's ambient, the lamps (ceiling lamps
-// in power, red emergency lamps in failure, strobes in the nest; most of the ceiling lamps are
+// in power, red emergency lamps in failure, a slow red pulse in the nest; most of the ceiling lamps are
 // dead), the surround's own light (the tanks, the breach, the dead, the window and its storm),
 // the nest's breath, lit flares, and the hero: a halo and the flashlight's cone cast against the
 // walls. Painted small every frame and multiplied over the scene by `StationWorld`.
@@ -20,6 +20,8 @@ export interface StationLights {
 	readonly hero: { readonly x: number; readonly y: number; readonly angle: number } | null;
 	/** Burning flares, tile coordinates. */
 	readonly flares: readonly Point[];
+	/** The super flare's beam, tile centres. */
+	readonly beam: readonly Point[];
 	/** A wall or the void at tile (x, y): it stops the flashlight. */
 	readonly solid: (x: number, y: number) => boolean;
 }
@@ -45,16 +47,18 @@ const DEAD: readonly Point[] = [
 ];
 const WINDOW: Point = { x: (VIEWPORT.x - MX) / T, y: (VIEWPORT.y - MY) / T };
 
-/** Lightning in the storm below the window: rare double flashes. */
+/**
+ * Lightning in the storm below the window: a soft swell now and then. Safe for the eyes:
+ * nothing on the station flashes; every light changes slowly (well under 3 Hz).
+ */
 function lightning(t: number): number {
-	const k = t % 7.3;
-	return k < 0.08 ? 1 : k > 0.16 && k < 0.22 ? 0.6 : 0;
+	const k = (t % 9.3) / 0.9;
+	return k < 1 ? Math.sin(k * Math.PI) * 0.5 : 0;
 }
 
-function flicker(seed: number, t: number): number {
-	const k =
-		Math.sin(t * 13 + seed * 50) * Math.sin(t * 7.3 + seed * 20) * Math.sin(t * 2.1 + seed * 9);
-	return k > 0.55 ? 0.15 : 1;
+/** A failing lamp: it dims and comes back slowly, never blinks. */
+function breathe(seed: number, t: number): number {
+	return 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * (0.5 + seed * 0.6) + seed * 9));
 }
 
 function light(
@@ -132,9 +136,9 @@ export function buildLightMap(
 		const x = sx(l.x);
 		const y = sy(l.y);
 		if (l.kind === 'ceiling') {
-			// most of them are dead; the rest stutter
+			// most of them are dead; the rest dim and come back slowly
 			if (ph === 1 && l.seed >= 0.45) {
-				light(c, x, y, S * 3.1, '200,215,190', 0.75 * flicker(l.seed, t * 1.7));
+				light(c, x, y, S * 3.1, '200,215,190', 0.75 * breathe(l.seed, t * 1.7));
 			}
 		} else if (l.kind === 'emergency') {
 			if (ph >= 2) {
@@ -164,9 +168,9 @@ export function buildLightMap(
 				ph === 1
 					? 1
 					: ph === 2
-						? 0.45 * flicker(l.seed + 3, t)
+						? 0.45 * breathe(l.seed + 3, t)
 						: l.seed < 0.3
-							? 0.3 * flicker(l.seed, t * 2)
+							? 0.3 * breathe(l.seed, t * 2)
 							: 0;
 			light(c, x, y, S * 4.2, '255,190,120', 0.6 * on * (l.seed >= 0.5 ? 0.15 : 1));
 		}
@@ -196,7 +200,7 @@ export function buildLightMap(
 		sy(DEAD[0].y),
 		S * 3.6,
 		'255,205,150',
-		0.55 * dim * flicker(0.21, t * 2.6)
+		0.55 * dim * breathe(0.21, t * 2.6)
 	);
 	light(
 		c,
@@ -214,6 +218,9 @@ export function buildLightMap(
 		const fl = 0.85 + 0.15 * Math.sin(t * 31) * Math.sin(t * 17);
 		light(c, sx(p.x), sy(p.y), S * 3.4 * fl, '255,96,110', 0.95);
 		light(c, sx(p.x), sy(p.y), S * 1.2, '255,220,225', 0.6);
+	}
+	for (const p of lights.beam) {
+		light(c, sx(p.x), sy(p.y), S * 1.6, '255,244,226', 0.6);
 	}
 	const hero = lights.hero;
 	if (hero) {

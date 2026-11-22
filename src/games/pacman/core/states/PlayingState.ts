@@ -42,16 +42,24 @@ export class PlayingState implements GameState {
 			ctx.director.showGameOver();
 			return;
 		}
+		const station = session.stationRules;
+		if (station?.rewinding) {
+			// the rewind: the hero is pulled back along his trail, the world stands still
+			ctx.level.consumeFireRequest();
+			station.update(dt, false);
+			return;
+		}
 		lairCode.update(dt);
 		ctx.level.syncLairOpen();
 		player.update(dt);
 		fruit.update(dt, player);
 		const fireRequested = ctx.level.consumeFireRequest();
-		// the arcade is plain Pac-Man: no Easter egg, no abilities; the hell fires instead
-		if (!ctx.level.secretMode) {
+		// the arcade is plain Pac-Man: no Easter egg, no abilities; the hell fires instead; the
+		// station has its own kit
+		if (!ctx.level.secretMode && !station) {
 			egg.update(dt, player);
 		}
-		if (!ctx.level.secretMode && !session.doom) {
+		if (!ctx.level.secretMode && !session.doom && !station) {
 			const world = {
 				player,
 				ghosts,
@@ -96,6 +104,24 @@ export class PlayingState implements GameState {
 			}
 		} else {
 			ghosts.update(dt);
+		}
+		if (station) {
+			station.update(dt, fireRequested);
+			if (!combat.endRequested && station.consumeCaught()) {
+				combat.killPlayerInHell();
+				ctx.director.showDeath();
+				return;
+			}
+			// the nest: the hatch and the heart open; taking either ends the level
+			const reward = session.bossReward;
+			if (!combat.endRequested && station.phase === 3 && reward) {
+				reward.offer(player.tile);
+				reward.update(player);
+				const choice = reward.consumeChoice();
+				if (choice) {
+					combat.completeHellLevel(choice === 'life');
+				}
+			}
 		}
 		combat.update(dt);
 		this.hitStop = combat.consumeHitStop();
