@@ -264,12 +264,17 @@ config with the balance bot.
      most of the station.
 - **Direction rule**: ghosts show it with their eyes, hunters with the turn of the head and a dim
   mark on the leading edge.
-- **Art** (all in code, the owner approves mock-ups first): walls of hull panels and pipes, a deck
-  grating floor, the nest's living resin growing over them phase by phase (the game's "organic
-  and alive" lives in the nest); the food, the flare, the ghosts, the cocoon, the hunter, the vent
-  grilles, the hatch, the heart, the boss HUD's skin, the screens, the caught transition (in
-  place of the abyss) and the world turn. The hell's look rules hold: walls as blocks, no height;
-  nothing bright jumps forward; everything reads at one tile, lit and in the dark.
+- **Art** (all in code; the owner's pick: style B of the `station` prototype): a quarantine lab
+  that something got out of. Massive scorched bulkheads with claw gouges, blood and soot, a
+  continuous dim edge round every block (the maze must stay readable in every phase) with
+  broken light strips as accents; heavy deck plates with blood dragged toward the nest; round the
+  maze specimen tanks (one burst), a hull breach the nest pours out of, the dead crew, a window
+  in the deck onto the storm of the planet below. The nest's resin grows over it phase by phase
+  (the game's "organic and alive" lives in the nest). No toy outlines: the food is the nest's
+  spores, the ghosts screaming wraiths, the cocoon a husk with a face pressed from inside, the
+  hunter a creature made for the top-down view, one tile in size, not a humanoid. A cold, sick
+  grade, scanlines, grain. The hell's look rules hold: walls as blocks, no height; nothing bright
+  jumps forward; everything reads at one tile, lit and in the dark.
 - **Sound** carries half the level: the tracker's beep, the hunters' breath and steps, the vent
   rattle, the hero's heartbeat when one is close, the lamps' buzz and flicker. Samples the owner
   brings or synthesised like the arcade's: open.

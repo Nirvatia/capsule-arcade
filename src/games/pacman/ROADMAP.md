@@ -108,19 +108,38 @@ last (see Later).
    death `style` and a season-turn style; every element but the heroes has art of its own.
    1. **The station** (the current focus; `DESIGN.md` §7a). It
       replaced TRON (dropped with its `grid_tron`). Steps, one per chat:
-      1. The look: the `station` prototype on `grid_station` (the dark deck, the flashlight
-         cone, ghost, cocoon and hunter, the tracker, the three phases' light) is built and
-         awaits the owner's review. The hunter is drawn upright like every actor of the game,
-         the ghost's silhouette hardened into chitin. The maze is a draft the owner may rework.
-      2. The feel: a greybox playable prototype of darkness, light, noise, sight and the tracker
-         (the tracker's place decided here).
-      3. `BossCatalog` and the mechanics in the game on placeholder art (`logic/station/`,
-         tests for the hunter's senses and states, the metamorphosis clock, vents, fairness).
-      4. The art in code (`render/station/`), the caught transition and the world turn.
-      5. Sound (sources open: the owner's samples or synthesised).
-      6. The boss HUD's skin (part III).
-         Cost: light and sound carry the play here; the darkness and the cone go through
-         `moodBuffer` / the light map, not a new full-screen layer.
+      The look is approved (2026-11-22): **style B** of the `station` prototype, the
+      quarantine lab (scorched bulkheads with claw gouges and blood, deck plates with drag
+      trails, specimen tanks, the hull breach, the dead crew, the floor viewport onto the storm,
+      spores for food, wraiths for ghosts, the husk with a face for the cocoon, a cold grade,
+      scanlines, grain). Style A is dropped. No new mock-up: the rest is tuned in the game.
+      1. **The world in the game** (next). `BossCatalog` (the hell and the station, seeded,
+         no immediate repeat, forced from the dev panel) and the route; `render/station/`
+         ported from the prototype's style B only (bake, world, level renderer with
+         `preview()`); the prototype's style A and the page go once the port stands. Until
+         step 2 the level plays by the season rules with the ghosts as unkillable wraiths.
+         The owner's fixes, done in the port:
+         - the hunters are **not humanoid**: a creature made for the top-down view, one tile in
+           size;
+         - the walls need a **continuous contour** that keeps the maze readable in all three
+           phases (the broken neon cut it up, worse in phases 2 and 3): a dim edge that is
+           always on, the broken strip only as brighter accents, and more contrast between
+           wall and floor;
+         - the wraiths' glitch reads as a head cut off: make it whole-body and subtler (the
+           owner may keep the cut as a feature: show both);
+         - **performance**: the prototype still lags. A settled frame keeps to the seasons'
+           budget: the baked base and glow scaled to the screen once, the light map small and
+           multiplied once with the vignette and grade folded into it, grain on High only;
+           measured with the dev frame meter.
+      2. The mechanics (`logic/station/`): the metamorphosis clock, the hunters' senses and
+         states, vents, flares, the tracker (its place decided in play), the phases by dots,
+         the hell's HP and reward, fairness; tests. The greybox feel prototype is dropped:
+         tuned in the game.
+      3. The caught transition and the world turn.
+      4. Sound (sources open: the owner's samples or synthesised).
+      5. The boss HUD's skin (part III).
+         Cost: light and sound carry the play here; the darkness and the cone go through the
+         light map, not a new full-screen layer.
    2. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe
       islands change. Playful; palette clear of the hell's reds.
    3. **A Bomberman world**: bombs and blasts along the maze's lines, soft/hard walls. Think
