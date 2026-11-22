@@ -211,6 +211,72 @@ pads, and no ghosts but their lord.
 - Direction rule: every actor shows where it heads (eyes; the imps add a small chevron; the boss's eyes are enough
   on the tile's leading edge; Pac-Man has his mouth).
 
+## 7a. The station (boss level; designed, not built)
+
+The second boss world, a horror level: an abandoned research station in the dark, taken over by a
+living nest. Working name "the station" (code id `station`); the owner names it. The mood is that
+of slow industrial sci-fi horror; nothing else is borrowed from the films and games of that genre:
+no names, no ship, no creature design. Our creature grows out of our own ghost. Like the hell it
+is a full world of its own: every element but the heroes has art of its own. The hell is combat;
+the station is stealth: nothing here can be killed. Numbers below are starting points, tuned in
+config with the balance bot.
+
+- **Place in the run**: a boss level. `BossCatalog` picks the boss of every 5th level (the hell
+  or the station), the same for both heroes (`ROADMAP.md`, part II, step 2).
+- **Heroes**: their look and controls are unchanged. As in the hell, both play with the world's
+  kit: the energizer's scare and Ms. Pac-Man's overdrive and hypnosis do nothing here.
+- **Goal**: eat the dots. When the last dot is eaten an escape hatch opens and a heart appears,
+  by the hell's rule: the heart at the far end of the maze from the player, the hatch far from
+  both; taking either ends the level as a win, the heart also gives +1 life.
+- **Health**: the hell's. 3 HP, a hit costs one and knocks the hero back with a short grace.
+  Losing them all is being caught: the run goes on to the next level without losing a life and
+  without the reward.
+- **Darkness and the flashlight**: the station is dark. The hero carries a flashlight: a cone
+  along his heading (about 6 tiles, about 50°) that walls stop, and a small halo around him
+  (about 1.5 tiles). The dots glow faintly, so the maze reads without light; walls show where
+  light falls and as faint outlines near lamps.
+- **Ghosts into hunters (the level's clock)**: the four ghosts start pale and translucent. They
+  wander, shy from the light (a lit ghost is pushed back) and cost 1 HP on touch. At 20, 40, 60
+  and 80 % of the dots eaten (and at most 40 s after the previous one, so waiting does not stop
+  it) one ghost goes to a nest, wraps itself in a cocoon that beats for 4 s and hatches as a
+  hunter. A trace of its colour stays on the hunter, so the four can be told apart.
+- **The hunter** hears and sees. Noise: a dot eaten makes a ring of about 5 tiles by path, a vent
+  entered about 8. Sight: along an open corridor up to about 5 tiles, or at any range while the
+  hero's light is on it. States: roam (patrol, vents), search (to the last noise, looking round),
+  hunt (has seen the hero: faster than him on straights, slower in corners, so cornering and
+  vents are the escape), lost (out of sight for about 3 s: back to search). A lit hunter
+  hesitates for 0.5 s, then hunts: the light is not a weapon but a trade, you see it and it sees
+  you. Hunters travel through the vents and ambush from them; a vent rattles and shows on the
+  tracker 1.5 s before one comes out, and never within a few tiles of the hero. The hell's
+  fairness rule holds: there is always a way out.
+- **Flares** lie where the energizers would be, one slot (the dial). `F` / `Shift` / the dial
+  lights one at the hero's feet: it burns 5 s with a warm light of about 3 tiles that hunters do
+  not enter and ghosts flee.
+- **Motion tracker**: a pulse from the hero every 1.5 s; hunters, cocoons and moving ghosts
+  within about 10 tiles show as blips for a moment, also in the dark, with a beep that quickens
+  as the nearest comes closer. Whether it lives around the hero in the world, on the HUD's dial
+  or both is decided in the feel prototype.
+- **Three phases** (the boss HUD's pips; light, nest and sound):
+  1. Power: the ceiling lamps flicker but light the corridors dimly.
+  2. Failure (the second hunter): main power off; red emergency lamps at some junctions; the
+     nest's resin creeps over the walls.
+  3. Nest (the fourth hunter): near total dark, the emergency lamps strobe, the resin covers
+     most of the station.
+- **Direction rule**: ghosts show it with their eyes, hunters with the turn of the head and a dim
+  mark on the leading edge.
+- **Art** (all in code, the owner approves mock-ups first): walls of hull panels and pipes, a deck
+  grating floor, the nest's living resin growing over them phase by phase (the game's "organic
+  and alive" lives in the nest); the food, the flare, the ghosts, the cocoon, the hunter, the vent
+  grilles, the hatch, the heart, the boss HUD's skin, the screens, the caught transition (in
+  place of the abyss) and the world turn. The hell's look rules hold: walls as blocks, no height;
+  nothing bright jumps forward; everything reads at one tile, lit and in the dark.
+- **Sound** carries half the level: the tracker's beep, the hunters' breath and steps, the vent
+  rattle, the hero's heartbeat when one is close, the lamps' buzz and flicker. Samples the owner
+  brings or synthesised like the arcade's: open.
+- **Maze**: its own `grid_station`: long corridors with blind corners, three or four vent pairs
+  in place of tunnels, the nests, room for the hatch and the heart far apart. Drafted before the
+  mock-ups, which use it.
+
 ## 8. The arcade (secret level)
 
 Our own 80s-style arcade inside the game (not a copy of any existing game's art, rules or
@@ -391,10 +457,8 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 Each new boss level is still Pac-Man in a maze, but with its own boss, mechanic and way to play;
 the hell is combat, so the others must not be. The order proposed (`ROADMAP.md`, part II, step 3):
 
-- **TRON**: the hero's light trail becomes a wall for a few seconds, the boss rides a light cycle
-  that cuts the maze. A spatial puzzle on a neon grid.
-- **An Alien Isolation style stalker**: darkness, a flashlight cone, one hunter that cannot be
-  killed, a motion tracker, the vents as tunnels. Stealth.
+- **The station** (§7a): designed; darkness, a flashlight, ghosts that turn into unkillable
+  hunters, a motion tracker, vents. Stealth.
 - **Sharkboy and Lavagirl**: a tide of water and lava floods the tiles in waves, sharks patrol the
   water. Terrain, a playful tone, clear of the hell's reds.
 - **A Bomberman style world**: blasts along the maze's lines. To be thought through.

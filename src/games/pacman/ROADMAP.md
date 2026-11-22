@@ -52,29 +52,29 @@ last (see Later).
      important thing reads at one tile;
    - the static is baked into `MeadowBake`; no new full-screen passes (settled season: High 3,
      Medium 1, Low 1).
-   Decided with the owner: start with **winter (New Year)**; spring and summer **dress the same
-   meadow** (keep the accepted base, change the wall material and the props into a full setting,
-   not a new layout). Order: winter, autumn (Halloween), then spring, summer.
-   Winter brief (the candidate to prototype first): snow-capped stone walls with the cap on the
-   lit top/left edge and a faint ice sheen (directional, not random drifts); a snowfield ground
-   and a frozen stream/pond with an ice sheen and a snow rim; composed snow piles at wall bases
-   on the downwind side instead of sprinkled specks; the snowman landmark kept and joined by a
-   small decorated New Year tree; warm window light and a string of lights on the cabins/bridge;
-   falling snow kept. All static baked.
-   Done in the game (owner's pick from the `season-winter` prototype, 2026-11-18): the walls —
-   same stone, seams and moss, the snow lies on the lit top/left rim of the silhouette, full
-   caps on lone blocks, base drifts on the lee side, never across the face; a deeper soft drop
-   shadow under the blocks; the corridor floor — one flat slate, no per-tile shade steps, with
-   quiet frost (an ice streak along the run, a rare frozen puddle, frost specks at wall bases);
-   the lair — a frozen crust, a step lighter than the corridor, sheen and thin cracks; the
-   energizer — a Christmas bauble (the snowman stays the meadow landmark). Mechanism: opt-in
-   hooks with the shared painters as fallback — `MeadowBakeTheme.wall.paint` (whole painter),
-   `.floor.paint` and `.lair.paint` (per cell) — other seasons render byte-identical; the
-   default-preserving rule from the brief is kept in code and tested (`meadowBake.test.ts`).
-   Left from the brief: the decorated New Year tree by the snowman, warm window light and the
-   string of lights on the cabins/bridge. Corridor floors were "untouched" in the brief; the
-   owner asked for a winter floor of their own — flat and quiet, nothing that reads at a
-   glance while playing.
+     Decided with the owner: start with **winter (New Year)**; spring and summer **dress the same
+     meadow** (keep the accepted base, change the wall material and the props into a full setting,
+     not a new layout). Order: winter, autumn (Halloween), then spring, summer.
+     Winter brief (the candidate to prototype first): snow-capped stone walls with the cap on the
+     lit top/left edge and a faint ice sheen (directional, not random drifts); a snowfield ground
+     and a frozen stream/pond with an ice sheen and a snow rim; composed snow piles at wall bases
+     on the downwind side instead of sprinkled specks; the snowman landmark kept and joined by a
+     small decorated New Year tree; warm window light and a string of lights on the cabins/bridge;
+     falling snow kept. All static baked.
+     Done in the game (owner's pick from the `season-winter` prototype, 2026-11-18): the walls —
+     same stone, seams and moss, the snow lies on the lit top/left rim of the silhouette, full
+     caps on lone blocks, base drifts on the lee side, never across the face; a deeper soft drop
+     shadow under the blocks; the corridor floor — one flat slate, no per-tile shade steps, with
+     quiet frost (an ice streak along the run, a rare frozen puddle, frost specks at wall bases);
+     the lair — a frozen crust, a step lighter than the corridor, sheen and thin cracks; the
+     energizer — a Christmas bauble (the snowman stays the meadow landmark). Mechanism: opt-in
+     hooks with the shared painters as fallback — `MeadowBakeTheme.wall.paint` (whole painter),
+     `.floor.paint` and `.lair.paint` (per cell) — other seasons render byte-identical; the
+     default-preserving rule from the brief is kept in code and tested (`meadowBake.test.ts`).
+     Left from the brief: the decorated New Year tree by the snowman, warm window light and the
+     string of lights on the cabins/bridge. Corridor floors were "untouched" in the brief; the
+     owner asked for a winter floor of their own — flat and quiet, nothing that reads at a
+     glance while playing.
 2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
    Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
    wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"
@@ -97,24 +97,36 @@ last (see Later).
    `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks, no height or
    extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
    heartbeat (~2.5 s); the teleport is the iron gateway; night stays `cord`.
-2. **A random boss on every 5th level, for both heroes.** Level 5 stays the hell while it is the
-   only boss. With the second boss: a `BossCatalog` (id, world, maze, renderer, design page), a
+2. **A random boss on every 5th level, for both heroes** (the owner's decision: built together
+   with the station, not after it). A `BossCatalog` (id, world, maze, renderer, design page), a
    seeded pick per boss level (no immediate repeat), the same for both heroes; difficulty scaled
-   by level number, not world; the dev panel can force a boss.
+   by level number, not world; the dev panel can force a boss. Until the station is playable the
+   catalog holds the hell alone.
 3. **Each new boss world** (design first, one page the owner approves; mechanics on placeholder
    art, then art in code). Still Pac-Man in a maze, a different boss/mechanic/way to play, never
    a reskin of the hell. Like the hell: `*Bake` + `*World` + a level renderer with `preview()`, a
-   death `style` and a season-turn style. Candidates in order:
-   1. **TRON, a neon grid** (`grid_tron`, no tunnels): the hero's light trail becomes a wall, the
-      boss rides a light cycle, ghosts derez. A spatial puzzle.
-   2. **An Alien Isolation stalker**: darkness, a flashlight cone, an unkillable hunter, a motion
-      tracker, vents as tunnels. Stealth. Costliest in light and sound.
-   3. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe
+   death `style` and a season-turn style; every element but the heroes has art of its own.
+   1. **The station** (the current focus; `DESIGN.md` §7a, awaiting the owner's approval). It
+      replaced TRON (dropped with its `grid_tron`). Steps, one per chat:
+      1. The design page approved; `grid_station` drafted with the owner.
+      2. The look: a prototype on the real maze (the dark station, the flashlight cone, ghost,
+         cocoon and hunter, the tracker, the three phases' light), two or three candidates as
+         screenshots.
+      3. The feel: a greybox playable prototype of darkness, light, noise, sight and the tracker
+         (the tracker's place decided here).
+      4. `BossCatalog` and the mechanics in the game on placeholder art (`logic/station/`,
+         tests for the hunter's senses and states, the metamorphosis clock, vents, fairness).
+      5. The art in code (`render/station/`), the caught transition and the world turn.
+      6. Sound (sources open: the owner's samples or synthesised).
+      7. The boss HUD's skin (part III).
+         Cost: light and sound carry the play here; the darkness and the cone go through
+         `moodBuffer` / the light map, not a new full-screen layer.
+   2. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe
       islands change. Playful; palette clear of the hell's reds.
-   4. **A Bomberman world**: bombs and blasts along the maze's lines, soft/hard walls. Think
+   3. **A Bomberman world**: bombs and blasts along the maze's lines, soft/hard walls. Think
       through with the owner.
-   - Zombies rejected (a horde with weapons is the hell again). More old-arcade candidates
-     (Dig Dug, Space Invaders, Frogger) can be offered before step 3.
+   - Zombies rejected (a horde with weapons is the hell again). TRON dropped for the station. More
+     old-arcade candidates (Dig Dug, Space Invaders, Frogger) can be offered before step 3.
 
 ## Part III. The interface
 
@@ -125,6 +137,7 @@ last (see Later).
 ## Later
 
 **Depth and post-processing** (the very end), as far as WebGL2 over Canvas2D allows:
+
 1. Soft drop shadows; walls with height (baked height map + bevel).
 2. Normal maps for walls/bodies so the world lights shade them.
 3. A post stack on `render/common/GlPass`: bloom, per-world grading, vignette, optional
