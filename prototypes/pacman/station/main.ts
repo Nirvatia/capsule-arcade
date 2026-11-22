@@ -8,19 +8,12 @@ import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanH
 import { makeCanvas, context, tint } from '../../../src/games/pacman/render/doom/fleshNoise';
 import type { Phase } from './stationScene';
 import { bakeStation, FRAME, MX, MY, T } from './stationScene';
+import { bakeStationB, VIEWPORT } from './stationSceneB';
 import type { GhostId } from './stationActors';
-import {
-	drawCell,
-	drawCocoon,
-	drawFlare,
-	drawGhost,
-	drawHatch,
-	drawHunter,
-	drawHunterGlints,
-	drawMedPod,
-	drawTracker,
-	GHOSTS
-} from './stationActors';
+import * as ActA from './stationActors';
+import * as ActB from './stationActorsB';
+
+const GHOSTS = ActA.GHOSTS;
 
 const grid = GRID_STATION;
 const GW = 25;
@@ -34,6 +27,10 @@ const params = new URLSearchParams(location.search);
 let phase = (Number(params.get('phase')) || 1) as Phase;
 let mode = (params.get('mode') ?? 'scene') as 'scene' | 'zoom' | 'gallery';
 const frozen = params.has('t') ? Number(params.get('t')) : null;
+/** A: the first look; B: the brutal alternative. */
+let style: 'a' | 'b' = params.get('style') === 'a' ? 'a' : 'b';
+const actors = () => (style === 'b' ? ActB : ActA);
+const bakeFor = (ph: Phase) => (style === 'b' ? bakeStationB(grid, ph) : bakeStation(grid, ph));
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = context(view);
@@ -207,7 +204,16 @@ interface View {
 	oy: number;
 }
 
-const AMBIENT: Readonly<Record<Phase, string>> = { 1: 'rgb(40,48,60)', 2: 'rgb(26,24,34)', 3: 'rgb(19,17,27)' };
+const AMBIENT: Readonly<Record<'a' | 'b', Readonly<Record<Phase, string>>>> = {
+	a: { 1: 'rgb(40,48,60)', 2: 'rgb(26,24,34)', 3: 'rgb(19,17,27)' },
+	b: { 1: 'rgb(38,44,41)', 2: 'rgb(28,18,18)', 3: 'rgb(15,12,13)' }
+};
+
+/** Lightning in the storm below the deck's window: rare double flashes. */
+function lightning(t: number): number {
+	const k = t % 7.3;
+	return k < 0.08 ? 1 : k > 0.16 && k < 0.22 ? 0.6 : 0;
+}
 
 /** The flashlight's lit area: rays from the hero across the cone, stopped by the walls. */
 function conePolygon(hx: number, hy: number, a: number, half: number, reach: number): Pt[] {
@@ -236,7 +242,21 @@ function conePolygon(hx: number, hy: number, a: number, half: number, reach: num
 }
 
 let lm: HTMLCanvasElement | null = null;
+let lmSoft: HTMLCanvasElement | null = null;
+let lmBloom: HTMLCanvasElement | null = null;
 const LM_SCALE = 0.25;
+
+/** The light map softened in its own small size (a blur over the full screen costs too much). */
+function softened(src: HTMLCanvasElement, into: HTMLCanvasElement | null, px: number): HTMLCanvasElement {
+	const out = into && into.width === src.width && into.height === src.height ? into : makeCanvas(src.width, src.height);
+	const c = context(out);
+	c.setTransform(1, 0, 0, 1, 0, 0);
+	c.globalCompositeOperation = 'copy';
+	c.filter = `blur(${px}px)`;
+	c.drawImage(src, 0, 0);
+	c.filter = 'none';
+	return out;
+}
 
 function flicker(seed: number, t: number): number {
 	// mostly on, now and then a stutter
@@ -261,7 +281,7 @@ function lightMap(v: View, ph: Phase, t: number, hero: { p: Pt; a: number }, sc:
 	const c = context(lm);
 	c.setTransform(1, 0, 0, 1, 0, 0);
 	c.globalCompositeOperation = 'source-over';
-	c.fillStyle = AMBIENT[ph];
+	c.fillStyle = AMBIENT[style][ph];
 	c.fillRect(0, 0, w, h);
 	const f = D * LM_SCALE;
 	c.setTransform(f, 0, 0, f, -v.x * f, -v.y * f);
@@ -269,13 +289,15 @@ function lightMap(v: View, ph: Phase, t: number, hero: { p: Pt; a: number }, sc:
 	const sx = (x: number) => v.ox + x * v.S;
 	const sy = (y: number) => v.oy + y * v.S;
 	const S = v.S;
-	const bake = bakeStation(grid, ph);
+	const bake = bakeFor(ph);
+	const B = style === 'b';
 	// the lamps
 	for (const l of bake.lamps) {
 		const x = sx(l.x);
 		const y = sy(l.y);
 		if (l.kind === 'ceiling' && ph === 1) {
-			addLight(c, x, y, S * 3.1, '170,205,225', 0.9 * flicker(l.seed, t));
+			if (B && l.seed < 0.45) continue; // most of them are dead
+			addLight(c, x, y, S * 3.1, B ? '200,215,190' : '170,205,225', (B ? 0.75 : 0.9) * flicker(l.seed, B ? t * 1.7 : t));
 		} else if (l.kind === 'emergency' && ph >= 2) {
 			const strobe = ph === 3 ? ((t + l.seed) % 1.3 < 0.18 ? 1 : 0.08) : 0.55 + 0.25 * Math.sin(t * 3 + l.seed * 6);
 			addLight(c, x, y, S * 2.4, '255,40,28', 0.6 * strobe);
@@ -294,8 +316,24 @@ function lightMap(v: View, ph: Phase, t: number, hero: { p: Pt; a: number }, sc:
 			}
 		} else if (l.kind === 'wall') {
 			const on = ph === 1 ? 1 : ph === 2 ? 0.45 * flicker(l.seed + 3, t) : l.seed < 0.3 ? 0.3 * flicker(l.seed, t * 2) : 0;
-			addLight(c, x, y, S * 4.2, '255,190,120', 0.6 * on);
+			addLight(c, x, y, S * 4.2, '255,190,120', 0.6 * on * (B && l.seed >= 0.5 ? 0.15 : 1));
 		}
+	}
+	// the storm below the window
+	if (B) {
+		const f = lightning(t);
+		if (f > 0) addLight(c, sx((VIEWPORT.x - MX) / T), sy((VIEWPORT.y - MY) / T), S * 11, '220,200,255', 0.9 * f);
+		addLight(c, sx((VIEWPORT.x - MX) / T), sy((VIEWPORT.y - MY) / T), S * 7.5, '200,120,60', ph === 3 ? 0.3 : 0.45);
+		// the surround's story keeps a little light of its own: the tanks, the breach, the dead
+		const dim = ph === 1 ? 1 : ph === 2 ? 0.7 : 0.45;
+		for (const [x, y] of [
+			[-9.3, 2.9],
+			[-13.3, 5.1]
+		])
+			addLight(c, sx(x), sy(y), S * 4.2, '90,200,110', 0.42 * dim * (0.85 + 0.15 * Math.sin(t * 1.3 + x)));
+		addLight(c, sx(-9.3), sy(23.2), S * 4.5, '150,175,80', 0.32 * dim);
+		addLight(c, sx(31.6), sy(25.6), S * 3.6, '255,205,150', 0.55 * dim * flicker(0.21, t * 2.6));
+		addLight(c, sx(-6), sy(16.4), S * 3.2, '255,60,40', 0.4 * dim * (0.6 + 0.4 * Math.sin(t * 2.2)));
 	}
 	// the nest's sickly breath
 	if (ph >= 2) addLight(c, sx(12.5), sy(13), S * (ph === 3 ? 4.5 : 3), '120,190,60', ph === 3 ? 0.35 : 0.22);
@@ -310,7 +348,7 @@ function lightMap(v: View, ph: Phase, t: number, hero: { p: Pt; a: number }, sc:
 	// the hero: a halo, and the flashlight's cone cast against the walls
 	const hx = sx(hero.p.x);
 	const hy = sy(hero.p.y);
-	addLight(c, hx, hy, S * 1.7, '255,226,190', 0.65);
+	addLight(c, hx, hy, S * (B ? 1.3 : 1.7), B ? '230,236,240' : '255,226,190', B ? 0.5 : 0.65);
 	const cone = conePolygon(hero.p.x, hero.p.y, hero.a, 0.46, 6.5);
 	for (const [half, a] of [
 		[1, 1],
@@ -318,15 +356,18 @@ function lightMap(v: View, ph: Phase, t: number, hero: { p: Pt; a: number }, sc:
 	] as const) {
 		const poly = half === 1 ? cone : conePolygon(hero.p.x, hero.p.y, hero.a, 0.46 * half, 6.5);
 		const g = c.createRadialGradient(hx, hy, S * 0.2, hx, hy, S * 6.5);
-		g.addColorStop(0, `rgba(255,244,222,${a})`);
-		g.addColorStop(0.35, `rgba(255,236,205,${a * 0.85})`);
-		g.addColorStop(1, 'rgba(255,230,200,0)');
+		const lc = B ? '238,244,255' : '255,240,215';
+		g.addColorStop(0, `rgba(${lc},${a})`);
+		g.addColorStop(B ? 0.5 : 0.35, `rgba(${lc},${a * 0.85})`);
+		g.addColorStop(1, `rgba(${lc},0)`);
 		c.fillStyle = g;
 		c.beginPath();
 		poly.forEach((p, i) => (i ? c.lineTo(sx(p.x), sy(p.y)) : c.moveTo(sx(p.x), sy(p.y))));
 		c.closePath();
 		c.fill();
 	}
+	lmSoft = softened(lm, lmSoft, B ? 0.8 : 1.6);
+	lmBloom = softened(lm, lmBloom, 6);
 	return lm;
 }
 
@@ -334,7 +375,47 @@ function lightMap(v: View, ph: Phase, t: number, hero: { p: Pt; a: number }, sc:
 // Drawing a view
 
 const hero = new PacmanHero();
-let tintCache: { red: HTMLCanvasElement } | null = null;
+const tintCache = new Map<string, HTMLCanvasElement>();
+
+/** The vignette (and in style B a cold grade and faint scanlines) as one multiply layer. */
+const postCache = new Map<string, HTMLCanvasElement>();
+function postLayer(v: View, B: boolean): HTMLCanvasElement {
+	const k = `${v.w}x${v.h}|${B}|${D}`;
+	const hit = postCache.get(k);
+	if (hit) return hit;
+	const out = makeCanvas(v.w * D, v.h * D);
+	const c = context(out);
+	c.scale(D, D);
+	c.fillStyle = B ? 'rgb(214,228,218)' : '#fff';
+	c.fillRect(0, 0, v.w, v.h);
+	const vg = c.createRadialGradient(v.w / 2, v.h / 2, Math.min(v.w, v.h) * 0.35, v.w / 2, v.h / 2, Math.max(v.w, v.h) * 0.75);
+	vg.addColorStop(0, 'rgba(0,0,0,0)');
+	vg.addColorStop(1, B ? 'rgba(0,0,0,.88)' : 'rgba(0,0,0,.65)');
+	c.fillStyle = vg;
+	c.fillRect(0, 0, v.w, v.h);
+	if (B) {
+		c.fillStyle = 'rgba(0,0,0,.12)';
+		for (let y = 0; y < v.h; y += 3) c.fillRect(0, y, v.w, 1);
+	}
+	postCache.set(k, out);
+	return out;
+}
+
+/** A baked layer already scaled to this view (the scene view holds still: scale it once). */
+const viewCache = new Map<string, HTMLCanvasElement>();
+function atViewScale(key: string, src: HTMLCanvasElement, v: View, bx: number, by: number, w: number, h: number): HTMLCanvasElement {
+	const k = `${key}|${v.w}x${v.h}|${bx.toFixed(1)},${by.toFixed(1)}|${w.toFixed(1)}|${D}`;
+	const hit = viewCache.get(k);
+	if (hit) return hit;
+	if (viewCache.size > 24) viewCache.clear();
+	const out = makeCanvas(v.w * D, v.h * D);
+	const c = context(out);
+	c.imageSmoothingQuality = 'high';
+	c.setTransform(D, 0, 0, D, -v.x * D, -v.y * D);
+	c.drawImage(src, bx, by, w, h);
+	viewCache.set(k, out);
+	return out;
+}
 let grainTex: HTMLCanvasElement | null = null;
 
 function grain(): HTMLCanvasElement {
@@ -347,7 +428,7 @@ function grain(): HTMLCanvasElement {
 		im.data[i] = v;
 		im.data[i + 1] = v;
 		im.data[i + 2] = v;
-		im.data[i + 3] = 22;
+		im.data[i + 3] = 34;
 	}
 	c.putImageData(im, 0, 0);
 	grainTex = g;
@@ -367,7 +448,9 @@ function inCone(hero: { p: Pt; a: number }, p: Pt): number {
 }
 
 function drawView(v: View, ph: Phase, t: number, dt: number): void {
-	const bake = bakeStation(grid, ph);
+	const bake = bakeFor(ph);
+	const B = style === 'b';
+	const { drawCell, drawCocoon, drawFlare, drawGhost, drawHatch, drawHunter, drawHunterGlints, drawMedPod, drawTracker } = actors();
 	const heroAt = onLoop(HERO_LOOP, 2.6 + t * HERO_SPEED);
 	const sc = cast(ph, t, heroAt);
 	const S = v.S;
@@ -385,40 +468,41 @@ function drawView(v: View, ph: Phase, t: number, dt: number): void {
 	const bx = v.ox - MX * scale;
 	const by = v.oy - MY * scale;
 	ctx.imageSmoothingQuality = 'high';
-	ctx.drawImage(bake.base, bx, by, FRAME.w * scale, FRAME.h * scale);
+	const still = mode === 'scene';
+	const layerAt = (key: string, src: HTMLCanvasElement) => {
+		if (still) ctx.drawImage(atViewScale(`${style}${ph}${key}`, src, v, bx, by, FRAME.w * scale, FRAME.h * scale), v.x, v.y, v.w, v.h);
+		else ctx.drawImage(src, bx, by, FRAME.w * scale, FRAME.h * scale);
+	};
+	layerAt('base', bake.base);
 	// what lives in the dark (lit only by the light map)
 	for (const k of sc.cocoons) drawCocoon(ctx, sx(k.p.x), sy(k.p.y), S, k.id, t);
 	for (const h of sc.hunters) {
 		drawHunter(ctx, sx(h.p.x), sy(h.p.y), S, h.id, h.a, t, { bite: h.bite ?? 0, lit: inCone(heroAt, h.p) });
 	}
 	// the dark
-	const map = lightMap(v, ph, t, heroAt, sc);
+	lightMap(v, ph, t, heroAt, sc);
 	ctx.globalCompositeOperation = 'multiply';
 	ctx.imageSmoothingEnabled = true;
-	ctx.filter = `blur(${Math.max(1, S * 0.14)}px)`;
-	ctx.drawImage(map, v.x, v.y, v.w, v.h);
+	if (lmSoft) ctx.drawImage(lmSoft, v.x, v.y, v.w, v.h);
 	ctx.globalCompositeOperation = 'lighter';
 	// the light's own glow: the same map, soft, added back a little (a lit place looks lit)
-	ctx.filter = `blur(${Math.max(2, S * 0.5)}px)`;
-	ctx.globalAlpha = 0.2;
-	ctx.drawImage(map, v.x, v.y, v.w, v.h);
-	ctx.filter = 'none';
+	ctx.globalAlpha = B ? 0.14 : 0.2;
+	if (lmBloom) ctx.drawImage(lmBloom, v.x, v.y, v.w, v.h);
 	ctx.globalAlpha = 1;
 	// what glows by itself: the light strips (cold in power, red in failure, strobing in the nest)
-	if (!tintCache) tintCache = { red: tint(bake.glow, '#ff2a1f') };
-	const gw = FRAME.w * scale;
-	const gh = FRAME.h * scale;
+	const red = tintCache.get(style) ?? tint(bake.glow, '#ff2a1f');
+	tintCache.set(style, red);
 	if (ph === 1) {
-		ctx.globalAlpha = 0.55 + 0.1 * Math.sin(t * 1.7);
-		ctx.drawImage(bake.glow, bx, by, gw, gh);
+		ctx.globalAlpha = B ? 0.6 * flicker(0.7, t * 2.3) : 0.55 + 0.1 * Math.sin(t * 1.7);
+		layerAt('glow', bake.glow);
 	} else if (ph === 2) {
 		ctx.globalAlpha = 0.08 * flicker(0.4, t * 3);
-		ctx.drawImage(bake.glow, bx, by, gw, gh);
+		layerAt('glow', bake.glow);
 		ctx.globalAlpha = 0.28 + 0.12 * Math.sin(t * 3);
-		ctx.drawImage(tintCache.red, bx, by, gw, gh);
+		layerAt('red', red);
 	} else {
 		ctx.globalAlpha = t % 1.3 < 0.18 ? 0.55 : 0.16;
-		ctx.drawImage(tintCache.red, bx, by, gw, gh);
+		layerAt('red', red);
 	}
 	ctx.globalAlpha = 1;
 	// dust turning in the beam
@@ -437,7 +521,7 @@ function drawView(v: View, ph: Phase, t: number, dt: number): void {
 		if (!clear) continue;
 		const px = sx(tx) + Math.sin(t * 0.7 + i) * S * 0.1;
 		const py = sy(ty) + Math.cos(t * 0.5 + i * 2) * S * 0.1;
-		ctx.fillStyle = `rgba(255,240,220,${0.4 * (1 - d / 6.6)})`;
+		ctx.fillStyle = B ? `rgba(235,242,250,${0.5 * (1 - d / 6.6)})` : `rgba(255,240,220,${0.4 * (1 - d / 6.6)})`;
 		ctx.beginPath();
 		ctx.arc(px, py, Math.max(0.6, S * 0.016), 0, Math.PI * 2);
 		ctx.fill();
@@ -476,17 +560,18 @@ function drawView(v: View, ph: Phase, t: number, dt: number): void {
 		y: p.y - heroAt.p.y
 	}));
 	drawTracker(ctx, hx, hy, S, t + 0.9, blips);
-	// vignette and grain
-	const vg = ctx.createRadialGradient(v.x + v.w / 2, v.y + v.h / 2, Math.min(v.w, v.h) * 0.35, v.x + v.w / 2, v.y + v.h / 2, Math.max(v.w, v.h) * 0.75);
-	vg.addColorStop(0, 'rgba(0,0,0,0)');
-	vg.addColorStop(1, 'rgba(0,0,0,.65)');
-	ctx.fillStyle = vg;
-	ctx.fillRect(v.x, v.y, v.w, v.h);
+	// vignette, grade and scanlines: one cached layer, multiplied
+	ctx.globalCompositeOperation = 'multiply';
+	ctx.drawImage(postLayer(v, B), v.x, v.y, v.w, v.h);
 	ctx.globalCompositeOperation = 'overlay';
 	const gp = ctx.createPattern(grain(), 'repeat');
 	if (gp) {
+		// the grain crawls: a new offset every frame
+		gp.setTransform(new DOMMatrix().translate((t * 977) % 256, (t * 631) % 256));
+		ctx.globalAlpha = B ? 1 : 0.7;
 		ctx.fillStyle = gp;
 		ctx.fillRect(v.x, v.y, v.w, v.h);
+		ctx.globalAlpha = 1;
 	}
 	ctx.restore();
 }
@@ -502,6 +587,7 @@ function label(text: string, x: number, y: number): void {
 }
 
 function drawGallery(t: number): void {
+	const { drawCell, drawCocoon, drawFlare, drawGhost, drawHatch, drawHunter, drawMedPod } = actors();
 	ctx.fillStyle = '#080b0f';
 	ctx.fillRect(0, 0, vw, vh);
 	const items: Array<{ name: string; draw: (x: number, y: number, s: number) => void }> = [];
@@ -586,6 +672,7 @@ function frame(now: number): void {
 function syncButtons(): void {
 	document.querySelectorAll<HTMLButtonElement>('button[data-phase]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.phase) === phase)));
 	document.querySelectorAll<HTMLButtonElement>('button[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+	document.querySelectorAll<HTMLButtonElement>('button[data-style]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.style === style)));
 }
 document.querySelectorAll<HTMLButtonElement>('button[data-phase]').forEach((b) =>
 	b.addEventListener('click', () => {
@@ -596,6 +683,12 @@ document.querySelectorAll<HTMLButtonElement>('button[data-phase]').forEach((b) =
 document.querySelectorAll<HTMLButtonElement>('button[data-mode]').forEach((b) =>
 	b.addEventListener('click', () => {
 		mode = b.dataset.mode as typeof mode;
+		syncButtons();
+	})
+);
+document.querySelectorAll<HTMLButtonElement>('button[data-style]').forEach((b) =>
+	b.addEventListener('click', () => {
+		style = b.dataset.style as 'a' | 'b';
 		syncButtons();
 	})
 );

@@ -37,14 +37,36 @@ function glow(c: CanvasRenderingContext2D, x: number, y: number, r: number, colo
 // ---------------------------------------------------------------------------------------------
 // Food and pickups
 
-/** A power cell: a small capsule with a glowing core, lying across the corridor. */
+const cellCache = new Map<number, HTMLCanvasElement>();
+
+/** A power cell: a small capsule with a glowing core, lying across the corridor (from a sprite). */
 export function drawCell(c: CanvasRenderingContext2D, x: number, y: number, S: number, t: number, seed: number): void {
+	const v = Math.floor(seed * 3.99);
+	const key = Math.round(S * 4) * 4 + v;
+	let sp = cellCache.get(key);
+	if (!sp) {
+		sp = document.createElement('canvas');
+		const D = 2;
+		const size = Math.ceil(S * 0.8 * D);
+		sp.width = size;
+		sp.height = size;
+		const cc = sp.getContext('2d') as CanvasRenderingContext2D;
+		cc.scale(D, D);
+		paintCell(cc, size / D / 2, size / D / 2, S, v / 4);
+		cellCache.set(key, sp);
+	}
+	const w = sp.width / 2;
+	c.globalAlpha = 0.85 + 0.15 * Math.sin(t * 2.4 + seed * 6);
+	c.drawImage(sp, x - w / 2, y - w / 2, w, w);
+	c.globalAlpha = 1;
+}
+
+function paintCell(c: CanvasRenderingContext2D, x: number, y: number, S: number, seed: number): void {
 	const w = S * 0.2;
 	const h = S * 0.11;
-	const pulse = 0.8 + 0.2 * Math.sin(t * 2.4 + seed * 6);
 	c.save();
 	c.globalCompositeOperation = 'lighter';
-	glow(c, x, y, S * 0.36, '#59e3ff', 0.32 * pulse);
+	glow(c, x, y, S * 0.36, '#59e3ff', 0.32);
 	c.restore();
 	c.save();
 	c.translate(x, y);

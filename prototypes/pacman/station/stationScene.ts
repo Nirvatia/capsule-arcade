@@ -72,14 +72,14 @@ export const PAL = {
 /** How far the nest's resin has spread, by phase (in tiles of path from the lair). */
 const RESIN_REACH: Readonly<Record<Phase, number>> = { 1: 1.2, 2: 6.5, 3: 15 };
 
-const isWall = (g: GridMatrix, x: number, y: number) => g[y]?.[x] === 'WL';
-const isVoid = (g: GridMatrix, x: number, y: number) => {
+export const isWall = (g: GridMatrix, x: number, y: number) => g[y]?.[x] === 'WL';
+export const isVoid = (g: GridMatrix, x: number, y: number) => {
 	const t = g[y]?.[x];
 	return t === undefined || t === 'ES';
 };
 const LAIR = new Set(['LT', 'BY', 'IY', 'PY', 'CE', 'DB']);
-const isLair = (g: GridMatrix, x: number, y: number) => LAIR.has(g[y]?.[x] ?? '');
-const isFloor = (g: GridMatrix, x: number, y: number) =>
+export const isLair = (g: GridMatrix, x: number, y: number) => LAIR.has(g[y]?.[x] ?? '');
+export const isFloor = (g: GridMatrix, x: number, y: number) =>
 	!isWall(g, x, y) && !isVoid(g, x, y) && !isLair(g, x, y) && g[y]?.[x] !== 'LE';
 
 /** The lamps: ceiling lamps over some corridors, red emergency lamps at some junctions. */
@@ -122,7 +122,7 @@ export function stationLamps(g: GridMatrix): Lamp[] {
 // ---------------------------------------------------------------------------------------------
 // Small painting helpers
 
-function rivet(c: CanvasRenderingContext2D, x: number, y: number, s: number): void {
+export function rivet(c: CanvasRenderingContext2D, x: number, y: number, s: number): void {
 	c.fillStyle = 'rgba(0,0,0,.55)';
 	c.beginPath();
 	c.arc(x + s * 0.35, y + s * 0.45, s, 0, Math.PI * 2);
@@ -136,7 +136,7 @@ function rivet(c: CanvasRenderingContext2D, x: number, y: number, s: number): vo
 	c.fill();
 }
 
-function hazardBand(
+export function hazardBand(
 	c: CanvasRenderingContext2D,
 	x: number,
 	y: number,
@@ -174,7 +174,7 @@ function hazardBand(
 	c.restore();
 }
 
-function stencil(
+export function stencil(
 	c: CanvasRenderingContext2D,
 	text: string,
 	x: number,
@@ -195,7 +195,7 @@ function stencil(
 }
 
 /** A frame-sized canvas at K pixels per unit, its context already scaled to scene units. */
-function layer(): [HTMLCanvasElement, CanvasRenderingContext2D] {
+export function layer(): [HTMLCanvasElement, CanvasRenderingContext2D] {
 	const c = makeCanvas(FRAME.w * K, FRAME.h * K);
 	const x = context(c);
 	x.scale(K, K);
@@ -203,12 +203,12 @@ function layer(): [HTMLCanvasElement, CanvasRenderingContext2D] {
 }
 
 /** Draws a frame-sized layer onto a scene-scaled context, pixel for pixel, moved by (dx, dy). */
-function put(c: CanvasRenderingContext2D, src: HTMLCanvasElement, dx = 0, dy = 0): void {
+export function put(c: CanvasRenderingContext2D, src: HTMLCanvasElement, dx = 0, dy = 0): void {
 	c.drawImage(src, dx, dy, FRAME.w, FRAME.h);
 }
 
 /** Shape helpers: grow / shrink an alpha mask by `d` units (12 shifted copies). */
-function morph(src: HTMLCanvasElement, d: number, grow: boolean): HTMLCanvasElement {
+export function morph(src: HTMLCanvasElement, d: number, grow: boolean): HTMLCanvasElement {
 	const c = makeCanvas(src.width, src.height);
 	const x = context(c);
 	x.drawImage(src, 0, 0);
@@ -220,7 +220,7 @@ function morph(src: HTMLCanvasElement, d: number, grow: boolean): HTMLCanvasElem
 	return c;
 }
 
-function minus(a: HTMLCanvasElement, b: HTMLCanvasElement): HTMLCanvasElement {
+export function minus(a: HTMLCanvasElement, b: HTMLCanvasElement): HTMLCanvasElement {
 	const c = makeCanvas(a.width, a.height);
 	const x = context(c);
 	x.drawImage(a, 0, 0);
@@ -229,7 +229,7 @@ function minus(a: HTMLCanvasElement, b: HTMLCanvasElement): HTMLCanvasElement {
 	return c;
 }
 
-function paintInto(mask: HTMLCanvasElement, paint: (c: CanvasRenderingContext2D) => void) {
+export function paintInto(mask: HTMLCanvasElement, paint: (c: CanvasRenderingContext2D) => void) {
 	const [c, x] = layer();
 	paint(x);
 	x.setTransform(1, 0, 0, 1, 0, 0);
@@ -373,7 +373,7 @@ function hullFrame(c: CanvasRenderingContext2D, pts: ReadonlyArray<readonly [num
 	}
 }
 
-function pipe(
+export function pipe(
 	c: CanvasRenderingContext2D,
 	pts: ReadonlyArray<readonly [number, number]>,
 	w: number,
@@ -438,7 +438,7 @@ function pipe(
 	}
 }
 
-function crate(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, r: Rng) {
+export function crate(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, r: Rng) {
 	c.save();
 	c.fillStyle = 'rgba(0,0,0,.55)';
 	c.filter = 'blur(6px)';
@@ -594,7 +594,7 @@ function coolantSpill(c: CanvasRenderingContext2D, x: number, y: number, s: numb
 	c.stroke();
 }
 
-function cable(c: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, sag: number, color: string) {
+export function cable(c: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, sag: number, color: string) {
 	c.save();
 	c.lineCap = 'round';
 	const mx = (x0 + x1) / 2 + sag * 0.4;
@@ -723,7 +723,7 @@ function paintSurround(c: CanvasRenderingContext2D, glow: CanvasRenderingContext
 // ---------------------------------------------------------------------------------------------
 // The maze
 
-function wallMask(g: GridMatrix, grow: number): HTMLCanvasElement {
+export function wallMask(g: GridMatrix, grow: number): HTMLCanvasElement {
 	const [m, c] = layer();
 	c.fillStyle = '#fff';
 	const rad = 7;
@@ -749,7 +749,7 @@ function wallMask(g: GridMatrix, grow: number): HTMLCanvasElement {
 	return m;
 }
 
-function floorMask(g: GridMatrix, pred: (x: number, y: number) => boolean): HTMLCanvasElement {
+export function floorMask(g: GridMatrix, pred: (x: number, y: number) => boolean): HTMLCanvasElement {
 	const [m, c] = layer();
 	c.fillStyle = '#fff';
 	for (let y = 0; y < g.length; y += 1) {
@@ -964,7 +964,7 @@ function paintWalls(c: CanvasRenderingContext2D, glow: CanvasRenderingContext2D,
 	put(glow, paintInto(band, (p) => ((p.fillStyle = PAL.strip), p.fillRect(0, 0, FRAME.w, FRAME.h))));
 }
 
-function paintVents(c: CanvasRenderingContext2D, g: GridMatrix): void {
+export function paintVents(c: CanvasRenderingContext2D, g: GridMatrix): void {
 	for (let y = 0; y < g.length; y += 1) {
 		for (let x = 0; x < (g[0]?.length ?? 0); x += 1) {
 			const t = g[y]?.[x] ?? 'ES';
@@ -1012,7 +1012,7 @@ function paintVents(c: CanvasRenderingContext2D, g: GridMatrix): void {
 }
 
 /** The nest: the lair filled with living resin, its gate a torn blast door. */
-function paintNest(c: CanvasRenderingContext2D, glow: CanvasRenderingContext2D, g: GridMatrix): void {
+export function paintNest(c: CanvasRenderingContext2D, glow: CanvasRenderingContext2D, g: GridMatrix): void {
 	const r = rng(41);
 	const lair = floorMask(g, (x, y) => isLair(g, x, y));
 	const nest = paintInto(lair, (p) => {
@@ -1075,7 +1075,7 @@ function paintNest(c: CanvasRenderingContext2D, glow: CanvasRenderingContext2D, 
 }
 
 /** Resin: glossy dark sheets with ribs that flow, beads of wet light, a few strands. */
-function resinTexture(p: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number, r: Rng, density: number): void {
+export function resinTexture(p: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number, r: Rng, density: number): void {
 	const n = Math.floor(((w * h) / 90) * density);
 	p.lineCap = 'round';
 	for (let i = 0; i < n; i += 1) {
@@ -1114,7 +1114,7 @@ function resinTexture(p: CanvasRenderingContext2D, x0: number, y0: number, w: nu
 }
 
 /** The nest's resin over the station: from the lair along the corridors and over the walls. */
-function paintResin(c: CanvasRenderingContext2D, g: GridMatrix, phase: Phase): void {
+export function paintResin(c: CanvasRenderingContext2D, g: GridMatrix, phase: Phase): void {
 	const reach = RESIN_REACH[phase];
 	const W = g[0]?.length ?? 0;
 	// path distance from the lair, through floors and walls (resin creeps over both)

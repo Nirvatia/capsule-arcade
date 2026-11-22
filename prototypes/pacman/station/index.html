@@ -7,7 +7,7 @@
     <!-- Prototype: the station boss level's look (DESIGN.md §7a) on the real `grid_station`: the
          dark deck, the flashlight, the ghosts, the cocoon and the hunters, the tracker, the three
          phases. `node prototypes/pacman/build.mjs station`; open as a file.
-         Query: ?phase=1|2|3 &mode=scene|zoom|gallery &t=<seconds, freezes time> -->
+         Query: ?style=a|b &phase=1|2|3 &mode=scene|zoom|gallery &t=<seconds, freezes time> -->
     <style>
       :root{color-scheme:dark}
       html,body{margin:0;height:100%;overflow:hidden;background:#05070a;color:#d8e2ea;font:14px "Trebuchet MS","Segoe UI",system-ui,sans-serif}
@@ -21,6 +21,9 @@
   <body>
     <canvas id="view"></canvas>
     <div class="bar">
+      <button type="button" data-style="a">Стиль A</button>
+      <button type="button" data-style="b">Стиль B</button>
+      <span class="sep"></span>
       <button type="button" data-phase="1">Фаза 1: свет</button>
       <button type="button" data-phase="2">Фаза 2: авария</button>
       <button type="button" data-phase="3">Фаза 3: гнездо</button>
