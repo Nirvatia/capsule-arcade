@@ -119,7 +119,7 @@ export class SunHero extends PacmanHero {
 		ctx.arc(0, 0, R * REACH, 0, TAU);
 		ctx.fill();
 		ctx.restore();
-		this.corona(ctx, R, p);
+		this.sunCorona(ctx, R, p);
 		this.prominences(ctx, R, p);
 	}
 
@@ -160,7 +160,7 @@ export class SunHero extends PacmanHero {
 	}
 
 	/** The corona: one outline, two tones under one ink line, blown back by the wind. */
-	private corona(ctx: CanvasRenderingContext2D, R: number, p: number): void {
+	private sunCorona(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		const wind = this.windInFrame();
 		const wk = this.windK;
 		const N = 180;
