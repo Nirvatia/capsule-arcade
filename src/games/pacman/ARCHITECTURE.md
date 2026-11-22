@@ -35,6 +35,7 @@ logic/
   bonuses/   fruit, Easter egg, AbilityService (the season levels' abilities: the token, the
              slot, the F key, the mask, the shock; it owns the EchoCloneService riot), boss reward
   station/   the station's rules: SwarmField (the swarm as a density over the corridors),
+             HoundPack (the hounds: a pack that hunts tile by tile and moves like animals),
              StationService (HP and the rewind, the beam's and the flares'
              scare, the paces, the metamorphosis and the cocoons, the phases, the super flare),
              stationBeam (the flashlight cone and the super flare's corridor as the rules see them)

@@ -128,6 +128,16 @@ last (see Later).
          bugs as cached sprites streaming along the flow, the swarm's glow as one scaled density
          map). The torch, its fuel, the health, the beacons and the escape are in the page for
          the feel, with every number in its `TUNE`.
+         The owner played it: the bugs glitched (they were re-placed from the density every
+         frame instead of living on), and a fluid swarm risks a fuzzy, unreadable threat. His
+         pick: a **mini-swarm of hounds** instead, prototyped in `prototypes/pacman/hounds`
+         (built, awaits his play): `logic/station/HoundPack` (6-10 bright seekers that choose
+         their way tile by tile but move like animals: creep with pauses, sniff at junctions,
+         hold a breath and dash down a straight corridor, tire, round the corners, spread to cut
+         the ways, shy back from fire at once; a bite costs health; tested) and
+         `render/station/stationHound` (an arrowhead lit from inside, a burning eye at the tip,
+         legs and tail catching its fire; `HoundMotion` eases the path into curves). The torch,
+         the beacons and the escape stay. Which one the level keeps is the owner's call.
       2. The swarm rules in the game in place of the ghosts and `StationService`'s ghost parts;
          walls and floor readable in the dark; the surround's own light; the nest's door.
       3. The station's horror HUD (health, fuel, beacons).

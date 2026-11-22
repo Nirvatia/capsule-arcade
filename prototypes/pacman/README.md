@@ -56,6 +56,7 @@ Most pages read the query string and/or show buttons. Common ones:
 | `echo` | the echo bonus wisps on a season world |
 | `easter-egg` | the easter egg |
 | `arcade` | the secret arcade level |
+| `hounds` | the station's hound pack to play (the owner's pick over the fluid swarm): the same maze, look, torch, beacons and escape as `swarm`, the pack from `logic/station/HoundPack`; R restarts (`?high` for High) |
 | `swarm` | the station's swarm to play: the real maze and look, the hero on the keys, the torch fed by the dots, the swarm (`logic/station/SwarmField`), F drops / takes the torch, the four beacons, the escape; R restarts (`?high` for the High setting) |
 | `station` | the station's actors from `render/station/`, large and at game scale (`?t=<s>` freezes time); the station itself: the game, dev panel → Station |
 | `hud` | **broken** — imports a `GameHud.svelte` that no longer exists; fix or delete when next needed |
