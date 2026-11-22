@@ -24,19 +24,21 @@ describe('level routing', () => {
 		expect(seasons).toEqual(['summer', 'autumn', 'winter', 'spring']);
 	});
 
-	it('the seasons go on after the hell: level 6 is summer again, on a new run of mazes', () => {
+	it('the seasons go on after a boss: level 6 is summer again, on a new run of mazes', () => {
 		const loader = newRun();
 		loader.setMazeSeed(2024);
 		loader.startNewGame();
 		const seen: { level: number; season: string; maze: string; hell: boolean }[] = [];
+		const bossMazes: string[] = [];
 		for (let level = 1; level <= 14; level += 1) {
 			const session = loader.ensure();
 			seen.push({
 				level: loader.level,
 				season: session.season.name,
 				maze: session.season.maze,
-				hell: loader.hellMode
+				hell: loader.hellMode || loader.stationMode
 			});
+			if (loader.hellMode || loader.stationMode) bossMazes.push(session.season.maze);
 			loader.advanceLevel();
 		}
 		expect(seen.filter((s) => s.hell).map((s) => s.level)).toEqual([5, 10]);
@@ -62,9 +64,8 @@ describe('level routing', () => {
 		for (const run of [regular.slice(0, 4), regular.slice(4, 8)]) {
 			expect(run.map((s) => s.maze).sort()).toEqual(['grid_01', 'grid_02', 'grid_03', 'grid_04']);
 		}
-		for (const s of seen.filter((x) => x.hell)) {
-			expect(s.maze).toBe('doom');
-		}
+		// two different bosses in a row, each on its own maze
+		expect([...bossMazes].sort()).toEqual(['doom', 'station']);
 	});
 
 	it('peekNextLevel shows the maze the next level will get', () => {
@@ -94,18 +95,47 @@ describe('level routing', () => {
 		expect(orders.size).toBeGreaterThan(1);
 	});
 
-	it.each(['pacman', 'ms-pacman'] as const)('every fifth level is the hell (%s)', (profile) => {
+	it.each(['pacman', 'ms-pacman'] as const)('every fifth level is a boss level (%s)', (profile) => {
 		const loader = newRun(profile);
 		for (let level = 1; level < 5; level += 1) {
-			expect(loader.hellMode).toBe(false);
+			expect(loader.hellMode || loader.stationMode).toBe(false);
 			loader.advanceLevel();
 		}
 		expect(loader.level).toBe(5);
-		expect(loader.hellMode).toBe(true);
-		expect(loader.ensure().doom).not.toBeNull();
-		expect(loader.peekNextLevel().hell).toBe(false);
+		expect(loader.hellMode !== loader.stationMode).toBe(true);
+		expect(loader.peekNextLevel()).toMatchObject({ hell: false, station: false });
 		loader.advanceLevel();
-		expect(loader.hellMode).toBe(false);
+		expect(loader.hellMode || loader.stationMode).toBe(false);
+	});
+
+	it.each(['hell', 'station'] as const)('a forced %s builds its own world', (boss) => {
+		const loader = newRun();
+		loader.debugForceBoss(boss);
+		loader.debugGotoLevel(5);
+		const session = loader.ensure();
+		expect(loader.hellMode).toBe(boss === 'hell');
+		expect(loader.stationMode).toBe(boss === 'station');
+		expect(session.season.maze).toBe(boss === 'hell' ? 'doom' : 'station');
+		expect(session.doom !== null).toBe(boss === 'hell');
+		expect(session.station).toBe(boss === 'station');
+	});
+
+	it('on the station an energizer frightens nobody', () => {
+		const loader = newRun();
+		loader.debugForceBoss('station');
+		loader.debugGotoLevel(5);
+		const session = loader.ensure();
+		let energizer: { x: number; y: number } | null = null;
+		for (let y = 0; y < session.grid.height && !energizer; y += 1) {
+			for (let x = 0; x < session.grid.width && !energizer; x += 1) {
+				if (session.grid.tileAt(x, y) === 'EU') energizer = { x, y };
+			}
+		}
+		expect(energizer).not.toBeNull();
+		session.progress.collectAt(energizer!.x, energizer!.y);
+		session.combat.update(1 / 60);
+		expect(session.combat.isPowerActive).toBe(false);
+		expect(session.ghosts.list.some((g) => g.state === 'frightened')).toBe(false);
 	});
 });
 

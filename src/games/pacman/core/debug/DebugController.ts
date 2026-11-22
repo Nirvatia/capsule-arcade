@@ -32,6 +32,9 @@ export interface DebugSnapshot {
 	readonly scale: number;
 	readonly level: number;
 	readonly hell: boolean;
+	readonly station: boolean;
+	/** The boss forced on every boss level, or null: the run's own pick. */
+	readonly forcedBoss: string | null;
 	readonly secret: boolean;
 	readonly profile: string;
 	readonly quality: RenderQuality;
@@ -100,6 +103,8 @@ export class DebugController {
 			scale: this.time.scale,
 			level: this.loader.level,
 			hell: this.loader.hellMode,
+			station: this.loader.stationMode,
+			forcedBoss: this.loader.forcedBoss,
 			secret: this.loader.secretMode,
 			profile: this.loader.profile,
 			quality: this.quality,
@@ -199,6 +204,15 @@ export class DebugController {
 
 	enterHell(): void {
 		this.director.debugEnterHell();
+	}
+
+	enterStation(): void {
+		this.director.debugEnterBoss('station');
+	}
+
+	/** Back to the run's own boss pick on the boss levels. */
+	unforceBoss(): void {
+		this.loader.debugForceBoss(null);
 	}
 
 	enterSecret(): void {

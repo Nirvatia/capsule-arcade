@@ -137,7 +137,9 @@
 					<span class="st">{snap.state} · {snap.phase} · {fmt(snap.phaseRemaining)} s</span>
 				</div>
 				<div class="l2">
-					<b>LV {snap.level}</b>{snap.hell ? ' · hell' : ''}{snap.secret ? ' · secret' : ''} · {snap.profile}
+					<b>LV {snap.level}</b>{snap.hell ? ' · hell' : ''}{snap.station
+						? ' · station'
+						: ''}{snap.secret ? ' · secret' : ''} · {snap.profile}
 					· жизни <b>{snap.lives}</b> · счёт <b>{snap.score}</b>
 				</div>
 				{#if perf}
@@ -236,6 +238,16 @@
 				<div class="dev-ctl">
 					<button type="button" class="dev-btn" tabindex={-1} onclick={run((d) => d.enterHell())}
 						>Hell</button
+					>
+					<button type="button" class="dev-btn" tabindex={-1} onclick={run((d) => d.enterStation())}
+						>Station</button
+					>
+					<button
+						type="button"
+						class="dev-btn"
+						tabindex={-1}
+						disabled={!snap?.forcedBoss}
+						onclick={run((d) => d.unforceBoss())}>Boss: auto</button
 					>
 					<button type="button" class="dev-btn" tabindex={-1} onclick={run((d) => d.enterSecret())}
 						>Secret</button

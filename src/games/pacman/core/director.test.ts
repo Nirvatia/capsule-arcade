@@ -227,11 +227,13 @@ describe('game flow', () => {
 		expect(director.flow.phase).toBe('short');
 	});
 
-	it('peeks the next world: a season, or the hell every fifth level', () => {
+	it('peeks the next world: a season, or a boss every fifth level', () => {
 		const { level } = setup();
 		level.setPendingStartLevel(4);
 		level.startNewGame();
-		expect(level.peekNextLevel()).toMatchObject({ level: 5, hell: true });
+		const boss = level.peekNextLevel();
+		expect(boss.level).toBe(5);
+		expect(boss.hell !== boss.station).toBe(true);
 		level.setPendingStartLevel(1);
 		level.startNewGame();
 		expect(level.peekNextLevel()).toMatchObject({ level: 2, hell: false });

@@ -23,7 +23,9 @@ import type {
 	PacmanHudPayload
 } from '../../core/Events';
 import { BOSS_HP, PLAYER_MAX_HP } from '../doom/DoomBalance';
-import { seasonForLevel, secretSeason, hellSeason } from './SeasonCatalog';
+import { seasonForLevel, secretSeason, hellSeason, stationSeason } from './SeasonCatalog';
+import { bossForLevel } from './BossCatalog';
+import type { BossId } from './BossCatalog';
 import { ARCADE } from '../../config/arcadeConfig';
 import type { SeasonData } from './SeasonCatalog';
 import { buildLevelSession, resetForNextLevel, resetLevelSession } from './LevelSession';
@@ -33,6 +35,8 @@ import type { LevelSession } from './LevelSession';
 export interface NextLevel {
 	readonly level: number;
 	readonly hell: boolean;
+	/** The station boss level (DESIGN.md §7a). */
+	readonly station: boolean;
 	readonly season: SeasonData;
 }
 
@@ -51,6 +55,9 @@ export class LevelLoader {
 	private pendingStartLevelValue = 1;
 	private secretModeValue = false;
 	private hellModeValue = false;
+	private stationModeValue = false;
+	/** Dev: the boss every boss level gets, or null for the run's own pick (`BossCatalog`). */
+	private forcedBossValue: BossId | null = null;
 	private fireRequestedValue = false;
 	private secretReturnLevelValue = 1;
 	/** The arcade on the secret level: the round (1..3) and the tries carried between rounds. */
@@ -108,6 +115,21 @@ export class LevelLoader {
 
 	get hellMode(): boolean {
 		return this.hellModeValue;
+	}
+
+	/** The station boss level (DESIGN.md §7a). */
+	get stationMode(): boolean {
+		return this.stationModeValue;
+	}
+
+	/** The dev panel's boss for every boss level, or null: the run's own pick. */
+	get forcedBoss(): BossId | null {
+		return this.forcedBossValue;
+	}
+
+	/** Dev: makes every boss level `boss` (null: back to the run's own pick). */
+	debugForceBoss(boss: BossId | null): void {
+		this.forcedBossValue = boss;
 	}
 
 	get mazeSeed(): number {
@@ -333,9 +355,15 @@ export class LevelLoader {
 	}
 
 	debugEnterHell(): void {
+		this.debugEnterBoss('hell');
+	}
+
+	/** Dev: the first boss level now, with `boss` forced from here on. */
+	debugEnterBoss(boss: BossId): void {
 		if (this.secretModeValue) {
 			return;
 		}
+		this.forcedBossValue = boss;
 		this.changeLevel(() => {
 			this.levelNumber = HELL_LEVEL_INTERVAL;
 		});
@@ -408,17 +436,24 @@ export class LevelLoader {
 	}
 
 	/**
-	 * Which world a level number is: the hell every HELL_LEVEL_INTERVAL (for both heroes),
-	 * else a season.
+	 * Which world a level number is: a boss every HELL_LEVEL_INTERVAL (for both heroes), the
+	 * hell or the station as `BossCatalog` picks them for the run, else a season.
 	 */
-	private worldOf(level: number, secret: boolean): { hell: boolean; season: SeasonData } {
-		const hell = !secret && level % HELL_LEVEL_INTERVAL === 0;
+	private worldOf(
+		level: number,
+		secret: boolean
+	): { hell: boolean; station: boolean; season: SeasonData } {
+		const boss = secret ? null : bossForLevel(level, this.mazeSeedValue, this.forcedBossValue);
+		const hell = boss === 'hell';
+		const station = boss === 'station';
 		const season = secret
 			? secretSeason()
 			: hell
 				? hellSeason()
-				: seasonForLevel(level, this.mazeSeedValue);
-		return { hell, season };
+				: station
+					? stationSeason()
+					: seasonForLevel(level, this.mazeSeedValue);
+		return { hell, station, season };
 	}
 
 	private secretReturnLevel(): number {
@@ -467,14 +502,16 @@ export class LevelLoader {
 	}
 
 	private buildLevel(): LevelSession {
-		const { hell, season } = this.worldOf(this.levelNumber, this.secretModeValue);
+		const { hell, station, season } = this.worldOf(this.levelNumber, this.secretModeValue);
 		this.hellModeValue = hell;
+		this.stationModeValue = station;
 		const session = buildLevelSession({
 			events: this.events,
 			level: this.levelNumber,
 			profile: this.profileValue,
 			season,
 			hell,
+			station,
 			secret: this.secretModeValue,
 			godMode: this.godModeValue,
 			arcadeRound: this.arcadeRoundValue,

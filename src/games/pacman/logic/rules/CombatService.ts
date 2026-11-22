@@ -34,6 +34,8 @@ export class CombatService {
 	private completedValue = false;
 	private deathActiveValue = false;
 	private hellModeValue = false;
+	/** The station: nothing can be killed there, an energizer frightens nobody. */
+	private stationModeValue = false;
 	private hellDefeatValue = false;
 	private profileValue: GameProfile = 'pacman';
 	private resultValue: PacmanGameResult = 'none';
@@ -211,6 +213,15 @@ export class CombatService {
 		this.ghosts.setVisible(!value);
 	}
 
+	/** The station: an energizer gives its points but frightens nobody (nothing dies there). */
+	setStationMode(value: boolean): void {
+		this.stationModeValue = value;
+	}
+
+	get stationMode(): boolean {
+		return this.stationModeValue;
+	}
+
 	reset(): void {
 		this.livesValue = 3;
 		this.deathsValue = 0;
@@ -257,7 +268,7 @@ export class CombatService {
 			return;
 		}
 
-		if (this.progress.consumePendingEnergizer()) {
+		if (this.progress.consumePendingEnergizer() && !this.stationModeValue) {
 			this.activatePower();
 		}
 

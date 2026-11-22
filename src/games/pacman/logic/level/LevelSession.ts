@@ -37,6 +37,8 @@ export interface DoomSession {
 export interface LevelSession {
 	readonly season: SeasonData;
 	readonly hell: boolean;
+	/** The station boss level: until its own rules land, the season rules with unkillable ghosts. */
+	readonly station: boolean;
 	readonly secret: boolean;
 	readonly grid: GridService;
 	readonly score: ScoreModel;
@@ -62,6 +64,7 @@ export interface LevelSessionRequest {
 	readonly profile: GameProfile;
 	readonly season: SeasonData;
 	readonly hell: boolean;
+	readonly station?: boolean;
 	readonly secret: boolean;
 	readonly godMode: boolean;
 	/** Secret level only: the arcade round (1..3) and the tries left. */
@@ -71,6 +74,7 @@ export interface LevelSessionRequest {
 
 export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 	const { events, level, profile, season, hell, secret } = request;
+	const station = Boolean(request.station);
 	const grid = new GridService(new GridModel(season.grid));
 	if (hell) {
 		grid.setLairOpen(true);
@@ -106,6 +110,7 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 	}
 	combat.setProfile(profile);
 	combat.setHellMode(hell);
+	combat.setStationMode(station);
 	const mods = seasonModifiers(season.name);
 	fruit.setFruitDuration(mods.fruitDuration);
 	if (secret) {
@@ -137,6 +142,7 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 	return {
 		season,
 		hell,
+		station,
 		secret,
 		grid,
 		score,

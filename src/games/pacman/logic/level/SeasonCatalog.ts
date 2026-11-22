@@ -1,4 +1,4 @@
-import { GRID_CLASSIC, GRID_DOOM, SEASON_MAZES } from '../../config/mazes';
+import { GRID_CLASSIC, GRID_DOOM, GRID_STATION, SEASON_MAZES } from '../../config/mazes';
 import { HELL_LEVEL_INTERVAL } from '../../config/gridConfig';
 import type { GridMatrix } from '../../config/gridConfig';
 import { CYCLE_LENGTH, mazeIndexForSeasonLevel } from './MazeCycle';
@@ -74,6 +74,11 @@ export function secretSeason(): SeasonData {
 /** The hell's world: its old maze stays until the new one is finished. */
 export function hellSeason(): SeasonData {
 	return { name: 'autumn', grid: GRID_DOOM, maze: 'doom' };
+}
+
+/** The station's world (DESIGN.md §7a): its own maze; the name only picks the season tuning. */
+export function stationSeason(): SeasonData {
+	return { name: 'winter', grid: GRID_STATION, maze: 'station' };
 }
 
 /** Per-season gameplay tuning (durations in seconds, speeds as multipliers). */

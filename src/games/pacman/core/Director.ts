@@ -1,4 +1,5 @@
 import type { EventBus } from '../engine/EventBus';
+import type { BossId } from '../logic/level/BossCatalog';
 import type { PacmanEventMap, PacmanStateName } from './Events';
 import type { LevelLoader } from '../logic/level/LevelLoader';
 import type { GameState, GameStateContext } from './flow/GameState';
@@ -296,10 +297,15 @@ export class Director {
 	}
 
 	debugEnterHell(): void {
+		this.debugEnterBoss('hell');
+	}
+
+	/** Dev: the first boss level now, with `boss` forced on every boss level from here on. */
+	debugEnterBoss(boss: BossId): void {
 		if (this.fadeValue) {
 			return;
 		}
-		this.context.level.debugEnterHell();
+		this.context.level.debugEnterBoss(boss);
 		this.setState(new ReadyState('short'), true);
 	}
 
