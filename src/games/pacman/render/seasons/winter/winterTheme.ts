@@ -25,6 +25,16 @@ const fog = lazy(() =>
 	)
 );
 
+/** A snowflake: white, soft, a faint cool rim so it reads over the snow. */
+const flake = lazy(() =>
+	radial([
+		[0, 'rgba(255,255,255,1)'],
+		[0.58, 'rgba(252,254,255,.95)'],
+		[0.74, 'rgba(108,134,172,.6)'],
+		[1, 'rgba(120,144,180,0)']
+	])
+);
+
 export const winterTheme: MeadowTheme = {
 	name: 'winter',
 	bake: {
@@ -172,30 +182,35 @@ export const winterTheme: MeadowTheme = {
 		wash: lazy(() => washTexture('rgba(255,236,200,.14)', 'rgba(70,90,150,.16)')),
 		stormTint: '#e4edf6',
 		stormAlpha: 0.24,
+		// a blizzard (the owner's review): dense flakes in three depths, each with a faint cool rim
+		// so it reads over the snow, gusts that push the whole field, and thin streaks of drifting
+		// snow low and fast; no white veil
 		weather: {
-			count: 220,
+			count: 900,
 			make: (i, vw, vh): WeatherParticle => {
-				const st = i % 2 === 0;
-				const s = st ? 0.8 + Math.random() : 0.14 + Math.random() * 0.2;
+				const st = i % 6 === 0;
+				const z = Math.random();
+				const s = st ? 0.8 + Math.random() * 0.6 : 2.8 + z * 6.2;
 				return {
 					st,
-					im: st ? streakTexture(i % 4 === 0 ? 0xffffff : 0xa9bdd6) : glowTexture(0xffffff),
-					w: st ? 16 * s : (64 * s) / 3,
-					h: st ? 2 * s : (64 * s) / 3,
+					im: st ? streakTexture(0xffffff) : flake(),
+					w: st ? 30 * s : s,
+					h: st ? 1.3 : s,
 					px: Math.random() * vw,
 					py: Math.random() * vh,
-					vx: st ? 12 + Math.random() * 8 : 3 + Math.random() * 3,
-					vy: st ? 4 + Math.random() * 3 : 2 + Math.random() * 2,
+					vx: st ? 22 + Math.random() * 8 : 7 + z * 11,
+					vy: st ? 1 + Math.random() : 2.5 + z * 4.5,
 					ph: Math.random() * 6,
-					rot: st ? 0.3 : 0,
+					rot: st ? 0.08 : 0,
 					add: false
 				};
 			},
 			step: (p, d, t, s, vw, vh) => {
-				p.px += p.vx * d * s;
-				p.py += p.vy * d * s + (p.st ? 0 : Math.sin(t * 2 + p.ph) * 0.3);
-				if (p.px > vw + 30) {
-					p.px = -30;
+				const gust = 1 + 0.45 * Math.sin(t * 0.7) + 0.2 * Math.sin(t * 1.9 + 1);
+				p.px += p.vx * d * s * gust;
+				p.py += p.vy * d * s + (p.st ? 0 : Math.sin(t * 2.2 + p.ph) * 0.35);
+				if (p.px > vw + 40) {
+					p.px = -40;
 					p.py = Math.random() * vh;
 				}
 				if (p.py > vh + 30) {
@@ -203,7 +218,7 @@ export const winterTheme: MeadowTheme = {
 					p.px = Math.random() * vw;
 				}
 			},
-			alpha: (p, s) => s * (p.st ? 0.7 : 0.9)
+			alpha: (p, s) => s * (p.st ? 0.3 : 0.95)
 		},
 		nightTint: '#5a6ea6',
 		nightAlpha: 0.55,

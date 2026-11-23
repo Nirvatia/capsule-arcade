@@ -182,9 +182,11 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   bat shadows gliding over the meadow, faint rain rings). In the rain autumn's ground gets wet instead of misty: the theme's `wet`
   layer (baked once at half resolution, faded in over ~12 s as the storm soaks it, part of the
   settled bake, no extra pass) darkens the ground, makes the stone's rims, the roofs and the
-  bridge glisten and fills puddles (small ones against the corridor walls, off the dots; larger
-  ones on the meadow); at night the nearby lights lie in them as soft spots. The rain is thin and
-  dim, a few leaves blow across it. Winter is **New Year** (a
+  bridge glisten and fills puddles (one tile each, lying wide across the corridor with an uneven edge; larger
+  ones on the meadow); at night the nearby lights lie in them as soft spots. The rain is a careful downpour (dense,
+  thin streaks, rings on the floor), a few leaves blow across it. Winter's weather is a blizzard:
+  dense flakes in three depths with a faint cool rim, gusts, thin streaks of drifting snow. Where
+  the lair meets its entrance, the corridor's tone runs into its tiles (no hard step). Winter is **New Year** (a
   decorated tree with presents and sparklers beside each snowman, lights round the cabins' roofs
   and on the bridge, warm window light, holly on the lamps). Spring is a **hanami** (every tree in
   blossom, petal carpets, blankets, paper lanterns between the trees and in two strings from lamp

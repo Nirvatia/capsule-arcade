@@ -296,7 +296,7 @@ export const halloweenScene: SeasonScene = {
 			ctx.save();
 			ctx.strokeStyle = 'rgba(200,214,226,1)';
 			ctx.lineWidth = Math.max(0.6, 0.5 * k);
-			for (let i = 0; i < 14; i += 1) {
+			for (let i = 0; i < 26; i += 1) {
 				const life = 1.1;
 				const q = (t / life + hash(i, 1)) % 1;
 				const gen = Math.floor(t / life + hash(i, 1));
@@ -305,7 +305,7 @@ export const halloweenScene: SeasonScene = {
 				if (v.grid[r0]?.[c0] !== 'DT' && v.grid[r0]?.[c0] !== 'EU') continue;
 				const x = v.ox + (c0 + 0.5) * T * k;
 				const y = v.oy + (r0 + 0.5) * T * k;
-				ctx.globalAlpha = 0.22 * v.storm * (1 - q);
+				ctx.globalAlpha = 0.3 * v.storm * (1 - q);
 				ctx.beginPath();
 				ctx.ellipse(x, y, (2 + 7 * q) * k, (1.4 + 5 * q) * k, 0, 0, TAU);
 				ctx.stroke();

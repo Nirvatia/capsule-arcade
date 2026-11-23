@@ -50,9 +50,12 @@ last (see Later).
    - **Summer**: ivy / wild vine over the walls, uneven (some walls almost covered, some with a
      shoot or two, about half on average); a band of roots and shoots at their feet; the carousel
      at half speed; heat haze with poplar fluff for the weather.
-   - **Winter's blizzard**: flakes of several sizes on the wind and drifting snow along the
-     ground, no white veil; the snow on the walls and at their feet grows a little while it blows.
+   - **Winter**: the snow on the walls and at their feet grows a little while the blizzard blows.
    - The pumpkin and the starfish brought to the new food's style.
+   - **The tunnel pads**: the worn paths behind them (there to blend the corridor's dark tile into
+     the light meadow) to be replaced by a better transition or a new pad art (the owner's ask).
+   - **The background as a cozy place**: winter's roofs still carry snow "stickers"; the
+     bubble-like bushes everywhere; proposals for the meadow's nature welcome.
      Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
      heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the
      static is baked (hooks of `MeadowBake`), no new full-screen passes in the settled state

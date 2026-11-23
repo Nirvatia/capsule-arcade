@@ -207,7 +207,7 @@ export const autumnTheme: MeadowTheme = {
 		stormTint: '#4a5870',
 		stormAlpha: 0.3,
 		weather: {
-			count: 260,
+			count: 440,
 			make: (i, vw, vh): WeatherParticle => {
 				const s = 0.9 + Math.random() * 0.9;
 				const vx = 3 + Math.random() * 2;
@@ -218,9 +218,9 @@ export const autumnTheme: MeadowTheme = {
 					im:
 						i % 24 === 0
 							? tinted(leaf(), LEAVES[i % 4])
-							: streakTexture(i % 3 === 0 ? 0xc9d6e4 : 0x9fb4c8),
-					w: i % 24 === 0 ? 7 : 14 * s,
-					h: i % 24 === 0 ? 4.2 : 0.55 * s,
+							: streakTexture(i % 3 === 0 ? 0xd8e2ec : 0xaabdd0),
+					w: i % 24 === 0 ? 7 : 20 * s,
+					h: i % 24 === 0 ? 4.2 : 0.75 * s,
 					px: Math.random() * vw,
 					py: Math.random() * vh,
 					vx,
@@ -241,7 +241,7 @@ export const autumnTheme: MeadowTheme = {
 					p.px = -30;
 				}
 			},
-			alpha: (p, s) => s * (p.w === 7 ? 0.85 : 0.38)
+			alpha: (p, s) => s * (p.w === 7 ? 0.85 : 0.5)
 		},
 		nightTint: '#3a3a70',
 		nightAlpha: 0.55,

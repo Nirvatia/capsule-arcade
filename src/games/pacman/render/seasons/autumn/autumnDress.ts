@@ -125,40 +125,82 @@ export function mossAndLeaves(f: MeadowFrame, r: () => number): void {
 	}
 }
 
-/** One puddle: a few overlapping ovals of dark water with a sky sheen and a lit lower rim. */
+/** An uneven outline round (x, y): a smooth loop whose radius wanders with a few slow waves. */
+function blobPath(x: number, y: number, rx: number, ry: number, k: () => number): Path2D {
+	const n = 22;
+	const waves: Array<[number, number, number]> = [
+		[2, 0.1 + k() * 0.06, k() * TAU],
+		[3, 0.07 + k() * 0.05, k() * TAU],
+		[5, 0.04 + k() * 0.03, k() * TAU]
+	];
+	const pts: Array<[number, number]> = [];
+	for (let i = 0; i < n; i += 1) {
+		const a = (i / n) * TAU;
+		let m = 1;
+		for (const [f, amp, ph] of waves) m += amp * Math.sin(a * f + ph);
+		pts.push([x + Math.cos(a) * rx * m, y + Math.sin(a) * ry * m]);
+	}
+	const path = new Path2D();
+	const mid = (i: number): [number, number] => {
+		const [ax, ay] = pts[i % n];
+		const [bx, by] = pts[(i + 1) % n];
+		return [(ax + bx) / 2, (ay + by) / 2];
+	};
+	path.moveTo(...mid(0));
+	for (let i = 1; i <= n; i += 1) {
+		const [cx, cy] = pts[i % n];
+		path.quadraticCurveTo(cx, cy, ...mid(i));
+	}
+	path.closePath();
+	return path;
+}
+
+/**
+ * One puddle from above, always lying wide: an uneven outline, a damp dark ring in the ground
+ * round it, the water holding the overcast sky (lighter than the ground), the bank's shade along
+ * its upper edge (the water lies lower than the ground) and a bright line where its lower edge
+ * catches the light.
+ */
 function puddle(b: C2, x: number, y: number, rx: number, ry: number, k: () => number): void {
-	const parts: Array<[number, number, number, number]> = [[x, y, rx, ry]];
-	for (let i = 0; i < 2; i += 1) {
-		parts.push([
-			x + (k() - 0.5) * rx,
-			y + (k() - 0.5) * ry,
-			rx * (0.45 + k() * 0.3),
-			ry * (0.5 + k() * 0.3)
-		]);
-	}
-	const shape = new Path2D();
-	for (const [px, py, prx, pry] of parts) {
-		shape.moveTo(px + prx, py);
-		shape.ellipse(px, py, prx, pry, 0, 0, TAU);
-	}
-	// the damp rim, then the water
+	const shape = blobPath(x, y, rx, ry, k);
 	b.save();
-	b.strokeStyle = 'rgba(14,10,8,.4)';
-	b.lineWidth = 1.6;
+	b.lineJoin = 'round';
+	b.strokeStyle = 'rgba(16,11,8,.32)';
+	b.lineWidth = 3;
 	b.stroke(shape);
-	const g = b.createLinearGradient(x - rx, y - ry, x + rx, y + ry);
-	// the water holds the overcast sky: lighter and cooler than the ground round it
-	g.addColorStop(0, 'rgba(92,106,130,.82)');
-	g.addColorStop(1, 'rgba(150,166,190,.72)');
+	b.strokeStyle = 'rgba(16,11,8,.4)';
+	b.lineWidth = 1.2;
+	b.stroke(shape);
+	const g = b.createLinearGradient(x, y - ry, x, y + ry);
+	g.addColorStop(0, 'rgba(70,82,104,.9)');
+	g.addColorStop(0.45, 'rgba(118,134,160,.82)');
+	g.addColorStop(1, 'rgba(160,176,198,.78)');
 	b.fillStyle = g;
 	b.fill(shape);
 	b.clip(shape);
-	// the sky's sheen along the lower right, a thin bright line where the far bank catches light
-	b.strokeStyle = 'rgba(232,240,250,.6)';
-	b.lineWidth = 0.8;
-	b.beginPath();
-	b.ellipse(x - 0.8, y - 0.8, rx, ry, 0, 0.05 * TAU, 0.3 * TAU);
-	b.stroke();
+	// the bank's shade on the water's upper edge
+	b.strokeStyle = 'rgba(20,24,34,.45)';
+	b.lineWidth = 2.4;
+	b.translate(0, 1.2);
+	b.stroke(shape);
+	b.translate(0, -2.2);
+	// the lit lower edge
+	b.strokeStyle = 'rgba(236,242,250,.55)';
+	b.lineWidth = 0.9;
+	b.stroke(shape);
+	b.translate(0, 1);
+	// a streak or two of reflected sky across the water
+	b.strokeStyle = 'rgba(220,230,244,.28)';
+	b.lineWidth = 0.7;
+	b.lineCap = 'round';
+	for (let i = 0; i < 2; i += 1) {
+		const sy = y + (k() - 0.3) * ry * 0.8;
+		const sx = x + (k() - 0.5) * rx * 0.6;
+		b.beginPath();
+		b.moveTo(sx - rx * 0.35, sy);
+		b.lineTo(sx + rx * 0.35, sy);
+		b.stroke();
+	}
 	b.restore();
 }
 
@@ -203,28 +245,25 @@ export function autumnWet(f: MeadowFrame): Array<readonly [number, number, numbe
 			for (let yy = o.y - 34; yy < o.y + 34; yy += 10) b.fillRect(o.x - 22, yy, 44, 0.8);
 		}
 	}
-	// corridor puddles: small, pressed against a wall, beside the dot, never over it
+	// corridor puddles: one tile each, lying wide across the cell (the dot sits on the water),
+	// never on an energizer, a few cells apart
 	const isPath = (r: number, c: number) => {
 		const t = S[r]?.[c];
-		return t !== undefined && t !== 'WL' && t !== 'ES' && !LAIR.has(t);
+		return t !== undefined && t !== 'WL' && t !== 'ES' && t !== 'EU' && !LAIR.has(t);
 	};
+	const wet: Array<[number, number]> = [];
 	for (let r = 0; r < f.R; r += 1) {
 		for (let c = 0; c < f.C; c += 1) {
-			if (!isPath(r, c) || f.isW(r, c) || hash(r * 53 + c * 11, 21) > 0.13) continue;
+			if (!isPath(r, c) || hash(r * 53 + c * 11, 21) > 0.1) continue;
+			if (wet.some(([wr, wc]) => Math.abs(wr - r) + Math.abs(wc - c) < 4)) continue;
+			wet.push([r, c]);
 			const k = rng(hash(r * 3 + c * 71, 8) * 1e6);
-			const x = c * T;
-			const y = r * T;
-			const sides: Array<[number, number, number, number]> = [];
-			if (f.isW(r - 1, c)) sides.push([x + T / 2, y + 3.6, 6 + k() * 3, 2.7]);
-			if (f.isW(r + 1, c)) sides.push([x + T / 2, y + T - 3.6, 6 + k() * 3, 2.7]);
-			if (f.isW(r, c - 1)) sides.push([x + 3.6, y + T / 2, 2.7, 6 + k() * 3]);
-			if (f.isW(r, c + 1)) sides.push([x + T - 3.6, y + T / 2, 2.7, 6 + k() * 3]);
-			if (!sides.length) continue;
-			const [px, py, rx, ry] = sides[(k() * sides.length) | 0];
-			const sx = rx > ry ? (k() - 0.5) * 5 : 0;
-			const sy = ry > rx ? (k() - 0.5) * 5 : 0;
-			puddle(b, px + sx, py + sy, rx, ry, k);
-			out.push([px + sx, py + sy, Math.max(rx, ry)]);
+			const x = c * T + T / 2 + (k() - 0.5) * 2;
+			const y = r * T + T / 2 + (k() - 0.5) * 1.5;
+			const rx = T * (0.4 + k() * 0.06);
+			const ry = T * (0.24 + k() * 0.05);
+			puddle(b, x, y, rx, ry, k);
+			out.push([x, y, rx]);
 		}
 	}
 	// meadow puddles, clear of the decor, the scene's lights and marks
@@ -244,7 +283,7 @@ export function autumnWet(f: MeadowFrame): Array<readonly [number, number, numbe
 		const rad = 1 + hash(i, 31) * 0.5;
 		const [x, y] = spot(f, tx, ty, rad, taken);
 		const k = rng(i * 977 + 5);
-		puddle(b, x, y, rad * T * 0.85, rad * T * 0.55, k);
+		puddle(b, x, y, rad * T * 0.95, rad * T * 0.5, k);
 		out.push([x, y, rad * T * 0.8]);
 	});
 	return out;

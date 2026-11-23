@@ -296,6 +296,37 @@ function paintLairCell(f: MeadowFrame, x: number, y: number, k: () => number): v
 	blob(x + k() * T, y + k() * T, 3, 1.4, 'rgba(255,255,255,.18)', 0);
 }
 
+/**
+ * Where a lair cell meets the corridor (its exit), the corridor's tone runs into it and fades over
+ * most of the cell: no hard step from the lair's tiles to the corridor (the owner's review).
+ */
+function blendLairExit(f: MeadowFrame, r: number, c: number, x: number, y: number): void {
+	const { S, P, b } = f;
+	const open = (rr: number, cc: number) => {
+		const t = S[rr]?.[cc];
+		return t !== undefined && t !== 'WL' && t !== 'ES' && !LAIR.has(t);
+	};
+	const tone = P.floor.tiles[0];
+	const run = T * 0.75;
+	const side = (x0: number, y0: number, x1: number, y1: number) => {
+		const g = b.createLinearGradient(x0, y0, x1, y1);
+		g.addColorStop(0, tone);
+		g.addColorStop(0.35, tone + 'b0');
+		g.addColorStop(1, tone + '00');
+		b.fillStyle = g;
+		b.fillRect(
+			Math.min(x0, x1) - 0.5,
+			Math.min(y0, y1) - 0.5,
+			Math.abs(x1 - x0) || T + 1,
+			Math.abs(y1 - y0) || T + 1
+		);
+	};
+	if (open(r - 1, c)) side(x, y, x, y + run);
+	if (open(r + 1, c)) side(x, y + T, x, y + T - run);
+	if (open(r, c - 1)) side(x, y, x + run, y);
+	if (open(r, c + 1)) side(x + T, y, x + T - run, y);
+}
+
 /** Path cells, lair floor, gate, portal rings. */
 function paintMazeFloor(f: MeadowFrame): void {
 	const { S, P, R, C, b, vis, rnd, rr, pick, shade, lin, blob, rp } = f;
@@ -315,6 +346,7 @@ function paintMazeFloor(f: MeadowFrame): void {
 				} else {
 					paintLairCell(f, x, y, k);
 				}
+				blendLairExit(f, r, c, x, y);
 				continue;
 			}
 			if (P.floor.paint) {
