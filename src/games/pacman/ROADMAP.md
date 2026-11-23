@@ -40,13 +40,11 @@ last (see Later).
 ## Part I. The main game
 
 1. **Season scenes: the owner's refinements** (the current focus; his answers of 2026-11-23 to
-   the season questionnaire). Done, in review: spring (temari, bindweed and moss, a soft petal
-   wind with pollen) and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
+   the season questionnaire). Done, in review: spring as a Japanese garden (plaster walls with a
+   tile edge, raked gravel, a deck lair, pebbles, toro lanterns, koi, temari, a soft petal wind) and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
    the shared base (snow blanket, thin bank, trodden-snow corridor, tile lair, icicles, the new
    bauble, a blizzard), the food of every season, autumn's wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
    ground pools and a storm that never brightens the night (`DESIGN.md` §6). Left, one chat:
-   - **Spring**: still the weakest theme by its subject (the owner); the temari, the bindweed and
-     moss, the softer petal wind are in, a stronger idea for the scene is open.
    - **Winter**: the snow on the walls and at their feet grows a little while the blizzard blows.
    - The pumpkin and the starfish brought to the new food's style.
    - **The tunnel pads** (the owner's pick, 2026-11-23: both): drop the worn paths behind them;

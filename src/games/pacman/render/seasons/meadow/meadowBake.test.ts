@@ -160,13 +160,14 @@ describe('MeadowBake theme paint hooks', () => {
 	it("every season paints its corridor and keeps the shared lair; winter and autumn dress the walls' feet", () => {
 		for (const theme of [winterTheme, autumnTheme, springTheme, summerTheme]) {
 			expect(theme.bake.floor.paint).toBeTypeOf('function');
-			// the lair is the common tile floor in every season (winter's ice crust is gone)
-			expect(theme.bake.lair.paint).toBeUndefined();
+			// the lair is the common tile floor (winter's ice crust is gone), spring's garden a deck
+			if (theme === springTheme) expect(theme.bake.lair.paint).toBeTypeOf('function');
+			else expect(theme.bake.lair.paint).toBeUndefined();
 			// the wall painter lays tiles[0] under the rounded corners: it is the corridor's tone
 			expect(new Set(theme.bake.floor.tiles).size).toBe(1);
 		}
 		// the shared stone with a band at the feet: winter's snow bank, autumn's wet leaf litter,
-		// spring's young moss, summer's ivy roots
+		// spring's river pebbles, summer's ivy roots
 		for (const theme of [winterTheme, autumnTheme, springTheme, summerTheme]) {
 			expect(theme.bake.wall.paint).toBeTypeOf('function');
 		}

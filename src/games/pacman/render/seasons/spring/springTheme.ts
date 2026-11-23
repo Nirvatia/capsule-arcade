@@ -1,7 +1,8 @@
 // Spring, from the owner's CLAUDE_GRID_SPRING mock-up: fresh green meadow, cherry trees,
 // picnic blankets, yellow button pellets and cherry-blossom energizers, a petal-laden wind, a soft night.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
-import { springFloor, hanamiScene } from './springScene';
+import { hanamiScene } from './springScene';
+import { GRAVEL, gardenFloor, gardenLair, pebbleFoot } from './gardenDress';
 import {
 	glowTexture,
 	lazy,
@@ -12,7 +13,6 @@ import {
 } from '../meadow/meadowSprites';
 import { temari, springPellet } from '../meadow/seasonFood';
 import { paintWalls } from '../meadow/meadowBakeWalls';
-import { greenFoot } from '../meadow/wallFlora';
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 
 const PETALS = [0xffc2d9, 0xffffff, 0xffdde8, 0xf7a8c4];
@@ -77,13 +77,14 @@ export const springTheme: MeadowTheme = {
 		},
 		rock: ['#b8b8a8', '#6a6a5a', '#7fbf4a', '#9fd46a'],
 		// muted (owner's review): the ghosts and the Easter egg must read on the lair floor
-		lair: { base: '#2e3424', tiles: ['#5a6446', '#535d40', '#606a4c'] },
+		// a Japanese garden (the owner's pick, 2026-11-23): a wooden deck for the lair
+		lair: { base: '#5a4430', tiles: ['#6e5438', '#685034', '#73583b'], paint: gardenLair },
 		// the holiday scene's corridor (the owner's pick of `season-dress`): one opaque tone, a
 		// contact shadow and grass at the walls' feet; the tiles are that tone, as the wall
 		// painter lays `tiles[0]` under the rounded corners
 		floor: {
-			tiles: ['#7b5a3d', '#7b5a3d', '#7b5a3d'],
-			paint: springFloor,
+			tiles: [GRAVEL, GRAVEL, GRAVEL],
+			paint: gardenFloor,
 			specks: ['#6e5846', '#3a2c20', '#7a6452']
 		},
 		portal: {
@@ -94,26 +95,22 @@ export const springTheme: MeadowTheme = {
 			ring: '#fff3a0',
 			corners: '#fffbe0'
 		},
-		// young moss along the walls' feet, under the stones (`wallFlora`)
+		// the garden walls' stone under the plaster dress; river pebbles along their feet
 		wall: {
-			paint: (f) =>
-				paintWalls(f, {
-					foot: (g) =>
-						greenFoot(g, 'rgba(46,84,30,.45)', ['#5f9a3a', '#7fb84a', '#4d8230', '#8cc456'], 61)
-				}),
-			base: '#24481f',
-			moss: ['#4a8a3e', '#2a5a2a'],
-			top: ['#5a9a48', '#62a24e', '#528f42'],
-			bottom: ['#2f6a2c', '#357230', '#2a6028'],
+			paint: (f) => paintWalls(f, { foot: pebbleFoot }),
+			base: '#4a4640',
+			moss: ['#6a665e', '#55514a'],
+			top: ['#8a867c', '#8e8a80', '#86827a'],
+			bottom: ['#615d56', '#66625a', '#5c5852'],
 			mossSpecks: ['#ffc2d9', '#f58fb5', '#ffffff'],
 			specks: ['rgba(190,230,130,.3)', 'rgba(15,50,20,.32)'],
 			crack: 'rgba(15,50,20,.28)',
 			joints: 'rgba(15,50,20,.2)',
-			drifts: ['#8fcf6a', '#a8dc80'],
+			drifts: ['#9a968c', '#a29e94'],
 			light: 'rgba(210,240,160,.35)',
 			dark: 'rgba(10,40,15,.4)',
 			flowers: ['#ffffff', '#ffc2d9', '#f58fb5'],
-			shadow: 'rgba(20,50,20,.5)'
+			shadow: 'rgba(30,36,24,.5)'
 		},
 		edgeGrass: ['#5faa3a', '#86c94f', '#b8e07a'],
 		trees: {

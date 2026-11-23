@@ -172,11 +172,13 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   blanket on the walls (the stone a thin rim, the corners' rounding kept), a thin snow bank at
   their feet that leaves the corridor its width, a dark blue-grey corridor of trodden snow, rare
   short icicles under long walls. Autumn (`autumn/autumnDress.ts`): wet leaf litter at the walls'
-  feet, wet moss on their edges and a few stuck leaves. Spring and summer (`meadow/wallFlora.ts`):
-  creepers grow over the stone unevenly by a growth map (some walls almost covered, some with a
-  shoot or two): spring's bindweed with small white and pink flowers over young moss (about two
-  fifths), summer's ivy in dense mats (about half); a green band at the walls' feet (spring's moss,
-  summer's roots and shoots). The snowman stays the winter landmark.
+  feet, wet moss on their edges and a few stuck leaves. Spring is a **Japanese garden** (the owner's pick,
+  2026-11-23, so that it never reads as summer; `spring/gardenDress.ts`): garden walls of cream
+  plaster with a dark scalloped roof-tile edge, corridors of raked grey gravel (the rake's lines
+  along the way), the lair a wooden deck, a gutter of river pebbles at the walls' feet, stone toro
+  lanterns by the maze that glow at night, koi in the pond. Summer (`meadow/wallFlora.ts`): ivy
+  grows over the stone unevenly by a growth map (some walls almost covered, some with a shoot or
+  two, about half), roots and shoots at the walls' feet. The snowman stays the winter landmark.
 - **Holiday scenes** (the owner's picks of the `season-dress` prototype, 2026-11-23; refinements
   to come from his list): each season is a finished holiday scene on the same meadow and layout
   (the pond and the stream where they are), all seen from above and baked, a few moving bits
@@ -192,7 +194,7 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   dense flakes in three depths with a faint cool rim, gusts, thin streaks of drifting snow. Where
   the lair meets its entrance, the corridor's tone runs into its tiles (no hard step). Winter is **New Year** (a
   decorated tree with presents and sparklers beside each snowman, lights round the cabins' roofs
-  and on the bridge, warm window light, holly on the lamps). Spring is a **hanami** (every tree in
+  and on the bridge, warm window light, holly on the lamps). Spring is a **hanami** in a Japanese garden (every tree in
   blossom, petal carpets, blankets, paper lanterns between the trees and in two strings from lamp
   to lamp, petals on the walls). Summer is a **fair** (striped tents, festoons, balloons, a
   turning carousel beside each umbrella, bunting along the maze's frame). What glows lights up at
