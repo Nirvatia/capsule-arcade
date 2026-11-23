@@ -24,7 +24,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link
 		rel="stylesheet"
-		href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400&display=swap"
+		href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&display=swap"
 	/>
 </svelte:head>
 
@@ -36,15 +36,17 @@
 
 <style>
 	.drift {
-		--d-ink: #cfe6ea;
-		--d-dim: #7f9fab;
+		--d-ink: #262c36;
+		--d-dim: rgba(38, 44, 54, 0.6);
+		--d-line: rgba(38, 44, 54, 0.2);
+		--d-paper: rgba(244, 240, 232, 0.82);
 		position: fixed;
 		inset: 0;
 		overflow: hidden;
-		background: #02070d;
+		background: #e4e5e3;
 		color: var(--d-ink);
-		font-family: 'Raleway', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
-		font-weight: 300;
+		font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif;
+		font-weight: 400;
 		touch-action: none;
 		user-select: none;
 		-webkit-user-select: none;

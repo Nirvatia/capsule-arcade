@@ -1,5 +1,5 @@
-// WebGL2-пост поверх 2D-кадра: искажение пространства у порталов, туннель перехода
-// между полями и мягкий bloom с высоким порогом. Без WebGL2 кадр выводится как есть.
+// WebGL2-пост поверх 2D-кадра: искажение пространства у порталов и туннель перехода
+// между мирами. Без WebGL2 кадр выводится как есть.
 
 export interface Warp {
 	/** Центр в долях экрана. */
@@ -36,7 +36,6 @@ uniform sampler2D uTex; uniform vec2 uRes; uniform float uTime;
 uniform vec4 uW[4]; uniform vec4 uD[4]; uniform vec4 uTr; uniform float uSwirl; uniform vec3 uFlash;
 out vec4 o;
 float hash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
-vec3 thr(vec3 c,float t){ float l=dot(c,vec3(0.3,0.55,0.15)); return c*max(l-t,0.0)/max(l,1e-4); }
 vec2 rot(vec2 v,float a){ float c=cos(a),s=sin(a); return vec2(c*v.x-s*v.y,s*v.x+c*v.y); }
 void main(){
   vec2 uv=vec2(gl_FragCoord.x, uRes.y-gl_FragCoord.y)/uRes;
@@ -60,16 +59,9 @@ void main(){
   chroma.x/=asp;
   vec3 col;
   col.r=textureLod(uTex,uv+chroma,0.0).r; col.g=textureLod(uTex,uv,0.0).g; col.b=textureLod(uTex,uv-chroma,0.0).b;
-  vec3 b=vec3(0.0);
-  for(int i=0;i<8;i++){ float a=float(i)*0.785398; vec2 off=vec2(cos(a)/asp,sin(a))*0.006; b+=textureLod(uTex,uv+off,2.5).rgb; }
-  b=thr(b/8.0,0.32);
-  vec3 b2=vec3(0.0);
-  for(int i=0;i<4;i++){ float a=float(i)*1.5708+0.4; vec2 off=vec2(cos(a)/asp,sin(a))*0.02; b2+=textureLod(uTex,uv+off,4.5).rgb; }
-  b2=thr(b2/4.0,0.22);
-  col+=b*0.45+b2*0.5;
-  col=col/(1.0+0.35*max(max(col.r,col.g),col.b));
-  float vg=smoothstep(1.2,0.35,length((uv-0.5)*vec2(asp,1.0)));
-  col*=mix(0.62,1.0,vg);
+  // светлый акварельный мир: без bloom и тонмаппинга, только лёгкая виньетка
+  float vg=smoothstep(1.25,0.4,length((uv-0.5)*vec2(asp,1.0)));
+  col*=mix(0.9,1.0,vg);
   col=mix(col,uFlash,uTr.w);
   col+=(hash(gl_FragCoord.xy+fract(uTime)*91.7)-0.5)/255.0;
   o=vec4(col,1.0);
@@ -121,7 +113,7 @@ export class Post {
 		gl.bindVertexArray(gl.createVertexArray());
 		this.tex = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, this.tex);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -153,7 +145,6 @@ export class Post {
 			this.texW = scene.width;
 			this.texH = scene.height;
 		} else gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, scene);
-		gl.generateMipmap(gl.TEXTURE_2D);
 		const ws = new Float32Array(16);
 		const ds = new Float32Array(16);
 		warps.slice(0, 4).forEach((w, i) => {

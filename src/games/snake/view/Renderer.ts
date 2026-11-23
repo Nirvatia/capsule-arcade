@@ -1,45 +1,100 @@
-// Кадр игры на 2D-канвасе: фон, Течение, Полотно, оживление рисунка, змейка, эффекты.
-// Затем пост (post.ts). Вид только читает состояние логики.
+// Кадр игры в духе акварели и туши. Два мира:
+// Течение — бледная вода, в которую собранные рисунки возвращают свои цвета;
+// Полотно — лист бумаги, где змейка-кисть обводит линии тушью.
+// Тяжёлая акварель рисуется заранее в отдельные холсты; каждый кадр — только живое.
+// Затем пост (post.ts): искажение у порталов и туннель между мирами.
 
 import { COLS, ROWS } from '../config';
 import { morph, type StrokeShape } from '../pictures/smooth';
 import type { Picture, Pt } from '../pictures/types';
 import type { Current } from '../sim/current';
 import { DIRS, type Pond } from '../sim/pond';
+import { drawCreature, type CreaturePalette } from './creature';
 import type { Fx } from './fx';
+import {
+	TAU,
+	bloom,
+	brush,
+	enso,
+	fillPoly,
+	layer,
+	paper,
+	resample,
+	rng,
+	roundCorners,
+	spline,
+	wash,
+	type Rng
+} from './paint';
 import { Post, type Tunnel } from './post';
 
-const TAU = Math.PI * 2;
 const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
-const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 const ease = (t: number): number => {
 	t = clamp(t, 0, 1);
 	return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 };
+const hsl = (h: number, s: number, l: number): string => `hsl(${h},${s}%,${l}%)`;
 
-/** Оттенок змейки — один на всю игру, это её «характер». */
-export const SNAKE_HUE = 178;
+/** Палитра «Возвращение цвета». */
+const PAL = {
+	sky: ['#f3f2ef', '#e2e4e4', '#cdd2d5'],
+	/** Бледная лаванда и серый: дымка мира до того, как в него вернутся цвета. */
+	washes: ['#a3a2d6', '#b8bcc4', '#a9a8d8', '#c4c8cc'],
+	far: '#c3c9ce',
+	farTexture: '#d4d8da',
+	near: '#9aa3ab',
+	kelp: '#88929b',
+	shaft: 'rgba(255,255,255,0.35)',
+	mote: 'rgb(70,80,92)',
+	ink: '#262c36',
+	paper: '#f2ecdf',
+	pencil: 'rgba(100,94,84,0.7)',
+	gridDot: 'rgba(120,110,92,0.22)',
+	veil: 'rgb(242,240,236)'
+};
+
+/** Змейка в воде: светлая, с тушевым контуром; плавник — цвета текущего рисунка. */
+const waterSnake = (hue: number): CreaturePalette => ({
+	ink: PAL.ink,
+	body: '#eceeed',
+	belly: '#ffffff',
+	mark: '#a3acb4',
+	fin: hsl(hue, 55, 70),
+	finEdge: hsl(hue, 45, 48),
+	eye: PAL.ink,
+	glint: 'rgba(255,250,240,0.9)'
+});
+
+/** На бумаге змейка становится самой кистью: тушевое тело, плавник в цвет рисунка. */
+const inkSnake = (hue: number): CreaturePalette => ({
+	ink: PAL.ink,
+	body: '#2e3442',
+	belly: '#5a6170',
+	mark: '#171b24',
+	fin: hsl(hue, 50, 62),
+	finEdge: hsl(hue, 45, 42),
+	eye: '#f4eee0',
+	glint: '#2e3442'
+});
 
 export interface FrameState {
 	t: number;
 	mode: 'current' | 'pond' | 'reveal';
-	/** 0 — Полотно, 1 — Течение: смешивание фона. */
-	mix: number;
 	picture: Picture;
 	shapes: StrokeShape[];
 	/** Зажжённые штрихи рисунка. */
 	lit: ReadonlySet<number>;
-	/** Когда штрих загорелся (для бегущего света). */
+	/** Когда штрих загорелся в этой сессии (для бегущего мазка). */
 	litAt: ReadonlyMap<number, number>;
+	/** Оттенки собранных рисунков: они вернули цвет в воду. */
+	colors: readonly number[];
 	current: Current | null;
 	pond: Pond | null;
 	/** Время с начала оживления, с. */
 	reveal: number;
-	/** Когда змейка последний раз что-то подобрала (волна света по телу). */
-	pulseAt: number;
 	fx: Fx;
 	tunnel: Tunnel | null;
-	/** Затемнение под меню 0..1. */
+	/** Вуаль под меню 0..1. */
 	dim: number;
 }
 
@@ -50,33 +105,31 @@ interface Mote {
 	ph: number;
 }
 
-interface SnakePt extends Pt {
-	tx: number;
-	ty: number;
-	/** 0 — кончик хвоста, 1 — голова. */
-	u: number;
-	/** Расстояние от головы, px. */
-	sh: number;
-	/** Расстояние от кончика хвоста, px. */
-	s: number;
-}
+/** Сколько длится бегущий мазок только что зажжённого штриха. */
+const SWEEP = 0.9;
 
 export class Renderer {
 	readonly view: HTMLCanvasElement;
 	private readonly scene: HTMLCanvasElement;
 	private readonly ctx: CanvasRenderingContext2D;
 	private readonly post: Post;
-	private readonly sprites = new Map<number, HTMLCanvasElement>();
 	private motes: Mote[] = [];
 	W = 0;
 	H = 0;
 	private S = 1;
+	/** Масштаб декораций относительно эскиза 1280×720. */
+	private k = 1;
 	/** Сетка Полотна в пикселях. */
 	grid = { cell: 40, x: 0, y: 0 };
 	/** Пикселей на единицу поля Течения. */
 	unit = 1;
-	/** Сглаженный угол головы на Полотне: на углах сетки нос поворачивает плавно. */
 	private pondAng: number | null = null;
+
+	private water: { key: string; canvas: HTMLCanvasElement } | null = null;
+	private sheet: { key: string; paper: HTMLCanvasElement; dots: HTMLCanvasElement } | null = null;
+	private ink: { key: string; canvas: HTMLCanvasElement } | null = null;
+	private tint: { key: string; canvas: HTMLCanvasElement } | null = null;
+	private paths: { key: string; list: Pt[][] } | null = null;
 
 	constructor(parent: HTMLElement) {
 		this.view = document.createElement('canvas');
@@ -103,6 +156,7 @@ export class Renderer {
 		const px = this.W * this.H * s * s;
 		if (px > 2.6e6) s *= Math.sqrt(2.6e6 / px);
 		this.S = s;
+		this.k = Math.min(this.W / 1280, this.H / 720) * 0.5 + (Math.min(this.W, this.H) / 720) * 0.5;
 		this.scene.width = this.view.width = Math.max(2, Math.round(this.W * s));
 		this.scene.height = this.view.height = Math.max(2, Math.round(this.H * s));
 		this.post.resized();
@@ -114,11 +168,12 @@ export class Renderer {
 			y: top + (this.H - top - 40 - cell * ROWS) / 2
 		};
 		this.unit = Math.min(this.W, this.H) / 1000;
-		this.motes = Array.from({ length: 46 }, () => ({
-			x: Math.random() * this.W,
-			y: Math.random() * this.H,
-			z: 0.25 + Math.random() * 0.75,
-			ph: Math.random() * 10
+		const mr = rng(77);
+		this.motes = Array.from({ length: 40 }, () => ({
+			x: mr() * this.W,
+			y: mr() * this.H,
+			z: 0.3 + mr() * 0.7,
+			ph: mr() * 10
 		}));
 	}
 
@@ -134,43 +189,8 @@ export class Renderer {
 		};
 	}
 
-	// ------------------------------------------------------------------ helpers
-
-	private sprite(h: number): HTMLCanvasElement {
-		h = (((Math.round(h / 6) * 6) % 360) + 360) % 360;
-		let c = this.sprites.get(h);
-		if (c) return c;
-		c = document.createElement('canvas');
-		c.width = c.height = 64;
-		const x = c.getContext('2d');
-		if (x) {
-			const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
-			g.addColorStop(0, `hsla(${h},80%,72%,0.9)`);
-			g.addColorStop(0.2, `hsla(${h},75%,58%,0.5)`);
-			g.addColorStop(0.55, `hsla(${h},70%,45%,0.12)`);
-			g.addColorStop(1, `hsla(${h},70%,40%,0)`);
-			x.fillStyle = g;
-			x.fillRect(0, 0, 64, 64);
-		}
-		this.sprites.set(h, c);
-		return c;
-	}
-
-	private glow(h: number, x: number, y: number, r: number, a: number): void {
-		if (a <= 0.003) return;
-		this.ctx.globalAlpha = Math.min(1, a);
-		this.ctx.drawImage(this.sprite(h), x - r, y - r, r * 2, r * 2);
-		this.ctx.globalAlpha = 1;
-	}
-
-	private poly(pts: readonly Pt[], toPx: (p: Pt) => Pt): void {
-		const ctx = this.ctx;
-		ctx.beginPath();
-		pts.forEach((p, i) => {
-			const q = toPx(p);
-			if (i) ctx.lineTo(q.x, q.y);
-			else ctx.moveTo(q.x, q.y);
-		});
+	private get sizeKey(): string {
+		return `${this.W}x${this.H}@${this.S}|${this.grid.cell}`;
 	}
 
 	// ------------------------------------------------------------------ кадр
@@ -180,435 +200,646 @@ export class Renderer {
 		ctx.setTransform(this.S, 0, 0, this.S, 0, 0);
 		ctx.globalAlpha = 1;
 		ctx.globalCompositeOperation = 'source-over';
-		this.drawBackground(f);
-		if (f.mode === 'current' && f.current) {
-			this.drawBackdropPicture(f);
-			this.drawCurrent(f, f.current);
-		} else if (f.pond) {
-			this.drawPond(f, f.pond);
-		}
-		this.drawFx(f.fx);
+		if (f.mode === 'current' && f.current) this.drawCurrent(f, f.current);
+		else if (f.pond) this.drawPond(f, f.pond);
+		this.drawFx(f);
 		if (f.dim > 0) {
-			ctx.fillStyle = `rgba(2,6,12,${0.55 * f.dim})`;
+			ctx.globalAlpha = 0.6 * f.dim;
+			ctx.fillStyle = PAL.veil;
 			ctx.fillRect(0, 0, this.W, this.H);
+			ctx.globalAlpha = 1;
 		}
-		const flash: [number, number, number] = [0.08, 0.22, 0.28];
-		this.post.present(this.scene, f.t, f.fx.warps(this.W, this.H), f.tunnel, flash);
-	}
-
-	private drawBackground(f: FrameState): void {
-		const { ctx, W, H } = this;
-		const m = f.mix;
-		const g = ctx.createRadialGradient(
-			W * 0.5,
-			H * 0.55,
-			0,
-			W * 0.5,
-			H * 0.55,
-			Math.max(W, H) * 0.8
-		);
-		g.addColorStop(0, `rgb(${lerp(7, 6, m) | 0},${lerp(17, 22, m) | 0},${lerp(30, 32, m) | 0})`);
-		g.addColorStop(0.6, `rgb(3,${lerp(9, 11, m) | 0},${lerp(18, 20, m) | 0})`);
-		g.addColorStop(1, '#01040a');
-		ctx.fillStyle = g;
-		ctx.fillRect(0, 0, W, H);
-		ctx.globalCompositeOperation = 'lighter';
-		for (const p of this.motes) {
-			p.y -= (3 + 8 * p.z) / 60;
-			p.x += Math.sin(f.t * 0.25 + p.ph) * 0.08 * p.z;
-			if (p.y < -10) {
-				p.y = H + 10;
-				p.x = Math.random() * W;
-			}
-			const tw = 0.6 + 0.4 * Math.sin(f.t * 0.8 + p.ph * 3);
-			ctx.fillStyle = `hsla(190,60%,70%,${0.12 * p.z * tw})`;
-			ctx.beginPath();
-			ctx.arc(p.x, p.y, 0.8 + 1.4 * p.z, 0, TAU);
-			ctx.fill();
-		}
-		ctx.globalCompositeOperation = 'source-over';
-	}
-
-	/** На Течении зажжённая часть рисунка видна крупно и бледно — силуэт проступает. */
-	private drawBackdropPicture(f: FrameState): void {
-		const { ctx, W, H } = this;
-		if (!f.lit.size) return;
-		const c = Math.min(W / COLS, H / ROWS) * 0.92;
-		const ox = (W - c * COLS) / 2;
-		const oy = (H - c * ROWS) / 2;
-		const toPx = (p: Pt): Pt => ({ x: ox + p.x * c, y: oy + p.y * c });
-		const hue = f.picture.hue;
-		ctx.lineJoin = 'round';
-		ctx.lineCap = 'round';
-		f.picture.strokes.forEach((s, i) => {
-			if (!f.lit.has(i)) return;
-			const sh = f.shapes[i];
-			if (s.cells.length === 1) {
-				const p = toPx(sh.raw[0]);
-				ctx.fillStyle = `hsla(${hue},55%,60%,0.22)`;
-				ctx.beginPath();
-				ctx.arc(p.x, p.y, c * 0.12, 0, TAU);
-				ctx.fill();
-				return;
-			}
-			this.poly(sh.smooth, toPx);
-			ctx.strokeStyle = `hsla(${hue},50%,55%,0.16)`;
-			ctx.lineWidth = Math.max(2, c * 0.1);
-			ctx.stroke();
-		});
+		this.post.present(this.scene, f.t, f.fx.warps(this.W, this.H), f.tunnel, [0.95, 0.94, 0.9]);
 	}
 
 	// ------------------------------------------------------------------ Течение
 
+	/** Вода: градиент, свет сверху, серые заливки, вернувшиеся цвета, лучи, риф. */
+	private bakeWater(colors: readonly number[]): HTMLCanvasElement {
+		const key = `${this.sizeKey}|${colors.join(',')}`;
+		if (this.water?.key === key) return this.water.canvas;
+		const { W, H, k } = this;
+		const { canvas, ctx } = layer(W, H, this.S);
+		const r = rng(21);
+		const g = ctx.createLinearGradient(0, 0, 0, H);
+		g.addColorStop(0, PAL.sky[0]);
+		g.addColorStop(0.5, PAL.sky[1]);
+		g.addColorStop(1, PAL.sky[2]);
+		ctx.fillStyle = g;
+		ctx.fillRect(0, 0, W, H);
+		bloom(ctx, W * 0.42, -H * 0.2, H * 1.05, '#ffffff', 0.8);
+		for (let i = 0; i < 4; i++)
+			wash(
+				ctx,
+				{
+					x: W * (0.15 + 0.25 * i) + r.gauss() * 60 * k,
+					y: H * (0.25 + 0.3 * r()),
+					r: (200 + r() * 160) * k
+				},
+				PAL.washes[i],
+				// не меньше ~2% на слой: тоньше 8-битный холст округляет неравномерно и уводит цвет
+				{ rng: r, alpha: 0.03, layers: 14, sx: 1.7, sy: 0.75, rot: r.gauss() * 0.2, spread: 0.14 }
+			);
+		// вернувшиеся цвета: у каждого рисунка своё место, чтобы при новом цвете старые не прыгали
+		colors.forEach((hue, i) => {
+			const x = W * (0.12 + ((i * 0.37 + 0.05) % 1) * 0.76);
+			const y = H * (0.22 + ((i * 0.53 + 0.4) % 1) * 0.45);
+			wash(ctx, { x, y, r: 190 * k }, hsl(hue, 45, 72), {
+				rng: rng(1000 + i * 31),
+				alpha: 0.022,
+				layers: 44,
+				sx: 1.6,
+				sy: 0.8,
+				blend: 'multiply',
+				spread: 0.15,
+				edge: 0.06
+			});
+		});
+		this.shafts(ctx, r);
+		this.reef(ctx, r);
+		paper(ctx, W, H, 0.16, 'multiply', 21);
+		this.water = { key, canvas };
+		return canvas;
+	}
+
+	private shafts(ctx: CanvasRenderingContext2D, r: Rng): void {
+		const { W, H, k } = this;
+		const { canvas: lc, ctx: l } = layer(W, H, 1);
+		for (let i = 0; i < 4; i++) {
+			const x = W * (0.16 + 0.22 * i) + r.gauss() * 30 * k;
+			const w = (70 + r() * 80) * k;
+			l.save();
+			l.translate(x, 0);
+			l.transform(1, 0, 0.32, 1, 0, 0);
+			const lg = l.createLinearGradient(-w / 2, 0, w / 2, 0);
+			lg.addColorStop(0, 'rgba(255,255,255,0)');
+			lg.addColorStop(0.5, PAL.shaft);
+			lg.addColorStop(1, 'rgba(255,255,255,0)');
+			l.fillStyle = lg;
+			l.fillRect(-w / 2, 0, w, H);
+			l.restore();
+		}
+		l.globalCompositeOperation = 'destination-in';
+		const fade = l.createLinearGradient(0, 0, 0, H * 0.8);
+		fade.addColorStop(0, 'rgba(0,0,0,1)');
+		fade.addColorStop(1, 'rgba(0,0,0,0)');
+		l.fillStyle = fade;
+		l.fillRect(0, 0, W, H);
+		ctx.drawImage(lc, 0, 0, W, H);
+	}
+
+	/** Риф: два слоя круглых скал, арка и несколько длинных водорослей. */
+	private reef(ctx: CanvasRenderingContext2D, r: Rng): void {
+		const { W, H, k } = this;
+		const ridge = (
+			y0: number,
+			amp: number,
+			step: number,
+			freq: number,
+			ph: number,
+			pow: number
+		): Pt[] => {
+			const pts: Pt[] = [];
+			for (let x = -step * 2; x <= W + step * 2; x += step)
+				pts.push({
+					x,
+					y: y0 - Math.pow(Math.abs(Math.sin(x * freq + ph)), pow) * amp - r() * 18 * k
+				});
+			return spline(pts, 10);
+		};
+		const fillRidge = (top: Pt[], color: string, a: number): Pt[] => {
+			const poly = [{ x: top[0].x, y: H + 20 }, ...top, { x: top[top.length - 1].x, y: H + 20 }];
+			ctx.save();
+			ctx.globalAlpha = a;
+			ctx.fillStyle = color;
+			fillPoly(ctx, poly);
+			ctx.restore();
+			return poly;
+		};
+		const far = fillRidge(ridge(H * 0.74, 90 * k, 110 * k, 0.004 / k, 1.3, 2), PAL.far, 0.55);
+		ctx.save();
+		ctx.beginPath();
+		far.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+		ctx.closePath();
+		ctx.clip();
+		for (let i = 0; i < 5; i++)
+			wash(
+				ctx,
+				{ x: r() * W, y: H * (0.85 + 0.1 * r()), r: (120 + r() * 120) * k },
+				PAL.farTexture,
+				{
+					rng: r,
+					alpha: 0.02,
+					layers: 24,
+					sx: 1.8,
+					sy: 0.6
+				}
+			);
+		ctx.restore();
+		// арка из камня справа, дальний план
+		const ax = W * 0.83;
+		const ay = H * 0.72;
+		ctx.save();
+		ctx.globalAlpha = 0.5;
+		ctx.fillStyle = PAL.far;
+		ctx.beginPath();
+		ctx.moveTo(ax - 120 * k, ay + 40 * k);
+		ctx.bezierCurveTo(
+			ax - 110 * k,
+			ay - 170 * k,
+			ax + 120 * k,
+			ay - 190 * k,
+			ax + 130 * k,
+			ay + 40 * k
+		);
+		ctx.lineTo(ax + 80 * k, ay + 40 * k);
+		ctx.bezierCurveTo(
+			ax + 70 * k,
+			ay - 110 * k,
+			ax - 60 * k,
+			ay - 100 * k,
+			ax - 70 * k,
+			ay + 40 * k
+		);
+		ctx.closePath();
+		ctx.fill();
+		ctx.restore();
+		fillRidge(ridge(H * 0.9, 70 * k, 140 * k, 0.0035 / k, 0.2, 3), PAL.near, 0.7);
+		for (let i = 0; i < 5; i++) {
+			const x = W * (0.06 + 0.2 * i) + r.gauss() * 40 * k;
+			const h = (140 + r() * 190) * k;
+			const pts: Pt[] = [];
+			for (let j = 0; j <= 10; j++)
+				pts.push({
+					x: x + Math.sin(j * 0.5 + i * 1.7) * 22 * k * (j / 10),
+					y: H + 10 - (h * j) / 10
+				});
+			brush(ctx, spline(pts, 6), (11 + r() * 5) * k, PAL.kelp, {
+				seed: 300 + i,
+				alpha: 0.45,
+				taper: 0.5,
+				dry: false,
+				grit: 0.02,
+				wobble: 0.6
+			});
+		}
+	}
+
 	private drawCurrent(f: FrameState, cur: Current): void {
-		const { ctx } = this;
+		const { ctx, W, H, k } = this;
 		const u = this.unit;
 		const P = (p: Pt): Pt => ({ x: p.x * u, y: p.y * u });
 		const t = f.t;
+		const hue = f.picture.hue;
+		ctx.drawImage(this.bakeWater(f.colors), 0, 0, W, H);
 
-		const gate = P(cur.gate);
-		this.drawGate(gate.x, gate.y, 46 * u, cur.gate.open, f.picture.hue, t);
+		// уже зажжённая часть рисунка — крупно и бледно, силуэт проступает в воде
+		if (f.lit.size) {
+			const c = Math.min(W / COLS, H / ROWS) * 0.92;
+			const ox = (W - c * COLS) / 2;
+			const oy = (H - c * ROWS) / 2;
+			const toPx = (p: Pt): Pt => ({ x: ox + p.x * c, y: oy + p.y * c });
+			f.picture.strokes.forEach((s, i) => {
+				if (!f.lit.has(i)) return;
+				const sh = f.shapes[i];
+				if (s.cells.length === 1) {
+					const p = toPx(sh.raw[0]);
+					ctx.fillStyle = PAL.ink;
+					ctx.globalAlpha = 0.1;
+					ctx.beginPath();
+					ctx.arc(p.x, p.y, c * 0.1, 0, TAU);
+					ctx.fill();
+					ctx.globalAlpha = 1;
+					return;
+				}
+				brush(ctx, sh.smooth.map(toPx), c * 0.09, PAL.ink, {
+					seed: 500 + i,
+					alpha: 0.1,
+					dry: false
+				});
+			});
+		}
 
-		ctx.globalCompositeOperation = 'lighter';
+		// пылинки в воде
+		ctx.fillStyle = PAL.mote;
+		for (const m of this.motes) {
+			const y = (((m.y - t * (4 + 8 * m.z)) % H) + H) % H;
+			const x = m.x + Math.sin(t * 0.25 + m.ph) * 8 * m.z;
+			ctx.globalAlpha = 0.08 + 0.2 * m.z;
+			ctx.beginPath();
+			ctx.arc(x, y, 0.5 + 1.1 * m.z * m.z, 0, TAU);
+			ctx.fill();
+		}
+		ctx.globalAlpha = 1;
+
+		// портал: закрыт — карандашный круг, открыт — энсо тушью и мягкое пятно цвета
+		const gp = P(cur.gate);
+		const R = 54 * k;
+		if (cur.gate.open) {
+			bloom(ctx, gp.x, gp.y, R * 1.6, hsl(hue, 45, 72), 0.55, 'multiply');
+			enso(ctx, gp.x, gp.y, R, R * 0.2, PAL.ink, { seed: 8, alpha: 0.88, start: -1.2 + t * 0.15 });
+			enso(ctx, gp.x, gp.y, R * 0.62, R * 0.07, PAL.ink, {
+				seed: 9,
+				alpha: 0.42,
+				start: 1.4 - t * 0.25,
+				span: 0.75
+			});
+		} else {
+			ctx.save();
+			ctx.strokeStyle = PAL.pencil;
+			ctx.setLineDash([2 * k, 7 * k]);
+			ctx.lineDashOffset = -t * 6;
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.arc(gp.x, gp.y, R * 0.8, 0, TAU);
+			ctx.stroke();
+			ctx.restore();
+		}
+
+		// искры несут цвет рисунка: мокрое пятно и точка туши
 		for (const s of cur.sparks) {
 			const q = P(s);
 			const fade = clamp((cur.time - s.born) / 1.2, 0, 1);
-			const tw = 0.75 + 0.25 * Math.sin(t * 2.3 + s.ph);
-			const h = s.big ? 44 : 186;
-			const r = (s.big ? 10 : 6) * u * 1.3;
-			this.glow(h, q.x, q.y, r * 3.4 * tw, 0.35 * fade);
-			this.glow(h, q.x, q.y, r * 1.2, 0.7 * fade);
-			ctx.strokeStyle = `hsla(${h},70%,74%,${0.4 * fade})`;
-			ctx.lineWidth = 1;
+			const tw = 0.85 + 0.15 * Math.sin(t * 2 + s.ph);
+			bloom(ctx, q.x, q.y, (s.big ? 26 : 16) * k * tw, hsl(hue, 60, 66), 0.55 * fade, 'multiply');
+			ctx.fillStyle = PAL.ink;
+			ctx.globalAlpha = 0.85 * fade;
 			ctx.beginPath();
-			const a0 = t * 0.8 + s.ph;
-			const L = r * (s.big ? 2.2 : 1.7) * tw;
-			for (let k = 0; k < 4; k++) {
-				const a = a0 + (k * Math.PI) / 2;
-				ctx.moveTo(q.x + Math.cos(a) * r * 0.5, q.y + Math.sin(a) * r * 0.5);
-				ctx.lineTo(q.x + Math.cos(a) * L, q.y + Math.sin(a) * L);
-			}
-			ctx.stroke();
+			ctx.arc(q.x, q.y, (s.big ? 2.8 : 1.9) * k, 0, TAU);
+			ctx.fill();
+			ctx.globalAlpha = 1;
 		}
+
+		// зов — тонкое кольцо туши, расходящееся по воде
 		const since = cur.time - cur.callAt;
 		if (since < 1.1) {
-			const k = since / 1.1;
+			const q = since / 1.1;
 			const head = P(cur);
-			ctx.strokeStyle = `hsla(${SNAKE_HUE},60%,65%,${0.35 * (1 - k)})`;
-			ctx.lineWidth = 1.5;
-			ctx.beginPath();
-			ctx.arc(head.x, head.y, 420 * u * (1 - Math.pow(1 - Math.min(1, k * 1.2), 3)), 0, TAU);
-			ctx.stroke();
-		}
-		ctx.globalCompositeOperation = 'source-over';
-
-		const subs: Pt[][] = [];
-		let curSub: Pt[] = [];
-		for (const p of cur.trail) {
-			if (p.g && curSub.length) {
-				subs.push(curSub);
-				curSub = [];
-			}
-			curSub.push(P(p));
-		}
-		curSub.push(P(cur));
-		subs.push(curSub);
-		const R = clamp(8.5 * u, 5, 11);
-		this.drawSnake(this.sample(subs, 3), R, cur.ang, 0.6, f, 1);
-	}
-
-	private drawGate(x: number, y: number, R: number, open: boolean, hue: number, t: number): void {
-		const ctx = this.ctx;
-		ctx.globalCompositeOperation = 'lighter';
-		const br = 0.8 + 0.2 * Math.sin(t * 2.2);
-		this.glow(hue, x, y, R * (open ? 2.6 : 1.6), (open ? 0.4 : 0.1) * br);
-		const a = open ? 0.85 : 0.28;
-		for (let i = 0; i < 3; i++) {
-			ctx.lineWidth = 2 - i * 0.4;
-			ctx.strokeStyle = `hsla(${hue + i * 22},65%,${62 - i * 4}%,${a * (0.8 - i * 0.18)})`;
-			const rr = R * (1 - i * 0.24);
-			const a0 = t * (1.1 + i * 0.5) * (i % 2 ? -1 : 1);
-			ctx.beginPath();
-			ctx.arc(x, y, rr, a0, a0 + Math.PI * 1.45);
-			ctx.stroke();
-			ctx.beginPath();
-			ctx.arc(x, y, rr, a0 + Math.PI * 1.6, a0 + Math.PI * 1.9);
-			ctx.stroke();
-		}
-		if (open) {
-			ctx.strokeStyle = `hsla(${hue + 20},70%,72%,0.45)`;
+			ctx.strokeStyle = PAL.ink;
+			ctx.globalAlpha = 0.35 * (1 - q);
 			ctx.lineWidth = 1.2;
 			ctx.beginPath();
-			for (let k = 0; k < 14; k += 0.3) {
-				const r = R * 0.07 * k;
-				const an = k + t * 2.2;
-				ctx.lineTo(x + Math.cos(an) * r, y + Math.sin(an) * r);
-			}
+			ctx.arc(head.x, head.y, 420 * u * (1 - Math.pow(1 - Math.min(1, q * 1.2), 3)), 0, TAU);
 			ctx.stroke();
+			ctx.globalAlpha = 1;
 		}
-		ctx.globalCompositeOperation = 'source-over';
+
+		// тело: куски хвоста от головы к кончику (разрыв там, где змейка вынырнула с другой стороны)
+		const subs: Pt[][] = [];
+		let piece: Pt[] = [P(cur)];
+		for (let i = cur.trail.length - 1; i >= 0; i--) {
+			const p = cur.trail[i];
+			piece.push(P(p));
+			if (p.g) {
+				subs.push(piece);
+				piece = [];
+			}
+		}
+		if (piece.length) subs.push(piece);
+		drawCreature(ctx, subs, clamp(12 * k, 7, 16), cur.ang, waterSnake(hue), t, 0.5);
 	}
 
 	// ------------------------------------------------------------------ Полотно
 
+	private bakeSheet(): { paper: HTMLCanvasElement; dots: HTMLCanvasElement } {
+		const key = this.sizeKey;
+		if (this.sheet?.key === key) return this.sheet;
+		const { W, H } = this;
+		const { canvas: pc, ctx } = layer(W, H, this.S);
+		ctx.fillStyle = PAL.paper;
+		ctx.fillRect(0, 0, W, H);
+		const r = rng(31);
+		for (let i = 0; i < 5; i++)
+			bloom(
+				ctx,
+				r() * W,
+				r() * H,
+				(260 + r() * 200) * this.k,
+				'rgb(196,182,150)',
+				0.08,
+				'multiply'
+			);
+		const v = ctx.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, Math.max(W, H) * 0.75);
+		v.addColorStop(0, 'rgba(0,0,0,0)');
+		v.addColorStop(1, 'rgba(120,100,70,0.22)');
+		ctx.fillStyle = v;
+		ctx.fillRect(0, 0, W, H);
+		paper(ctx, W, H, 0.22, 'multiply', 31);
+		const { canvas: dc, ctx: d } = layer(W, H, this.S);
+		d.fillStyle = PAL.gridDot;
+		const c = this.grid.cell;
+		for (let x = 0; x < COLS; x++)
+			for (let y = 0; y < ROWS; y++) {
+				d.beginPath();
+				d.arc(
+					this.grid.x + (x + 0.5) * c,
+					this.grid.y + (y + 0.5) * c,
+					Math.max(0.8, c * 0.026),
+					0,
+					TAU
+				);
+				d.fill();
+			}
+		this.sheet = { key, paper: pc, dots: dc };
+		return this.sheet;
+	}
+
+	/** Путь штриха по сетке со скруглёнными углами, в пикселях. */
+	private strokePaths(pic: Picture): Pt[][] {
+		const key = `${this.sizeKey}|${pic.id}`;
+		if (this.paths?.key === key) return this.paths.list;
+		const list = pic.strokes.map((s) =>
+			roundCorners(
+				s.cells.map((c) => this.cellPx(c)),
+				this.grid.cell * 0.45
+			)
+		);
+		this.paths = { key, list };
+		return list;
+	}
+
+	/** Мокрый цвет вдоль линии: перекрывающиеся мягкие пятна. */
+	private bleed(
+		ctx: CanvasRenderingContext2D,
+		pts: Pt[],
+		color: string,
+		size: number,
+		a: number,
+		seed: number
+	): void {
+		const r = rng(seed);
+		for (const p of resample(pts, size * 0.85))
+			bloom(
+				ctx,
+				p.x + r.gauss() * size * 0.15,
+				p.y + r.gauss() * size * 0.15,
+				size * (0.8 + r() * 0.5),
+				color,
+				a,
+				'multiply'
+			);
+	}
+
+	private inkStroke(ctx: CanvasRenderingContext2D, pts: Pt[], i: number, alpha = 0.9): void {
+		const c = this.grid.cell;
+		if (pts.length === 1) {
+			ctx.fillStyle = PAL.ink;
+			ctx.globalAlpha = alpha;
+			ctx.beginPath();
+			ctx.arc(pts[0].x, pts[0].y, c * 0.11, 0, TAU);
+			ctx.fill();
+			ctx.globalAlpha = 1;
+			return;
+		}
+		brush(ctx, pts, c * 0.11, PAL.ink, { seed: 40 + i, alpha });
+	}
+
+	/** Слой туши: штрихи, которые уже отгорели (вместе с мокрым цветом под ними). */
+	private bakeInk(f: FrameState, settled: number[]): HTMLCanvasElement {
+		const key = `${this.sizeKey}|${f.picture.id}|${settled.join(',')}`;
+		if (this.ink?.key === key) return this.ink.canvas;
+		const { canvas, ctx } = layer(this.W, this.H, this.S);
+		const paths = this.strokePaths(f.picture);
+		const color = hsl(f.picture.hue, 55, 66);
+		const c = this.grid.cell;
+		for (const i of settled) this.bleed(ctx, paths[i], color, c * 0.7, 0.14, 70 + i);
+		for (const i of settled) this.inkStroke(ctx, paths[i], i);
+		this.ink = { key, canvas };
+		return canvas;
+	}
+
 	private drawPond(f: FrameState, pond: Pond): void {
-		const { ctx } = this;
-		const { cell: c, x: gx, y: gy } = this.grid;
-		const gw = c * COLS;
-		const gh = c * ROWS;
-		const hue = f.picture.hue;
+		const { ctx, W, H } = this;
+		const c = this.grid.cell;
+		const sheet = this.bakeSheet();
 		const rev = f.mode === 'reveal' ? f.reveal : 0;
 		const gridA = 1 - clamp(rev / 1.2, 0, 1);
-		const head = this.pondHead(pond);
-
-		// чаша
-		ctx.fillStyle = `rgba(3,11,22,${0.5 * (0.4 + 0.6 * gridA)})`;
-		this.roundRect(gx - 12, gy - 12, gw + 24, gh + 24, 20);
-		ctx.fill();
-		ctx.strokeStyle = `hsla(${hue},35%,50%,${0.16 * gridA})`;
-		ctx.lineWidth = 1;
-		ctx.stroke();
-
+		ctx.drawImage(sheet.paper, 0, 0, W, H);
 		if (gridA > 0) {
-			for (let i = 0; i < COLS; i++)
-				for (let j = 0; j < ROWS; j++) {
-					const px = gx + (i + 0.5) * c;
-					const py = gy + (j + 0.5) * c;
-					const d = Math.hypot(px - head.x, py - head.y) / c;
-					const near = Math.exp((-d * d) / 7);
-					ctx.fillStyle = `hsla(${hue},35%,65%,${(0.07 + 0.2 * near) * gridA})`;
-					ctx.beginPath();
-					ctx.arc(px, py, c * (0.035 + 0.02 * near), 0, TAU);
-					ctx.fill();
-				}
+			ctx.globalAlpha = gridA;
+			ctx.drawImage(sheet.dots, 0, 0, W, H);
+			ctx.globalAlpha = 1;
 		}
-
+		const head = this.pondHead(pond);
 		if (f.mode === 'reveal') this.drawReveal(f);
-		else this.drawStrokesOnGrid(f, pond, head);
+		else this.drawStrokes(f, pond, head);
 
+		// тело: путь по сетке со скруглёнными углами; через край — отдельными кусками
 		const fade = f.mode === 'reveal' ? 1 - clamp(rev / 0.9, 0, 1) : 1;
-		if (fade > 0) {
-			const pts = this.sample(this.pondPath(pond), c * 0.13);
-			const last = pts[pts.length - 1];
-			const want = Math.atan2(last.ty, last.tx);
+		if (fade <= 0) return;
+		const subs = this.pondPath(pond)
+			.map((s) => roundCorners(s, c * 0.5).reverse())
+			.reverse();
+		const first = subs[0];
+		if (first && first.length > 1) {
+			const want = Math.atan2(first[0].y - first[1].y, first[0].x - first[1].x);
 			if (this.pondAng === null) this.pondAng = want;
 			const d = Math.atan2(Math.sin(want - this.pondAng), Math.cos(want - this.pondAng));
 			this.pondAng += d * 0.3;
-			this.drawSnake(pts, c * 0.2, this.pondAng, 0.3, f, fade);
 		}
+		drawCreature(ctx, subs, c * 0.2, this.pondAng ?? 0, inkSnake(f.picture.hue), f.t, 0.25, fade);
 	}
 
-	private drawStrokesOnGrid(f: FrameState, pond: Pond, head: Pt): void {
+	private drawStrokes(f: FrameState, pond: Pond, head: Pt): void {
 		const { ctx } = this;
 		const c = this.grid.cell;
-		const hue = f.picture.hue;
 		const t = f.t;
-		const px = (p: Pt): Pt => this.cellPx(p);
-		ctx.lineJoin = 'round';
-		ctx.lineCap = 'round';
+		const color = hsl(f.picture.hue, 55, 66);
+		const paths = this.strokePaths(f.picture);
 
-		const active = new Map(pond.strokes.map((s) => [s.id, s]));
-		f.picture.strokes.forEach((s, i) => {
-			const lit = f.lit.has(i);
-			const ps = active.get(i);
-			if (!lit && !ps) return; // будущие заходы скрыты
-			const pts = s.cells;
-			if (lit) {
-				const since = t - (f.litAt.get(i) ?? -99);
-				// бегущий свет: за 0.9 с линия загорается от начала обводки к концу
-				const front = since < 0.9 ? (since / 0.9) * (pts.length + 0.6) : Infinity;
-				const order = ps?.rev ? [...pts].reverse() : pts;
-				const shown = order.slice(0, Math.max(1, Math.ceil(front)));
-				if (shown.length === 1) {
-					const p = px(shown[0]);
-					ctx.globalCompositeOperation = 'lighter';
-					this.glow(hue, p.x, p.y, c * 0.6, 0.35);
-					ctx.globalCompositeOperation = 'source-over';
-					ctx.fillStyle = `hsla(${hue},70%,68%,0.9)`;
-					ctx.beginPath();
-					ctx.arc(p.x, p.y, c * 0.13, 0, TAU);
-					ctx.fill();
-					return;
-				}
-				ctx.globalCompositeOperation = 'lighter';
-				this.poly(shown, px);
-				ctx.strokeStyle = `hsla(${hue},70%,55%,0.07)`;
-				ctx.lineWidth = c * 0.3;
-				ctx.stroke();
-				ctx.globalCompositeOperation = 'source-over';
-				this.poly(shown, px);
-				ctx.strokeStyle = `hsla(${hue},65%,64%,0.85)`;
-				ctx.lineWidth = c * 0.11;
-				ctx.stroke();
-				if (since < 1.2) {
-					const tip = px(shown[shown.length - 1]);
-					ctx.globalCompositeOperation = 'lighter';
-					this.glow(hue + 20, tip.x, tip.y, c * 0.9, 0.5 * (1 - since / 1.2));
-					ctx.globalCompositeOperation = 'source-over';
-				}
-				return;
-			}
-			if (!ps) return;
-			// бледная направляющая
-			if (pts.length > 1) {
-				this.poly(pts, px);
-				ctx.strokeStyle = `hsla(${hue},40%,60%,0.2)`;
-				ctx.lineWidth = c * 0.05;
-				ctx.stroke();
-			}
-			for (const p of pts) {
-				const q = px(p);
-				ctx.fillStyle = `hsla(${hue},45%,66%,0.4)`;
+		// ближайшие к голове точки сетки чуть темнее — легче целиться
+		ctx.fillStyle = PAL.gridDot;
+		const hx = Math.round((head.x - this.grid.x) / c - 0.5);
+		const hy = Math.round((head.y - this.grid.y) / c - 0.5);
+		for (let x = hx - 3; x <= hx + 3; x++)
+			for (let y = hy - 3; y <= hy + 3; y++) {
+				if (x < 0 || y < 0 || x >= COLS || y >= ROWS) continue;
+				const p = this.cellPx({ x, y });
+				ctx.globalAlpha = Math.exp(-((Math.hypot(p.x - head.x, p.y - head.y) / c) ** 2) / 4);
 				ctx.beginPath();
-				ctx.arc(q.x, q.y, c * 0.07, 0, TAU);
+				ctx.arc(p.x, p.y, Math.max(1, c * 0.035), 0, TAU);
 				ctx.fill();
 			}
-			// пройденная часть
+		ctx.globalAlpha = 1;
+
+		// отгоревшие штрихи — из готового слоя; свежие рисуются бегущим мазком
+		const settled: number[] = [];
+		const sweeping: number[] = [];
+		for (const i of f.lit) {
+			if (t - (f.litAt.get(i) ?? -99) < SWEEP) sweeping.push(i);
+			else settled.push(i);
+		}
+		settled.sort((a, b) => a - b);
+		ctx.drawImage(this.bakeInk(f, settled), 0, 0, this.W, this.H);
+		const active = new Map(pond.strokes.map((s) => [s.id, s]));
+		for (const i of sweeping) {
+			const ps = active.get(i);
+			const pts = ps?.rev ? [...paths[i]].reverse() : paths[i];
+			const q = clamp((t - (f.litAt.get(i) ?? t)) / SWEEP, 0, 1);
+			const shown = pts.slice(0, Math.max(1, Math.ceil(pts.length * ease(q))));
+			this.bleed(ctx, shown, color, c * 0.7, 0.14 * q, 70 + i);
+			this.inkStroke(ctx, shown, i);
+		}
+
+		// штрихи захода: карандашный пунктир, звёздочки на концах, пройденная часть — свежей тушью
+		for (const ps of pond.strokes) {
+			if (ps.lit) continue;
+			const cells = ps.cells.map((p) => this.cellPx(p));
+			ctx.save();
+			ctx.strokeStyle = PAL.pencil;
+			ctx.lineWidth = 1;
+			ctx.setLineDash([Math.max(1, c * 0.035), c * 0.13]);
+			ctx.lineCap = 'round';
+			ctx.beginPath();
+			cells.forEach((p, j) => (j ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+			ctx.stroke();
+			ctx.restore();
 			if (ps.n > 0) {
-				const seq = ps.rev ? [...pts].reverse() : pts;
-				const done = seq.slice(0, ps.n);
-				if (done.length > 1) {
-					this.poly(done, px);
-					ctx.strokeStyle = `hsla(${hue},70%,66%,0.75)`;
-					ctx.lineWidth = c * 0.09;
-					ctx.stroke();
-				}
-			}
-			// концы — звёздочки; ближайшая к голове светится ярче
-			const ends = pts.length === 1 ? [pts[0]] : [pts[0], pts[pts.length - 1]];
-			if (ps.n === 0)
+				const seq = ps.rev ? [...ps.cells].reverse() : ps.cells;
+				const done = roundCorners(
+					seq.slice(0, ps.n).map((p) => this.cellPx(p)),
+					c * 0.45
+				);
+				this.bleed(ctx, done, color, c * 0.6, 0.08, 90 + ps.id);
+				if (done.length > 1) brush(ctx, done, c * 0.08, PAL.ink, { seed: 77 + ps.id, alpha: 0.55 });
+			} else {
+				const ends = cells.length === 1 ? [cells[0]] : [cells[0], cells[cells.length - 1]];
 				for (const e of ends) {
-					const q = px(e);
-					const d = Math.hypot(q.x - head.x, q.y - head.y) / c;
-					const near = clamp(1 - (d - 1) / 4, 0, 1);
-					const pulse = 0.5 + 0.5 * Math.sin(t * 2.4 + e.x);
+					const near = clamp(1 - (Math.hypot(e.x - head.x, e.y - head.y) / c - 1) / 4, 0, 1);
+					const pulse = 0.5 + 0.5 * Math.sin(t * 2.2 + e.x * 0.05);
 					this.star(
-						q.x,
-						q.y,
-						c * (0.24 + 0.06 * near),
-						hue,
-						0.5 + 0.3 * near + 0.15 * pulse,
-						t * 0.4 + e.y
+						e.x,
+						e.y,
+						c * (0.15 + 0.05 * near + 0.015 * pulse),
+						0.55 + 0.4 * near,
+						e.y * 0.01
 					);
 				}
-		});
+			}
+		}
 
-		// подсказки обводки: следующая клетка и ближайший поворот
+		// подсказки обводки: карандашный кружок на следующей клетке и уголок перед поворотом
 		for (const e of pond.expected()) {
 			const s = pond.strokes.find((q) => q.id === e.stroke);
 			if (!s) continue;
 			const q = this.cellPx(e.cell);
-			const pulse = 0.5 + 0.5 * Math.sin(t * 6);
-			ctx.strokeStyle = `hsla(${hue},70%,72%,${0.35 + 0.3 * pulse})`;
-			ctx.lineWidth = 1.5;
+			const pulse = 0.5 + 0.5 * Math.sin(t * 5);
+			ctx.strokeStyle = PAL.ink;
+			ctx.globalAlpha = 0.25 + 0.25 * pulse;
+			ctx.lineWidth = 1.1;
 			ctx.beginPath();
 			ctx.arc(q.x, q.y, c * 0.26, 0, TAU);
 			ctx.stroke();
+			ctx.globalAlpha = 1;
 			const seq = s.rev ? [...s.cells].reverse() : s.cells;
-			// ищем угол в пределах двух клеток впереди
-			for (let k = s.n; k < Math.min(seq.length - 1, s.n + 2); k++) {
-				const a = seq[k - 1];
-				const b = seq[k];
-				const n = seq[k + 1];
-				const d1 = [b.x - a.x, b.y - a.y];
-				const d2 = [n.x - b.x, n.y - b.y];
-				if (d1[0] === d2[0] && d1[1] === d2[1]) continue;
-				const turn = DIRS.findIndex(([dx, dy]) => dx === d2[0] && dy === d2[1]);
+			for (let j = s.n; j < Math.min(seq.length - 1, s.n + 2); j++) {
+				const a = seq[j - 1];
+				const b = seq[j];
+				const n = seq[j + 1];
+				if (b.x - a.x === n.x - b.x && b.y - a.y === n.y - b.y) continue;
+				const turn = DIRS.findIndex(([dx, dy]) => dx === n.x - b.x && dy === n.y - b.y);
 				if (turn < 0) break;
 				const bp = this.cellPx(b);
-				this.chevron(bp.x, bp.y, turn, c, hue, 0.4 + 0.4 * pulse);
+				this.chevron(bp.x, bp.y, turn, c, 0.45 + 0.35 * pulse);
 				break;
 			}
 		}
 	}
 
-	private star(x: number, y: number, r: number, hue: number, a: number, rot: number): void {
+	/** Звёздочка тушью на конце штриха. */
+	private star(x: number, y: number, R: number, a: number, rot: number): void {
 		const ctx = this.ctx;
-		ctx.globalCompositeOperation = 'lighter';
-		this.glow(hue, x, y, r * 2.6, a * 0.35);
-		ctx.globalCompositeOperation = 'source-over';
-		ctx.fillStyle = `hsla(${hue},70%,72%,${Math.min(1, a)})`;
-		ctx.beginPath();
-		for (let i = 0; i < 8; i++) {
-			const ang = rot + (i * Math.PI) / 4;
-			const rr = i % 2 ? r * 0.38 : r;
-			ctx.lineTo(x + Math.cos(ang) * rr, y + Math.sin(ang) * rr);
+		ctx.save();
+		ctx.translate(x, y);
+		ctx.rotate(rot);
+		ctx.strokeStyle = PAL.ink;
+		ctx.globalAlpha = Math.min(1, a);
+		ctx.lineWidth = Math.max(1, R * 0.18);
+		ctx.lineCap = 'round';
+		for (let i = 0; i < 4; i++) {
+			const ang = (i * Math.PI) / 4;
+			const l = i % 2 ? R * 0.55 : R;
+			ctx.beginPath();
+			ctx.moveTo(-Math.cos(ang) * l, -Math.sin(ang) * l);
+			ctx.lineTo(Math.cos(ang) * l, Math.sin(ang) * l);
+			ctx.stroke();
 		}
-		ctx.closePath();
-		ctx.fill();
+		ctx.restore();
 	}
 
-	private chevron(x: number, y: number, dir: number, c: number, hue: number, a: number): void {
+	private chevron(x: number, y: number, dir: number, c: number, a: number): void {
 		const ctx = this.ctx;
 		const [dx, dy] = DIRS[dir];
 		const px = -dy;
 		const py = dx;
-		const s = c * 0.17;
+		const s = c * 0.15;
 		const ox = x + dx * c * 0.18;
 		const oy = y + dy * c * 0.18;
-		ctx.strokeStyle = `hsla(${hue},75%,74%,${a})`;
-		ctx.lineWidth = Math.max(1.5, c * 0.05);
+		ctx.strokeStyle = PAL.ink;
+		ctx.globalAlpha = a;
+		ctx.lineWidth = Math.max(1.2, c * 0.04);
+		ctx.lineCap = 'round';
 		ctx.beginPath();
 		ctx.moveTo(ox - dx * s + px * s, oy - dy * s + py * s);
 		ctx.lineTo(ox, oy);
 		ctx.lineTo(ox - dx * s - px * s, oy - dy * s - py * s);
 		ctx.stroke();
+		ctx.globalAlpha = 1;
 	}
 
-	/** Оживление: сетка гаснет, ступеньки перетекают в гладкие линии, рисунок покачивается. */
+	/** Цвет готового рисунка: мокрые пятна вдоль гладких линий, рисуется один раз. */
+	private bakeTint(f: FrameState): HTMLCanvasElement {
+		const key = `${this.sizeKey}|${f.picture.id}`;
+		if (this.tint?.key === key) return this.tint.canvas;
+		const { canvas, ctx } = layer(this.W, this.H, this.S);
+		const c = this.grid.cell;
+		const hue = f.picture.hue;
+		const toPx = (p: Pt): Pt => ({ x: this.grid.x + p.x * c, y: this.grid.y + p.y * c });
+		f.picture.strokes.forEach((_, i) => {
+			const pts = f.shapes[i].smooth.map(toPx);
+			this.bleed(ctx, pts, hsl(hue + (i % 3) * 6 - 6, 50, 64), c * 1.1, 0.12, 200 + i);
+		});
+		this.tint = { key, canvas };
+		return canvas;
+	}
+
+	/** Оживление: сетка гаснет, ступеньки перетекают в гладкие линии, разливается цвет, рисунок дышит. */
 	private drawReveal(f: FrameState): void {
 		const { ctx } = this;
 		const c = this.grid.cell;
-		const hue = f.picture.hue;
 		const r = f.reveal;
 		const k = ease((r - 0.8) / 2.6);
 		const alive = clamp((r - 3.4) / 1.5, 0, 1);
 		const t = f.t;
 		const toPx = (p: Pt): Pt => {
-			const sx = Math.sin(t * 1.3 + p.y * 0.45) * 0.14 * alive;
-			const sy = Math.sin(t * 1.05 + p.x * 0.35) * 0.1 * alive;
+			const sx = Math.sin(t * 1.3 + p.y * 0.45) * 0.12 * alive;
+			const sy = Math.sin(t * 1.05 + p.x * 0.35) * 0.08 * alive;
 			return { x: this.grid.x + (p.x + sx) * c, y: this.grid.y + (p.y + sy) * c };
 		};
-		ctx.lineJoin = 'round';
-		ctx.lineCap = 'round';
-		const bright = 0.85 + 0.15 * Math.sin(r * 2) * alive;
+		ctx.globalAlpha = k;
+		ctx.drawImage(this.bakeTint(f), 0, 0, this.W, this.H);
+		ctx.globalAlpha = 1;
 		f.picture.strokes.forEach((s, i) => {
 			const sh = f.shapes[i];
 			if (s.cells.length === 1) {
-				const p = toPx(sh.raw[0]);
-				ctx.globalCompositeOperation = 'lighter';
-				this.glow(hue, p.x, p.y, c * 0.7, 0.35);
-				ctx.globalCompositeOperation = 'source-over';
-				ctx.fillStyle = `hsla(${hue},70%,70%,0.95)`;
-				ctx.beginPath();
-				ctx.arc(p.x, p.y, c * 0.14, 0, TAU);
-				ctx.fill();
+				this.inkStroke(ctx, [toPx(sh.raw[0])], i, 0.95);
 				return;
 			}
-			const pts = morph(sh, k);
-			ctx.globalCompositeOperation = 'lighter';
-			this.poly(pts, toPx);
-			ctx.strokeStyle = `hsla(${hue},70%,55%,${0.07 + 0.05 * alive})`;
-			ctx.lineWidth = c * 0.32;
-			ctx.stroke();
-			ctx.globalCompositeOperation = 'source-over';
-			this.poly(pts, toPx);
-			ctx.strokeStyle = `hsla(${hue},65%,${64 + 6 * alive}%,${bright})`;
-			ctx.lineWidth = c * lerp(0.11, 0.09, k);
-			ctx.stroke();
+			const pts = morph(sh, 0.12 + 0.88 * k).map(toPx);
+			brush(ctx, pts, c * (0.11 + 0.02 * k), PAL.ink, { seed: 60 + i, alpha: 0.92 });
 		});
 	}
 
-	// ------------------------------------------------------------------ змейка
+	// ------------------------------------------------------------------ змейка на сетке
 
 	private pondHead(pond: Pond): Pt {
 		const a = this.cellPx(pond.head);
 		if (pond.next.w) return a;
 		const b = this.cellPx(pond.next);
-		return { x: lerp(a.x, b.x, pond.t), y: lerp(a.y, b.y, pond.t) };
+		return { x: a.x + (b.x - a.x) * pond.t, y: a.y + (b.y - a.y) * pond.t };
 	}
 
-	/** Путь тела на Полотне в пикселях, с разрывами там, где змейка прошла через край. */
+	/** Путь тела на Полотне в пикселях (от хвоста к голове), с разрывами там, где змейка прошла через край. */
 	private pondPath(pond: Pond): Pt[][] {
 		const seq = [...pond.body, pond.next];
 		const n = pond.body.length;
@@ -620,289 +851,59 @@ export class Renderer {
 			const l = cur[cur.length - 1];
 			if (!l || Math.abs(l.x - q.x) + Math.abs(l.y - q.y) > 1e-4) cur.push(q);
 		};
-		for (let k = 0; k < n; k++) {
-			const a = seq[k];
-			const b = seq[k + 1];
+		const lerp = (A: Pt, B: Pt, q: number): Pt => ({
+			x: A.x + (B.x - A.x) * q,
+			y: A.y + (B.y - A.y) * q
+		});
+		for (let i = 0; i < n; i++) {
+			const a = seq[i];
+			const b = seq[i + 1];
 			const A = this.cellPx(a);
 			const B = this.cellPx(b);
-			const f0 = k === 0 ? t : 0;
-			const f1 = k === n - 1 ? t : 1;
+			const f0 = i === 0 ? t : 0;
+			const f1 = i === n - 1 ? t : 1;
 			if (a.x === b.x && a.y === b.y) {
 				add(A);
 				continue;
 			}
 			if (!b.w) {
-				add({ x: lerp(A.x, B.x, f0), y: lerp(A.y, B.y, f0) });
-				add({ x: lerp(A.x, B.x, f1), y: lerp(A.y, B.y, f1) });
+				add(lerp(A, B, f0));
+				add(lerp(A, B, f1));
 				continue;
 			}
 			// шаг через край: первая половина уходит за край, вторая выходит с другой стороны
-			const dx = Math.sign(b.x - a.x) === 0 ? 0 : -Math.sign(b.x - a.x);
-			const dy = Math.sign(b.y - a.y) === 0 ? 0 : -Math.sign(b.y - a.y);
-			const first = (q: number): Pt => ({ x: A.x + dx * c * q, y: A.y + dy * c * q });
-			const second = (q: number): Pt => ({ x: B.x - dx * c * (1 - q), y: B.y - dy * c * (1 - q) });
+			const dx = -Math.sign(b.x - a.x);
+			const dy = -Math.sign(b.y - a.y);
+			const out = (q: number): Pt => ({ x: A.x + dx * c * q, y: A.y + dy * c * q });
+			const back = (q: number): Pt => ({ x: B.x - dx * c * (1 - q), y: B.y - dy * c * (1 - q) });
 			if (f0 < 0.5) {
-				add(first(f0));
-				if (f1 <= 0.5) add(first(f1));
+				add(out(f0));
+				if (f1 <= 0.5) add(out(f1));
 				else {
-					add(first(0.5));
+					add(out(0.5));
 					subs.push(cur);
 					cur = [];
-					add(second(0.5));
-					add(second(f1));
+					add(back(0.5));
+					add(back(f1));
 				}
 			} else {
 				if (cur.length) {
 					subs.push(cur);
 					cur = [];
 				}
-				add(second(f0));
-				add(second(f1));
+				add(back(f0));
+				add(back(f1));
 			}
 		}
 		if (cur.length) subs.push(cur);
-		return subs;
-	}
-
-	private sample(subs: Pt[][], step: number): SnakePt[] {
-		let total = 0;
-		for (const sub of subs)
-			for (let i = 1; i < sub.length; i++)
-				total += Math.hypot(sub[i].x - sub[i - 1].x, sub[i].y - sub[i - 1].y);
-		const out: SnakePt[] = [];
-		let s = 0;
-		let carry = 0;
-		for (const sub of subs) {
-			for (let i = 1; i < sub.length; i++) {
-				const p = sub[i - 1];
-				const q = sub[i];
-				const len = Math.hypot(q.x - p.x, q.y - p.y);
-				if (len < 1e-6) continue;
-				const ux = (q.x - p.x) / len;
-				const uy = (q.y - p.y) / len;
-				let d = carry;
-				while (d < len) {
-					out.push({ x: p.x + ux * d, y: p.y + uy * d, tx: ux, ty: uy, u: 0, sh: 0, s: s + d });
-					d += step;
-				}
-				carry = d - len;
-				s += len;
-			}
-		}
-		const last = subs[subs.length - 1];
-		const h = last[last.length - 1];
-		const prev = out[out.length - 1];
-		out.push({ x: h.x, y: h.y, tx: prev?.tx ?? 1, ty: prev?.ty ?? 0, u: 1, sh: 0, s: total });
-		for (const o of out) {
-			o.u = total > 0 ? o.s / total : 1;
-			o.sh = total - o.s;
-		}
-		return out;
-	}
-
-	/**
-	 * Морская змея: узкое тело, сходящееся в острый хвост, светлые поперечные кольца,
-	 * отдельная вытянутая голова с глазами по бокам и изредка — язык.
-	 * `R` — полуширина тела в самом толстом месте.
-	 */
-	private drawSnake(
-		pts: SnakePt[],
-		R: number,
-		headAng: number,
-		wave: number,
-		f: FrameState,
-		alpha: number
-	): void {
-		const { ctx } = this;
-		const n = pts.length;
-		if (n < 2 || alpha <= 0) return;
-		const hue = SNAKE_HUE;
-		const t = f.t;
-		// извивы: бегущая волна, у головы гаснет, чтобы нос смотрел ровно
-		if (wave > 0)
-			for (const p of pts) {
-				const k = clamp(p.sh / (R * 6), 0, 1);
-				const off = Math.sin(p.sh / (R * 5.5) - t * 4.2) * R * wave * k;
-				p.x += -p.ty * off;
-				p.y += p.tx * off;
-			}
-		const pulse = (t - f.pulseAt) * 0.9;
-		const boost = (u: number): number => {
-			const d = (u - (1 - pulse)) / 0.13;
-			return pulse < 1.4 ? Math.exp(-d * d) : 0;
-		};
-		// полуширина: острый хвост, ровное тело, лёгкая шея перед головой
-		const half = (u: number): number => {
-			const tail = 0.1 + 0.9 * (1 - Math.pow(1 - clamp(u / 0.5, 0, 1), 2));
-			const neck = 1 - 0.18 * clamp((u - 0.9) / 0.1, 0, 1);
-			return R * tail * neck;
-		};
-		const side = pts.map((p) => {
-			const w = half(p.u);
-			return { lx: p.x - p.ty * w, ly: p.y + p.tx * w, rx: p.x + p.ty * w, ry: p.y - p.tx * w, w };
-		});
-		const outline = (): void => {
-			ctx.beginPath();
-			ctx.moveTo(side[0].lx, side[0].ly);
-			for (let i = 1; i < n; i++) ctx.lineTo(side[i].lx, side[i].ly);
-			for (let i = n - 1; i >= 0; i--) ctx.lineTo(side[i].rx, side[i].ry);
-			ctx.closePath();
-		};
-		ctx.globalAlpha = alpha;
-		ctx.lineJoin = 'round';
-		ctx.lineCap = 'round';
-
-		// мягкое свечение воды вокруг тела (и волна света, когда змейка что-то подобрала)
-		ctx.globalCompositeOperation = 'lighter';
-		for (let i = 0; i < n; i += 3) {
-			const p = pts[i];
-			this.glow(hue, p.x, p.y, R * 3, (0.025 + 0.03 * p.u + 0.16 * boost(p.u)) * alpha);
-		}
-		ctx.globalCompositeOperation = 'source-over';
-
-		// тело
-		outline();
-		ctx.fillStyle = `hsl(${hue + 8},42%,15%)`;
-		ctx.fill();
-
-		// светлые кольца, привязанные к телу (едут вместе с ним)
-		const B = R * 2.6;
-		ctx.fillStyle = `hsla(${hue - 4},38%,34%,0.75)`;
-		let i = 0;
-		while (i < n - 1) {
-			const ph = (pts[i].sh % B) / B;
-			if (ph > 0.42 || pts[i].sh < R * 1.2) {
-				i++;
-				continue;
-			}
-			let j = i;
-			while (j < n - 1 && (pts[j].sh % B) / B <= 0.42 && pts[j].sh >= R * 1.2) j++;
-			ctx.beginPath();
-			ctx.moveTo(side[i].lx, side[i].ly);
-			for (let k = i + 1; k <= j; k++) ctx.lineTo(side[k].lx, side[k].ly);
-			for (let k = j; k >= i; k--) ctx.lineTo(side[k].rx, side[k].ry);
-			ctx.closePath();
-			ctx.fill();
-			i = j + 1;
-		}
-
-		// блик вдоль спины — тело кажется круглым
-		ctx.beginPath();
-		for (let k = 0; k < n; k++) {
-			const p = pts[k];
-			const w = side[k].w * 0.35;
-			const x = p.x - p.ty * w;
-			const y = p.y + p.tx * w;
-			if (k) ctx.lineTo(x, y);
-			else ctx.moveTo(x, y);
-		}
-		ctx.strokeStyle = `hsla(${hue - 10},55%,72%,0.16)`;
-		ctx.lineWidth = Math.max(1, R * 0.35);
-		ctx.stroke();
-
-		// огоньки по хребту, по одному в каждом тёмном промежутке
-		ctx.globalCompositeOperation = 'lighter';
-		let last = -1;
-		for (const p of pts) {
-			const k = Math.floor(p.sh / B);
-			if (k === last || p.sh < B) continue;
-			if ((p.sh % B) / B < 0.68) continue;
-			last = k;
-			const tw = 0.55 + 0.45 * Math.sin(t * 2 + k * 1.9);
-			this.glow(hue + 14, p.x, p.y, R * 1.3, (0.18 + 0.3 * tw + 0.3 * boost(p.u)) * p.u * alpha);
-		}
-		ctx.globalCompositeOperation = 'source-over';
-
-		// контур — чтобы силуэт читался на тёмной воде
-		outline();
-		ctx.strokeStyle = `hsla(${hue + 20},50%,6%,0.75)`;
-		ctx.lineWidth = 1;
-		ctx.stroke();
-
-		this.drawHead(pts[n - 1], R, headAng, t, boost(1), alpha);
-		ctx.globalAlpha = 1;
-	}
-
-	private drawHead(hd: Pt, R: number, ang: number, t: number, boost: number, alpha: number): void {
-		const { ctx } = this;
-		const hue = SNAKE_HUE;
-		const hl = R * 2.5;
-		const hw = R * 1.3;
-		ctx.save();
-		ctx.translate(hd.x, hd.y);
-		ctx.rotate(ang);
-		ctx.globalAlpha = alpha;
-
-		ctx.globalCompositeOperation = 'lighter';
-		this.glow(hue, hl * 0.35, 0, R * 3.2, (0.16 + 0.2 * boost) * alpha);
-		ctx.globalCompositeOperation = 'source-over';
-
-		// язык: короткий раздвоенный взмах раз в несколько секунд
-		const ph = (t % 3.7) / 3.7;
-		if (ph < 0.09) {
-			const out = Math.sin((ph / 0.09) * Math.PI);
-			const x0 = hl * 0.95;
-			const x1 = x0 + R * 1.5 * out;
-			ctx.strokeStyle = `hsla(350,55%,62%,${0.85 * alpha})`;
-			ctx.lineWidth = Math.max(1, R * 0.14);
-			ctx.beginPath();
-			ctx.moveTo(x0, 0);
-			ctx.lineTo(x1, 0);
-			ctx.lineTo(x1 + R * 0.45 * out, -R * 0.3 * out);
-			ctx.moveTo(x1, 0);
-			ctx.lineTo(x1 + R * 0.45 * out, R * 0.3 * out);
-			ctx.stroke();
-		}
-
-		// голова: шире шеи, вытянутая, с закруглённой мордой
-		ctx.beginPath();
-		ctx.moveTo(-hl * 0.35, -hw * 0.72);
-		ctx.bezierCurveTo(-hl * 0.05, -hw * 1.02, hl * 0.45, -hw * 1.0, hl * 0.78, -hw * 0.6);
-		ctx.quadraticCurveTo(hl * 1.02, -hw * 0.2, hl, 0);
-		ctx.quadraticCurveTo(hl * 1.02, hw * 0.2, hl * 0.78, hw * 0.6);
-		ctx.bezierCurveTo(hl * 0.45, hw * 1.0, -hl * 0.05, hw * 1.02, -hl * 0.35, hw * 0.72);
-		ctx.closePath();
-		const g = ctx.createLinearGradient(-hl * 0.35, 0, hl, 0);
-		g.addColorStop(0, `hsl(${hue + 8},42%,15%)`);
-		g.addColorStop(0.6, `hsl(${hue + 2},40%,${21 + 10 * boost}%)`);
-		g.addColorStop(1, `hsl(${hue - 4},42%,${30 + 10 * boost}%)`);
-		ctx.fillStyle = g;
-		ctx.fill();
-		ctx.strokeStyle = `hsla(${hue + 20},50%,6%,0.75)`;
-		ctx.lineWidth = 1;
-		ctx.stroke();
-
-		// светлое кольцо на затылке и блик на темени
-		ctx.fillStyle = `hsla(${hue - 4},38%,34%,0.7)`;
-		ctx.beginPath();
-		ctx.ellipse(-hl * 0.12, 0, hl * 0.1, hw * 0.86, 0, 0, TAU);
-		ctx.fill();
-		ctx.fillStyle = `hsla(${hue - 10},55%,72%,0.14)`;
-		ctx.beginPath();
-		ctx.ellipse(hl * 0.42, -hw * 0.22, hl * 0.3, hw * 0.22, 0, 0, TAU);
-		ctx.fill();
-
-		// глаза по бокам, ближе к морде
-		for (const s of [-1, 1]) {
-			const ex = hl * 0.55;
-			const ey = s * hw * 0.62;
-			ctx.fillStyle = '#020a10';
-			ctx.beginPath();
-			ctx.ellipse(ex, ey, R * 0.32, R * 0.26, 0, 0, TAU);
-			ctx.fill();
-			ctx.fillStyle = `hsla(${hue},60%,74%,0.9)`;
-			ctx.beginPath();
-			ctx.arc(ex + R * 0.08, ey - s * R * 0.06, R * 0.09, 0, TAU);
-			ctx.fill();
-		}
-		ctx.restore();
+		return subs.filter((s) => s.length > 1);
 	}
 
 	// ------------------------------------------------------------------ эффекты
 
-	private drawFx(fx: Fx): void {
+	private drawFx(f: FrameState): void {
 		const { ctx } = this;
-		ctx.globalCompositeOperation = 'lighter';
+		const fx = f.fx;
 		for (const e of fx.portals) {
 			if (!e.ring || e.t <= 0) continue;
 			const grow = 1 - Math.pow(1 - clamp(e.t / 0.3, 0, 1), 3);
@@ -912,31 +913,19 @@ export class Renderer {
 			ctx.save();
 			ctx.translate(e.x, e.y);
 			ctx.rotate(Math.atan2(e.dy, e.dx));
-			this.glow(e.hue, 0, 0, ry * 1.4, 0.3 * fade);
-			for (let i = 0; i < 3; i++) {
-				ctx.lineWidth = 2.2 - i * 0.6;
-				ctx.strokeStyle = `hsla(${e.hue + i * 20},70%,${64 - i * 4}%,${fade * (0.75 - i * 0.2)})`;
+			ctx.strokeStyle = PAL.ink;
+			for (let i = 0; i < 2; i++) {
+				ctx.globalAlpha = fade * (0.55 - i * 0.25);
+				ctx.lineWidth = 1.6 - i * 0.6;
 				ctx.beginPath();
-				ctx.ellipse(0, 0, rx * (1 - i * 0.22), ry * (1 - i * 0.2), 0, 0, TAU);
+				ctx.ellipse(0, 0, rx * (1 - i * 0.25), ry * (1 - i * 0.22), 0, 0, TAU);
 				ctx.stroke();
 			}
 			ctx.restore();
 		}
 		for (const p of fx.parts) {
 			const a = clamp(p.life / p.max, 0, 1);
-			this.glow(p.hue, p.x, p.y, p.size * (0.5 + a), a * 0.6);
+			bloom(ctx, p.x, p.y, p.size * (0.6 + a), hsl(p.hue, 55, 62), a * 0.5, 'multiply');
 		}
-		ctx.globalCompositeOperation = 'source-over';
-	}
-
-	private roundRect(x: number, y: number, w: number, h: number, r: number): void {
-		const ctx = this.ctx;
-		ctx.beginPath();
-		ctx.moveTo(x + r, y);
-		ctx.arcTo(x + w, y, x + w, y + h, r);
-		ctx.arcTo(x + w, y + h, x, y + h, r);
-		ctx.arcTo(x, y + h, x, y, r);
-		ctx.arcTo(x, y, x + w, y, r);
-		ctx.closePath();
 	}
 }

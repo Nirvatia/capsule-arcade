@@ -49,7 +49,7 @@
 		padding: 18px 20px 0;
 		color: var(--d-dim);
 		pointer-events: none;
-		font-size: 13px;
+		font-size: 16px;
 		letter-spacing: 0.16em;
 	}
 
@@ -78,19 +78,19 @@
 		height: 8px;
 		border-radius: 2px;
 		transform: rotate(45deg);
-		border: 1px solid rgba(120, 170, 190, 0.35);
+		border: 1px solid rgba(38, 44, 54, 0.35);
 		transition:
 			background 0.8s,
 			border-color 0.8s;
 	}
 
 	.strokes i.now {
-		border-color: rgba(150, 210, 220, 0.8);
+		border-color: rgba(38, 44, 54, 0.85);
 	}
 
 	.strokes i.lit {
-		background: rgba(150, 215, 220, 0.75);
-		border-color: rgba(180, 230, 235, 0.8);
+		background: rgba(38, 44, 54, 0.8);
+		border-color: rgba(38, 44, 54, 0.85);
 	}
 
 	.sparks {
@@ -110,7 +110,7 @@
 	}
 
 	.sparks.open b {
-		color: #e7d7a2;
+		color: #a2503f;
 	}
 
 	.pause {
@@ -118,9 +118,9 @@
 		width: 36px;
 		height: 36px;
 		margin: -6px -6px 0 0;
-		border: 1px solid rgba(110, 170, 190, 0.2);
+		border: 1px solid var(--d-line);
 		border-radius: 50%;
-		background: rgba(3, 14, 26, 0.4);
+		background: var(--d-paper);
 		display: flex;
 		gap: 4px;
 		align-items: center;

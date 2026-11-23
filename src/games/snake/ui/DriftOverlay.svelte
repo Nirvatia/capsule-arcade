@@ -21,6 +21,7 @@
 
 {#if st.screen === 'title'}
 	<div class="screen title" data-drift-ui>
+		<div class="halo" aria-hidden="true"></div>
 		<h1>{tr('name')}</h1>
 		<p class="sub">{tr('sub')}</p>
 		{@render menu()}
@@ -124,9 +125,22 @@
 		overflow-y: auto;
 	}
 
+	.halo {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background: radial-gradient(
+			ellipse 46% 52% at 50% 46%,
+			rgba(244, 241, 235, 0.82),
+			rgba(244, 241, 235, 0.5) 55%,
+			transparent 100%
+		);
+		pointer-events: none;
+	}
+
 	h1 {
 		margin: 0;
-		font-weight: 200;
+		font-weight: 300;
 		font-size: clamp(42px, 9vw, 104px);
 		letter-spacing: 0.4em;
 		text-indent: 0.4em;
@@ -168,7 +182,7 @@
 		background: none;
 		color: var(--d-dim);
 		font: inherit;
-		font-size: 16px;
+		font-size: 19px;
 		letter-spacing: 0.14em;
 		cursor: pointer;
 		transition:
@@ -180,8 +194,8 @@
 	.menu button.sel,
 	.menu button:hover {
 		color: var(--d-ink);
-		border-color: rgba(120, 200, 210, 0.28);
-		background: rgba(10, 34, 48, 0.5);
+		border-color: var(--d-line);
+		background: var(--d-paper);
 	}
 
 	.menu button:focus-visible {
@@ -215,7 +229,7 @@
 		font-size: 11px;
 		padding: 2px 7px;
 		border-radius: 5px;
-		border: 1px solid rgba(120, 190, 200, 0.3);
+		border: 1px solid var(--d-line);
 		color: var(--d-ink);
 	}
 
@@ -236,8 +250,9 @@
 	.cards li {
 		padding: 10px 10px 12px;
 		border-radius: 14px;
-		background: rgba(6, 20, 32, 0.66);
-		border: 1px solid rgba(110, 170, 190, 0.14);
+		background: #f2ecdf;
+		border: 1px solid var(--d-line);
+		box-shadow: 0 6px 18px rgba(60, 50, 30, 0.12);
 		display: grid;
 		gap: 4px;
 	}
@@ -247,15 +262,19 @@
 		aspect-ratio: 24 / 14;
 		display: block;
 		fill: none;
-		stroke: hsl(var(--h) 55% 62%);
-		stroke-width: 0.13;
+		stroke: #262c36;
+		stroke-width: 0.12;
 		stroke-linecap: round;
 		stroke-linejoin: round;
 	}
 
 	.cards circle {
-		fill: hsl(var(--h) 55% 66%);
+		fill: #262c36;
 		stroke: none;
+	}
+
+	.cards .done svg {
+		background: radial-gradient(ellipse at 55% 50%, hsl(var(--h) 50% 75% / 0.45), transparent 70%);
 	}
 
 	.cards .unknown svg {
@@ -267,8 +286,8 @@
 	}
 
 	.cards b {
-		font-weight: 400;
-		font-size: 15px;
+		font-weight: 500;
+		font-size: 18px;
 		letter-spacing: 0.08em;
 	}
 
@@ -297,7 +316,7 @@
 
 	.banner b {
 		display: block;
-		font-weight: 200;
+		font-weight: 300;
 		font-size: clamp(26px, 5vw, 54px);
 		letter-spacing: 0.3em;
 		text-indent: 0.3em;
@@ -323,11 +342,11 @@
 		width: max-content;
 		padding: 8px 18px;
 		border-radius: 999px;
-		background: rgba(3, 14, 26, 0.7);
-		border: 1px solid rgba(110, 180, 200, 0.2);
+		background: var(--d-paper);
+		border: 1px solid var(--d-line);
 		color: var(--d-ink);
-		font-size: 14px;
-		letter-spacing: 0.04em;
+		font-size: 17px;
+		letter-spacing: 0.03em;
 		text-align: center;
 		pointer-events: none;
 		animation: fade 0.8s ease both;

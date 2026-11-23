@@ -25,7 +25,7 @@ import {
 } from './ui/stores';
 import { Fx } from './view/fx';
 import type { Tunnel } from './view/post';
-import { Renderer, SNAKE_HUE } from './view/Renderer';
+import { Renderer } from './view/Renderer';
 
 type Mode = 'current' | 'pond' | 'reveal';
 
@@ -75,9 +75,9 @@ export class DriftGame implements GameModule {
 	private pond: Pond | null = null;
 	private trans: Transition | null = null;
 	private time = 0;
-	private mix = 1;
-	private pulseAt = -9;
 	private readonly litAt = new Map<number, number>();
+	private colors: number[] = [];
+	private colorsKey = '';
 	private clearAt = -1;
 	private revealT = 0;
 	private revealDone = false;
@@ -483,7 +483,6 @@ export class DriftGame implements GameModule {
 		this.renderer.render({
 			t: this.time,
 			mode: this.mode,
-			mix: this.mix,
 			picture: this.picture,
 			shapes: this.shapesOf(this.picture),
 			lit: new Set(this.progress.data.lit),
@@ -491,7 +490,7 @@ export class DriftGame implements GameModule {
 			current: this.current,
 			pond: this.pond,
 			reveal: this.revealT,
-			pulseAt: this.pulseAt,
+			colors: this.returnedColors(),
 			fx: this.fx,
 			tunnel: this.tunnel(),
 			dim: this.screen === 'title' ? 0.35 : this.screen ? 0.7 : 0
@@ -501,7 +500,6 @@ export class DriftGame implements GameModule {
 
 	private update(dt: number): void {
 		this.time += dt;
-		this.mix += ((this.mode === 'current' ? 1 : 0) - this.mix) * Math.min(1, dt * 2.2);
 		this.fx.update(dt);
 		const T = this.trans;
 		if (T) {
@@ -525,8 +523,7 @@ export class DriftGame implements GameModule {
 		const u = this.renderer.unit;
 		for (const e of cur.events) {
 			if (e.k === 'spark') {
-				this.pulseAt = this.time;
-				this.fx.burst(e.x * u, e.y * u, e.big ? 14 : 8, e.big ? 44 : 186, 90, 1.1, 10);
+				this.fx.burst(e.x * u, e.y * u, e.big ? 12 : 7, this.picture.hue, 70, 1.2, e.big ? 16 : 11);
 				this.fx.ripple(e.x * u, e.y * u, 0.22, 0.08, 0.6);
 				if (!cur.autopilot) this.sound.spark(e.big);
 			} else if (e.k === 'open') {
@@ -546,8 +543,8 @@ export class DriftGame implements GameModule {
 				this.fx.ripple(cur.x * u, cur.y * u, 0.25, 0.16, 0.9);
 			} else if (e.k === 'wrap') {
 				const size = Math.min(this.renderer.W, this.renderer.H) * 0.09;
-				this.fx.portal(e.from.x * u, e.from.y * u, e.dx, e.dy, size, SNAKE_HUE, 'in');
-				this.fx.portal(e.to.x * u, e.to.y * u, e.dx, e.dy, size, SNAKE_HUE, 'out', 0.1);
+				this.fx.portal(e.from.x * u, e.from.y * u, e.dx, e.dy, size, this.picture.hue, 'in');
+				this.fx.portal(e.to.x * u, e.to.y * u, e.dx, e.dy, size, this.picture.hue, 'out', 0.1);
 				if (!cur.autopilot) this.sound.whoosh(0.14, 0.55);
 			}
 		}
@@ -569,7 +566,6 @@ export class DriftGame implements GameModule {
 			} else if (e.k === 'lit') {
 				this.progress.light(e.stroke);
 				this.litAt.set(e.stroke, this.time);
-				this.pulseAt = this.time;
 				const cells = pic.strokes[e.stroke].cells;
 				this.sound.lit(cells.length);
 				cells.forEach((cell, i) => {
@@ -587,14 +583,22 @@ export class DriftGame implements GameModule {
 				const [dx, dy] = DIRS[e.dir];
 				const a = this.renderer.cellPx(e.from);
 				const b = this.renderer.cellPx(e.to);
-				this.fx.portal(a.x + dx * c * 0.5, a.y + dy * c * 0.5, dx, dy, c * 1.1, SNAKE_HUE, 'in');
+				this.fx.portal(
+					a.x + dx * c * 0.5,
+					a.y + dy * c * 0.5,
+					dx,
+					dy,
+					c * 1.1,
+					this.picture.hue,
+					'in'
+				);
 				this.fx.portal(
 					b.x - dx * c * 0.5,
 					b.y - dy * c * 0.5,
 					dx,
 					dy,
 					c * 1.1,
-					SNAKE_HUE,
+					this.picture.hue,
 					'out',
 					0.1
 				);
@@ -648,6 +652,17 @@ export class DriftGame implements GameModule {
 				return { x: cur.x * u, y: cur.y * u };
 			});
 		}
+	}
+
+	/** Цвета, вернувшиеся в воду: по одному на каждый собранный рисунок, в порядке сбора. */
+	private returnedColors(): number[] {
+		const key = this.progress.data.album.map((a) => a.id).join(',');
+		if (key !== this.colorsKey) {
+			this.colorsKey = key;
+			const ids = [...new Set(this.progress.data.album.map((a) => a.id))];
+			this.colors = ids.map((id) => this.pictures.find((p) => p.id === id)?.hue ?? 0);
+		}
+		return this.colors;
 	}
 
 	// ------------------------------------------------------------------ HUD
