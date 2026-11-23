@@ -7,6 +7,8 @@
 //   squash, a white flash, a puff of smoke and sparkles, a pop with an overshoot);
 // - the shock (V1): branching lightning hop by hop, a white impact with sparks, the held ghost
 //   cold blue with arcs crawling round it, a shake at the end and a puff of smoke on release.
+import type { AbilityKind } from '../../config/abilityConfig';
+import { medallion } from './abilityIcons';
 import { drawCuteGhost } from './cuteGhost';
 import type { CuteShape, Palette } from './cuteGhost';
 import { drawIceBow } from './hero/MsPacmanHero';
@@ -14,7 +16,6 @@ import type { HeroSeason } from './hero/heroSeasons';
 
 type Ctx = CanvasRenderingContext2D;
 const TAU = Math.PI * 2;
-const INK = '#241418';
 
 /** Seconds the turn into the ghost form (and back out of it) takes. */
 export const MORPH_SECONDS = 0.45;
@@ -165,13 +166,20 @@ function tokenHalo(c: Ctx, x: number, y: number, S: number, rgb: string, t: numb
 
 // ── the tokens ─────────────────────────────────────────────────────────────────
 
+/** Each ability's halo colour, from its medallion's enamel. */
+const HALO: Record<AbilityKind, string> = {
+	echo: '56,214,184',
+	mask: '255,206,84',
+	shock: '80,150,255'
+};
+
 /**
- * The mask's or the shock's token centred at (x, y) on a tile of `S` px (also the HUD slot's
- * icon). It bobs and breathes with `t`.
+ * An ability's token centred at (x, y) on a tile of `S` px (also the HUD slot's icon): its
+ * medallion (`abilityIcons`, one family for all three) in its breathing halo. It bobs with `t`.
  */
 export function drawAbilityIcon(
 	c: Ctx,
-	kind: 'mask' | 'shock',
+	kind: AbilityKind,
 	x: number,
 	y: number,
 	S: number,
@@ -181,110 +189,9 @@ export function drawAbilityIcon(
 	c.lineJoin = 'round';
 	c.lineCap = 'round';
 	const bob = Math.sin(t * 3) * S * 0.025;
-	if (kind === 'mask') {
-		tokenHalo(c, x, y, S, '255,206,84', t);
-		iconSheet(c, x, y + bob, S);
-	} else {
-		tokenHalo(c, x, y, S, '80,190,255', t);
-		iconOrb(c, x, y + bob, S);
-	}
+	tokenHalo(c, x, y, S, HALO[kind], t);
+	medallion(c, kind, x, y + bob, S);
 	c.restore();
-}
-
-/** M1: a little gold ghost sheet with two eye holes. */
-function iconSheet(c: Ctx, x: number, y: number, S: number): void {
-	const r = S * 0.22;
-	const top = y - r * 0.25;
-	c.beginPath();
-	c.arc(x, top, r, Math.PI, 0);
-	c.lineTo(x + r, y + r * 0.95);
-	for (let i = 0; i < 3; i++) {
-		const a = x + r - (i * 2 * r) / 3;
-		const b = x + r - ((i + 1) * 2 * r) / 3;
-		c.quadraticCurveTo((a + b) / 2, y + r * 0.5, b, y + r * 0.95);
-	}
-	c.closePath();
-	const g = c.createLinearGradient(x, top - r, x, y + r);
-	g.addColorStop(0, '#fff2a8');
-	g.addColorStop(0.55, '#ffd23f');
-	g.addColorStop(1, '#e99a1c');
-	c.fillStyle = g;
-	c.fill();
-	c.strokeStyle = INK;
-	c.lineWidth = Math.max(1, S * 0.05);
-	c.stroke();
-	c.fillStyle = INK;
-	for (const side of [-1, 1]) {
-		c.beginPath();
-		c.ellipse(x + side * r * 0.38, top + r * 0.05, r * 0.17, r * 0.26, 0, 0, TAU);
-		c.fill();
-	}
-	c.beginPath();
-	c.ellipse(x - r * 0.55, top - r * 0.55, r * 0.18, r * 0.1, -0.6, 0, TAU);
-	c.fillStyle = 'rgba(255,255,255,.85)';
-	c.fill();
-}
-
-/** The shock: a dark electric ball, one bold bolt and three contacts for the chained targets. */
-function iconOrb(c: Ctx, x: number, y: number, S: number): void {
-	const ink = '#10152e';
-	const contacts = [-Math.PI / 2, Math.PI / 6, (Math.PI * 5) / 6];
-	for (const a of contacts) {
-		c.strokeStyle = ink;
-		c.lineWidth = Math.max(1, S * 0.09);
-		c.beginPath();
-		c.moveTo(x + Math.cos(a) * S * 0.23, y + Math.sin(a) * S * 0.23);
-		c.lineTo(x + Math.cos(a) * S * 0.35, y + Math.sin(a) * S * 0.35);
-		c.stroke();
-		c.strokeStyle = '#a8f3ff';
-		c.lineWidth = Math.max(1, S * 0.04);
-		c.stroke();
-	}
-
-	const r = S * 0.265;
-	const g = c.createRadialGradient(x - r * 0.3, y - r * 0.35, 0, x, y, r);
-	g.addColorStop(0, '#294b91');
-	g.addColorStop(0.58, '#172b60');
-	g.addColorStop(1, '#0b1233');
-	c.fillStyle = g;
-	c.beginPath();
-	c.arc(x, y, r, 0, TAU);
-	c.fill();
-	c.strokeStyle = ink;
-	c.lineWidth = Math.max(1, S * 0.055);
-	c.stroke();
-	c.strokeStyle = 'rgba(150,220,255,.8)';
-	c.lineWidth = Math.max(1, S * 0.025);
-	c.beginPath();
-	c.arc(x, y, r * 0.82, Math.PI * 1.08, Math.PI * 1.42);
-	c.stroke();
-
-	const k = 0.78;
-	c.beginPath();
-	c.moveTo(x + S * 0.04 * k, y - S * 0.24 * k);
-	c.lineTo(x - S * 0.15 * k, y + S * 0.025 * k);
-	c.lineTo(x - S * 0.015 * k, y + S * 0.025 * k);
-	c.lineTo(x - S * 0.07 * k, y + S * 0.24 * k);
-	c.lineTo(x + S * 0.18 * k, y - S * 0.07 * k);
-	c.lineTo(x + S * 0.035 * k, y - S * 0.07 * k);
-	c.closePath();
-	c.fillStyle = '#f4fcff';
-	c.strokeStyle = ink;
-	c.lineWidth = Math.max(1, S * 0.035 * k);
-	c.fill();
-	c.stroke();
-
-	for (const a of contacts) {
-		const nx = x + Math.cos(a) * S * 0.36;
-		const ny = y + Math.sin(a) * S * 0.36;
-		c.fillStyle = '#e9ffff';
-		c.strokeStyle = ink;
-		c.lineWidth = Math.max(1, S * 0.03);
-		c.beginPath();
-		c.arc(nx, ny, S * 0.055, 0, TAU);
-		c.fill();
-		c.stroke();
-	}
 }
 
 // ── the mask: the hero's ghost form ─────────────────────────────────────────────

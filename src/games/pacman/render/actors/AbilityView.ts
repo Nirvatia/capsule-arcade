@@ -58,24 +58,21 @@ export class AbilityView {
 		const at = abilities.tokenPosition;
 		if (abilities.phase === 'token' && at) {
 			const left = abilities.tokenTimer;
-			if (abilities.kind === 'echo') {
-				this.echoView.drawToken(ctx, at, left, layout, time);
-			} else {
-				const S = layout.tileSize;
-				// the last seconds it flickers: take it or lose it
-				const blinking = left < ABILITY.tokenBlinkSeconds && Math.floor(left * 5) % 2 === 0;
-				ctx.save();
-				ctx.globalAlpha *= blinking ? 0.45 : 1;
-				drawAbilityIcon(
-					ctx,
-					abilities.kind,
-					layout.offsetX + at.x * S,
-					layout.offsetY + at.y * S,
-					S,
-					time
-				);
-				ctx.restore();
-			}
+			// one family for all three tokens (the medallions); the echo's too
+			const S = layout.tileSize;
+			// the last seconds it flickers: take it or lose it
+			const blinking = left < ABILITY.tokenBlinkSeconds && Math.floor(left * 5) % 2 === 0;
+			ctx.save();
+			ctx.globalAlpha *= blinking ? 0.45 : 1;
+			drawAbilityIcon(
+				ctx,
+				abilities.kind,
+				layout.offsetX + at.x * S,
+				layout.offsetY + at.y * S,
+				S,
+				time
+			);
+			ctx.restore();
 		}
 		this.echoView.draw(ctx, abilities.echo, layout, time);
 	}

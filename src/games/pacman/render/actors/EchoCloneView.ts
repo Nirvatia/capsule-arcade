@@ -92,44 +92,6 @@ export class EchoCloneView {
 		}
 	}
 
-	/** The echo ability's token at `at` (tile-centre coordinates), `left` seconds to take it. */
-	drawToken(
-		ctx: CanvasRenderingContext2D,
-		at: { readonly x: number; readonly y: number },
-		left: number,
-		layout: GridLayout,
-		time: number
-	): void {
-		const S = layout.tileSize;
-		const x = layout.offsetX + at.x * S;
-		const y = layout.offsetY + at.y * S;
-		const r = S * WISP_RADIUS;
-		// the last two seconds it flickers: take it or lose it
-		const blinking = left < 2 && Math.floor(left * 5) % 2 === 0;
-		ctx.save();
-		ctx.globalAlpha = blinking ? 0.45 : 1;
-		const pulse = 0.5 + 0.5 * Math.sin(time * 4);
-		ctx.globalCompositeOperation = 'lighter';
-		const h = r * (3.2 + 0.4 * pulse);
-		ctx.drawImage(halo(), x - h, y - h, h * 2, h * 2);
-		ctx.strokeStyle = `${RING}${0.55 + 0.35 * pulse})`;
-		ctx.lineWidth = Math.max(1, S * 0.05);
-		ctx.beginPath();
-		ctx.arc(x, y, S * (0.4 + 0.05 * pulse), 0, Math.PI * 2);
-		ctx.stroke();
-		// three motes circling: the echoes waiting inside
-		ctx.fillStyle = CORE;
-		for (let i = 0; i < 3; i++) {
-			const a = time * 2.4 + (i * Math.PI * 2) / 3;
-			ctx.beginPath();
-			ctx.arc(x + Math.cos(a) * S * 0.4, y + Math.sin(a) * S * 0.4, S * 0.045, 0, Math.PI * 2);
-			ctx.fill();
-		}
-		ctx.globalCompositeOperation = 'source-over';
-		this.body(ctx, x, y, r * (0.9 + 0.06 * pulse), -Math.PI / 2, 0.15 + 0.1 * pulse);
-		ctx.restore();
-	}
-
 	private drawRiot(
 		ctx: CanvasRenderingContext2D,
 		echo: EchoCloneService,

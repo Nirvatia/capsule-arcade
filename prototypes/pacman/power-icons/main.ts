@@ -1,9 +1,9 @@
-// Prototype: the abilities' icons (echo, mask, shock) as one family. The first row is the game's
-// icons as they are now; the next three are candidate sets (`sets.ts`). Each row shows the icons
-// at game scale on the four seasons' corridor tones, at the HUD slot's size and enlarged.
+// Prototype: the abilities' icons (echo, mask, shock) as one family, the owner's pick of three
+// candidate sets (2026-11-23): the medallions, now the game's own (`abilityIcons`, drawn through
+// `drawAbilityIcon` with the token's halo). Shown at game scale on the four seasons' corridor
+// tones, at the HUD slot's size and enlarged.
 import { drawAbilityIcon } from '../../../src/games/pacman/render/actors/abilityArt';
-import { EchoCloneView } from '../../../src/games/pacman/render/actors/EchoCloneView';
-import { SETS, type Kind } from './sets';
+import type { AbilityKind as Kind } from '../../../src/games/pacman/config/abilityConfig';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
@@ -11,22 +11,14 @@ const D = Math.min(window.devicePixelRatio || 1, 2);
 const KINDS: Kind[] = ['echo', 'mask', 'shock'];
 const NAMES: Record<Kind, string> = { echo: 'эхо', mask: 'маска', shock: 'разряд' };
 const CORRIDORS = ['#465166', '#403c3a', '#6f5137', '#a68b58'];
-const echo = new EchoCloneView();
 
 type Paint = (c: CanvasRenderingContext2D, kind: Kind, x: number, y: number, S: number) => void;
 
-/** The game's current icons, frozen at one moment. */
-const current: Paint = (c, kind, x, y, S) => {
-	if (kind === 'echo') {
-		echo.drawToken(c, { x: 0, y: 0 }, 8, { tileSize: S, offsetX: x, offsetY: y } as never, 0.4);
-	} else {
-		drawAbilityIcon(c, kind, x, y, S, 0.4);
-	}
-};
+/** The game's icons, frozen at one moment. */
+const current: Paint = (c, kind, x, y, S) => drawAbilityIcon(c, kind, x, y, S, 0.4);
 
 const rows: Array<{ name: string; paint: Paint }> = [
-	{ name: 'Сейчас в игре', paint: current },
-	...SETS.map((s) => ({ name: s.name, paint: s.paint as Paint }))
+	{ name: 'В игре: медальоны (общая золотая оправа, эмаль своего цвета)', paint: current }
 ];
 
 function frame(): void {

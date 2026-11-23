@@ -125,6 +125,11 @@ in the right situation.
   path, tunnels not counted) from the hero, on a way that does not pass through or beside an
   active ghost (no such tile now: it tries again a moment later). It waits 8 s and blinks in
   its last 2 s; missed, it is gone for the level. At most one token per level, never a second.
+- **The icons.** The three tokens (and the HUD slot's icons) are one family, medallions (the
+  owner's pick of the `power-icons` prototype, 2026-11-23; `render/actors/abilityIcons.ts`): one
+  gold rim with a coin's notches, an enamel field in the ability's colour (echo teal, mask gold,
+  shock blue), a white sign with an ink outline (the echo a wisp with three copies running off
+  it, the mask a ghost, the shock a bolt), in a breathing halo of the same colour.
 - **The slot.** Taking the token puts the ability in the hero's slot (shown in the HUD). It
   stays through a death on the same level and burns at the level's end, unspent or not.
 - **Spending.** `F` / `Shift` spends it. Not during an energizer (Pac-Man) or an overdrive (Ms.
