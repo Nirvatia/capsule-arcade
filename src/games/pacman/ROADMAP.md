@@ -62,16 +62,17 @@ last (see Later).
      woodpile by the houses, lamps along the paths lighting the ground as pools at night.
 
    Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
-     heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the
-     static is baked (hooks of `MeadowBake`), no new full-screen passes in the settled state
-     (High 3, Medium 1, Low 1), the live bits small sprites, nothing flashing faster than 3 times a
-     second; the stone rim along the rounded corners is never covered (the pixel guard:
-     `node prototypes/pacman/season-dress/guard.mjs` after building the page). Open from the port:
-     the bridge and the top cabin are off a 16:9 screen; nobody has measured the scenes' cost (and
-     the wet layer's memory, a half-resolution copy of the bake) on real hardware. To add a season
-     later (two are planned): `HeroSeason` / `SEASON_LOOKS`, `SEASON_GHOST`, the `meadowThemes`
-     registry, a `render/seasons/<season>/` theme and scene, `SeasonCatalog`'s modifiers, the food
-     sprites.
+   heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the
+   static is baked (hooks of `MeadowBake`), no new full-screen passes in the settled state
+   (High 3, Medium 1, Low 1), the live bits small sprites, nothing flashing faster than 3 times a
+   second; the stone rim along the rounded corners is never covered (the pixel guard:
+   `node prototypes/pacman/season-dress/guard.mjs` after building the page). Open from the port:
+   the bridge and the top cabin are off a 16:9 screen; nobody has measured the scenes' cost (and
+   the wet layer's memory, a half-resolution copy of the bake) on real hardware. To add a season
+   later (two are planned): `HeroSeason` / `SEASON_LOOKS`, `SEASON_GHOST`, the `meadowThemes`
+   registry, a `render/seasons/<season>/` theme and scene, `SeasonCatalog`'s modifiers, the food
+   sprites.
+
 2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
    Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
    wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"
