@@ -156,34 +156,46 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
 - Food stays calm and small: dots about a fifth of a tile with no inner detail;
   energizers differ from dots in shape, colour and size, and never look like food or a
   collectible. Each season has its own: a cherry blossom (spring), a starfish (summer), a
-  jack-o'-lantern (autumn), a Christmas bauble (winter); the pellets are a yellow button, a white
-  pebble, an amber bead and an ice drop. All are ink-outlined, in the heroes' cel style
+  jack-o'-lantern (autumn), a red Christmas bauble with a white snowflake (winter). The pellets
+  have a silhouette of their own and one simple detail, in a colour apart from their season's
+  walls (the owner, 2026-11-23): a cherry petal (spring), a popcorn puff (summer), an eyeball candy
+  (autumn), an ice-blue snowball (winter). All are ink-outlined, in the heroes' cel style
   (`render/seasons/meadow/seasonFood.ts`).
 - Food is drawn over the weather and the night, like the actors: it always reads. The
   floor is dark enough for the dots, the lair floor muted so ghosts and the egg read on
   it; the weather stays faint (no big pale blobs over the board).
 - A season dresses the maze itself through opt-in bake hooks on its theme
-  (`MeadowBakeTheme.wall.paint` for the whole wall painter, `.floor.paint` and
-  `.lair.paint` per cell): winter lays snow on the walls' lit rims and caps, never across
-  the stone faces, gives the corridor floor one flat slate with quiet frost, and makes
-  the lair a frozen crust. Without the hooks the shared painters render unchanged.
-  The snowman stays the winter landmark on the meadow; the bauble is the board's energizer.
+  (`MeadowBakeTheme.wall.paint`, `paintWalls`'s `foot` for a band at the walls' feet,
+  `.floor.paint` per cell, `.wet` for the ground after rain, the scene's `wallDress` on the
+  stone). Every season shares the base: the shared stone, the corridor one opaque tone with a
+  contact shadow, the lair the common tile floor. Winter (`winter/winterDress.ts`): a full snow
+  blanket on the walls (the stone a thin rim, the corners' rounding kept), a thin snow bank at
+  their feet that leaves the corridor its width, a dark blue-grey corridor of trodden snow, rare
+  short icicles under long walls. Autumn (`autumn/autumnDress.ts`): wet leaf litter at the walls'
+  feet, wet moss on their edges and a few stuck leaves. The snowman stays the winter landmark.
 - **Holiday scenes** (the owner's picks of the `season-dress` prototype, 2026-11-23; refinements
   to come from his list): each season is a finished holiday scene on the same meadow and layout
   (the pond and the stream where they are), all seen from above and baked, a few moving bits
   live. Autumn is **Halloween** (cobweb fans over the walls' outer corners and spiders, carved
   pumpkins whose lid cuts glow and whose light spills on the ground, candles, two small
   graveyards, sheet ghosts lying in the grass, a witch's cauldron, a big orb web on the grass,
-  bat shadows gliding over the meadow, faint rain rings; no puddles). Winter is **New Year** (a
+  bat shadows gliding over the meadow, faint rain rings). In the rain autumn's ground gets wet instead of misty: the theme's `wet`
+  layer (baked once at half resolution, faded in over ~12 s as the storm soaks it, part of the
+  settled bake, no extra pass) darkens the ground, makes the stone's rims, the roofs and the
+  bridge glisten and fills puddles (small ones against the corridor walls, off the dots; larger
+  ones on the meadow); at night the nearby lights lie in them as soft spots. The rain is thin and
+  dim, a few leaves blow across it. Winter is **New Year** (a
   decorated tree with presents and sparklers beside each snowman, lights round the cabins' roofs
   and on the bridge, warm window light, holly on the lamps). Spring is a **hanami** (every tree in
   blossom, petal carpets, blankets, paper lanterns between the trees and in two strings from lamp
   to lamp, petals on the walls). Summer is a **fair** (striped tents, festoons, balloons, a
   turning carousel beside each umbrella, bunting along the maze's frame). What glows lights up at
-  night. The walls' stone and rounded corners are never repainted: what lies on them is a pass of
-  its own clipped to their silhouette (no white corners), checked by the prototype's pixel guard.
-  Autumn, spring and summer share the corridor: one opaque tone with a contact shadow and grass
-  at the walls' feet; winter keeps its own.
+  night: the scene's lamps and windows as even pools on the ground without a halo round the lamp;
+  the energizers' and portals' light is soft at night; a storm never brightens the night (its
+  tint, the mist and the warm light fade out as the night falls, the weather dims). The walls' stone and rounded corners are never repainted: what lies on them is a pass of
+  its own clipped to their silhouette, checked by the prototype's pixel guard: a dress may cover a
+  wall's top but never the stone rim along the rounded corners. Spring and summer still have grass
+  blades at the walls' feet (their own bands come with their refinements).
 - **Weather** rises at 50 % of the dots eaten (spring petal wind, summer heat shimmer,
   autumn rain, winter blizzard); **night** falls at 75 %.
 - Gameplay tuning (`SeasonCatalog.seasonModifiers`): spring power 6.5 s; summer fruit

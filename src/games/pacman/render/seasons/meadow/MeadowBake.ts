@@ -162,6 +162,25 @@ function makeMeadowFrame(
 
 export type MeadowFrame = ReturnType<typeof makeMeadowFrame>;
 
+/** The theme's wet ground on a clear canvas the size of the bake at `RS`, or null (no `wet`). */
+export function bakeWet(
+	S: GridMatrix,
+	P: MeadowBakeTheme,
+	x0: number,
+	y0: number,
+	w: number,
+	h: number,
+	RS: number,
+	lit: SceneLit
+): { cv: HTMLCanvasElement; puddles: ReadonlyArray<readonly [number, number, number]> } | null {
+	if (!P.wet) {
+		return null;
+	}
+	const f = makeMeadowFrame(S, P, x0, y0, w, h, RS, lit);
+	const puddles = P.wet(f);
+	return { cv: f.cv, puddles };
+}
+
 /** Ground: one meadow for the whole screen. */
 function paintGround(f: MeadowFrame): void {
 	const { P, x0, y0, w, h, R, C, BG, b, rnd, rr, pick } = f;

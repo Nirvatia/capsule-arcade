@@ -49,6 +49,7 @@ interface Built {
 	season: Season;
 }
 const cache = new Map<string, Built>();
+const soaked = new WeakSet<Built>();
 function built(season: Season, withScene: boolean, vw: number, vh: number): Built {
 	const k = `${season}|${withScene}|${vw}x${vh}`;
 	let b = cache.get(k);
@@ -136,7 +137,10 @@ function live(now: number): void {
 	const newB = built(s, true, vw, vh);
 	for (const b of [nowB, newB]) {
 		b.world.setMood(storm, night);
-		b.world.update(dt || 1 / 60);
+		// a frozen frame (`?t=`) shows the mood settled: the wet ground takes ~12 s to fill
+		const steps = FROZEN !== null && !soaked.has(b) ? 200 : 1;
+		for (let i = 0; i < steps; i += 1) b.world.update(steps > 1 ? 0.1 : dt || 1 / 60);
+		soaked.add(b);
 	}
 	if (dirty) {
 		settle(nowB, night, storm);

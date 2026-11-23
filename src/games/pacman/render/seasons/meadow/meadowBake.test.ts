@@ -157,28 +157,33 @@ describe('MeadowBake theme paint hooks', () => {
 		expect(b.fills.some((d) => d.style === WALL_MARK)).toBe(false);
 	});
 
-	it('winter opts into all three hooks; the other seasons into the floor only', () => {
-		expect(winterTheme.bake.floor.paint).toBeTypeOf('function');
-		expect(winterTheme.bake.lair.paint).toBeTypeOf('function');
-		expect(winterTheme.bake.wall.paint).toBeTypeOf('function');
-		for (const theme of [autumnTheme, springTheme, summerTheme]) {
+	it("every season paints its corridor and keeps the shared lair; winter and autumn dress the walls' feet", () => {
+		for (const theme of [winterTheme, autumnTheme, springTheme, summerTheme]) {
 			expect(theme.bake.floor.paint).toBeTypeOf('function');
-			// the walls stay the shared painter, untouched (the scene's dress is a pass of its own)
-			expect(theme.bake.wall.paint).toBeUndefined();
+			// the lair is the common tile floor in every season (winter's ice crust is gone)
 			expect(theme.bake.lair.paint).toBeUndefined();
 			// the wall painter lays tiles[0] under the rounded corners: it is the corridor's tone
 			expect(new Set(theme.bake.floor.tiles).size).toBe(1);
 		}
+		// the shared stone with a band at the feet: winter's snow bank, autumn's wet leaf litter
+		expect(winterTheme.bake.wall.paint).toBeTypeOf('function');
+		expect(autumnTheme.bake.wall.paint).toBeTypeOf('function');
+		expect(springTheme.bake.wall.paint).toBeUndefined();
+		expect(summerTheme.bake.wall.paint).toBeUndefined();
+		// only autumn's ground gets wet in the rain
+		expect(autumnTheme.bake.wet).toBeTypeOf('function');
+		for (const theme of [winterTheme, springTheme, summerTheme])
+			expect(theme.bake.wet).toBeUndefined();
 	});
 
 	it('every season carries its holiday scene', () => {
 		for (const theme of [autumnTheme, winterTheme, springTheme, summerTheme]) {
 			expect(theme.bake.scene).toBeDefined();
 		}
-		// the scenes with something on the walls: Halloween (cobwebs), the hanami (petals), the fair (bunting)
-		expect(autumnTheme.bake.scene?.wallDress).toBeTypeOf('function');
-		expect(springTheme.bake.scene?.wallDress).toBeTypeOf('function');
-		expect(summerTheme.bake.scene?.wallDress).toBeTypeOf('function');
-		expect(winterTheme.bake.scene?.wallDress).toBeUndefined();
+		// every scene dresses the walls: Halloween (moss, leaves, cobwebs), New Year (the snow
+		// blanket), the hanami (petals), the fair (bunting)
+		for (const theme of [autumnTheme, winterTheme, springTheme, summerTheme]) {
+			expect(theme.bake.scene?.wallDress).toBeTypeOf('function');
+		}
 	});
 });

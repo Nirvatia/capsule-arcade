@@ -58,6 +58,27 @@ export function glowTexture(tint: number): HTMLCanvasElement {
 	return texture;
 }
 
+const poolCache = new Map<number, HTMLCanvasElement>();
+
+/**
+ * A pool of light on the ground: an even plateau with a soft edge and no hot centre, so a lamp
+ * or a window lights the ground round it without a halo round the lamp itself.
+ */
+export function poolTexture(tint: number): HTMLCanvasElement {
+	const cached = poolCache.get(tint);
+	if (cached) {
+		return cached;
+	}
+	const [r, g, b] = hexChannels(tint);
+	const texture = radialTexture(64, [
+		[0, `rgba(${r},${g},${b},0.42)`],
+		[0.5, `rgba(${r},${g},${b},0.3)`],
+		[1, `rgba(${r},${g},${b},0)`]
+	]);
+	poolCache.set(tint, texture);
+	return texture;
+}
+
 export function makeTexture(
 	width: number,
 	height: number,

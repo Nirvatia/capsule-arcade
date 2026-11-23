@@ -39,24 +39,31 @@ last (see Later).
 
 ## Part I. The main game
 
-1. **Season scenes: the owner's refinements** (the current focus). The holiday scenes are in the
-   game (the owner's picks of the `season-dress` prototype, 2026-11-23; `DESIGN.md` §6):
-   autumn Halloween, winter New Year, spring hanami, summer fair, on the accepted season base
-   (winter's walls, floor, lair and bauble untouched; autumn, spring and summer share the opaque
-   one-tone corridor with a contact shadow and grass at the walls' feet). The owner will send a
-   list of refinements and wants a separate mock-up with them first (prototype, then the game).
-   Rules that hold: top-down only, no pseudo-height; the maze silhouette, the corridor width, the
-   food and the heroes' readability unchanged; decor sits on a surface, composed, bold details
-   not sprinkled noise; the static is baked into `MeadowBake` (the scene's hooks), no new
-   full-screen passes (settled season: High 3, Medium 1, Low 1), the live bits small sprites,
-   nothing flashing faster than 3 times a second; the walls' stone and rounded corners are never
-   repainted: a wall dress is a pass clipped to their silhouette and must pass the pixel guard
-   (`node prototypes/pacman/season-dress/guard.mjs` after building the page). Open from the
-   port: the night lights of the scenes are steady (the prototype's slow twinkle of the bulbs was
-   dropped to keep them in the world's night lights); the bridge and the top cabin are off a
-   16:9 screen; nobody has measured the scenes' cost on real hardware. To add a season later
-   (two are planned): `HeroSeason` / `SEASON_LOOKS`, `SEASON_GHOST`, the `meadowThemes` registry,
-   a `render/seasons/<season>/` theme and scene, `SeasonCatalog`'s modifiers, the food sprites.
+1. **Season scenes: the owner's refinements** (the current focus; his answers of 2026-11-23 to
+   the season questionnaire). Done, in review: winter on the shared base (snow blanket, thin bank,
+   trodden-snow corridor, tile lair, icicles, the new bauble), the food of every season, autumn's
+   wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
+   ground pools and a storm that never brightens the night (`DESIGN.md` §6). Left, one chat:
+   - **Spring** (the weakest theme, the owner wants it stronger): a temari energizer; walls with
+     young moss on the edges, bindweed with small flowers and petals; a moss band at their feet;
+     a softer petal wind with pollen in the light.
+   - **Summer**: ivy / wild vine over the walls, uneven (some walls almost covered, some with a
+     shoot or two, about half on average); a band of roots and shoots at their feet; the carousel
+     at half speed; heat haze with poplar fluff for the weather.
+   - **Winter's blizzard**: flakes of several sizes on the wind and drifting snow along the
+     ground, no white veil; the snow on the walls and at their feet grows a little while it blows.
+   - The pumpkin and the starfish brought to the new food's style.
+     Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
+     heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the
+     static is baked (hooks of `MeadowBake`), no new full-screen passes in the settled state
+     (High 3, Medium 1, Low 1), the live bits small sprites, nothing flashing faster than 3 times a
+     second; the stone rim along the rounded corners is never covered (the pixel guard:
+     `node prototypes/pacman/season-dress/guard.mjs` after building the page). Open from the port:
+     the bridge and the top cabin are off a 16:9 screen; nobody has measured the scenes' cost (and
+     the wet layer's memory, a half-resolution copy of the bake) on real hardware. To add a season
+     later (two are planned): `HeroSeason` / `SEASON_LOOKS`, `SEASON_GHOST`, the `meadowThemes`
+     registry, a `render/seasons/<season>/` theme and scene, `SeasonCatalog`'s modifiers, the food
+     sprites.
 2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
    Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
    wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"

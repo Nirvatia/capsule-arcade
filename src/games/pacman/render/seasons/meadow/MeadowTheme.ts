@@ -127,6 +127,12 @@ export interface MeadowBakeTheme {
 	readonly flowerPatch: (k: BakeKit, o: MeadowDecor) => void;
 	/** Lily pads, floating leaves… drawn inside the pond, after its highlight. */
 	readonly pondExtras?: (k: BakeKit, o: MeadowDecor) => void;
+	/**
+	 * The ground after rain, baked once at half resolution on a clear layer and faded in as the
+	 * storm soaks it (`bakeWet`): darker ground, sheen, puddles. Returns the puddles as
+	 * [x, y, r] (world units) for the night lights' reflections.
+	 */
+	readonly wet?: (f: MeadowFrame) => ReadonlyArray<readonly [number, number, number]>;
 	/** The season's holiday scene (`seasonScene`): wall dress, props, night lights, live bits. */
 	readonly scene?: SeasonScene;
 }

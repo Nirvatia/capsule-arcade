@@ -3,6 +3,8 @@
 // night.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
 import { autumnFloor, halloweenScene } from './autumnScene';
+import { autumnWet, leafLitter } from './autumnDress';
+import { paintWalls } from '../meadow/meadowBakeWalls';
 import {
 	lazy,
 	makeTexture,
@@ -94,7 +96,9 @@ export const autumnTheme: MeadowTheme = {
 			corners: '#f0e0c0'
 		},
 		// warmer and lighter than the mock-up's rust-brown stones (owner's review)
+		// wet leaf litter at the walls' feet, under the stones (`autumnDress`)
 		wall: {
+			paint: (f) => paintWalls(f, { foot: leafLitter }),
 			base: '#7c3614',
 			moss: ['#c0502e', '#82301a'],
 			top: ['#dc9c4e', '#e2a456', '#d49447'],
@@ -118,6 +122,7 @@ export const autumnTheme: MeadowTheme = {
 			drifts: 'rgba(230,120,30,.5)'
 		},
 		scene: halloweenScene,
+		wet: autumnWet,
 		landmark: {
 			ex: [2.4, 2.2],
 			// a round hay bale seen from above
@@ -177,7 +182,8 @@ export const autumnTheme: MeadowTheme = {
 		portal: { glow: 0xc88aff, deep: 0x2a0a50 },
 		glints: 0xffffff,
 		fog,
-		mistAlpha: (s) => 0.1 + 0.22 * s,
+		// no mist in the rain: the ground gets wet instead (`autumnWet`)
+		mistAlpha: () => 0,
 		mistSpeed: (s) => 1 + 6 * s,
 		rays: (t, i, s, n) => (0.12 + 0.05 * Math.sin(t * 0.5 + i * 2)) * (1 - 0.8 * n) * (1 - s),
 		lit: lazy(() =>
@@ -208,9 +214,13 @@ export const autumnTheme: MeadowTheme = {
 				const vy = 20 + Math.random() * 10;
 				return {
 					st: true,
-					im: streakTexture(i % 3 === 0 ? 0xe6f0fa : 0xa9c4dc),
-					w: 16 * s,
-					h: 2 * s * 0.4,
+					// thin, dim rain; every 24th particle a leaf blown across the field
+					im:
+						i % 24 === 0
+							? tinted(leaf(), LEAVES[i % 4])
+							: streakTexture(i % 3 === 0 ? 0xc9d6e4 : 0x9fb4c8),
+					w: i % 24 === 0 ? 7 : 14 * s,
+					h: i % 24 === 0 ? 4.2 : 0.55 * s,
 					px: Math.random() * vw,
 					py: Math.random() * vh,
 					vx,
@@ -231,7 +241,7 @@ export const autumnTheme: MeadowTheme = {
 					p.px = -30;
 				}
 			},
-			alpha: (_p, s) => s * 0.6
+			alpha: (p, s) => s * (p.w === 7 ? 0.85 : 0.38)
 		},
 		nightTint: '#3a3a70',
 		nightAlpha: 0.55,

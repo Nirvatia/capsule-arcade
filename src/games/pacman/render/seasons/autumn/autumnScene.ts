@@ -32,13 +32,14 @@ import {
 	sceneFloor,
 	spot
 } from '../meadow/seasonScene';
+import { mossAndLeaves } from './autumnDress';
 import { WORLD_TILE } from '../../common/worldDecor';
 
 const T = WORLD_TILE;
 const AUTUMN_TONE: FloorTone = { base: '#403c3a', grain: ['#6a625c', '#25211f'], ao: 0.42 };
 
 /** The corridor: the one tone; the wet floor holds a faint warm band of the wall above. */
-export const autumnFloor = sceneFloor(AUTUMN_TONE, ['#8a7a3a', '#6e6030', '#a08a44'], (f, cell) => {
+export const autumnFloor = sceneFloor(AUTUMN_TONE, null, (f, cell) => {
 	if (f.isW(cell.r - 1, cell.c)) {
 		const g = f.b.createLinearGradient(cell.x, cell.y, cell.x, cell.y + 8);
 		g.addColorStop(0, 'rgba(220,130,60,.13)');
@@ -111,6 +112,8 @@ function groundWeb(b: C2, x: number, y: number, r: number): void {
 
 export const halloweenScene: SeasonScene = {
 	wallDress(f, r) {
+		// wet moss on the edges and a few stuck leaves first, the cobwebs over them
+		mossAndLeaves(f, r);
 		// cobweb fans over the outer corners: the hub sits where the rounded corner's arc is
 		// centred, the spokes run out over the corner; the clip keeps them on the stone
 		const cs = outerCorners(f, 0.13, 3);

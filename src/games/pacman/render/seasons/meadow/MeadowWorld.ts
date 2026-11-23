@@ -16,12 +16,13 @@ import { hudLayoutFor } from '../../../config/hudLayout';
 import type { GridMatrix } from '../../../config/gridConfig';
 import { isTeleportToken } from '../../../config/gridConfig';
 import type { GridLayout } from '../../maze/GridView';
-import { bakeMeadow, MEADOW_TILE } from './MeadowBake';
+import { bakeMeadow, bakeWet, MEADOW_TILE } from './MeadowBake';
 import type { SceneLit } from './seasonScene';
 import { newSceneLit } from './seasonScene';
 import { streamY, tunnelRowOf, worldDecor } from '../../common/worldDecor';
 import type { MeadowTheme, WeatherParticle } from './MeadowTheme';
 import { glowTexture, rayTexture } from './meadowSprites';
+import { poolTexture } from '../../common/textures';
 import { drawRipplePad, PAD_RADIUS } from './ripplePad';
 import { MoodBuffer } from '../../common/moodBuffer';
 import { hexChannels } from '../../common/textures';
@@ -141,6 +142,12 @@ export class MeadowWorld {
 	private bgX = 0;
 	private bgY = 0;
 	private bgRS = 1;
+	/** The theme's wet ground (`bake.wet`), half the background's resolution; null when dry. */
+	private wetBg: HTMLCanvasElement | null = null;
+	/** How wet the ground is, 0..1: it follows the storm slowly (about 12 s to fill). */
+	private wetV = 0;
+	/** The night lights caught in the puddles. */
+	private reflections: Reflection[] = [];
 	private rebakeAt = 0;
 	/** The atmosphere that holds still: what is baked into the background. */
 	private readonly mood = new MoodBuffer();
@@ -335,6 +342,13 @@ export class MeadowWorld {
 		const ez = Math.min(1, 0.04 * d);
 		this.stormV = settle(this.stormV, this.stormT, ez, MOOD_SETTLED);
 		this.nightV = settle(this.nightV, this.nightT, ez, MOOD_SETTLED);
+		if (this.wetBg) {
+			const step = (ms / 1000) * k * (this.stormT > this.wetV ? 1 / 12 : 1 / 25);
+			this.wetV =
+				this.wetV < this.stormT
+					? Math.min(this.stormT, this.wetV + step)
+					: Math.max(this.stormT, this.wetV - step);
+		}
 		// below High the mist holds still, so it can be baked with the rest
 		if (this.quality === 'high') {
 			for (const f of this.mist) {
@@ -390,7 +404,7 @@ export class MeadowWorld {
 		this.baked = lit !== null;
 		// what the baked storm tint and night would have done to the small things drawn over them
 		const dim = lit
-			? (1 - live.stormAlpha * this.stormV) *
+			? (1 - live.stormAlpha * this.stormV * (1 - this.nightV)) *
 				(showNight ? 1 - live.nightAlpha * this.nightV * (1 - this.nightLum) : 1)
 			: 1;
 		ctx.save();
@@ -409,6 +423,7 @@ export class MeadowWorld {
 		if (!lit) {
 			if (this.bg) {
 				this.drawBackground(ctx, this.bg);
+				this.drawWet(ctx);
 			}
 			for (const o of this.liveObjects) {
 				o.draw(ctx);
@@ -467,18 +482,35 @@ export class MeadowWorld {
 		ctx.drawImage(image, this.bgX, this.bgY, image.width / this.bgRS, image.height / this.bgRS);
 	}
 
+	/** The wet ground over the raw background, as wet as the storm has made it (world space). */
+	private drawWet(ctx: CanvasRenderingContext2D): void {
+		const wet = this.wetBg;
+		const bg = this.bg;
+		if (!wet || !bg || this.wetV <= 0.003) {
+			return;
+		}
+		ctx.globalAlpha = this.wetV;
+		ctx.drawImage(wet, this.bgX, this.bgY, bg.width / this.bgRS, bg.height / this.bgRS);
+		ctx.globalAlpha = 1;
+	}
+
 	/**
 	 * What the baked background holds, or null while it cannot be baked: the mood is still
 	 * moving. The key names everything the baked atmosphere depends on.
 	 */
 	private moodKey(): string | null {
-		if (this.stormV !== this.stormT || this.nightV !== this.nightT) {
+		if (
+			this.stormV !== this.stormT ||
+			this.nightV !== this.nightT ||
+			(this.wetBg !== null && this.wetV !== this.stormT)
+		) {
 			return null;
 		}
 		const flags = this.debugFlags;
 		return [
 			this.stormV,
 			this.nightV,
+			this.wetV,
 			this.quality === 'high' ? 'live-mist' : 'still-mist',
 			!flags || flags.night ? 'night' : '',
 			!flags || flags.vignette ? 'vignette' : ''
@@ -531,6 +563,11 @@ export class MeadowWorld {
 		c.globalAlpha = 1;
 		c.globalCompositeOperation = 'source-over';
 		c.drawImage(bg, 0, 0);
+		if (this.wetBg && this.wetV > 0.003) {
+			c.globalAlpha = this.wetV;
+			c.drawImage(this.wetBg, 0, 0, bg.width, bg.height);
+			c.globalAlpha = 1;
+		}
 		this.mood.compositeWithMargins(c, x, y, w, h, x, y, bg.width - x - w, bg.height - y - h);
 		c.restore();
 		this.bakeStrip += 1;
@@ -591,6 +628,23 @@ export class MeadowWorld {
 				w,
 				h
 			);
+			const wet = this.wetBg;
+			if (wet && this.wetV > 0.003) {
+				const q = wet.width / bg.width;
+				ctx.globalAlpha = this.wetV;
+				ctx.drawImage(
+					wet,
+					((cx - this.wx) / this.sc - this.bgX) * this.bgRS * q,
+					((cy - this.wy) / this.sc - this.bgY) * this.bgRS * q,
+					cw * world * q,
+					ch * world * q,
+					x0,
+					y0,
+					w,
+					h
+				);
+				ctx.globalAlpha = 1;
+			}
 			ctx.setTransform(base);
 			ctx.translate(this.wx, this.wy);
 			ctx.scale(this.sc, this.sc);
@@ -723,7 +777,17 @@ export class MeadowWorld {
 			}
 			const s = 1 + 0.05 * Math.sin(t * 2.6 + o.ph);
 			const rot = en.motion === 'spin' ? t * 0.4 : Math.sin(t * 2 + o.ph) * 0.12;
-			sprite(ctx, enGlow, o.x, o.y, en.glowSize * s, en.glowSize * s, 0.7, 0, true);
+			sprite(
+				ctx,
+				enGlow,
+				o.x,
+				o.y,
+				en.glowSize * s,
+				en.glowSize * s,
+				0.7 * (1 - 0.5 * this.nightV),
+				0,
+				true
+			);
 			sprite(ctx, enIm, o.x, o.y, en.size * s, en.size * s, 1, rot);
 		}
 		ctx.restore();
@@ -793,15 +857,24 @@ export class MeadowWorld {
 			ctx.save();
 			ctx.translate(this.wx, this.wy);
 			ctx.scale(this.sc, this.sc);
-			for (const g of this.sceneLights.length
-				? [...this.lights, ...this.sceneLights]
-				: this.lights) {
+			// the energizers' and portals' lights stay soft; the scene's lamps and windows light
+			// the ground as even pools, no halo round the lamp (the owner's review, 2026-11-23)
+			const glow = (g: Light, tex: HTMLCanvasElement, k: number) => {
 				const a =
+					k *
 					this.nightV *
 					g.a *
 					(g.flicker ? 0.88 + 0.12 * Math.sin(t * 7 + g.x) : 1) *
 					(1 - this.vignetteAt(this.wx + g.x * this.sc, this.wy + g.y * this.sc));
-				sprite(ctx, glowTexture(g.tint), g.x, g.y, 2 * g.r, 2 * g.r, a, 0, true);
+				sprite(ctx, tex, g.x, g.y, 2 * g.r, 2 * g.r, a, 0, true);
+			};
+			for (const g of this.lights) glow(g, glowTexture(g.tint), 0.55);
+			for (const g of this.sceneLights) glow(g, poolTexture(g.tint), 0.75);
+			const wetA = this.wetV * this.nightV;
+			if (wetA > 0.003) {
+				for (const q of this.reflections) {
+					sprite(ctx, poolTexture(q.tint), q.x, q.y, 2 * q.r, 2 * q.r, wetA * q.a, 0, true);
+				}
 			}
 			ctx.restore();
 		}
@@ -904,7 +977,8 @@ export class MeadowWorld {
 		const vh = this.vh;
 		if (moving) {
 			const fog = live.fog();
-			const mistA = live.mistAlpha(this.stormV);
+			// pale mist over a dark night is a milky veil: it thins as the night falls
+			const mistA = live.mistAlpha(this.stormV) * (1 - 0.85 * this.nightV);
 			for (const f of this.mist) {
 				sprite(ctx, fog, f.x, f.y, f.w, f.h, mistA);
 			}
@@ -927,7 +1001,10 @@ export class MeadowWorld {
 				}
 			}
 			const W = Math.max(vw, vh) * 1.5;
-			ctx.globalAlpha = Math.min(1, live.litAlpha(this.stormV, this.nightV));
+			ctx.globalAlpha = Math.min(
+				1,
+				live.litAlpha(this.stormV, this.nightV) * (1 - 0.5 * this.nightV)
+			);
 			ctx.globalCompositeOperation = 'lighter';
 			ctx.drawImage(live.lit(), 0, 0, W, W);
 		}
@@ -938,7 +1015,8 @@ export class MeadowWorld {
 		ctx.globalCompositeOperation = 'source-over';
 		ctx.drawImage(live.wash(), 0, 0, vw, vh);
 		if (this.stormV > 0.002) {
-			ctx.globalAlpha = live.stormAlpha * this.stormV;
+			// a storm night is as dark as a calm one: the storm's tint fades out with the light
+			ctx.globalAlpha = live.stormAlpha * this.stormV * (1 - this.nightV);
 			ctx.fillStyle = live.stormTint;
 			ctx.fillRect(0, 0, vw, vh);
 			ctx.globalAlpha = 1;
@@ -956,7 +1034,10 @@ export class MeadowWorld {
 		const flags = this.debugFlags;
 		if ((!flags || flags.weather) && this.stormV > 0.02) {
 			for (const p of this.weather) {
-				const a = live.weather.alpha(p, this.stormV) * (1 - this.vignetteAt(p.px, p.py));
+				const a =
+					live.weather.alpha(p, this.stormV) *
+					(1 - 0.4 * this.nightV) *
+					(1 - this.vignetteAt(p.px, p.py));
 				sprite(ctx, p.im, p.px, p.py, p.w, p.h, a, p.rot, p.add);
 			}
 		}
@@ -981,8 +1062,49 @@ export class MeadowWorld {
 		this.bg = bakeMeadow(this.S, this.theme.bake, bx, by, bw, bh, RS, lit);
 		this.sceneLit = lit;
 		this.sceneLights = [...lit.lights.values()];
+		const wet = bakeWet(this.S, this.theme.bake, bx, by, bw, bh, RS * 0.5, lit);
+		this.wetBg = wet?.cv ?? null;
+		this.reflections = wet ? reflectionsOf(wet.puddles, this.sceneLights) : [];
 		this.bgX = bx;
 		this.bgY = by;
 		this.bgRS = RS;
 	}
+}
+
+interface Reflection {
+	readonly x: number;
+	readonly y: number;
+	readonly r: number;
+	readonly tint: number;
+	readonly a: number;
+}
+
+/** Each puddle near a night light holds a soft spot of it (world units). */
+function reflectionsOf(
+	puddles: ReadonlyArray<readonly [number, number, number]>,
+	lights: readonly Light[]
+): Reflection[] {
+	const out: Reflection[] = [];
+	for (const [x, y, r] of puddles) {
+		let best: Light | null = null;
+		let bestK = 0;
+		for (const L of lights) {
+			const reach = L.r * 1.1 + r;
+			const k = 1 - Math.hypot(L.x - x, L.y - y) / reach;
+			if (k > bestK) {
+				bestK = k;
+				best = L;
+			}
+		}
+		if (best) {
+			out.push({
+				x: x + (best.x - x) * 0.15,
+				y,
+				r: r * 1.1,
+				tint: best.tint,
+				a: best.a * 0.6 * bestK
+			});
+		}
+	}
+	return out;
 }
