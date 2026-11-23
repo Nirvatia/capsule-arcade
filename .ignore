@@ -1,0 +1,17 @@
+# Discovery filter for ripgrep-based search (Grep/Glob). Deliberate reads and builds still work.
+# Keep repository-wide discovery focused on Pac-Man.
+src/games/tetris/
+src/games/snake/
+src/games/simon/
+
+# Generated and third-party trees.
+node_modules/
+.svelte-kit/
+build/
+dist/
+**/package-lock.json
+
+# Bundled pages: built prototypes, committed art sheets, the maze maker (lines of 16k+ chars).
+/prototypes/pacman/*.html
+/prototypes/pacman/art/*.html
+/src/games/pacman/*.html

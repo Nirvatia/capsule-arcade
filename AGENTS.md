@@ -15,6 +15,11 @@
 - Do not read generated bundles, screenshots, logs, or test output unless they are needed for the current decision.
 - Do not launch subagents unless the user explicitly requests delegation. Independent context is useful only for a genuinely large independent task.
 - Keep progress notes and final answers focused. Do not narrate routine tool calls or restate the plan after every step.
+- One ROADMAP step per chat. Everything written or read stays in the context until the chat ends; when a step is done (prototype approved and ported), suggest a new chat for the next one instead of starting it.
+- Cap command output: pipe builds, tests, checks and logs through `tail`/`grep` and print only failures and the summary line. Never print a whole diff of a large change; use `git diff --stat` and targeted hunks.
+- Search with a narrow `path`/`glob` and a specific pattern; never run a broad Grep in `content` mode over the repository. `.ignore` hides the bundled `.html` pages and the other games from discovery.
+- Screenshots: each image costs context. Combine the frames of one check into a single composite (2x2 or a strip), use `deviceScaleFactor: 1` for your own checks and crop to the area in question for detail. Prefer a numeric check (pixel guard, average/peak luminance) over another screenshot.
+- Write large new modules once from a settled plan; fix with small edits, not rewrites of whole files.
 
 ## Prototypes and approval
 
