@@ -380,5 +380,5 @@ const Paint = (() => {
 		ctx.restore();
 	}
 
-	return { TAU, rng, wash, bloom, paper, grain, spline, resample, frame, roundCorners, brush, enso, fillPoly };
+	return { TAU, rng, deform, wash, bloom, paper, grain, spline, resample, frame, roundCorners, brush, enso, fillPoly };
 })();

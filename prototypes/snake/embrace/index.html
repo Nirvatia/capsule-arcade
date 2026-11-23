@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>Обними цветом · прототип</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&display=swap"
+		/>
+		<style>
+			html,
+			body {
+				margin: 0;
+				height: 100%;
+				overflow: hidden;
+				background: #ecebe6;
+				color: #262c36;
+				font-family: 'Cormorant Garamond', Georgia, serif;
+				user-select: none;
+				-webkit-user-select: none;
+				touch-action: none;
+			}
+			canvas {
+				position: fixed;
+				inset: 0;
+				width: 100%;
+				height: 100%;
+				display: block;
+			}
+			.hud {
+				position: fixed;
+				left: 22px;
+				top: 16px;
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				font-size: 18px;
+				letter-spacing: 0.12em;
+				color: rgba(38, 44, 54, 0.65);
+				pointer-events: none;
+			}
+			.hud svg {
+				width: 26px;
+				height: 26px;
+				transform: rotate(-90deg);
+			}
+			.hud circle {
+				fill: none;
+				stroke-width: 2.2;
+			}
+			#ring {
+				stroke: #262c36;
+				stroke-dasharray: 100;
+				stroke-dashoffset: 100;
+				transition: stroke-dashoffset 0.8s ease;
+			}
+			.keys {
+				position: fixed;
+				right: 22px;
+				top: 16px;
+				font-size: 15px;
+				text-align: right;
+				line-height: 1.5;
+				color: rgba(38, 44, 54, 0.55);
+				pointer-events: none;
+			}
+			#hint {
+				position: fixed;
+				left: 50%;
+				bottom: 26px;
+				transform: translateX(-50%);
+				padding: 8px 20px;
+				border-radius: 999px;
+				background: rgba(244, 240, 232, 0.85);
+				border: 1px solid rgba(38, 44, 54, 0.18);
+				font-size: 18px;
+				opacity: 0;
+				transition: opacity 0.8s;
+				pointer-events: none;
+				white-space: nowrap;
+			}
+			#hint.on {
+				opacity: 1;
+			}
+			#banner {
+				position: fixed;
+				left: 0;
+				right: 0;
+				bottom: 13%;
+				text-align: center;
+				opacity: 0;
+				transition: opacity 1.4s;
+				pointer-events: none;
+			}
+			#banner.on {
+				opacity: 1;
+			}
+			#banner b {
+				display: block;
+				font-weight: 400;
+				font-size: clamp(30px, 5vw, 52px);
+				letter-spacing: 0.4em;
+				text-indent: 0.4em;
+			}
+			#banner i {
+				display: block;
+				margin-top: 6px;
+				font-style: normal;
+				font-size: 18px;
+				letter-spacing: 0.18em;
+				color: rgba(38, 44, 54, 0.6);
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="view"></canvas>
+		<div class="hud">
+			<svg viewBox="0 0 36 36" aria-hidden="true">
+				<circle cx="18" cy="18" r="15.9" stroke="rgba(38,44,54,0.18)" />
+				<circle id="ring" cx="18" cy="18" r="15.9" pathLength="100" />
+			</svg>
+			<span>Обними цветом</span>
+		</div>
+		<div class="keys">
+			← → — поворот · ↑ ↓ — быстрее и тише<br />
+			или зажмите мышь / палец — змейка плывёт к нему<br />
+			R — заново · M — звук
+		</div>
+		<div id="hint"></div>
+		<div id="banner"><b>КИТ</b><i>цвет вернулся · записано в альбом</i></div>
+		<script src="../look/data.js"></script>
+		<script src="../look/paint.js"></script>
+		<script src="embrace.js"></script>
+	</body>
+</html>
