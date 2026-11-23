@@ -13,7 +13,8 @@ const T = WORLD_TILE;
 /** Snow, its shade (the side away from the light) and its sparkle. */
 const SNOW = '#eef3f9';
 const SNOW_SHADE = 'rgba(112,138,180,';
-const BANK = '#d9e3ee';
+// a step darker than the blanket, so the walls keep their own edge and the corridor its width
+const BANK = '#b4c0d0';
 
 /** The corridor: trodden snow, one dark blue-grey, a barely visible grain. */
 export const winterFloor: (f: MeadowFrame, cell: MeadowPathCell) => void = sceneFloor(
@@ -39,10 +40,10 @@ export function snowBank(f: MeadowFrame): void {
 	b.lineJoin = 'round';
 	// the shade the bank throws on the floor, then the bank
 	b.strokeStyle = 'rgba(20,28,44,.28)';
-	b.lineWidth = 9.5;
+	b.lineWidth = 5.2;
 	b.stroke(edge);
 	b.strokeStyle = BANK;
-	b.lineWidth = 7;
+	b.lineWidth = 3.6;
 	b.stroke(edge);
 	// lumps along the open edges: the band's outer line is soft, not ruled
 	for (let rr = 0; rr < f.R; rr += 1) {
@@ -61,10 +62,11 @@ export function snowBank(f: MeadowFrame): void {
 			for (let i = 0; i < 3; i += 1) {
 				const t = 4 + i * 8.5 + r() * 3;
 				const s = 2.2 + r() * 1.6;
-				if (oU) lump(x + t, y - 1.5, s * 1.6, s * 0.7);
-				if (oD) lump(x + t, y + T + 1.5, s * 1.6, s * 0.7);
-				if (oL) lump(x - 1.5, y + t, s * 0.7, s * 1.6);
-				if (oR) lump(x + T + 1.5, y + t, s * 0.7, s * 1.6);
+				// thin: the bank reaches under 2 units into the corridor (the owner's review)
+				if (oU) lump(x + t, y - 0.2, s * 1.5, s * 0.45);
+				if (oD) lump(x + t, y + T + 0.2, s * 1.5, s * 0.45);
+				if (oL) lump(x - 0.2, y + t, s * 0.45, s * 1.5);
+				if (oR) lump(x + T + 0.2, y + t, s * 0.45, s * 1.5);
 			}
 		}
 	}
@@ -73,7 +75,7 @@ export function snowBank(f: MeadowFrame): void {
 	b.lineWidth = 1;
 	b.setLineDash([5, 3]);
 	b.lineDashOffset = 1;
-	b.translate(-1.4, -1.4);
+	b.translate(-0.9, -0.9);
 	b.stroke(edge);
 	b.restore();
 }

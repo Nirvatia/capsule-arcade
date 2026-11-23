@@ -136,34 +136,31 @@ export const starfish = energizer((c) => {
 	c.fill();
 });
 
-/** Summer pellet: a scallop shell, a peach fan with ribs on a small hinge. */
+/** Summer pellet: a popcorn puff, warm cream with a golden hull at its foot. */
 export const summerPellet = pellet((c) => {
-	c.beginPath();
-	c.roundRect(-1.7, 2, 3.4, 1.4, 0.4);
-	paint(c, '#f3c39e', 0.8);
-	// the fan with a scalloped rim: five bumps between ribs
-	const cy = 2.3;
-	const a0 = -Math.PI * 0.82;
-	const a1 = -Math.PI * 0.18;
-	const n = 5;
-	const at = (a: number, r: number): [number, number] => [Math.cos(a) * r, cy + Math.sin(a) * r];
-	c.beginPath();
-	c.moveTo(0, cy);
-	c.lineTo(...at(a0, 4.1));
-	for (let i = 0; i < n; i += 1) {
-		const am = a0 + ((i + 0.5) * (a1 - a0)) / n;
-		const ae = a0 + ((i + 1) * (a1 - a0)) / n;
-		const [mx, my] = at(am, 5.2);
-		const [ex, ey] = at(ae, 4.1);
-		c.quadraticCurveTo(mx, my, ex, ey);
+	const puffs: Array<[number, number, number]> = [
+		[-1.4, 0.5, 1.65],
+		[1.4, 0.5, 1.65],
+		[0, -1.2, 1.85],
+		[0.1, 1.5, 1.3]
+	];
+	// the ink round the whole cluster: stroke every puff wide, then fill them all over it
+	c.strokeStyle = INK;
+	c.lineWidth = 2;
+	for (const [x, y, r] of puffs) {
+		circle(c, x, y, r);
+		c.stroke();
 	}
-	c.closePath();
-	paint(c, '#ffdcc0', 1);
-	for (let i = 1; i < n; i += 1) {
-		const [ex, ey] = at(a0 + (i * (a1 - a0)) / n, 3.7);
-		stroke(c, 0, cy - 0.2, ex, ey, 'rgba(196,112,78,.7)', 0.5);
+	c.fillStyle = '#fbefd2';
+	for (const [x, y, r] of puffs) {
+		circle(c, x, y, r);
+		c.fill();
 	}
-	shine(c, -1.5, -0.6, 0.7, 0.45, -0.5);
+	c.fillStyle = '#e2a83a';
+	c.beginPath();
+	c.ellipse(0.1, 2.1, 0.9, 0.55, 0, 0, TAU);
+	c.fill();
+	stroke(c, -1.9, 0.9, -0.9, 1.3, 'rgba(190,140,70,.55)', 0.5);
 });
 
 /** Autumn: a jack-o'-lantern, an orange pumpkin with a lit face. */
@@ -215,31 +212,17 @@ export const pumpkin = energizer((c) => {
 	c.stroke();
 });
 
-/** Autumn pellet: a candy corn, yellow base, orange middle, white tip. */
+/** Autumn pellet: an eyeball candy, a green iris and a black pupil (orange would melt into the walls). */
 export const autumnPellet = pellet((c) => {
-	const tri = () => {
-		c.beginPath();
-		c.moveTo(0, -3.7);
-		c.quadraticCurveTo(1.6, -0.6, 3.2, 2.2);
-		c.quadraticCurveTo(0, 3.6, -3.2, 2.2);
-		c.quadraticCurveTo(-1.6, -0.6, 0, -3.7);
-		c.closePath();
-	};
-	tri();
-	c.save();
-	c.clip();
-	c.fillStyle = '#ffc426';
-	c.fillRect(-4, 0.9, 8, 4);
-	c.fillStyle = '#ff7a1c';
-	c.fillRect(-4, -1.3, 8, 2.2);
-	c.fillStyle = '#fff4e2';
-	c.fillRect(-4, -4, 8, 2.7);
-	c.restore();
-	tri();
-	c.strokeStyle = INK;
-	c.lineWidth = 0.9;
-	c.lineJoin = 'round';
-	c.stroke();
+	circle(c, 0, 0, 3);
+	paint(c, '#f6f1ea', 1);
+	circle(c, 0.5, 0.4, 1.55);
+	c.fillStyle = '#4fb840';
+	c.fill();
+	circle(c, 0.6, 0.5, 0.72);
+	c.fillStyle = INK;
+	c.fill();
+	shine(c, -1.2, -1.2, 0.7, 0.45, -0.5);
 });
 
 /** Winter: a snowman in a scarf and a top hat. */
@@ -316,15 +299,15 @@ export const bauble = energizer((c) => {
 	shine(c, -4.2, -2.4, 2, 1.3, -0.5);
 });
 
-/** Winter pellet: a snowball, a cool shade on its lower right. */
+/** Winter pellet: an ice-blue snowball (white would melt into the snow-covered walls). */
 export const winterPellet = pellet((c) => {
 	circle(c, 0, 0, 2.9);
-	paint(c, '#f4f8fc', 1);
+	paint(c, '#a6d4f4', 1);
 	c.save();
 	c.beginPath();
 	c.arc(0, 0, 2.4, 0, TAU);
 	c.clip();
-	c.fillStyle = '#b4c6de';
+	c.fillStyle = '#5f9dd2';
 	circle(c, -1.1, -1.1, 3);
 	c.rect(-5, -5, 10, 10);
 	c.fill('evenodd');
