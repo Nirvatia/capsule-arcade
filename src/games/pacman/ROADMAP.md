@@ -32,57 +32,27 @@ Token budget: code first, art after the mechanics of its part.
 
 ## Order
 
-**I** the main game (the seasons' scenes first, then abilities' sound/tuning, the heroes' rage
+**I** the main game (abilities' sound/tuning, the heroes' rage
 bite, a real-phone check, the mazes), **II** the boss levels (the hell's polish, the random boss,
 the new worlds), **III** the interface of each new boss. The depth/post-processing pass comes
 last (see Later).
 
 ## Part I. The main game
 
-1. **Season scenes: the owner's refinements** (the current focus; his answers of 2026-11-23 to
-   the season questionnaire). Done, in review: winter on the shared base (snow blanket, thin
-   bank, trodden-snow corridor, tile lair, icicles, the new bauble, a blizzard without a white
-   veil, fresh snow piling up while it blows, roofs under one snow cover); autumn's wet ground
-   (puddles, sheen, reflections, a careful downpour with leaves, no mist); spring (temari, a soft
-   petal wind with pollen); summer (a slower carousel, heat haze with poplar fluff); the food of
-   every season; the night lights as ground pools and a storm that never brightens the night;
-   the tunnel pads without worn paths; the meadow's trees and shrubs per season
-   (`meadow/flora.ts`); the cabins as homes (`meadow/homestead.ts`) (`DESIGN.md` §6). Then, after the owner's
-   review of that pass (2026-11-23), also in review: the Japanese garden
-   reverted, spring on the shared stone in light sandstone with moss in the joints; winter's
-   snow to the arc on the roundings (the contour on the straight runs only); summer's lianas
-   instead of the ivy and its pennants on the meadow's festoons; the cabins' paths and fences
-   removed (bench, woodpile, a lamp by the door); a burrow pad per season under a small
-   translucent ripple; seasonal roofs and meadow details instead of the sticker patches; a fuller
-   chimney smoke. The pumpkin and the starfish stay as they are (the owner). Next: the owner's
-   review of this pass.
-
-   Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
-   heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the
-   static is baked (hooks of `MeadowBake`), no new full-screen passes in the settled state
-   (High 3, Medium 1, Low 1), the live bits small sprites, nothing flashing faster than 3 times a
-   second; the stone rim along the rounded corners is never covered (the pixel guard:
-   `node prototypes/pacman/season-dress/guard.mjs` after building the page). Open from the port:
-   the bridge and the top cabin are off a 16:9 screen; nobody has measured the scenes' cost (and
-   the wet layer's memory, a half-resolution copy of the bake) on real hardware. To add a season
-   later (two are planned): `HeroSeason` / `SEASON_LOOKS`, `SEASON_GHOST`, the `meadowThemes`
-   registry, a `render/seasons/<season>/` theme and scene, `SeasonCatalog`'s modifiers, the food
-   sprites.
-
-2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
+1. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
    Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
    wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"
    (`config/abilityConfig.ts`); look at her magenta ghost form beside Pinky and his gold one
    beside Clyde at game scale.
-3. **The heroes: the rage bite and a cornering bot.** Left: the ghost's crunch and the chain
+2. **The heroes: the rage bite and a cornering bot.** Left: the ghost's crunch and the chain
    200-1600 rising with the rage; a balance bot that presses turns early so its numbers show the
    cornering. Kept: no tongue; the heroes' looks are the owner's picks of `hero-art` (2026-11-23): Pac-Man the
    sun with the pinwheel corona, Ms. Pac-Man the white comet with the ice bow (`DESIGN.md` §12).
-4. **Mobile: on a real phone.** Swipes/pad/dial/tap/audio-unlock are in and checked in Chromium
+3. **Mobile: on a real phone.** Swipes/pad/dial/tap/audio-unlock are in and checked in Chromium
    iPhone emulation. Left on real hardware: iOS Safari audio unlock and pinch, swipe threshold
    and pad size under a thumb, notched safe areas, the Auto graphics tier there.
-5. **Mazes**: the owner reworks the weak ones.
-6. **Music track support** (blocked: the owner is working out how to generate the music). A
+4. **Mazes**: the owner reworks the weak ones.
+5. **Music track support** (blocked: the owner is working out how to generate the music). A
    looped ogg/mp3 from `static/` per world under the same volume; the hell's track is part II.
 
 ## Part II. Boss levels
@@ -169,6 +139,16 @@ last (see Later).
 
 ## Known issues
 
+- **Season scenes, unmeasured.** The holiday scenes are in the game (the owner's refinements of
+  2026-11-23, `DESIGN.md` §6). Nobody has measured their cost on real hardware, nor the storm
+  layer's memory (`bake.wet`: a half-resolution copy of the background, autumn and winter). The
+  bridge and the top cabin are off a 16:9 screen. Rules for any later change: top-down only; the
+  maze silhouette, the corridor width, the food and the heroes' readability unchanged; nothing on
+  a wall's rounded corner (the pixel guard: `node prototypes/pacman/season-dress/guard.mjs` after
+  building the page); the static baked, no new full-screen pass in the settled state. To add a
+  season (two are planned): `HeroSeason` / `SEASON_LOOKS`, `SEASON_GHOST`, the `meadowThemes`
+  registry, a `render/seasons/<season>/` theme and scene, `SeasonCatalog`'s modifiers, the food
+  sprites, a burrow pad.
 - **Weak graphics.** Integrated GPUs feel sluggish controls with smooth frames (GPU-bound frame
   queue). The settled atmosphere is baked (Medium/Low blend one full-screen layer, High three);
   tiers cap DPR 1/1.5/2. Measured in Chromium without a GPU: winter High 38→49 FPS (DPR 1),

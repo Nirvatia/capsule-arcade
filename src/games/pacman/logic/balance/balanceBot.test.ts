@@ -19,5 +19,6 @@ describe('the balance bot', () => {
 		expect(a).toEqual(b);
 		const others = [6, 7, 8].map(run);
 		expect(others.some((o) => o.seconds !== a.seconds)).toBe(true);
-	});
+		// five whole levels simulated: a slow machine (a cloud container) passes 5 s
+	}, 20_000);
 });
