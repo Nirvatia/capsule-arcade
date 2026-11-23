@@ -52,10 +52,17 @@ last (see Later).
      at half speed; heat haze with poplar fluff for the weather.
    - **Winter**: the snow on the walls and at their feet grows a little while the blizzard blows.
    - The pumpkin and the starfish brought to the new food's style.
-   - **The tunnel pads**: the worn paths behind them (there to blend the corridor's dark tile into
-     the light meadow) to be replaced by a better transition or a new pad art (the owner's ask).
-   - **The background as a cozy place**: winter's roofs still carry snow "stickers"; the
-     bubble-like bushes everywhere; proposals for the meadow's nature welcome.
+   - **The tunnel pads** (the owner's pick, 2026-11-23: both): drop the worn paths behind them;
+     the corridor's last tile and a half fade from its dark tone into the meadow with a ragged,
+     season edge (snow, leaves, grass, sand); and a new pad art: a stone arch or a ring of runes
+     set into the ground with a trodden patch round it, binding the dark corridor to the meadow.
+   - **The background as a cozy place** (the owner agreed to all, 2026-11-23): winter's roofs a
+     whole snow cover with an overhang at the eaves and a dark ridge (no snow "stickers"); the
+     bubble bushes replaced per season (winter firs and frosted bare shrubs, autumn half-bare
+     russet shrubs, spring flowering shrubs, summer thick green with berries); trees with a
+     readable crown from above (branches, a shadow to one side); paths from the cabins to the
+     maze, fences or hedges round the plots, chimney smoke a little clearer, benches and a
+     woodpile by the houses, lamps along the paths lighting the ground as pools at night.
      Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
      heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the
      static is baked (hooks of `MeadowBake`), no new full-screen passes in the settled state

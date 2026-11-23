@@ -260,9 +260,21 @@ export function autumnWet(f: MeadowFrame): Array<readonly [number, number, numbe
 			const k = rng(hash(r * 3 + c * 71, 8) * 1e6);
 			const x = c * T + T / 2 + (k() - 0.5) * 2;
 			const y = r * T + T / 2 + (k() - 0.5) * 1.5;
-			const rx = T * (0.4 + k() * 0.06);
-			const ry = T * (0.24 + k() * 0.05);
+			// small enough that the uneven edge (up to +35 %) and the damp ring stay in the cell;
+			// a clip off the walls' faces as a guard (the owner's review: none may touch a wall)
+			const rx = T * (0.3 + k() * 0.05);
+			const ry = T * (0.19 + k() * 0.04);
+			const m = 1.8;
+			const cx0 = c * T + (f.isW(r, c - 1) ? m : -T);
+			const cy0 = r * T + (f.isW(r - 1, c) ? m : -T);
+			const cx1 = (c + 1) * T - (f.isW(r, c + 1) ? m : -T);
+			const cy1 = (r + 1) * T - (f.isW(r + 1, c) ? m : -T);
+			b.save();
+			b.beginPath();
+			b.rect(cx0, cy0, cx1 - cx0, cy1 - cy0);
+			b.clip();
 			puddle(b, x, y, rx, ry, k);
+			b.restore();
 			out.push([x, y, rx]);
 		}
 	}
