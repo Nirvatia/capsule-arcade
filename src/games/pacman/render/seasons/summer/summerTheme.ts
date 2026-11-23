@@ -13,6 +13,8 @@ import {
 	washTexture
 } from '../meadow/meadowSprites';
 import { starfish, summerPellet } from '../meadow/seasonFood';
+import { paintWalls } from '../meadow/meadowBakeWalls';
+import { greenFoot } from '../meadow/wallFlora';
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 
 const fog = lazy(() =>
@@ -48,6 +50,37 @@ const SUMMER_DECAY: DecayPalette = {
 	rim: 0xffb347,
 	warm: 0xfff4d0
 };
+
+/** A tuft of poplar fluff: fine white strands round a tiny seed. */
+const fluff = lazy(() =>
+	makeTexture(12, 12, (c) => {
+		c.translate(6, 6);
+		c.strokeStyle = 'rgba(255,255,255,.85)';
+		c.lineWidth = 0.45;
+		c.lineCap = 'round';
+		for (let i = 0; i < 14; i += 1) {
+			const a = (i / 14) * Math.PI * 2 + (i % 3) * 0.2;
+			const r = 3.6 + (i % 4) * 0.7;
+			c.beginPath();
+			c.moveTo(0, 0);
+			c.quadraticCurveTo(
+				Math.cos(a + 0.3) * r * 0.5,
+				Math.sin(a + 0.3) * r * 0.5,
+				Math.cos(a) * r,
+				Math.sin(a) * r
+			);
+			c.stroke();
+		}
+		c.fillStyle = 'rgba(255,255,255,.6)';
+		c.beginPath();
+		c.arc(0, 0, 2.2, 0, Math.PI * 2);
+		c.fill();
+		c.fillStyle = '#8a7a5a';
+		c.beginPath();
+		c.arc(0, 0, 0.7, 0, Math.PI * 2);
+		c.fill();
+	})
+);
 
 export const summerTheme: MeadowTheme = {
 	name: 'summer',
@@ -95,7 +128,13 @@ export const summerTheme: MeadowTheme = {
 			ring: '#7ff5e0',
 			corners: '#fff3cf'
 		},
+		// the ivy's roots and shoots along the walls' feet, under the stones (`wallFlora`)
 		wall: {
+			paint: (f) =>
+				paintWalls(f, {
+					foot: (g) =>
+						greenFoot(g, 'rgba(50,40,20,.4)', ['#2c7032', '#3d8a3a', '#5a4a2a', '#1f5a26'], 67)
+				}),
 			base: '#2f5a2a',
 			moss: ['#5fae3e', '#2f7a2c'],
 			top: ['#86cc4e', '#8fd356', '#7cc247'],
@@ -207,34 +246,50 @@ export const summerTheme: MeadowTheme = {
 		wash: lazy(() => washTexture('rgba(255,225,130,.22)', 'rgba(255,150,60,.08)')),
 		stormTint: '#ff9d3a',
 		stormAlpha: 0.14,
+		// heat haze and poplar fluff (the owner's answers): a few shimmer bands rising slowly and
+		// white tufts of fluff floating on a light breeze
 		weather: {
-			count: 60,
+			count: 90,
 			make: (i, vw, vh): WeatherParticle => {
-				const st = i % 2 === 0;
-				const s = st ? 1 + Math.random() * 1.5 : 0.12 + Math.random() * 0.14;
+				const st = i % 3 === 0;
+				const s = st ? 1 + Math.random() * 1.5 : 0.7 + Math.random() * 0.7;
 				return {
 					st,
-					im: st ? tinted(band(), 0xfff0c0) : glowTexture(0xffd36a),
-					w: st ? 48 * s : (64 * s) / 3,
-					h: st ? 6 * s : (64 * s) / 3,
+					im: st ? tinted(band(), 0xfff0c0) : fluff(),
+					w: st ? 48 * s : 9 * s,
+					h: st ? 6 * s : 9 * s,
 					px: Math.random() * vw,
 					py: Math.random() * vh,
-					vx: 0,
-					vy: st ? 0.5 + Math.random() * 0.7 : 0.8 + Math.random() * 1.2,
+					vx: st ? 0 : 1.2 + Math.random() * 1.6,
+					vy: st ? 0.5 + Math.random() * 0.7 : 0.15 + Math.random() * 0.35,
 					ph: Math.random() * 6,
-					rot: 0,
+					rot: Math.random() * 6,
 					add: false
 				};
 			},
 			step: (p, d, t, s, vw, vh) => {
-				p.px += (p.st ? Math.sin(t * 1.6 + p.ph) * 0.5 : Math.sin(t * 2 + p.ph) * 0.6) * d;
-				p.py -= p.vy * d * s;
-				if (p.py < -30) {
-					p.py = vh + 30;
-					p.px = Math.random() * vw;
+				if (p.st) {
+					p.px += Math.sin(t * 1.6 + p.ph) * 0.5 * d;
+					p.py -= p.vy * d * s;
+					if (p.py < -30) {
+						p.py = vh + 30;
+						p.px = Math.random() * vw;
+					}
+					return;
+				}
+				// fluff: drifts with the breeze, bobs, turns slowly
+				p.px += (p.vx * s + Math.sin(t * 0.8 + p.ph) * 0.4) * d;
+				p.py += (p.vy + Math.sin(t * 1.4 + p.ph * 2) * 0.35) * d * s;
+				p.rot += 0.01 * d;
+				if (p.px > vw + 30) {
+					p.px = -30;
+					p.py = Math.random() * vh;
+				}
+				if (p.py > vh + 30) {
+					p.py = -30;
 				}
 			},
-			alpha: (p, s) => s * (p.st ? 0.12 : 0.5)
+			alpha: (p, s) => s * (p.st ? 0.12 : 0.85)
 		},
 		nightTint: '#4a3f86',
 		nightAlpha: 0.45,

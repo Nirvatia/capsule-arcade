@@ -4,6 +4,7 @@
 // with a scalloped valance and lights turns live, slowly), bunting laid along the top of the
 // maze's frame (no white flag and none on the corners: light specks there read as white
 // corners). The festoons glow at night.
+import { creepers } from '../meadow/wallFlora';
 import { balloons, lights, shadow, tent } from '../meadow/sceneProps';
 import type { FloorTone, SeasonScene } from '../meadow/seasonScene';
 import { TAU, addBulbs, addMark, nearCorner, sceneFloor, spot } from '../meadow/seasonScene';
@@ -13,10 +14,19 @@ const T = WORLD_TILE;
 const SUMMER_TONE: FloorTone = { base: '#a68b58', grain: ['#cdb27a', '#7a6238'], ao: 0.3 };
 
 /** The corridor: one opaque tone, a contact shadow, grass at the walls' feet. */
-export const summerFloor = sceneFloor(SUMMER_TONE, ['#6ea040', '#88b84e', '#5a8a34']);
+export const summerFloor = sceneFloor(SUMMER_TONE, null);
 
 export const fairScene: SeasonScene = {
 	wallDress(f) {
+		// ivy over the walls, uneven: some almost covered, some with a shoot or two (about half)
+		creepers(f, {
+			seed: 29,
+			cover: 0.55,
+			stem: 'rgba(60,44,24,.85)',
+			leaves: ['#1f5a26', '#2c7032', '#3d8a3a', '#28642c'],
+			leaf: 3.8,
+			shape: 'ivy'
+		});
 		// bunting laid along the top of the maze's frame: small flags in turn
 		// (no white flag: it would read as a light speck on the stone)
 		const cols = ['#e04a5a', '#e8b828', '#2a8ad0', '#3ab070', '#c060c0'];
@@ -106,7 +116,7 @@ export const fairScene: SeasonScene = {
 		}
 	},
 	live(ctx, t, v) {
-		// the carousel's roof: striped, turning slowly (0.08 turns a second)
+		// the carousel's roof: striped, turning slowly (0.04 turns a second, the owner's review)
 		const k = v.k;
 		for (const g of v.lit.marks.values()) {
 			if (g.kind !== 'carousel') continue;
@@ -114,7 +124,7 @@ export const fairScene: SeasonScene = {
 			const y = v.oy + g.y * k;
 			const R = 1.05 * T * k;
 			const n = 12;
-			const spin = t * 0.5;
+			const spin = t * 0.25;
 			// the canopy's scalloped valance, then the striped roof
 			for (let i = 0; i < n; i += 1) {
 				const a = spin + ((i + 0.5) / n) * TAU;

@@ -155,7 +155,7 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
 
 - Food stays calm and small: dots about a fifth of a tile with no inner detail;
   energizers differ from dots in shape, colour and size, and never look like food or a
-  collectible. Each season has its own: a cherry blossom (spring), a starfish (summer), a
+  collectible. Each season has its own: a temari thread ball (spring), a starfish (summer), a
   jack-o'-lantern (autumn), a red Christmas bauble with a white snowflake (winter). The pellets
   have a silhouette of their own and one simple detail, in a colour apart from their season's
   walls (the owner, 2026-11-23): a cherry petal (spring), a popcorn puff (summer), an eyeball candy
@@ -172,7 +172,11 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   blanket on the walls (the stone a thin rim, the corners' rounding kept), a thin snow bank at
   their feet that leaves the corridor its width, a dark blue-grey corridor of trodden snow, rare
   short icicles under long walls. Autumn (`autumn/autumnDress.ts`): wet leaf litter at the walls'
-  feet, wet moss on their edges and a few stuck leaves. The snowman stays the winter landmark.
+  feet, wet moss on their edges and a few stuck leaves. Spring and summer (`meadow/wallFlora.ts`):
+  creepers grow over the stone unevenly by a growth map (some walls almost covered, some with a
+  shoot or two): spring's bindweed with small white and pink flowers over young moss (about two
+  fifths), summer's ivy in dense mats (about half); a green band at the walls' feet (spring's moss,
+  summer's roots and shoots). The snowman stays the winter landmark.
 - **Holiday scenes** (the owner's picks of the `season-dress` prototype, 2026-11-23; refinements
   to come from his list): each season is a finished holiday scene on the same meadow and layout
   (the pond and the stream where they are), all seen from above and baked, a few moving bits
@@ -196,10 +200,10 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   the energizers' and portals' light is soft at night; a storm never brightens the night (its
   tint, the mist and the warm light fade out as the night falls, the weather dims). The walls' stone and rounded corners are never repainted: what lies on them is a pass of
   its own clipped to their silhouette, checked by the prototype's pixel guard: a dress may cover a
-  wall's top but never the stone rim along the rounded corners. Spring and summer still have grass
-  blades at the walls' feet (their own bands come with their refinements).
-- **Weather** rises at 50 % of the dots eaten (spring petal wind, summer heat shimmer,
-  autumn rain, winter blizzard); **night** falls at 75 %.
+  wall's top but never the stone rim along the rounded corners. No season has grass blades at the
+  walls' feet any more.
+- **Weather** rises at 50 % of the dots eaten (spring a soft petal wind with pollen
+  motes, summer heat haze with poplar fluff, autumn a careful downpour, winter a blizzard); **night** falls at 75 %.
 - Gameplay tuning (`SeasonCatalog.seasonModifiers`): spring power 6.5 s; summer fruit
   14 s; autumn ghosts ×0.97; winter Pac-Man ×0.97.
 - **Tunnel** (the pads at the maze's sides): two tiles before a pad the hero curls into a

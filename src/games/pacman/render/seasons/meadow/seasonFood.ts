@@ -63,29 +63,52 @@ const pellet = (paintIt: (c: Ctx) => void): (() => HTMLCanvasElement) =>
 		})
 	);
 
-/** Spring: a cherry blossom, five notched petals round a yellow heart. */
-export const sakura = energizer((c) => {
-	for (let i = 0; i < 5; i++) {
+/**
+ * Spring energizer: a temari, the thread ball, from above: an indigo ball wound with a pink and
+ * gold eight-point star, a red ring round its middle and a small white flower at its heart.
+ */
+export const temari = energizer((c) => {
+	circle(c, 0, 0, 10.4);
+	paint(c, '#2c3f78', 1.5);
+	c.save();
+	c.beginPath();
+	c.arc(0, 0, 9.8, 0, TAU);
+	c.clip();
+	// the star: two squares of thread turned against each other, each a pair of strands
+	const square = (rot: number, col: string, r: number) => {
 		c.save();
-		c.rotate((i * TAU) / 5);
+		c.rotate(rot);
+		c.strokeStyle = col;
+		c.lineWidth = 1;
+		c.lineJoin = 'round';
 		c.beginPath();
-		c.moveTo(0, 0);
-		c.bezierCurveTo(-5.4, -3, -6.8, -9.8, -1.7, -11.4);
-		c.lineTo(0, -9.6);
-		c.lineTo(1.7, -11.4);
-		c.bezierCurveTo(6.8, -9.8, 5.4, -3, 0, 0);
+		c.moveTo(0, -r);
+		c.lineTo(r, 0);
+		c.lineTo(0, r);
+		c.lineTo(-r, 0);
 		c.closePath();
-		paint(c, i % 2 ? '#ffb0cf' : '#ffc6dd');
-		stroke(c, 0, -2, 0, -7, '#e0679a', 0.9);
+		c.stroke();
 		c.restore();
-	}
-	circle(c, 0, 0, 2.7);
-	paint(c, '#ffd23a', 1.2);
-	c.fillStyle = '#d6407c';
-	for (let k = 0; k < 5; k++) {
-		circle(c, Math.cos((k * TAU) / 5) * 1.3, Math.sin((k * TAU) / 5) * 1.3, 0.45);
+	};
+	square(0, '#ff8fb8', 8.4);
+	square(Math.PI / 4, '#f2c443', 8.4);
+	square(0, '#ffd0e0', 4.6);
+	c.strokeStyle = '#e0404a';
+	c.lineWidth = 1.2;
+	c.beginPath();
+	c.arc(0, 0, 9.2, 0, TAU);
+	c.stroke();
+	c.restore();
+	for (let i = 0; i < 5; i += 1) {
+		const a = (i / 5) * TAU - Math.PI / 2;
+		circle(c, Math.cos(a) * 1.5, Math.sin(a) * 1.5, 1.2);
+		c.fillStyle = '#fff7fa';
 		c.fill();
 	}
+	circle(c, 0, 0, 0.8);
+	c.fillStyle = '#f2c443';
+	c.fill();
+	shine(c, -4.4, -4.6, 2, 1.2, -0.7);
 });
 
 /** Spring pellet: a cherry petal, notched at its tip, a darker vein. */

@@ -40,16 +40,13 @@ last (see Later).
 ## Part I. The main game
 
 1. **Season scenes: the owner's refinements** (the current focus; his answers of 2026-11-23 to
-   the season questionnaire). Done, in review: winter on the shared base (snow blanket, thin bank,
-   trodden-snow corridor, tile lair, icicles, the new bauble), the food of every season, autumn's
-   wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
+   the season questionnaire). Done, in review: spring (temari, bindweed and moss, a soft petal
+   wind with pollen) and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
+   the shared base (snow blanket, thin bank, trodden-snow corridor, tile lair, icicles, the new
+   bauble, a blizzard), the food of every season, autumn's wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
    ground pools and a storm that never brightens the night (`DESIGN.md` §6). Left, one chat:
-   - **Spring** (the weakest theme, the owner wants it stronger): a temari energizer; walls with
-     young moss on the edges, bindweed with small flowers and petals; a moss band at their feet;
-     a softer petal wind with pollen in the light.
-   - **Summer**: ivy / wild vine over the walls, uneven (some walls almost covered, some with a
-     shoot or two, about half on average); a band of roots and shoots at their feet; the carousel
-     at half speed; heat haze with poplar fluff for the weather.
+   - **Spring**: still the weakest theme by its subject (the owner); the temari, the bindweed and
+     moss, the softer petal wind are in, a stronger idea for the scene is open.
    - **Winter**: the snow on the walls and at their feet grows a little while the blizzard blows.
    - The pumpkin and the starfish brought to the new food's style.
    - **The tunnel pads** (the owner's pick, 2026-11-23: both): drop the worn paths behind them;
@@ -63,7 +60,8 @@ last (see Later).
      readable crown from above (branches, a shadow to one side); paths from the cabins to the
      maze, fences or hedges round the plots, chimney smoke a little clearer, benches and a
      woodpile by the houses, lamps along the paths lighting the ground as pools at night.
-     Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
+
+   Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
      heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the
      static is baked (hooks of `MeadowBake`), no new full-screen passes in the settled state
      (High 3, Medium 1, Low 1), the live bits small sprites, nothing flashing faster than 3 times a

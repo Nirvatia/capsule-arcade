@@ -3,14 +3,16 @@
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
 import { springFloor, hanamiScene } from './springScene';
 import {
+	glowTexture,
 	lazy,
 	makeTexture,
 	radial,
-	streakTexture,
 	tinted,
 	washTexture
 } from '../meadow/meadowSprites';
-import { sakura, springPellet } from '../meadow/seasonFood';
+import { temari, springPellet } from '../meadow/seasonFood';
+import { paintWalls } from '../meadow/meadowBakeWalls';
+import { greenFoot } from '../meadow/wallFlora';
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 
 const PETALS = [0xffc2d9, 0xffffff, 0xffdde8, 0xf7a8c4];
@@ -92,7 +94,13 @@ export const springTheme: MeadowTheme = {
 			ring: '#fff3a0',
 			corners: '#fffbe0'
 		},
+		// young moss along the walls' feet, under the stones (`wallFlora`)
 		wall: {
+			paint: (f) =>
+				paintWalls(f, {
+					foot: (g) =>
+						greenFoot(g, 'rgba(46,84,30,.45)', ['#5f9a3a', '#7fb84a', '#4d8230', '#8cc456'], 61)
+				}),
 			base: '#24481f',
 			moss: ['#4a8a3e', '#2a5a2a'],
 			top: ['#5a9a48', '#62a24e', '#528f42'],
@@ -176,7 +184,7 @@ export const springTheme: MeadowTheme = {
 	live: {
 		pellet: { texture: springPellet, size: 10 },
 		energizer: {
-			texture: sakura,
+			texture: temari,
 			size: 20.8,
 			glow: 0xff5fa0,
 			glowSize: (64 * 0.95 * 0.8) / 3,
@@ -208,31 +216,33 @@ export const springTheme: MeadowTheme = {
 		wash: lazy(() => washTexture('rgba(255,255,220,.16)', 'rgba(120,200,255,.1)')),
 		stormTint: '#eef8e8',
 		stormAlpha: 0.14,
+		// a soft petal wind (the owner's answers): petals drifting slowly, turning slowly, and
+		// pollen motes hanging in the light; no wind streaks
 		weather: {
-			count: 240,
+			count: 200,
 			make: (i, vw, vh): WeatherParticle => {
 				const st = i % 3 === 0;
-				const s = st ? 1.2 + Math.random() * 1.6 : 0.9 + Math.random() * 0.8;
+				const s = st ? 0.6 + Math.random() * 0.7 : 0.9 + Math.random() * 0.8;
 				return {
 					st,
-					im: st ? streakTexture(0xffffff) : tinted(petal(), PETALS[i % 4]),
-					w: st ? 16 * s : 10 * s,
-					h: st ? 2 * s * 0.5 : 6 * s,
+					im: st ? glowTexture(0xffe98a) : tinted(petal(), PETALS[i % 4]),
+					w: st ? 7 * s : 10 * s,
+					h: st ? 7 * s : 6 * s,
 					px: Math.random() * vw,
 					py: Math.random() * vh,
-					vx: st ? 22 + Math.random() * 10 : 9 + Math.random() * 7,
-					vy: st ? 0.5 + Math.random() * 1.5 : 1 + Math.random() * 3,
+					vx: st ? 0.6 + Math.random() * 1.2 : 4 + Math.random() * 4,
+					vy: st ? 0.2 + Math.random() * 0.4 : 1.5 + Math.random() * 1.5,
 					ph: Math.random() * 6,
-					rot: st ? 0.06 : Math.random() * 6,
+					rot: st ? 0 : Math.random() * 6,
 					add: false
 				};
 			},
 			step: (p, d, t, s, vw, vh) => {
 				if (!p.st) {
-					p.rot += 0.12 * d;
+					p.rot += 0.05 * d;
 				}
-				p.px += p.vx * d * s;
-				p.py += p.vy * d * s + (p.st ? 0 : Math.sin(t * 3 + p.ph) * 1.2 * s);
+				p.px += p.vx * d * s + (p.st ? Math.sin(t * 0.9 + p.ph) * 0.25 * d : 0);
+				p.py += p.vy * d * s + Math.sin(t * (p.st ? 1.3 : 2) + p.ph) * (p.st ? 0.3 : 0.8) * s;
 				if (p.px > vw + 40) {
 					p.px = -40;
 					p.py = Math.random() * vh;
@@ -241,7 +251,7 @@ export const springTheme: MeadowTheme = {
 					p.py = -30;
 				}
 			},
-			alpha: (p, s) => s * (p.st ? 0.4 : 0.9)
+			alpha: (p, s) => s * (p.st ? 0.55 : 0.85)
 		},
 		nightTint: '#4a5a9a',
 		nightAlpha: 0.55,

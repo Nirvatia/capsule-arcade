@@ -165,11 +165,11 @@ describe('MeadowBake theme paint hooks', () => {
 			// the wall painter lays tiles[0] under the rounded corners: it is the corridor's tone
 			expect(new Set(theme.bake.floor.tiles).size).toBe(1);
 		}
-		// the shared stone with a band at the feet: winter's snow bank, autumn's wet leaf litter
-		expect(winterTheme.bake.wall.paint).toBeTypeOf('function');
-		expect(autumnTheme.bake.wall.paint).toBeTypeOf('function');
-		expect(springTheme.bake.wall.paint).toBeUndefined();
-		expect(summerTheme.bake.wall.paint).toBeUndefined();
+		// the shared stone with a band at the feet: winter's snow bank, autumn's wet leaf litter,
+		// spring's young moss, summer's ivy roots
+		for (const theme of [winterTheme, autumnTheme, springTheme, summerTheme]) {
+			expect(theme.bake.wall.paint).toBeTypeOf('function');
+		}
 		// only autumn's ground gets wet in the rain
 		expect(autumnTheme.bake.wet).toBeTypeOf('function');
 		for (const theme of [winterTheme, springTheme, summerTheme])

@@ -4,6 +4,7 @@
 // to lamp, one each side of the maze, two by the picnic blanket; fallen petals on the walls'
 // tops (deep pink, off the outer corners: a light speck there reads as a white corner). The
 // lanterns glow at night.
+import { creepers } from '../meadow/wallFlora';
 import type { MeadowFrame } from '../meadow/MeadowBake';
 import { blanket, paperLantern } from '../meadow/sceneProps';
 import type { FloorTone, SeasonScene } from '../meadow/seasonScene';
@@ -14,7 +15,7 @@ const T = WORLD_TILE;
 const SPRING_TONE: FloorTone = { base: '#7b5a3d', grain: ['#a47e55', '#4d3623'], ao: 0.32 };
 
 /** The corridor: one opaque tone, a contact shadow, grass at the walls' feet. */
-export const springFloor = sceneFloor(SPRING_TONE, ['#5f9a3a', '#7fb84a', '#4d8230']);
+export const springFloor = sceneFloor(SPRING_TONE, null);
 
 /** Trees near the maze that show (the meadow's strips and the bands above and below it). */
 const nearTrees = (f: MeadowFrame) =>
@@ -25,6 +26,17 @@ const nearTrees = (f: MeadowFrame) =>
 
 export const hanamiScene: SeasonScene = {
 	wallDress(f, r) {
+		// young moss on the edges and bindweed with small white and pink flowers, here and there
+		creepers(f, {
+			seed: 17,
+			cover: 0.42,
+			stem: 'rgba(70,110,40,.85)',
+			leaves: ['#3f7a2c', '#58983a', '#74b04a'],
+			leaf: 3,
+			shape: 'heart',
+			flowers: { petals: ['#fff8fb', '#ffd3e4', '#f9b4cf'], heart: '#f2c443', rate: 1.6 },
+			moss: ['rgba(60,104,40,.7)', 'rgba(92,140,54,.65)']
+		});
 		// fallen petals on the walls' tops: a few, pink, lying flat
 		for (let row = 0; row < f.R; row += 1) {
 			for (let c = 0; c < f.C; c += 1) {
