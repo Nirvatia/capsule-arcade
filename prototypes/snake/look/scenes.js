@@ -2,6 +2,8 @@
 /* global Paint, PICTURES */
 'use strict';
 
+// Loaded as a plain script: the global is read by index.html.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Scenes = (() => {
 	const { TAU, rng, wash, bloom, paper, spline, resample, frame, roundCorners, brush, enso, fillPoly } = Paint;
 	const W = 1280;

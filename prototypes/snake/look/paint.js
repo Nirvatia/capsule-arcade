@@ -2,6 +2,8 @@
 /* exported Paint */
 'use strict';
 
+// Loaded as a plain script: the global is read by scenes.js.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Paint = (() => {
 	const TAU = Math.PI * 2;
 
