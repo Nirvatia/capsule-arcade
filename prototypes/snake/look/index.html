@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Дрейф · эскиз визуала</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&display=swap"
+		/>
+		<style>
+			body {
+				margin: 0;
+				padding: 24px 16px 48px;
+				background: #1a1a1d;
+				color: #ddd;
+				font: 15px/1.4 Georgia, serif;
+			}
+			h2 {
+				font-weight: 400;
+				margin: 28px auto 10px;
+				max-width: 1280px;
+			}
+			figure {
+				margin: 0 auto 14px;
+				max-width: 1280px;
+			}
+			canvas {
+				width: 100%;
+				height: auto;
+				display: block;
+				border-radius: 6px;
+			}
+			figcaption {
+				color: #999;
+				font-size: 13px;
+				margin-top: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script src="data.js"></script>
+		<script src="paint.js"></script>
+		<script src="scenes.js"></script>
+		<script>
+			(async () => {
+				try {
+					await document.fonts.load('300 40px "Cormorant Garamond"');
+				} catch {
+					// no network: Georgia is used instead
+				}
+				const root = document.getElementById('root');
+				const only = new URLSearchParams(location.search).get('only');
+				const variants = { A: 'A · Сумерки', B: 'B · Возвращение цвета' };
+				const frames = [
+					['title', 'Титул'],
+					['current', 'Течение'],
+					['canvas', 'Полотно: рисунок наполовину'],
+					['reveal', 'Оживление: готовый рисунок']
+				];
+				for (const [v, name] of Object.entries(variants)) {
+					if (only && !only.startsWith(v)) continue;
+					const h = document.createElement('h2');
+					h.textContent = name;
+					root.appendChild(h);
+					for (const [id, cap] of frames) {
+						if (only && only.length > 1 && only !== v + id) continue;
+						const fig = document.createElement('figure');
+						const cv = document.createElement('canvas');
+						const dpr = Math.min(2, window.devicePixelRatio || 1);
+						cv.width = Scenes.W * dpr;
+						cv.height = Scenes.H * dpr;
+						cv.id = v + id;
+						const ctx = cv.getContext('2d');
+						ctx.scale(dpr, dpr);
+						Scenes[id](ctx, v);
+						const fc = document.createElement('figcaption');
+						fc.textContent = cap;
+						fig.append(cv, fc);
+						root.appendChild(fig);
+					}
+				}
+				document.body.dataset.ready = '1';
+			})();
+		</script>
+	</body>
+</html>
