@@ -48,8 +48,30 @@ last (see Later).
    the shared base (snow blanket, thin bank, trodden-snow corridor, tile lair, icicles, the new
    bauble, a blizzard without a white veil, fresh snow piling up while it blows), the food of every season, autumn's wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
    ground pools and a storm that never brightens the night (`DESIGN.md` §6). Left, one chat:
-   - The pumpkin and the starfish brought to the new food's style.
-   - The chimney smoke a little clearer (the owner's cozy-background list).
+   The owner's review of that pass (2026-11-23) and his decisions, to do next:
+   - **Spring**: the Japanese garden is rejected (other walls, the whole maze glares). Revert
+     `e63845a` (plaster, gravel, deck, pebbles, toro, koi) and give spring the shared stone in
+     light sandstone tones (young moss in the joints), the corridor earth as before; it must not
+     read as summer by colour alone. Keep the temari.
+   - **Winter**: keep the contour round the walls (the bank's shade line) but draw it only along
+     the straight runs, fading out ~8 units before every rounded corner: it makes the corners look
+     sharp.
+   - **Summer**: the ivy plus the bunting on the walls is a mess and the ivy hurts readability.
+     The bunting leaves the maze's frame for festoons between the tents on the meadow; the ivy
+     gives way to Jumanji-like lianas and roots: few, thick, curving stems with big leaves gripping
+     the walls' edges and corners, never a mat over the top.
+   - **Cabins**: remove the paths and the fences (`meadow/homestead.ts`); the bench, the woodpile
+     and the lamps stay (the lamps by the door, not along a path).
+   - **Tunnel pads**: a pad of each season's own, a "burrow" the hero dives into, under the same
+     live ripple: winter an ice hole, autumn a hollow stump, spring a stone well, summer a
+     whirlpool in the sand. The trodden patch without a path stays. (The rune ring is hidden under
+     the live pad and goes.)
+   - **No sticker patches**: the translucent ellipses on the cabins' roofs and the meadow's patches
+     become seasonal: roofs with real fallen leaves and moss in the tile joints (autumn), handfuls
+     of petals (spring), clean sun-faded tiles (summer); the meadow with leaf piles (autumn),
+     clover and dandelions (spring), dry grass patches (summer).
+   - The chimney smoke a little clearer.
+   - The pumpkin and the starfish stay as they are (the owner: not in the plans).
 
    Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
    heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the
