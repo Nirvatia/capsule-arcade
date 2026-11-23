@@ -191,7 +191,9 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   bridge glisten and fills puddles (one tile each, lying wide across the corridor with an uneven edge; larger
   ones on the meadow); at night the nearby lights lie in them as soft spots. The rain is a careful downpour (dense,
   thin streaks, rings on the floor), a few leaves blow across it. Winter's weather is a blizzard:
-  dense flakes in three depths with a faint cool rim, gusts, thin streaks of drifting snow. Where
+  dense flakes in three depths with a faint cool rim, gusts, thin streaks of drifting snow. No
+  white veil; while it blows fresh snow piles up a little at the walls' feet and on their lit rims
+  (the theme's `wet` layer, as autumn's wet ground). Where
   the lair meets its entrance, the corridor's tone runs into its tiles (no hard step). Winter is **New Year** (a
   decorated tree with presents and sparklers beside each snowman, lights round the cabins' roofs
   and on the bridge, warm window light, holly on the lamps). Spring is a **hanami** in a Japanese garden (every tree in

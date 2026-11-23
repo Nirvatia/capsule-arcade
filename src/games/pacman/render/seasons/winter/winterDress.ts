@@ -206,3 +206,43 @@ export function icicles(f: MeadowFrame): void {
 		}
 	}
 }
+
+/**
+ * Fresh snow while the blizzard blows (the theme's `wet` layer, faded in with the storm over
+ * ~12 s): the bank at the walls' feet a little fuller (still under 3 units into the corridor), new
+ * snow on the walls' lit rims and a few fresh drifts on the meadow. Returns no puddles.
+ */
+export function freshSnow(f: MeadowFrame): Array<readonly [number, number, number]> {
+	const { b } = f;
+	const r = rng(57);
+	const edge = wallClip(f, 0.6);
+	b.save();
+	b.lineJoin = 'round';
+	b.strokeStyle = 'rgba(232,240,250,.85)';
+	b.lineWidth = 5;
+	b.stroke(edge);
+	b.restore();
+	for (let rr = 0; rr < f.R; rr += 1) {
+		for (let c = 0; c < f.C; c += 1) {
+			if (!f.isW(rr, c)) continue;
+			const [oL, oU, oR, oD] = openSides(f, rr, c);
+			const x = c * T;
+			const y = rr * T;
+			b.fillStyle = 'rgba(246,250,255,.9)';
+			for (let i = 0; i < 2; i += 1) {
+				const t = 5 + i * 12 + r() * 4;
+				const lump = (lx: number, ly: number, w: number, h: number) => {
+					if (nearCorner(f, lx, ly, 10)) return;
+					b.beginPath();
+					b.ellipse(lx, ly, w, h, 0, 0, TAU);
+					b.fill();
+				};
+				if (oU) lump(x + t, y + 0.6, 3.4, 1.4);
+				if (oL) lump(x + 0.6, y + t, 1.4, 3.4);
+				if (oD && r() < 0.5) lump(x + t, y + T + 0.8, 3, 1.3);
+				if (oR && r() < 0.5) lump(x + T + 0.8, y + t, 1.3, 3);
+			}
+		}
+	}
+	return [];
+}

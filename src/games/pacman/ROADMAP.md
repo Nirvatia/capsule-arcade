@@ -46,9 +46,8 @@ last (see Later).
    per season (`meadow/flora.ts`), the cabins as homes (paths, fences, benches, woodpiles, path
    lamps; `meadow/homestead.ts`) and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
    the shared base (snow blanket, thin bank, trodden-snow corridor, tile lair, icicles, the new
-   bauble, a blizzard), the food of every season, autumn's wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
+   bauble, a blizzard without a white veil, fresh snow piling up while it blows), the food of every season, autumn's wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
    ground pools and a storm that never brightens the night (`DESIGN.md` §6). Left, one chat:
-   - **Winter**: the snow on the walls and at their feet grows a little while the blizzard blows.
    - The pumpkin and the starfish brought to the new food's style.
    - The chimney smoke a little clearer (the owner's cozy-background list).
 

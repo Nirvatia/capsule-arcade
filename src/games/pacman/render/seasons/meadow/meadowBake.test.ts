@@ -171,10 +171,10 @@ describe('MeadowBake theme paint hooks', () => {
 		for (const theme of [winterTheme, autumnTheme, springTheme, summerTheme]) {
 			expect(theme.bake.wall.paint).toBeTypeOf('function');
 		}
-		// only autumn's ground gets wet in the rain
+		// the storm's own layer: autumn's wet ground, winter's fresh snow
 		expect(autumnTheme.bake.wet).toBeTypeOf('function');
-		for (const theme of [winterTheme, springTheme, summerTheme])
-			expect(theme.bake.wet).toBeUndefined();
+		expect(winterTheme.bake.wet).toBeTypeOf('function');
+		for (const theme of [springTheme, summerTheme]) expect(theme.bake.wet).toBeUndefined();
 	});
 
 	it('every season carries its holiday scene', () => {

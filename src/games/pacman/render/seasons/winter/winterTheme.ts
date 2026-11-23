@@ -12,7 +12,7 @@ import {
 } from '../meadow/meadowSprites';
 import { bauble, winterPellet } from '../meadow/seasonFood';
 import { paintWalls } from '../meadow/meadowBakeWalls';
-import { icicles, snowBank, winterFloor } from './winterDress';
+import { freshSnow, icicles, snowBank, winterFloor } from './winterDress';
 import { ICE_PALETTE } from '../../transitions/decay/LevelDecay';
 
 const fog = lazy(() =>
@@ -140,6 +140,8 @@ export const winterTheme: MeadowTheme = {
 			snow: '#f4f9fd',
 			wood: '#7a5034'
 		},
+		// fresh snow piles up a little while the blizzard blows (the theme's `wet` layer)
+		wet: freshSnow,
 		scene: newYearScene,
 		landmark: {
 			ex: [1.8, 1.6],
@@ -191,7 +193,8 @@ export const winterTheme: MeadowTheme = {
 		portal: { glow: 0xa8d8ff, deep: 0x0a2a58 },
 		glints: 0xffffff,
 		fog,
-		mistAlpha: (s) => 0.1 + 0.22 * s,
+		// the blizzard without a white veil (the owner's answers): faint mist, a faint tint
+		mistAlpha: (s) => 0.04 + 0.06 * s,
 		mistSpeed: (s) => 1 + 6 * s,
 		rays: () => 0,
 		lit: lazy(() =>
@@ -213,7 +216,7 @@ export const winterTheme: MeadowTheme = {
 		},
 		wash: lazy(() => washTexture('rgba(255,236,200,.14)', 'rgba(70,90,150,.16)')),
 		stormTint: '#e4edf6',
-		stormAlpha: 0.24,
+		stormAlpha: 0.08,
 		// a blizzard (the owner's review): dense flakes in three depths, each with a faint cool rim
 		// so it reads over the snow, gusts that push the whole field, and thin streaks of drifting
 		// snow low and fast; no white veil
