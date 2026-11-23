@@ -11,7 +11,7 @@ import { TAU, addLight, hash, nearCorner, rng, sceneFloor, spot } from '../meado
 import { WORLD_TILE } from '../../common/worldDecor';
 
 const T = WORLD_TILE;
-const SPRING_TONE: FloorTone = { base: '#7b5a3d', grain: ['#a47e55', '#4d3623'], ao: 0.32 };
+const SPRING_TONE: FloorTone = { base: '#6f5137', grain: ['#94714c', '#45301f'], ao: 0.32 };
 
 /** The corridor: one opaque tone, a contact shadow, grass at the walls' feet. */
 export const springFloor = sceneFloor(SPRING_TONE, null);

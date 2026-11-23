@@ -85,7 +85,7 @@ export const springTheme: MeadowTheme = {
 		// contact shadow and grass at the walls' feet; the tiles are that tone, as the wall
 		// painter lays `tiles[0]` under the rounded corners
 		floor: {
-			tiles: ['#7b5a3d', '#7b5a3d', '#7b5a3d'],
+			tiles: ['#6f5137', '#6f5137', '#6f5137'],
 			paint: springFloor,
 			specks: ['#6e5846', '#3a2c20', '#7a6452']
 		},

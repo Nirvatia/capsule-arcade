@@ -53,7 +53,16 @@ export function snowBank(f: MeadowFrame): void {
 			const x = c * T;
 			const y = rr * T;
 			const lump = (lx: number, ly: number, w: number, h: number) => {
-				if (nearCorner(f, lx, ly, 9)) return;
+				// tested on the wall's own edge: the lump lies just outside it, by a rounded corner too
+				if (
+					nearCorner(
+						f,
+						Math.min(Math.max(lx, x + 0.1), x + T - 0.1),
+						Math.min(Math.max(ly, y + 0.1), y + T - 0.1),
+						9
+					)
+				)
+					return;
 				b.fillStyle = BANK;
 				b.beginPath();
 				b.ellipse(lx, ly, w, h, 0, 0, TAU);
@@ -252,7 +261,15 @@ export function freshSnow(f: MeadowFrame): Array<readonly [number, number, numbe
 			for (let i = 0; i < 2; i += 1) {
 				const t = 5 + i * 12 + r() * 4;
 				const lump = (lx: number, ly: number, w: number, h: number) => {
-					if (nearCorner(f, lx, ly, 10)) return;
+					if (
+						nearCorner(
+							f,
+							Math.min(Math.max(lx, x + 0.1), x + T - 0.1),
+							Math.min(Math.max(ly, y + 0.1), y + T - 0.1),
+							10
+						)
+					)
+						return;
 					b.beginPath();
 					b.ellipse(lx, ly, w, h, 0, 0, TAU);
 					b.fill();

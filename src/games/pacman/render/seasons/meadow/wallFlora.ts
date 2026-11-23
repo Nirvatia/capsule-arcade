@@ -3,7 +3,7 @@
 // grass blades (spring's moss, summer's roots). The lianas run inside the walls' silhouette (the
 // scene's wall dress); the band reaches under 2 units into the corridor.
 import type { MeadowFrame } from './MeadowBake';
-import { TAU, hash, nearCorner, rng, wallClip } from './seasonScene';
+import { TAU, hash, nearCorner, rng } from './seasonScene';
 import { WORLD_TILE } from '../../common/worldDecor';
 
 const T = WORLD_TILE;
@@ -75,36 +75,55 @@ export function greenFoot(
 ): void {
 	const { b } = f;
 	const r = rng(seed);
+	// along the straight runs only: the band and its tufts stop where a rounded corner begins
+	// (the owner's review: carried round the arc it broke the walls' rounding)
+	const cut = 8;
 	b.save();
-	b.lineJoin = 'round';
 	b.strokeStyle = band;
 	b.lineWidth = 4;
-	b.stroke(wallClip(f, 0.6));
+	b.lineCap = 'butt';
 	for (let rr = 0; rr < f.R; rr += 1) {
 		for (let c = 0; c < f.C; c += 1) {
 			if (!f.isW(rr, c)) continue;
 			const x = c * T;
 			const y = rr * T;
-			for (let s = 2.5; s < T; s += 4.5) {
-				const tuft = (tx: number, ty: number, hz: boolean) => {
-					b.fillStyle = tufts[(r() * tufts.length) | 0];
-					b.beginPath();
-					b.ellipse(
-						tx,
-						ty,
-						hz ? 1.9 + r() : 1 + r() * 0.5,
-						hz ? 1 + r() * 0.5 : 1.9 + r(),
-						0,
-						0,
-						TAU
-					);
-					b.fill();
-				};
+			const oL = !f.isW(rr, c - 1);
+			const oU = !f.isW(rr - 1, c);
+			const oR = !f.isW(rr, c + 1);
+			const oD = !f.isW(rr + 1, c);
+			const line = (x0: number, y0: number, x1: number, y1: number) => {
+				b.beginPath();
+				b.moveTo(x0, y0);
+				b.lineTo(x1, y1);
+				b.stroke();
+			};
+			const h0 = (a: boolean) => (a ? cut : 0);
+			if (oU) line(x + h0(oL), y + 0.6, x + T - h0(oR), y + 0.6);
+			if (oD) line(x + h0(oL), y + T - 0.6, x + T - h0(oR), y + T - 0.6);
+			if (oL) line(x + 0.6, y + h0(oU), x + 0.6, y + T - h0(oD));
+			if (oR) line(x + T - 0.6, y + h0(oU), x + T - 0.6, y + T - h0(oD));
+			const tuft = (tx: number, ty: number, hz: boolean) => {
+				b.fillStyle = tufts[(r() * tufts.length) | 0];
+				b.beginPath();
+				b.ellipse(
+					tx,
+					ty,
+					hz ? 1.9 + r() : 1 + r() * 0.5,
+					hz ? 1 + r() * 0.5 : 1.9 + r(),
+					0,
+					0,
+					TAU
+				);
+				b.fill();
+			};
+			for (let sx = 2.5; sx < T; sx += 4.5) {
 				const o = 0.5 + r() * 0.8;
-				if (!f.isW(rr - 1, c)) tuft(x + s, y - o, true);
-				if (!f.isW(rr + 1, c)) tuft(x + s, y + T + o, true);
-				if (!f.isW(rr, c - 1)) tuft(x - o, y + s, false);
-				if (!f.isW(rr, c + 1)) tuft(x + T + o, y + s, false);
+				const hzOk = sx > h0(oL) && sx < T - h0(oR);
+				const vtOk = sx > h0(oU) && sx < T - h0(oD);
+				if (oU && hzOk) tuft(x + sx, y - o, true);
+				if (oD && hzOk) tuft(x + sx, y + T + o, true);
+				if (oL && vtOk) tuft(x - o, y + sx, false);
+				if (oR && vtOk) tuft(x + T + o, y + sx, false);
 			}
 		}
 	}
