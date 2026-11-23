@@ -10,7 +10,7 @@ import { WORLD_TILE, streamY, tileRandom, tunnelRowOf, worldDecor } from '../../
 import { paintDecor } from './meadowBakeDecor';
 import { paintWalls } from './meadowBakeWalls';
 import type { SceneLit } from './seasonScene';
-import { newSceneLit, onWalls } from './seasonScene';
+import { TAU, newSceneLit, onWalls } from './seasonScene';
 
 export const MEADOW_TILE = WORLD_TILE;
 
@@ -329,7 +329,7 @@ function blendLairExit(f: MeadowFrame, r: number, c: number, x: number, y: numbe
 
 /** Path cells, lair floor, gate, portal rings. */
 function paintMazeFloor(f: MeadowFrame): void {
-	const { S, P, R, C, b, vis, rnd, rr, pick, shade, lin, blob, rp } = f;
+	const { S, P, R, C, b, vis, rnd, rr, pick, shade, lin, blob } = f;
 	const TP: Array<[number, number, number]> = [];
 	for (let r = 0; r < R; r++) {
 		for (let c = 0; c < C; c++) {
@@ -361,60 +361,82 @@ function paintMazeFloor(f: MeadowFrame): void {
 		}
 	}
 
+	// the tunnel pads (the owner's pick, 2026-11-23): no worn path; the corridor's tone runs out
+	// past the pad as a trodden patch that fades into the meadow with a ragged edge in the
+	// season's colours, and the pad is a stone ring with carved runes round its dark heart
+	const tone = P.floor.tiles[0];
 	for (const [x, y, c] of TP) {
 		const dir = c < C / 2 ? -1 : 1;
-		const L = 11 * T;
 		const px = x + T / 2;
 		const py = y + T / 2;
-		for (let i = 0; i < 240; i++) {
-			const u = i / 240;
-			const xx = px + dir * u * L;
-			const yy = py + Math.sin(u * 6 + dir) * 5 * u + rr(-1.2, 1.2);
-			const a = u < 0.1 ? 1 : Math.pow(1 - (u - 0.1) / 0.9, 1.5);
-			if (vis(xx, yy, 30)) {
-				blob(xx, yy, 11 - 5 * u + rr(0, 2), 10 - 4 * u, P.portal.trail(a));
-			}
-		}
-		for (let i = 0; i < 260; i++) {
-			const u = rnd();
-			const xx = px + dir * u * L;
-			const yy = py + Math.sin(u * 6 + dir) * 5 * u + (rnd() < 0.5 ? 1 : -1) * (rr(9, 14) - 5 * u);
-			if (u > 0.1 && vis(xx, yy, 10)) {
-				b.strokeStyle = pick(P.portal.grass);
-				b.lineWidth = 1.2;
-				b.beginPath();
-				b.moveTo(xx, yy);
-				b.lineTo(xx + rr(-3, 3), yy - rr(3, 7));
-				b.stroke();
-			}
-		}
-		blob(px + 1.5, py + 2, 10, 9.5, shade(0.38), 0);
-		b.fillStyle = lin(x, y, x + T, y + T, P.portal.plate[0], P.portal.plate[1]);
-		rp(x + 1.5, y + 1.5, T - 3, T - 3, [6, 6, 6, 6]);
+		const cx = px + dir * T * 0.55;
+		const g = b.createRadialGradient(cx, py, 0, cx, py, T * 1.7);
+		g.addColorStop(0, tone);
+		g.addColorStop(0.42, tone + 'd8');
+		g.addColorStop(0.75, tone + '60');
+		g.addColorStop(1, tone + '00');
+		b.fillStyle = g;
+		b.beginPath();
+		b.ellipse(cx, py, T * 1.7, T * 1.15, 0, 0, TAU);
 		b.fill();
-		b.strokeStyle = 'rgba(255,255,255,.55)';
-		b.lineWidth = 1;
-		rp(x + 2.5, y + 2.5, T - 5, T - 5, [5, 5, 5, 5]);
+		// the ragged edge: tufts of the season's ground cover round the outer side of the patch
+		for (let i = 0; i < 26; i++) {
+			const a = (rnd() - 0.5) * Math.PI * 1.5 + (dir < 0 ? Math.PI : 0);
+			const d = rr(1.0, 1.2);
+			const tx = cx + Math.cos(a) * T * 1.15 * d;
+			const ty = py + Math.sin(a) * T * 0.8 * d;
+			if (!vis(tx, ty, 10)) continue;
+			blob(tx, ty, rr(1.4, 2.6), rr(0.9, 1.6), pick(P.portal.grass), rnd() * 3);
+		}
+		blob(px + 1.5, py + 2, 11, 10.5, shade(0.34), 0);
+		// the stone ring
+		b.fillStyle = lin(x, y, x + T, y + T, P.portal.plate[0], P.portal.plate[1]);
+		b.beginPath();
+		b.arc(px, py, 11, 0, TAU);
+		b.fill();
+		b.strokeStyle = 'rgba(20,16,12,.45)';
+		b.lineWidth = 0.9;
 		b.stroke();
-		const q2 = b.createRadialGradient(px, py, 1, px, py, 8.5);
+		b.strokeStyle = 'rgba(255,255,255,.4)';
+		b.lineWidth = 0.7;
+		b.beginPath();
+		b.arc(px, py, 10, Math.PI * 0.95, Math.PI * 1.6);
+		b.stroke();
+		// eight runes carved round it, faintly lit by the portal
+		b.strokeStyle = P.portal.ring;
+		b.lineWidth = 0.7;
+		b.lineCap = 'round';
+		for (let i = 0; i < 8; i++) {
+			const a = (i / 8) * TAU + 0.2;
+			const rx = px + Math.cos(a) * 9.2;
+			const ry = py + Math.sin(a) * 9.2;
+			const tx = -Math.sin(a);
+			const ty = Math.cos(a);
+			b.globalAlpha = 0.75;
+			b.beginPath();
+			b.moveTo(rx - tx * 1.2, ry - ty * 1.2);
+			b.lineTo(rx + tx * 1.2, ry + ty * 1.2);
+			if (i % 2) {
+				b.moveTo(rx, ry);
+				b.lineTo(rx + Math.cos(a) * 1.1 + tx * 0.8, ry + Math.sin(a) * 1.1 + ty * 0.8);
+			} else {
+				b.moveTo(rx - tx * 1.2, ry - ty * 1.2);
+				b.lineTo(rx - Math.cos(a) * 1.1, ry - Math.sin(a) * 1.1);
+			}
+			b.stroke();
+		}
+		b.globalAlpha = 1;
+		const q2 = b.createRadialGradient(px, py, 1, px, py, 7.6);
 		q2.addColorStop(0, P.portal.core[0]);
 		q2.addColorStop(0.45, P.portal.core[1]);
 		q2.addColorStop(1, P.portal.core[2]);
 		b.fillStyle = q2;
 		b.beginPath();
-		b.arc(px, py, 8.5, 0, 7);
+		b.arc(px, py, 7.6, 0, TAU);
 		b.fill();
-		b.strokeStyle = P.portal.ring;
-		b.lineWidth = 1.2;
+		b.strokeStyle = 'rgba(20,16,12,.5)';
+		b.lineWidth = 0.8;
 		b.stroke();
-		for (const [dx, dy] of [
-			[5, 5],
-			[T - 5, 5],
-			[5, T - 5],
-			[T - 5, T - 5]
-		]) {
-			blob(x + dx, y + dy, 1.5, 1.2, P.portal.corners, 0);
-		}
 	}
 }
 

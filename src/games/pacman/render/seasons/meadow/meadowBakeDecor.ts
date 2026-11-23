@@ -118,8 +118,22 @@ export function paintDecor(f: MeadowFrame): void {
 				}
 				b.stroke();
 			}
-			for (let i = 0; i < 16; i++) {
-				blob(X + rnd() * ow, Y + rnd() * oh, rr(8, 18), rr(4, 8), P.cabin.roofBlobs);
+			if (P.cabin.roofSnow) {
+				// one snow cover over the whole roof (no patches): the roof's edge shows round it,
+				// soft overhangs along the eaves, the slope away from the light in a cool shade
+				b.fillStyle = P.cabin.roofBlobs;
+				rp(X + 2.5, Y + 2.5, ow - 5, oh - 5, [3, 3, 3, 3]);
+				b.fill();
+				for (let xx = X + 4; xx < X + ow - 3; xx += 6) {
+					blob(xx + rr(-1, 1), Y + 3, rr(3, 4), rr(1.6, 2.4), P.cabin.roofBlobs);
+					blob(xx + rr(-1, 1), Y + oh - 3, rr(3, 4), rr(1.6, 2.4), P.cabin.roofBlobs);
+				}
+				b.fillStyle = lin(X, o.y, X, Y + oh, 'rgba(110,135,175,0)', 'rgba(110,135,175,.3)');
+				b.fillRect(X, o.y, ow, oh / 2);
+			} else {
+				for (let i = 0; i < 16; i++) {
+					blob(X + rnd() * ow, Y + rnd() * oh, rr(8, 18), rr(4, 8), P.cabin.roofBlobs);
+				}
 			}
 			b.restore();
 			b.lineCap = 'round';

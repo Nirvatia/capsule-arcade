@@ -57,9 +57,11 @@ export const winterTheme: MeadowTheme = {
 		cabin: {
 			walls: ['#bb6851', '#a65240', '#87423b', '#6a342f'],
 			roofBlobs: 'rgba(248,252,255,.93)',
-			ridge: '#f6fafd',
+			// the ridge shows dark where the snow parts along it
+			ridge: '#6a4a44',
 			ridgeShadow: 'rgba(110,130,160,.45)',
-			chimneyCap: '#f4f9fd'
+			chimneyCap: '#f4f9fd',
+			roofSnow: true
 		},
 		rock: ['#b9c4d0', '#6f7d8d', '#ffffff', '#e8f1f9'],
 		// the shared season base (the owner's answers, 2026-11-23): the lair is the common tile

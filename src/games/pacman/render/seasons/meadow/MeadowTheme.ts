@@ -68,6 +68,8 @@ export interface MeadowBakeTheme {
 		readonly ridge: string;
 		readonly ridgeShadow: string;
 		readonly chimneyCap: string;
+		/** One snow cover over the whole roof instead of `roofBlobs` patches (winter). */
+		readonly roofSnow?: boolean;
 	};
 	readonly rock: Four;
 	readonly lair: {

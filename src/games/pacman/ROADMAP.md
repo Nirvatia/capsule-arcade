@@ -41,18 +41,14 @@ last (see Later).
 
 1. **Season scenes: the owner's refinements** (the current focus; his answers of 2026-11-23 to
    the season questionnaire). Done, in review: spring as a Japanese garden (plaster walls with a
-   tile edge, raked gravel, a deck lair, pebbles, toro lanterns, koi, temari, a soft petal wind) and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
+   tile edge, raked gravel, a deck lair, pebbles, toro lanterns, koi, temari, a soft petal wind), the tunnel pads (no worn
+   path: a trodden patch fading into the meadow, a rune ring), winter's roofs under one snow cover and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
    the shared base (snow blanket, thin bank, trodden-snow corridor, tile lair, icicles, the new
    bauble, a blizzard), the food of every season, autumn's wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
    ground pools and a storm that never brightens the night (`DESIGN.md` §6). Left, one chat:
    - **Winter**: the snow on the walls and at their feet grows a little while the blizzard blows.
    - The pumpkin and the starfish brought to the new food's style.
-   - **The tunnel pads** (the owner's pick, 2026-11-23: both): drop the worn paths behind them;
-     the corridor's last tile and a half fade from its dark tone into the meadow with a ragged,
-     season edge (snow, leaves, grass, sand); and a new pad art: a stone arch or a ring of runes
-     set into the ground with a trodden patch round it, binding the dark corridor to the meadow.
-   - **The background as a cozy place** (the owner agreed to all, 2026-11-23): winter's roofs a
-     whole snow cover with an overhang at the eaves and a dark ridge (no snow "stickers"); the
+   - **The background as a cozy place** (the owner agreed to all, 2026-11-23): the
      bubble bushes replaced per season (winter firs and frosted bare shrubs, autumn half-bare
      russet shrubs, spring flowering shrubs, summer thick green with berries); trees with a
      readable crown from above (branches, a shadow to one side); paths from the cabins to the
