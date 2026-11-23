@@ -260,11 +260,11 @@ export interface FloorTone {
 /**
  * One corridor cell: opaque, one tone, a faint grain, the contact shadow where a wall stands (the
  * light comes from the upper left: deeper on a cell's left and top edge, a thin line on its right
- * and bottom), short grass blades at the walls' feet, never in the middle.
+ * and bottom), short grass blades at the walls' feet (`feet`; none when null), never in the middle.
  */
 export function sceneFloor(
 	tone: FloorTone,
-	feet: readonly [string, string, string],
+	feet: readonly [string, string, string] | null,
 	extra?: (f: MeadowFrame, cell: MeadowPathCell) => void
 ): (f: MeadowFrame, cell: MeadowPathCell) => void {
 	return (f, cell) => {
@@ -299,6 +299,10 @@ export function sceneFloor(
 		if (isW(r - 1, c)) strip(x, y, x, y + 9, T, 9, 1);
 		if (isW(r, c + 1)) strip(x + T, y, x + T - 4, y, 4, T, 0.5);
 		if (isW(r + 1, c)) strip(x, y + T, x, y + T - 4, T, 4, 0.5);
+		if (!feet) {
+			extra?.(f, cell);
+			return;
+		}
 		b.lineCap = 'round';
 		const blade = (bx: number, by: number, dx: number, dy: number) => {
 			b.strokeStyle = feet[Math.floor(k() * 3)];

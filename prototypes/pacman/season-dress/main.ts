@@ -342,6 +342,9 @@ requestAnimationFrame(frame);
 	};
 	const near = grow(inside, 1, 1);
 	const core = grow(inside, 2, 0);
+	// the stone rim along the silhouette (1.6 units): a dress may cover a wall's top (the owner,
+	// 2026-11-23) but leaves this rim, and so the rounding of the corners, as it is
+	const rimCore = grow(inside, Math.round(1.6 * RS), 0);
 	const lum = (d: Uint8ClampedArray, i: number) => d[i] * 0.2126 + d[i + 1] * 0.7152 + d[i + 2] * 0.0722;
 	let outside = 0;
 	let wallsChanged = 0;
@@ -358,7 +361,7 @@ requestAnimationFrame(frame);
 				const y = Math.round((cy - y0) * RS + sy * v);
 				if (x < 0 || y < 0 || x >= W || y >= H) continue;
 				const p = y * W + x;
-				if (!inside[p]) continue;
+				if (!inside[p] || rimCore[p]) continue;
 				const i = p * 4;
 				if (lum(on, i) > 200 && lum(on, i) - lum(off, i) > 30) cornerLight += 1;
 			}

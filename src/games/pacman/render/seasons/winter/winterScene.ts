@@ -3,15 +3,17 @@
 // spiral of lights, the gold star at the centre) with presents under it and two sparklers stuck in
 // the snow; strings of lights round the cabins' roofs and on the bridge's rails; warm window light
 // on the snow; a present on each doorstep; holly on the lamps. Live: the sparklers' sparks (short,
-// turning slowly). The accepted winter walls, floor, lair and bauble are untouched.
+// turning slowly). The walls wear the snow blanket (`winterDress`) as the scene's wall dress.
 import { gift, lights, newYearTree, windowSpill } from '../meadow/sceneProps';
 import type { SeasonScene } from '../meadow/seasonScene';
 import { TAU, addBulbs, addLight, addMark, cabinsOf } from '../meadow/seasonScene';
 import { WORLD_TILE } from '../../common/worldDecor';
+import { snowBlanket } from './winterDress';
 
 const T = WORLD_TILE;
 
 export const newYearScene: SeasonScene = {
+	wallDress: snowBlanket,
 	landmark(k, o, lit, i) {
 		// the tree stands beside the snowman, the presents under its lower branches
 		const side = i === 0 ? -1 : 1;

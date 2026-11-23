@@ -12,7 +12,7 @@ import {
 } from '../meadow/meadowSprites';
 import { bauble, winterPellet } from '../meadow/seasonFood';
 import { paintWalls } from '../meadow/meadowBakeWalls';
-import { LAIR, T } from '../meadow/MeadowBake';
+import { icicles, snowBank, winterFloor } from './winterDress';
 import { ICE_PALETTE } from '../../transitions/decay/LevelDecay';
 
 const fog = lazy(() =>
@@ -52,154 +52,14 @@ export const winterTheme: MeadowTheme = {
 			chimneyCap: '#f4f9fd'
 		},
 		rock: ['#b9c4d0', '#6f7d8d', '#ffffff', '#e8f1f9'],
-		// The lair is a frozen crust: muted ice a step lighter than the corridor floor, a
-		// glossy sheen, thin cracks, trapped air. Edge cells melt into the corridor slate so
-		// there is no hard rim at the opening. The ghosts and the Easter egg must read on
-		// it, so no bright spots. `base`/`tiles` stay as the no-hook fallback.
-		lair: {
-			base: '#66788a',
-			tiles: ['#66788a', '#607284', '#6c7e90'],
-			paint: (f, { r, c, x, y, k }) => {
-				const { S, b, blob } = f;
-				// a cell touching the corridor takes the corridor's slate: a soft shoreline
-				let edge = false;
-				for (const [dr, dc] of [
-					[0, -1],
-					[0, 1],
-					[-1, 0],
-					[1, 0]
-				] as const) {
-					const n = S[r + dr]?.[c + dc];
-					if (n && n !== 'WL' && n !== 'ES' && !LAIR.has(n)) {
-						edge = true;
-					}
-				}
-				const dim = edge ? 0.55 : 1;
-				b.fillStyle = edge ? '#576475' : '#66788a';
-				b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
-				blob(
-					x + k() * T,
-					y + k() * T,
-					5 + k() * 4,
-					3 + k() * 2.5,
-					`rgba(214,232,244,${0.28 * dim})`,
-					k()
-				);
-				blob(
-					x + k() * T,
-					y + k() * T,
-					3.5 + k() * 3,
-					2 + k() * 1.5,
-					`rgba(232,244,252,${0.2 * dim})`,
-					k()
-				);
-				// the old tile seams, frozen over
-				b.strokeStyle = 'rgba(240,248,255,.13)';
-				b.lineWidth = 0.8;
-				b.beginPath();
-				b.moveTo(x, y + T / 2);
-				b.lineTo(x + T, y + T / 2);
-				b.moveTo(x + T / 2, y);
-				b.lineTo(x + T / 2, y + T);
-				b.stroke();
-				// thin cracks
-				if (k() < 0.35) {
-					b.strokeStyle = 'rgba(46,66,86,.38)';
-					b.lineWidth = 0.9;
-					const cx = x + 3 + k() * (T - 6);
-					const cy = y + 3 + k() * (T - 6);
-					b.beginPath();
-					b.moveTo(cx, cy);
-					b.lineTo(cx + (k() - 0.5) * 10, cy + 3 + k() * 6);
-					b.lineTo(cx + (k() - 0.5) * 14, cy + 8 + k() * 8);
-					b.stroke();
-				}
-				// trapped air bubbles
-				for (let i = 0; i < 2; i++) {
-					if (k() < 0.5) {
-						blob(
-							x + k() * T,
-							y + k() * T,
-							0.7 + k() * 0.6,
-							0.6 + k() * 0.5,
-							'rgba(238,248,254,.5)',
-							0
-						);
-					}
-				}
-			}
-		},
+		// the shared season base (the owner's answers, 2026-11-23): the lair is the common tile
+		// floor in cold tones with snow in its seams; the corridor one dark blue-grey of trodden
+		// snow (`winterDress`); the bank, the blanket and the icicles dress the walls
+		lair: { base: '#8d9bb0', tiles: ['#4c586b', '#485467', '#505c70'] },
 		floor: {
-			tiles: ['#566274', '#515d6f', '#5b6779'],
-			specks: ['#6a768a', '#3a4452', '#7a869a'],
-			// winter floor: one flat slate (no per-tile shade steps, a corridor reads as one
-			// continuous floor), quiet frost: an ice streak along the run, a rare frozen
-			// puddle, frost specks at a neighbouring wall base. All below the food.
-			paint: (f, { r, c, x, y, k }) => {
-				const { P, S, b, blob } = f;
-				b.fillStyle = '#525d6e';
-				b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
-				for (let i = 0; i < 2; i++) {
-					blob(
-						x + k() * T,
-						y + k() * T,
-						0.6 + k() * 1.4,
-						0.5 + k(),
-						P.floor.specks[(k() * 3) | 0],
-						k() * 3
-					);
-				}
-				const open = (rr: number, cc: number) => {
-					const t = S[rr]?.[cc];
-					return !!t && t !== 'WL' && t !== 'ES';
-				};
-				if (k() < 0.14) {
-					b.strokeStyle = 'rgba(205,228,248,.26)';
-					b.lineWidth = 1;
-					b.beginPath();
-					if (open(r, c - 1) || open(r, c + 1)) {
-						const yy = y + 5 + k() * (T - 10);
-						b.moveTo(x + 3 + k() * 5, yy);
-						b.lineTo(x + T - 3 - k() * 5, yy);
-					} else {
-						const xx = x + 5 + k() * (T - 10);
-						b.moveTo(xx, y + 3 + k() * 5);
-						b.lineTo(xx, y + T - 3 - k() * 5);
-					}
-					b.stroke();
-				}
-				if (k() < 0.03) {
-					blob(
-						x + 5 + k() * (T - 10),
-						y + 5 + k() * (T - 10),
-						5.5 + k() * 3,
-						3.5 + k() * 2,
-						'rgba(188,218,240,.16)',
-						k()
-					);
-				}
-				for (const [dr, dc] of [
-					[0, -1],
-					[0, 1],
-					[-1, 0],
-					[1, 0]
-				] as const) {
-					if (S[r + dr]?.[c + dc] !== 'WL' || k() >= 0.65) {
-						continue;
-					}
-					for (let i = 0; i < 2; i++) {
-						const t = k();
-						blob(
-							dc ? x + (dc > 0 ? T - 2 - k() * 1.5 : 2 + k() * 1.5) : x + 3 + t * (T - 6),
-							dr ? y + (dr > 0 ? T - 2 - k() * 1.5 : 2 + k() * 1.5) : y + 3 + t * (T - 6),
-							0.8 + k() * 0.7,
-							0.6 + k() * 0.5,
-							'rgba(228,240,250,.5)',
-							0
-						);
-					}
-				}
-			}
+			tiles: ['#465166', '#465166', '#465166'],
+			specks: ['#6b7890', '#323a4a', '#5a667c'],
+			paint: winterFloor
 		},
 		portal: {
 			trail: (a) => `rgba(86,98,116,${a * 0.55})`,
@@ -211,10 +71,10 @@ export const winterTheme: MeadowTheme = {
 		},
 		wall: {
 			base: '#5d6a62',
-			moss: ['#4f7f66', '#2f5a4a'],
+			moss: ['#7a889b', '#566375'],
 			top: ['#a3afbf', '#a9b0bd', '#9aa8b8'],
 			bottom: ['#7a8799', '#838c9a', '#74869a'],
-			mossSpecks: ['#8fb8a2', '#2a4f40', '#e8f2f8'],
+			mossSpecks: ['#9aa7b8', '#3e4a5a', '#e8f2f8'],
 			specks: ['rgba(255,255,255,.4)', 'rgba(40,55,48,.3)'],
 			crack: 'rgba(50,65,58,.22)',
 			joints: 'rgba(45,60,72,.17)',
@@ -223,9 +83,12 @@ export const winterTheme: MeadowTheme = {
 			dark: 'rgba(30,45,38,.32)',
 			flowers: ['#d9333a', '#ff6b6b', '#ffffff'],
 			shadow: 'rgba(30,40,70,.45)',
-			// winter walls: same stone, the snow lies on the rims and caps, not across the
-			// face; a deeper soft shadow under the blocks for depth
-			paint: (f) => paintWalls(f, { snow: 'caps', shadow: [11, 2.5, 4.5] })
+			// winter walls: the shared stone in cold tones under a snow blanket (the scene's wall
+			// dress); the bank at their feet goes under the stones, the icicles over them
+			paint: (f) => {
+				paintWalls(f, { foot: snowBank });
+				icicles(f);
+			}
 		},
 		edgeGrass: ['#b9c4a6', '#8a9a7a', '#e8eef2'],
 		trees: {

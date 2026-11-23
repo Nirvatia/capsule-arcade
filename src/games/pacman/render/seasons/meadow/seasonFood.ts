@@ -88,11 +88,20 @@ export const sakura = energizer((c) => {
 	}
 });
 
-/** Spring pellet: a small yellow button. */
+/** Spring pellet: a cherry petal, notched at its tip, a darker vein. */
 export const springPellet = pellet((c) => {
-	circle(c, 0, 0, 2.8);
-	paint(c, '#ffe14a', 1);
-	shine(c, -0.9, -1, 0.9, 0.6, -0.5);
+	// long and narrow, a shallow notch, a little turned: a petal, not a heart
+	c.rotate(0.4);
+	c.beginPath();
+	c.moveTo(0, 3.7);
+	c.bezierCurveTo(-2.8, 2, -2.7, -2.5, -0.9, -3.5);
+	c.lineTo(0, -2.8);
+	c.lineTo(0.9, -3.5);
+	c.bezierCurveTo(2.7, -2.5, 2.8, 2, 0, 3.7);
+	c.closePath();
+	paint(c, '#ffb6d0', 1);
+	stroke(c, 0, 2.8, 0, -0.9, '#e2729c', 0.6);
+	shine(c, -1.1, -1.4, 0.7, 0.45, -0.4);
 });
 
 /** Summer: an orange starfish with pale dots along its arms. */
@@ -127,12 +136,34 @@ export const starfish = energizer((c) => {
 	c.fill();
 });
 
-/** Summer pellet: a small white pebble. */
+/** Summer pellet: a scallop shell, a peach fan with ribs on a small hinge. */
 export const summerPellet = pellet((c) => {
 	c.beginPath();
-	c.ellipse(0, 0.3, 3.4, 2.7, 0.2, 0, TAU);
-	paint(c, '#f1ede4', 1);
-	shine(c, -1, -0.8, 0.9, 0.5, -0.4);
+	c.roundRect(-1.7, 2, 3.4, 1.4, 0.4);
+	paint(c, '#f3c39e', 0.8);
+	// the fan with a scalloped rim: five bumps between ribs
+	const cy = 2.3;
+	const a0 = -Math.PI * 0.82;
+	const a1 = -Math.PI * 0.18;
+	const n = 5;
+	const at = (a: number, r: number): [number, number] => [Math.cos(a) * r, cy + Math.sin(a) * r];
+	c.beginPath();
+	c.moveTo(0, cy);
+	c.lineTo(...at(a0, 4.1));
+	for (let i = 0; i < n; i += 1) {
+		const am = a0 + ((i + 0.5) * (a1 - a0)) / n;
+		const ae = a0 + ((i + 1) * (a1 - a0)) / n;
+		const [mx, my] = at(am, 5.2);
+		const [ex, ey] = at(ae, 4.1);
+		c.quadraticCurveTo(mx, my, ex, ey);
+	}
+	c.closePath();
+	paint(c, '#ffdcc0', 1);
+	for (let i = 1; i < n; i += 1) {
+		const [ex, ey] = at(a0 + (i * (a1 - a0)) / n, 3.7);
+		stroke(c, 0, cy - 0.2, ex, ey, 'rgba(196,112,78,.7)', 0.5);
+	}
+	shine(c, -1.5, -0.6, 0.7, 0.45, -0.5);
 });
 
 /** Autumn: a jack-o'-lantern, an orange pumpkin with a lit face. */
@@ -184,11 +215,31 @@ export const pumpkin = energizer((c) => {
 	c.stroke();
 });
 
-/** Autumn pellet: an amber bead. */
+/** Autumn pellet: a candy corn, yellow base, orange middle, white tip. */
 export const autumnPellet = pellet((c) => {
-	circle(c, 0, 0, 2.8);
-	paint(c, '#ffb43a', 1);
-	shine(c, -0.9, -1, 0.9, 0.6, -0.5);
+	const tri = () => {
+		c.beginPath();
+		c.moveTo(0, -3.7);
+		c.quadraticCurveTo(1.6, -0.6, 3.2, 2.2);
+		c.quadraticCurveTo(0, 3.6, -3.2, 2.2);
+		c.quadraticCurveTo(-1.6, -0.6, 0, -3.7);
+		c.closePath();
+	};
+	tri();
+	c.save();
+	c.clip();
+	c.fillStyle = '#ffc426';
+	c.fillRect(-4, 0.9, 8, 4);
+	c.fillStyle = '#ff7a1c';
+	c.fillRect(-4, -1.3, 8, 2.2);
+	c.fillStyle = '#fff4e2';
+	c.fillRect(-4, -4, 8, 2.7);
+	c.restore();
+	tri();
+	c.strokeStyle = INK;
+	c.lineWidth = 0.9;
+	c.lineJoin = 'round';
+	c.stroke();
 });
 
 /** Winter: a snowman in a scarf and a top hat. */
@@ -234,36 +285,49 @@ export const snowman = energizer((c) => {
 	paint(c, '#ff8a1f', 0.9);
 });
 
-/** Winter: a Christmas bauble, a red glass ball with a gold band, a cap and a loop. */
+/** Winter energizer: a red Christmas bauble, a gold cap and loop, a white snowflake painted on it. */
 export const bauble = energizer((c) => {
 	c.beginPath();
-	c.arc(0, -10.4, 2, 0, TAU);
-	paint(c, '#c8a03a', 1);
-	c.beginPath();
-	c.roundRect(-3, -9.2, 6, 3.4, 1.2);
-	paint(c, '#d8b04a', 1);
-	circle(c, 0, 1.4, 9.6);
-	paint(c, '#e8403a');
-	c.save();
-	c.beginPath();
-	c.arc(0, 1.4, 9.4, 0, TAU);
-	c.clip();
-	c.strokeStyle = '#f0c04a';
-	c.lineWidth = 2.4;
-	c.beginPath();
-	c.moveTo(-9.5, 5.2);
-	c.quadraticCurveTo(0, 1.6, 9.5, 5.2);
+	c.arc(0, -10.3, 1.9, 0, TAU);
+	c.strokeStyle = INK;
+	c.lineWidth = 1;
 	c.stroke();
+	c.beginPath();
+	c.roundRect(-3.2, -9.4, 6.4, 3.6, 1.2);
+	paint(c, '#e3b84e', 1);
+	stroke(c, -1.6, -8.6, -1.6, -6.4, 'rgba(150,100,20,.6)', 0.6);
+	stroke(c, 1.6, -8.6, 1.6, -6.4, 'rgba(150,100,20,.6)', 0.6);
+	circle(c, 0, 1.6, 9.6);
+	paint(c, '#d42f3a');
+	c.save();
+	c.translate(0.6, 2.4);
+	for (let i = 0; i < 6; i += 1) {
+		const a = (i * TAU) / 6 + 0.26;
+		const ex = Math.cos(a) * 4.6;
+		const ey = Math.sin(a) * 4.6;
+		stroke(c, 0, 0, ex, ey, '#fff6f0', 1.1);
+		const bx = Math.cos(a) * 3;
+		const by = Math.sin(a) * 3;
+		for (const d of [-0.7, 0.7]) {
+			stroke(c, bx, by, bx + Math.cos(a + d) * 1.4, by + Math.sin(a + d) * 1.4, '#fff6f0', 0.8);
+		}
+	}
 	c.restore();
-	shine(c, -3.4, -2.2, 2.2, 1.5, -0.5);
-	c.fillStyle = 'rgba(255,255,255,.85)';
-	circle(c, 2.6, 4.8, 0.8);
-	c.fill();
+	shine(c, -4.2, -2.4, 2, 1.3, -0.5);
 });
 
-/** Winter pellet: a small ice drop. */
+/** Winter pellet: a snowball, a cool shade on its lower right. */
 export const winterPellet = pellet((c) => {
-	circle(c, 0, 0, 2.7);
-	paint(c, '#cfeaff', 1);
-	shine(c, -0.9, -1, 0.9, 0.6, -0.5);
+	circle(c, 0, 0, 2.9);
+	paint(c, '#f4f8fc', 1);
+	c.save();
+	c.beginPath();
+	c.arc(0, 0, 2.4, 0, TAU);
+	c.clip();
+	c.fillStyle = '#b4c6de';
+	circle(c, -1.1, -1.1, 3);
+	c.rect(-5, -5, 10, 10);
+	c.fill('evenodd');
+	c.restore();
+	shine(c, -0.9, -1, 0.8, 0.55, -0.5);
 });

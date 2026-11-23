@@ -13,6 +13,8 @@ export interface WallPaintOpts {
 	readonly snow?: WallSnow;
 	/** The soft drop shadow under the blocks as [blur, dx, dy] in world units. */
 	readonly shadow?: readonly [number, number, number];
+	/** Painted after the floor under the rounded corners and before the stones (a snow bank at the walls' feet). */
+	readonly foot?: (f: MeadowFrame) => void;
 }
 
 /** Walls: seen strictly from above. A rounded moss bed with loose stone blocks set into it. */
@@ -69,6 +71,7 @@ export function paintWalls(f: MeadowFrame, opts: WallPaintOpts = {}): void {
 			);
 		}
 	}
+	opts.foot?.(f);
 	b.save();
 	b.shadowColor = W.shadow;
 	b.shadowBlur = shBlur * RS;
@@ -225,19 +228,40 @@ function paintSnowCaps(
 	// a trim along the exposed top/left rim: wind from the up-left lays snow there only
 	if (!up) {
 		for (let i = 0; i < 3; i++) {
-			blob(x + 3.5 + i * 7 + k() * 2.5, y + 1.6 + k() * 1.6, 4.5 + k() * 2, 2 + k() * 1, snow[i % 2], 0);
+			blob(
+				x + 3.5 + i * 7 + k() * 2.5,
+				y + 1.6 + k() * 1.6,
+				4.5 + k() * 2,
+				2 + k() * 1,
+				snow[i % 2],
+				0
+			);
 		}
 	}
 	if (!lf) {
 		for (let i = 0; i < 3; i++) {
-			blob(x + 1.6 + k() * 1.6, y + 3.5 + i * 7 + k() * 2.5, 2 + k() * 1, 4.5 + k() * 2, snow[(i + 1) % 2], 0);
+			blob(
+				x + 1.6 + k() * 1.6,
+				y + 3.5 + i * 7 + k() * 2.5,
+				2 + k() * 1,
+				4.5 + k() * 2,
+				snow[(i + 1) % 2],
+				0
+			);
 		}
 	}
 	// a lone block or a run's end collects a full cap, stone peeking at the bottom-right
 	const open = Number(!up) + Number(!dn) + Number(!lf) + Number(!rt);
 	if (open >= 3) {
 		for (let i = 0; i < 5; i++) {
-			blob(x + 2 + k() * T * 0.65, y + 1 + k() * T * 0.45, 6 + k() * 3.5, 4 + k() * 2, snow[0], k());
+			blob(
+				x + 2 + k() * T * 0.65,
+				y + 1 + k() * T * 0.45,
+				6 + k() * 3.5,
+				4 + k() * 2,
+				snow[0],
+				k()
+			);
 		}
 	}
 	// a drift at the base where the lee side meets the floor
