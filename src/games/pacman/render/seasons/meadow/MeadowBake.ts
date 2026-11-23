@@ -9,6 +9,8 @@ import type { BakeKit, MeadowBakeTheme } from './MeadowTheme';
 import { WORLD_TILE, streamY, tileRandom, tunnelRowOf, worldDecor } from '../../common/worldDecor';
 import { paintDecor } from './meadowBakeDecor';
 import { paintWalls } from './meadowBakeWalls';
+import type { SceneLit } from './seasonScene';
+import { newSceneLit, onWalls } from './seasonScene';
 
 export const MEADOW_TILE = WORLD_TILE;
 
@@ -17,8 +19,10 @@ export const LAIR: ReadonlySet<string> = new Set(['LT', 'BY', 'IY', 'PY', 'CE', 
 
 /**
  * Bakes the static world inside the world-space rect (x0, y0, w, h) at RS canvas pixels
- * per world unit: meadow, stream, decorations, path cells, lair, portals, walls and tree
- * crowns, faded into the background colour at the edge of the world.
+ * per world unit: meadow, stream, decorations, path cells, lair, portals, walls (and the
+ * season scene's dress on them, clipped to their silhouette, and its props) and tree crowns,
+ * faded into the background colour at the edge of the world. What the scene lights at night
+ * and animates is collected into `lit`.
  */
 export function bakeMeadow(
 	S: GridMatrix,
@@ -27,14 +31,21 @@ export function bakeMeadow(
 	y0: number,
 	w: number,
 	h: number,
-	RS: number
+	RS: number,
+	lit: SceneLit = newSceneLit()
 ): HTMLCanvasElement {
-	const f = makeMeadowFrame(S, P, x0, y0, w, h, RS);
+	const f = makeMeadowFrame(S, P, x0, y0, w, h, RS, lit);
 	paintGround(f);
 	paintStream(f);
 	paintDecor(f);
 	paintMazeFloor(f);
 	(P.wall.paint ?? paintWalls)(f);
+	const scene = P.scene;
+	if (scene?.wallDress) {
+		const dress = scene.wallDress;
+		onWalls(f, (r) => dress(f, r));
+	}
+	scene?.props?.(f, lit);
 	paintTreeCrowns(f);
 	paintWorldEdge(f);
 	return f.cv;
@@ -47,7 +58,8 @@ function makeMeadowFrame(
 	y0: number,
 	w: number,
 	h: number,
-	RS: number
+	RS: number,
+	lit: SceneLit
 ) {
 	const R = S.length;
 	const C = S[0].length;
@@ -143,7 +155,8 @@ function makeMeadowFrame(
 		rp,
 		fl5,
 		sph,
-		kit
+		kit,
+		lit
 	};
 }
 

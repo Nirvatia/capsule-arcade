@@ -2,6 +2,7 @@
 // jack-o'-lantern energizers, amber bead pellets, falling leaves, rain, a grey-violet
 // night.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
+import { autumnFloor, halloweenScene } from './autumnScene';
 import {
 	lazy,
 	makeTexture,
@@ -76,8 +77,12 @@ export const autumnTheme: MeadowTheme = {
 		rock: ['#a89c88', '#5f5648', '#8a9a4a', '#b0a28a'],
 		// muted (owner's review): the ghosts and the Easter egg must read on the lair floor
 		lair: { base: '#2a1c12', tiles: ['#6e5236', '#684e33', '#755839'] },
+		// the holiday scene's corridor (the owner's pick of `season-dress`): one opaque tone, a
+		// contact shadow and grass at the walls' feet; the tiles are that tone, as the wall
+		// painter lays `tiles[0]` under the rounded corners
 		floor: {
-			tiles: ['#4a3426', '#45301f', '#503a2a'],
+			tiles: ['#403c3a', '#403c3a', '#403c3a'],
+			paint: autumnFloor,
 			specks: ['#5e4634', '#2e2016', '#6b5240']
 		},
 		portal: {
@@ -112,6 +117,7 @@ export const autumnTheme: MeadowTheme = {
 			plainDots: ['rgba(255,248,190,.8)', 'rgba(120,60,10,.45)'],
 			drifts: 'rgba(230,120,30,.5)'
 		},
+		scene: halloweenScene,
 		landmark: {
 			ex: [2.4, 2.2],
 			// a round hay bale seen from above

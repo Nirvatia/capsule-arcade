@@ -1,10 +1,10 @@
-// A tail or a wake made of where the hero has been (it bends with every turn, as the trail
-// rule asks), drawn from the pure `ribbon` (common/trail.ts): width and alpha go to 0 at both
+// Ms. Pac-Man's comet tails: a tail made of where she has been (it bends with every turn, as the trail
+// rule asks), drawn from the pure `ribbon` (common/trailRibbon): width and alpha go to 0 at both
 // ends in every frame, and when the hero stops it shrinks back and fades by itself.
 // Drawn additively in short chunks, each with a gradient between its ends: additive edges add
 // up exactly, so the chunks join without seams, and a curved tail keeps its colour along it.
-import type { RibbonPoint, Sample } from '../common/trail';
-import { ribbon } from '../common/trail';
+import type { RibbonPoint, Sample } from '../../common/trailRibbon';
+import { ribbon } from '../../common/trailRibbon';
 
 export interface WakeSpec {
 	readonly life: number;
@@ -34,11 +34,21 @@ export class Wake {
 	}
 
 	points(now: number, spec: WakeSpec): RibbonPoint[] {
-		const r = ribbon(this.hist, now, { life: spec.life, width: spec.width, capHead: spec.capHead, capTail: spec.capTail });
+		const r = ribbon(this.hist, now, {
+			life: spec.life,
+			width: spec.width,
+			capHead: spec.capHead,
+			capTail: spec.capTail
+		});
 		if (!spec.widen && !spec.shift) return r;
 		return r.map((p) => {
 			const off = spec.shift ? spec.shift(p.u, p) : 0;
-			return { ...p, x: p.x + p.nx * off, y: p.y + p.ny * off, w: p.w * (spec.widen ? spec.widen(p.u) : 1) };
+			return {
+				...p,
+				x: p.x + p.nx * off,
+				y: p.y + p.ny * off,
+				w: p.w * (spec.widen ? spec.widen(p.u) : 1)
+			};
 		});
 	}
 

@@ -1,6 +1,7 @@
 // Winter, from the owner's CLAUDE_GRID_WINTER mock-up: snowy meadow, frozen stream,
 // snowmen, ice-drop pellets and snowman energizers, a blizzard, a blue night.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
+import { newYearScene } from './winterScene';
 import {
 	glowTexture,
 	lazy,
@@ -76,8 +77,22 @@ export const winterTheme: MeadowTheme = {
 				const dim = edge ? 0.55 : 1;
 				b.fillStyle = edge ? '#576475' : '#66788a';
 				b.fillRect(x - 0.5, y - 0.5, T + 1, T + 1);
-				blob(x + k() * T, y + k() * T, 5 + k() * 4, 3 + k() * 2.5, `rgba(214,232,244,${0.28 * dim})`, k());
-				blob(x + k() * T, y + k() * T, 3.5 + k() * 3, 2 + k() * 1.5, `rgba(232,244,252,${0.2 * dim})`, k());
+				blob(
+					x + k() * T,
+					y + k() * T,
+					5 + k() * 4,
+					3 + k() * 2.5,
+					`rgba(214,232,244,${0.28 * dim})`,
+					k()
+				);
+				blob(
+					x + k() * T,
+					y + k() * T,
+					3.5 + k() * 3,
+					2 + k() * 1.5,
+					`rgba(232,244,252,${0.2 * dim})`,
+					k()
+				);
 				// the old tile seams, frozen over
 				b.strokeStyle = 'rgba(240,248,255,.13)';
 				b.lineWidth = 0.8;
@@ -102,7 +117,14 @@ export const winterTheme: MeadowTheme = {
 				// trapped air bubbles
 				for (let i = 0; i < 2; i++) {
 					if (k() < 0.5) {
-						blob(x + k() * T, y + k() * T, 0.7 + k() * 0.6, 0.6 + k() * 0.5, 'rgba(238,248,254,.5)', 0);
+						blob(
+							x + k() * T,
+							y + k() * T,
+							0.7 + k() * 0.6,
+							0.6 + k() * 0.5,
+							'rgba(238,248,254,.5)',
+							0
+						);
 					}
 				}
 			}
@@ -213,6 +235,7 @@ export const winterTheme: MeadowTheme = {
 			plainDots: ['rgba(255,255,255,.8)', 'rgba(70,95,115,.45)'],
 			drifts: 'rgba(255,255,255,.55)'
 		},
+		scene: newYearScene,
 		landmark: {
 			ex: [1.8, 1.6],
 			// a snowman with a red scarf, seen from above

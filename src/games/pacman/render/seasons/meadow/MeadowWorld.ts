@@ -17,6 +17,8 @@ import type { GridMatrix } from '../../../config/gridConfig';
 import { isTeleportToken } from '../../../config/gridConfig';
 import type { GridLayout } from '../../maze/GridView';
 import { bakeMeadow, MEADOW_TILE } from './MeadowBake';
+import type { SceneLit } from './seasonScene';
+import { newSceneLit } from './seasonScene';
 import { streamY, tunnelRowOf, worldDecor } from '../../common/worldDecor';
 import type { MeadowTheme, WeatherParticle } from './MeadowTheme';
 import { glowTexture, rayTexture } from './meadowSprites';
@@ -117,6 +119,9 @@ export class MeadowWorld {
 	private readonly smoke: Array<{ cx: number; cy: number; u: number; ph: number }> = [];
 	private readonly liveObjects: LiveObject[] = [];
 	private readonly lights: Light[] = [];
+	/** What the season's scene lights at night and animates, found by the last bake. */
+	private sceneLit: SceneLit = newSceneLit();
+	private sceneLights: readonly Light[] = [];
 	private readonly mist: Array<{ x: number; y: number; w: number; h: number; v: number }>;
 	private readonly drift: Drift[];
 	private weather: WeatherParticle[] = [];
@@ -788,7 +793,9 @@ export class MeadowWorld {
 			ctx.save();
 			ctx.translate(this.wx, this.wy);
 			ctx.scale(this.sc, this.sc);
-			for (const g of this.lights) {
+			for (const g of this.sceneLights.length
+				? [...this.lights, ...this.sceneLights]
+				: this.lights) {
 				const a =
 					this.nightV *
 					g.a *
@@ -797,6 +804,21 @@ export class MeadowWorld {
 				sprite(ctx, glowTexture(g.tint), g.x, g.y, 2 * g.r, 2 * g.r, a, 0, true);
 			}
 			ctx.restore();
+		}
+		// the season scene's moving bits (bat shadows, sparks, a carousel): small sprites only
+		const live = this.theme.bake.scene?.live;
+		if (live) {
+			ctx.globalAlpha = 1;
+			ctx.globalCompositeOperation = 'source-over';
+			live(ctx, t, {
+				ox: this.wx,
+				oy: this.wy,
+				k: this.sc,
+				night: this.nightV,
+				storm: this.stormV,
+				grid: this.S,
+				lit: this.sceneLit
+			});
 		}
 		ctx.restore();
 	}
@@ -955,7 +977,10 @@ export class MeadowWorld {
 		while (RS * RS * bw * bh > 1.3e7) {
 			RS *= 0.92;
 		}
-		this.bg = bakeMeadow(this.S, this.theme.bake, bx, by, bw, bh, RS);
+		const lit = newSceneLit();
+		this.bg = bakeMeadow(this.S, this.theme.bake, bx, by, bw, bh, RS, lit);
+		this.sceneLit = lit;
+		this.sceneLights = [...lit.lights.values()];
 		this.bgX = bx;
 		this.bgY = by;
 		this.bgRS = RS;

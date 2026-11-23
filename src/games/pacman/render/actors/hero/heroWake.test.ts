@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Wake } from './wake';
+import { Wake } from './heroWake';
 
 // the comet's tails as `CometMs` lays them: a run right, an L turn down, a stop
 function run(w: Wake, until: number): void {

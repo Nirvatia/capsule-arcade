@@ -1,6 +1,7 @@
 // Spring, from the owner's CLAUDE_GRID_SPRING mock-up: fresh green meadow, cherry trees,
 // picnic blankets, yellow button pellets and cherry-blossom energizers, a petal-laden wind, a soft night.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
+import { springFloor, hanamiScene } from './springScene';
 import {
 	lazy,
 	makeTexture,
@@ -75,8 +76,12 @@ export const springTheme: MeadowTheme = {
 		rock: ['#b8b8a8', '#6a6a5a', '#7fbf4a', '#9fd46a'],
 		// muted (owner's review): the ghosts and the Easter egg must read on the lair floor
 		lair: { base: '#2e3424', tiles: ['#5a6446', '#535d40', '#606a4c'] },
+		// the holiday scene's corridor (the owner's pick of `season-dress`): one opaque tone, a
+		// contact shadow and grass at the walls' feet; the tiles are that tone, as the wall
+		// painter lays `tiles[0]` under the rounded corners
 		floor: {
-			tiles: ['#5a4636', '#54402f', '#604b3a'],
+			tiles: ['#7b5a3d', '#7b5a3d', '#7b5a3d'],
+			paint: springFloor,
 			specks: ['#6e5846', '#3a2c20', '#7a6452']
 		},
 		portal: {
@@ -105,11 +110,13 @@ export const springTheme: MeadowTheme = {
 		edgeGrass: ['#5faa3a', '#86c94f', '#b8e07a'],
 		trees: {
 			accent: ['#ffe6ef', '#f5a6c4', '#c85a88'],
-			plain: ['#d8f58a', '#78c050', '#3a7a30'],
+			// the hanami: every tree in blossom, the plain ones white-pink
+			plain: ['#fff4f7', '#f8cadb', '#d98aa8'],
 			accentDots: ['rgba(255,255,255,.85)', 'rgba(150,50,90,.5)'],
-			plainDots: ['rgba(235,255,170,.7)', 'rgba(25,80,30,.45)'],
+			plainDots: ['rgba(255,255,255,.9)', 'rgba(170,80,110,.4)'],
 			drifts: 'rgba(255,200,220,.5)'
 		},
+		scene: hanamiScene,
 		landmark: {
 			ex: [2.4, 2.2],
 			// a checked picnic blanket with a basket

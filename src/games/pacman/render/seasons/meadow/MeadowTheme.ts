@@ -1,6 +1,7 @@
 // A season of the meadow world: the owner's CLAUDE_GRID_<SEASON> mock-ups share one
 // layout (maze, meadow, stream, bridge, cabins, pond, lamps, trees) and differ in colours,
 // one landmark, a few decorations, the food sprites and the weather. A theme holds those.
+import type { SeasonScene } from './seasonScene';
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 import type { WorldDecor as MeadowDecor } from '../../common/worldDecor';
 import type { MeadowFrame } from './MeadowBake';
@@ -126,6 +127,8 @@ export interface MeadowBakeTheme {
 	readonly flowerPatch: (k: BakeKit, o: MeadowDecor) => void;
 	/** Lily pads, floating leaves… drawn inside the pond, after its highlight. */
 	readonly pondExtras?: (k: BakeKit, o: MeadowDecor) => void;
+	/** The season's holiday scene (`seasonScene`): wall dress, props, night lights, live bits. */
+	readonly scene?: SeasonScene;
 }
 
 /** One kind of wind-blown particle of the weather layer, in screen space. */

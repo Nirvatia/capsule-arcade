@@ -11,7 +11,7 @@ import {
 	ghostPath,
 	lightGlow
 } from './hellGhost';
-import { DashTrack, drawCrouchEmbers, drawSpeedLines, drawSteam } from './doomDashFx';
+import { LavaDash } from './doomDashFx';
 import { IRON_HORN, drawCheeks, drawHelm } from './bossArmor';
 
 /** Everything the view needs about one body (the boss or its phase-3 echo). */
@@ -86,19 +86,13 @@ const ECHO_SKIN: Skin = {
  * horns, phase 2 an iron helm, phase 3 the helm, cheek plates and long iron horns.
  * The eyes look where it is heading (on the wind-up: at the player); no chevron, the
  * eyes are enough for the boss (the imps keep theirs). Wind-up: it swells and shivers, the
- * mouth glows. Dash: stretched along the heading with afterimages. Stunned: spiral eyes.
+ * mouth glows. Dash: the body turns into a rolling lava ball and back (`doomDashFx`, the owner's
+ * pick of the `hell-dash` prototype). Stunned: spiral eyes.
  */
 export class HellBlinkyView {
-	private readonly dashTrack = new DashTrack();
+	private readonly lava = new LavaDash();
 
-	/** `ghost`: one of the dash's afterimages (the body only, no effects, no floor marks). */
-	draw(
-		ctx: CanvasRenderingContext2D,
-		snap: BossSnapshot,
-		layout: GridLayout,
-		time: number,
-		ghost = false
-	): void {
+	draw(ctx: CanvasRenderingContext2D, snap: BossSnapshot, layout: GridLayout, time: number): void {
 		if (snap.alpha <= 0.01) {
 			return;
 		}
@@ -116,18 +110,24 @@ export class HellBlinkyView {
 		const t = time * (stunned ? 0.35 : 1);
 		const heading = dirAngle(snap.dir);
 		const R = S * 0.5 * (0.3 + 0.7 * intro) * (1 + tele * 0.06);
-		let x = layout.offsetX + snap.x * S;
-		let y = layout.offsetY + snap.y * S;
+		const cx = layout.offsetX + snap.x * S;
+		const cy = layout.offsetY + snap.y * S;
+		let x = cx;
+		let y = cy;
 		if (dashTele) {
 			// he crouches and rocks back before the dash
 			const back = S * 0.2 * Math.min(1, tele * 2);
 			x -= Math.cos(heading) * back;
 			y -= Math.sin(heading) * back;
 		}
-		if (!ghost) {
-			this.dashTrack.update(x, y, dash, recover, time);
-			this.dashTrack.drawFloor(ctx, S, heading, x, y, time);
-		}
+		const lava = this.lava;
+		lava.update(cx, cy, dashTele, dash, snap.progress, time, S);
+		const morph = lava.morph;
+		ctx.save();
+		ctx.globalAlpha = snap.alpha * (snap.echo ? 0.72 : 1);
+		lava.drawFloor(ctx, S, time, snap.echo);
+		lava.drawCrouch(ctx, x, y, S, snap.echo);
+		ctx.restore();
 		const shiver = (transition ? 0.08 : 0) + (stunned ? 0.03 : 0) + tele * 0.04;
 		if (shiver > 0) {
 			x += Math.sin(time * 90) * R * shiver;
@@ -151,7 +151,7 @@ export class HellBlinkyView {
 		ctx.lineCap = 'round';
 
 		// a dark pool and a glow under it, kept inside the tile
-		if (!ghost) {
+		{
 			const pool = ctx.createRadialGradient(x, y + R * 0.2, R * 0.2, x, y + R * 0.2, R);
 			pool.addColorStop(0, 'rgba(0,0,0,0.5)');
 			pool.addColorStop(1, 'rgba(0,0,0,0)');
@@ -167,36 +167,64 @@ export class HellBlinkyView {
 			);
 		}
 
-		if (dash && !ghost) {
-			// afterimages trail the dash: the whole body again, fainter the further back
-			for (let k = 4; k >= 1; k -= 1) {
-				const off = k * 0.42;
-				this.draw(
-					ctx,
-					{
-						...snap,
-						x: snap.x - Math.cos(heading) * off,
-						y: snap.y - Math.sin(heading) * off,
-						alpha: snap.alpha * (0.34 - k * 0.065)
-					},
-					layout,
-					time,
-					true
-				);
-			}
+		// the body, unless the turn into the ball is over: smaller, darker and fading as it turns
+		if (morph < 0.999) {
+			this.drawBodyAt(
+				ctx,
+				x,
+				y,
+				shape,
+				skin,
+				phase,
+				t,
+				snap,
+				tele,
+				dashTele,
+				casting,
+				stunned,
+				transition,
+				recover,
+				pulse,
+				heading,
+				morph
+			);
 		}
+		if (morph > 0.001) {
+			lava.drawBall(ctx, x, y, S, heading, phase, time, snap.echo, snap.hit);
+		}
+		lava.drawAir(ctx, S, time, snap.echo);
+		lava.drawSteam(ctx, x, y, S, time, 0.7);
+		ctx.restore();
+	}
 
+	private drawBodyAt(
+		ctx: CanvasRenderingContext2D,
+		x: number,
+		y: number,
+		shape: GhostShape,
+		skin: Skin,
+		phase: number,
+		t: number,
+		snap: BossSnapshot,
+		tele: number,
+		dashTele: boolean,
+		casting: boolean,
+		stunned: boolean,
+		transition: boolean,
+		recover: boolean,
+		pulse: number,
+		heading: number,
+		morph: number
+	): void {
 		ctx.save();
 		ctx.translate(x, y);
+		if (morph > 0) {
+			ctx.globalAlpha *= Math.pow(1 - morph, 0.7);
+			ctx.scale(1 - 0.4 * morph, 1 - 0.4 * morph);
+		}
 		if (dashTele) {
 			ctx.rotate(heading);
 			ctx.scale(1 - 0.1 * tele, 1 + 0.07 * tele);
-			ctx.rotate(-heading);
-		}
-		if (dash) {
-			// stretched along the heading, squeezed across it
-			ctx.rotate(heading);
-			ctx.scale(1.14, 0.88);
 			ctx.rotate(-heading);
 		}
 		const burning = casting || tele > 0;
@@ -211,16 +239,14 @@ export class HellBlinkyView {
 		);
 		this.drawBody(ctx, shape, skin, phase, t, snap);
 		this.drawFace(ctx, shape, skin, phase, t, tele, casting, stunned, transition, recover, snap);
-		ctx.restore();
-
-		if (!ghost) {
-			if (dashTele) {
-				drawCrouchEmbers(ctx, S, heading, x, y, tele, time);
-			} else if (dash) {
-				drawSpeedLines(ctx, S, heading, x, y);
-			} else if (recover) {
-				drawSteam(ctx, S, x, y, time);
-			}
+		if (morph > 0) {
+			// the heat darkens him as he curls into the ball
+			ctx.save();
+			ghostPath(ctx, 0, 0, shape, t);
+			ctx.clip();
+			ctx.fillStyle = `rgba(40,6,4,${(0.7 * morph).toFixed(3)})`;
+			ctx.fillRect(-shape.w * 2, -shape.w * 3, shape.w * 4, shape.w * 6);
+			ctx.restore();
 		}
 		ctx.restore();
 	}

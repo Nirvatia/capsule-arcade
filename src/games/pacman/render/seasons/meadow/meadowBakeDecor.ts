@@ -60,6 +60,7 @@ export function paintDecor(f: MeadowFrame): void {
 			}
 		} else if (o.k === 'landmark') {
 			P.landmark.draw(kit, o);
+			P.scene?.landmark?.(kit, o, f.lit, o.x < 0 ? 0 : 1);
 		} else if (o.k === 'lamp') {
 			blob(o.x + 2, o.y + 3, 5, 3.5, shade(0.35), 0);
 			sph(o.x, o.y, 4.2, '#7b7268', '#2f2a27');

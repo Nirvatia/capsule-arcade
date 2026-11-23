@@ -13,7 +13,7 @@ await p.goto(pathToFileURL(join(here, '..', 'season-dress.html')).href + '?mode=
 await p.waitForTimeout(1500);
 const rows = [];
 let bad = 0;
-for (const id of ['autumn', 'winter', 'spring-hanami', 'spring-easter', 'summer-beach', 'summer-fair']) {
+for (const id of ['autumn', 'winter', 'spring', 'summer']) {
   const r = await p.evaluate((id) => window.__guard(id), id);
   const ok = r.outside === 0 && r.cornerLight === 0 && r.wallsChanged === 0;
   if (!ok) bad += 1;

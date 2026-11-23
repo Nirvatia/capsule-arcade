@@ -53,10 +53,20 @@ render/
                    MeadowLevelRenderer, driven by a MeadowTheme per season
                    (seasons/<season>/<season>Theme.ts). A theme may opt into its own wall /
                    floor / lair paint through MeadowBakeTheme hooks; without them the shared
-                   painters render, so a season that does not opt in is unchanged.
+                   painters render, so a season that does not opt in is unchanged. Each season
+                   carries a holiday scene (`MeadowBakeTheme.scene`, seasonScene: autumnScene
+                   Halloween, winterScene New Year, springScene hanami, summerScene fair, with
+                   sceneProps' top-down painters): the bake runs its wall dress clipped to the
+                   walls' silhouette after the unchanged wall painter, its props and its
+                   landmark extras, and collects what glows at night (`SceneLit`); MeadowWorld
+                   draws those lights with its own night lights and the scene's few moving bits
+                   (`scene.live`) over the mood. Autumn, spring and summer share the corridor
+                   floor `sceneFloor` (one opaque tone, a contact shadow, grass at the feet).
   doom/            DoomLevelRenderer, the flesh hell: DoomWorld (camera, mood) over a scene
                    baked once (fleshBake, with fleshNoise) and moved by the heartbeat
-                   (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX
+                   (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX;
+                   the boss's dash (doomDashFx: LavaDash, the body turned into a rolling lava
+                   ball that lays a cooling track, its timing read from the telegraph's run)
   station/         the station (style B): StationBake (the scene baked once at a scale fitted
                    to the screen, in layers: base, the surround's glow, the walls' safety edge
                    and light strip, the resin per phase; painted by stationPaint / stationMarks /
@@ -73,8 +83,8 @@ render/
   transitions/decay/       the death black hole: field (Dijkstra), timeline (pure clock), WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
   transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
-  actors/ (hero/: the shared Hero, PacmanHero (the sun), MsPacmanHero (the pearl star, `drawPearlBow` shared with the mask's ghost form), heroSeasons (the season's colours), heroFx (fire drops, outline-free embers, the highlight star); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
-  common/          textures, GlPass (every WebGL2 pass), moodBuffer (a world's atmosphere and
+  actors/ (hero/: the shared Hero, PacmanHero (the sun), MsPacmanHero (the white comet, `drawIceBow` shared with the mask's ghost form; her two tails are heroWake ribbons), heroSeasons (the season's colours), heroFx (fire drops, outline-free embers, the highlight star); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
+  common/          textures, trailRibbon (pure trails: a ribbon from an actor's recent positions whose width and alpha go to 0 at both ends and with age; the dash's lava track, the comet's tails), GlPass (every WebGL2 pass), moodBuffer (a world's atmosphere and
                    night in two small maps, a shade and a light, drawn over the screen, over a
                    part of it or into a baked background), renderQuality (the quality tiers' DPR
                    caps and atmosphere rates), graphicsSetting (the player's choice: Auto or a
@@ -282,6 +292,13 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   bake's margins, the repaint rate, and a painter that leaves its alpha behind.
 - `render/common/math.test.ts` — `settle`: an eased value lands on its target (a mood that never
   lands is never baked).
+- `render/common/trailRibbon.test.ts` — the trail never ends in a cut: width and alpha 0 at both
+  ends in every frame of a dash of 3/6/12 tiles, no step along it, gone a life after the stop,
+  motes that fade in and out.
+- `render/doom/doomDashFx.test.ts` — the boss turns into the lava ball only over the telegraph's
+  last 0.25 s (whatever its length), smoothly, and back into the body over 0.28 s after the stop.
+- `render/actors/hero/heroWake.test.ts` — the comet's tails: both ends 0 through a turn and
+  after the stop, gone a life later.
 - `logic/actors/playerControl.test.ts` — reversal, late turns, held keys.
 - `logic/actors/playerCorner.test.ts` — cornering on the diagonal, the rage's dash and the energizer's hit-stop.
 - `logic/doom/doomMechanics.test.ts` — pickups, BFG, minions, attack sets per phase,

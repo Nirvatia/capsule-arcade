@@ -107,29 +107,45 @@ describe('the trail', () => {
 	});
 
 	it.each(['spring', 'summer', 'autumn', 'winter'] as const)(
-		'is glints of sunlight for Pac-Man, whatever the season (%s)',
+		"is the sun's cooling embers for Pac-Man, whatever the season (%s)",
 		(season) => {
 			const hero = newHero();
 			run(hero, { x: 0, y: 0 }, { x: 5, y: 0 }, 0.6, { season });
 			const kinds = new Set(hero.particles.map((p) => p.kind));
-			expect(kinds).toEqual(new Set(['spark']));
+			expect(kinds).toEqual(new Set(['ember']));
 		}
 	);
 
-	it('is stars for Ms. Pac-Man, whatever the season', () => {
+	it('is ice crystals for Ms. Pac-Man, whatever the season', () => {
 		const hero = newHero(true);
 		run(hero, { x: 0, y: 0 }, { x: 5, y: 0 }, 0.8, { season: 'spring' });
 		const kinds = new Set(hero.particles.map((p) => p.kind));
-		expect(kinds).toEqual(new Set(['star']));
+		expect(kinds).toEqual(new Set(['flake']));
 	});
 
-	it.each([false, true])('turns to fire when powered (Ms. Pac-Man: %s)', (ms) => {
+	it.each([false, true])('runs hot when powered (Ms. Pac-Man: %s)', (ms) => {
 		const hero = newHero(ms);
 		run(hero, { x: 0, y: 0 }, { x: 5, y: 0 }, 1.2, { power: true, season: 'summer' });
 		const kinds = new Set(hero.particles.map((p) => p.kind));
 		expect(kinds.has('flame')).toBe(true);
-		expect(kinds.has('ember')).toBe(true);
 		expect(kinds.has('spark')).toBe(false);
+		expect(kinds.has('star')).toBe(false);
+	});
+
+	it('nothing rises: seen from above, the pieces only drift back (no lift)', () => {
+		// (the shared Hero lifts a piece by `liftFor`, 0.8 if a hero gives none)
+		class Lift extends PacmanHero {
+			lift(): number {
+				return this.liftFor?.() ?? 0.8;
+			}
+		}
+		class MsLift extends MsPacmanHero {
+			lift(): number {
+				return this.liftFor?.() ?? 0.8;
+			}
+		}
+		expect(new Lift().lift()).toBe(0);
+		expect(new MsLift().lift()).toBe(0);
 	});
 
 	it('dies down after he stops', () => {
@@ -165,7 +181,7 @@ describe('the rolling ball', () => {
 		expect(hero.particles.length).toBeGreaterThan(mid);
 	});
 
-	it('is Pac-Man fire while he rolls, her hearts and twinkles', () => {
+	it('is Pac-Man fire while he rolls, her ice crystals', () => {
 		const pac = rolled(false);
 		run(pac, { x: 100, y: 0 }, { x: 5, y: 0 }, 0.6, { season: 'winter' });
 		const fire = new Set(pac.particles.filter((p) => p.hot).map((p) => p.kind));
@@ -175,9 +191,8 @@ describe('the rolling ball', () => {
 		const ms = rolled(true);
 		run(ms, { x: 100, y: 0 }, { x: 5, y: 0 }, 0.6, { season: 'winter' });
 		const kinds = new Set(ms.particles.map((p) => p.kind));
-		expect(kinds.has('heart')).toBe(true);
-		expect(kinds.has('star')).toBe(true);
-		expect(kinds.has('flake')).toBe(false);
+		expect(kinds.has('flake')).toBe(true);
+		expect(kinds.has('heart')).toBe(false);
 	});
 
 	it('sheds more while it rolls than while he runs', () => {
@@ -252,26 +267,19 @@ describe('the trail paint (the element language, no beads)', () => {
 		}
 	}
 
-	it.each([false, true])('embers glow, with one comet streak only for Ms. Pac-Man: %s', (ms) => {
-		const rec = record();
-		const hero = ms ? new MsProbe() : new SunProbe();
-		hero.paint(rec.ctx, piece('ember', true), 1, 3);
-		expect(rec.strokes()).toBe(ms ? 1 : 0);
-		expect(rec.images()).toBeGreaterThan(0);
+	it('his embers are round glowing coals: no strokes, no star points', () => {
+		for (const kind of ['ember', 'flame'] as const) {
+			const rec = record();
+			new SunProbe().paint(rec.ctx, { ...piece(kind, true), ang: 0, len: 6 }, 1, 3);
+			expect(rec.strokes()).toBe(0);
+			expect(rec.points).toHaveLength(0);
+		}
 	});
 
-	it('his glints are thin four-point flares, not stubby stars', () => {
+	it('her ice crystals are small hexagonal plates without an ink outline', () => {
 		const rec = record();
-		new SunProbe().paint(rec.ctx, piece('spark'), 1, 3);
-		const radii = rec.points.map(([x, y]) => Math.hypot(x, y));
-		expect(radii).toHaveLength(8);
-		expect(Math.max(...radii) / Math.min(...radii)).toBeGreaterThanOrEqual(8);
-	});
-
-	it('her stars are soft twinkles without an ink outline', () => {
-		const rec = record();
-		new MsProbe().paint(rec.ctx, piece('star'), 1, 3);
+		new MsProbe().paint(rec.ctx, piece('flake'), 1, 3);
 		expect(rec.strokes()).toBe(0);
-		expect(rec.images()).toBeGreaterThan(0);
+		expect(rec.points).toHaveLength(6);
 	});
 });

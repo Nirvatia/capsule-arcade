@@ -1,7 +1,7 @@
-// Prototype: the heroes' mad experiment. Pac-Man a real sun (`sun.ts`, three coronas from one ring
-// of fire), Ms. Pac-Man a white comet (`comet.ts`, three looks), each beside the game's hero as it
-// is (`сейчас`). First screen: the contact sheet, rows the candidates, columns the moments (rest,
-// run, a turn, a bite, the rage, the game's 1:1 scale) on the real season corridor (`MeadowWorld`).
+// Prototype: the heroes as the game draws them: Pac-Man the sun with the pinwheel corona, Ms.
+// Pac-Man the white comet with the ice bow (the owner's picks). First screen: the contact sheet,
+// rows the heroes, columns the moments (rest, run, a turn, a bite, the rage, the game's 1:1
+// scale) on the real season corridor (`MeadowWorld`).
 // "Живое": the hero runs a route through the real maze, with a x4 magnifier.
 // Every switch is a button; for scripts the same choices work as a query:
 // ?mode=sheet|live &who=both|pac|ms &season=… &zoom=2|3|4 &v=<id> &rage=0|1 &speed=1|0.25
@@ -9,13 +9,11 @@ import { GRID_01 } from '../../../src/games/pacman/config/mazes';
 import { GAME_FEEL } from '../../../src/games/pacman/render/actors/HeroView';
 import type { Hero } from '../../../src/games/pacman/render/actors/hero/Hero';
 import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
-import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
+import { CORONA_REACH as REACH, PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import { Bar } from '../common/ui';
-import { CometMs } from './comet';
-import { REACH, SunHero } from './sun';
 
 type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 interface Cand {
@@ -29,14 +27,8 @@ const mk = (h: Hero): Hero => {
 	return h;
 };
 const CANDS: readonly Cand[] = [
-	{ id: 'pac-now', name: 'Pac-Man сейчас', ms: false, make: () => mk(new PacmanHero()) },
-	{ id: 'pac-ring', name: 'A кольцо пламени', ms: false, make: () => mk(new SunHero('ring')) },
-	{ id: 'pac-emblem', name: 'B эмблема солнца', ms: false, make: () => mk(new SunHero('emblem')) },
-	{ id: 'pac-pinwheel', name: 'C вертушка', ms: false, make: () => mk(new SunHero('pinwheel')) },
-	{ id: 'ms-now', name: 'Ms. сейчас', ms: true, make: () => mk(new MsPacmanHero()) },
-	{ id: 'ms-classic', name: 'A бант, родинка, серьга', ms: true, make: () => mk(new CometMs('classic')) },
-	{ id: 'ms-crystal', name: 'B ледяной бант, блик, локон', ms: true, make: () => mk(new CometMs('crystal')) },
-	{ id: 'ms-ribbon', name: 'C хвосты из банта', ms: true, make: () => mk(new CometMs('ribbon')) }
+	{ id: 'pac', name: 'Pac-Man: солнце', ms: false, make: () => mk(new PacmanHero()) },
+	{ id: 'ms', name: 'Ms. Pac-Man: комета', ms: true, make: () => mk(new MsPacmanHero()) }
 ];
 
 const view = document.getElementById('view') as HTMLCanvasElement;
@@ -53,7 +45,7 @@ const bar = new Bar(
 		{ key: 'rage', label: 'энерджайзер', options: [{ id: '0', label: 'нет' }, { id: '1', label: 'да' }] },
 		{ key: 'speed', label: 'скорость', options: [{ id: '1', label: '1×' }, { id: '0.25', label: '¼×' }] }
 	],
-	{ mode: 'sheet', who: 'both', season: 'summer', zoom: '3', v: 'pac-ring', rage: '0', speed: '1' },
+	{ mode: 'sheet', who: 'both', season: 'summer', zoom: '3', v: 'pac', rage: '0', speed: '1' },
 	() => {
 		dirty = true;
 		liveHero = null;
@@ -398,7 +390,7 @@ requestAnimationFrame(frame);
 		out[st] = Number(reach.toFixed(3));
 	}
 	// the comet's tails across the run: a real run, everything drawn
-	if (c.ms && c.id !== 'ms-now') {
+	if (c.ms) {
 		const h = c.make();
 		h.setRadius(R);
 		let across = 0;

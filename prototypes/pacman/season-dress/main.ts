@@ -1,10 +1,10 @@
-// Prototype: the seasons as holiday scenes (`scenes.ts`) on the real `MeadowWorld`, beside the game's
-// seasons as they are. First screen: a split view, the game's season on the left, the new scene on
-// the right, the same board under both. "Целиком" shows one; "лист" is the season's contact sheet
-// (rows: now and the concepts; columns: day, night, a cabin x3, the landmark x3, a wall corner x4).
-// Every switch is a button; for scripts the same choices work as a query:
-// ?mode=split|full|sheet &season=… &spring=hanami|easter &summer=beach|fair &v=now|new
-// &layers=floor,shadow,dress,props,live &night=0|1 &storm=0|1 &t=<s>
+// Prototype: the seasons' holiday scenes as the game draws them (`render/seasons/<season>/*Scene.ts`,
+// the owner's picks: autumn Halloween, winter New Year, spring hanami, summer fair), on the real
+// `MeadowWorld`. First screen: a split view, the season without its scene (left) and with it
+// (right), on the same board with heroes, season ghosts and food. "Целиком" shows one; "лист" is
+// the season's contact sheet (day, night, a cabin x3, the landmark x3, a wall corner x4).
+// The walls' guard (`guard.mjs`) runs `window.__guard(season)`.
+// Query (for scripts): ?mode=split|full|sheet &season=… &v=with|without &night=0|1 &storm=0|1 &t=<s>
 import { GRID_01 } from '../../../src/games/pacman/config/mazes';
 import { GAME_FEEL } from '../../../src/games/pacman/render/actors/HeroView';
 import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
@@ -13,110 +13,56 @@ import { SEASON_GHOST, drawCuteGhost } from '../../../src/games/pacman/render/ac
 import { T, bakeMeadow } from '../../../src/games/pacman/render/seasons/meadow/MeadowBake';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
-import { paintWalls } from '../../../src/games/pacman/render/seasons/meadow/meadowBakeWalls';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import { Bar } from '../common/ui';
-import { onWalls } from './common';
-import { SCENES, sceneCell, sceneOf } from './scenes';
-import type { Lit, Scene, Season } from './scenes';
+
+type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const q = new URLSearchParams(location.search);
 const FROZEN = q.has('t') ? Number(q.get('t')) : null;
-const LAYERS = ['floor', 'shadow', 'dress', 'props', 'live'] as const;
-type Layer = (typeof LAYERS)[number];
 
 const bar = new Bar(
 	[
-		{ key: 'mode', label: 'вид', options: [{ id: 'split', label: 'сейчас | новое' }, { id: 'full', label: 'целиком' }, { id: 'sheet', label: 'лист сезона' }] },
-		{ key: 'season', label: 'сезон', options: [{ id: 'autumn', label: 'осень' }, { id: 'winter', label: 'зима' }, { id: 'spring', label: 'весна' }, { id: 'summer', label: 'лето' }] },
-		{ key: 'spring', label: 'весна', options: [{ id: 'hanami', label: 'A ханами ★' }, { id: 'easter', label: 'B Пасха' }] },
-		{ key: 'summer', label: 'лето', options: [{ id: 'fair', label: 'B ярмарка ★' }, { id: 'beach', label: 'A пляж' }] },
-		{ key: 'v', label: 'целиком', options: [{ id: 'new', label: 'новое' }, { id: 'now', label: 'сейчас' }] },
-		{
-			key: 'layers',
-			label: 'слои',
-			multi: true,
-			options: [
-				{ id: 'floor', label: 'пол' },
-				{ id: 'shadow', label: 'тени' },
-				{ id: 'dress', label: 'стены' },
-				{ id: 'props', label: 'антураж' },
-				{ id: 'live', label: 'живое' }
-			]
-		},
+		{ key: 'mode', label: 'вид', options: [{ id: 'split', label: 'без сцены | со сценой' }, { id: 'full', label: 'целиком' }, { id: 'sheet', label: 'лист сезона' }] },
+		{ key: 'season', label: 'сезон', options: [{ id: 'autumn', label: 'осень: Хэллоуин' }, { id: 'winter', label: 'зима: Новый год' }, { id: 'spring', label: 'весна: ханами' }, { id: 'summer', label: 'лето: ярмарка' }] },
+		{ key: 'v', label: 'целиком', options: [{ id: 'with', label: 'со сценой' }, { id: 'without', label: 'без сцены' }] },
 		{ key: 'night', label: 'время', options: [{ id: '0', label: 'день' }, { id: '1', label: 'ночь' }] },
 		{ key: 'storm', label: 'погода', options: [{ id: '0', label: 'тихо' }, { id: '1', label: 'непогода' }] }
 	],
-	{ mode: 'split', season: 'autumn', spring: 'hanami', summer: 'fair', v: 'new', layers: LAYERS.join(','), night: '0', storm: '0' },
+	{ mode: 'split', season: 'autumn', v: 'with', night: '0', storm: '0' },
 	() => {
 		dirty = true;
 	}
 );
 
-type Layers = Record<Layer, boolean>;
-const layersNow = (): Layers => Object.fromEntries(LAYERS.map((l) => [l, bar.has('layers', l)])) as Layers;
-const ALL: Layers = { floor: true, shadow: true, dress: true, props: true, live: true };
-
-/** The game's theme with a scene laid over it, layer by layer. The walls' painter runs unchanged. */
-function sceneTheme(base: MeadowTheme, sc: Scene, L: Layers, lit: Lit): MeadowTheme {
-	const bk = base.bake;
-	const tone = sc.floor;
-	return {
-		...base,
-		bake: {
-			...bk,
-			...(L.props ? sc.bake : {}),
-			floor:
-				L.floor && tone
-					? { ...bk.floor, tiles: [tone.base, tone.base, tone.base], paint: (f, cell) => sceneCell(sc, f, cell, L.shadow) }
-					: bk.floor,
-			landmark: {
-				...bk.landmark,
-				draw: (k, o) => {
-					bk.landmark.draw(k, o);
-					if (L.props) sc.landmark?.(k, o, lit, o.x < 0 ? 0 : 1);
-				}
-			},
-			wall: {
-				...bk.wall,
-				paint: (f) => {
-					// the theme's own painter (winter's) or the shared one, untouched
-					if (bk.wall.paint) bk.wall.paint(f);
-					else paintWalls(f, L.shadow ? { shadow: [9, 3, 4] } : {});
-					if (L.dress && sc.wallDress) onWalls(f, (r) => sc.wallDress?.(f, r));
-					if (L.props) sc.props?.(f, lit);
-				}
-			}
-		}
-	};
+/** The game's theme of a season, with its scene or without it (the rest the same). */
+function themeOf(season: Season, withScene: boolean): MeadowTheme {
+	const base = meadowThemeFor(season) as MeadowTheme;
+	return withScene ? base : { ...base, bake: { ...base.bake, scene: undefined } };
 }
 
 interface Built {
 	world: MeadowWorld;
-	sc: Scene | null;
-	lit: Lit;
 	season: Season;
 }
 const cache = new Map<string, Built>();
-function built(season: Season, sc: Scene | null, L: Layers, vw: number, vh: number): Built {
-	const k = `${season}|${sc?.id ?? 'now'}|${LAYERS.filter((l) => L[l]).join(',')}|${vw}x${vh}`;
+function built(season: Season, withScene: boolean, vw: number, vh: number): Built {
+	const k = `${season}|${withScene}|${vw}x${vh}`;
 	let b = cache.get(k);
 	if (b) return b;
-	const base = meadowThemeFor(season) as MeadowTheme;
-	const lit: Lit = { bulbs: new Map(), glows: new Map() };
-	const world = new MeadowWorld(GRID_01, sc ? sceneTheme(base, sc, L, lit) : base);
+	const world = new MeadowWorld(GRID_01, themeOf(season, withScene));
 	world.resize(vw, vh, D);
 	world.setLairGate(0);
-	b = { world, sc, lit, season };
+	b = { world, season };
 	cache.set(k, b);
 	return b;
 }
 
 const season = () => bar.get('season') as Season;
-const scene = (s: Season = season()) => sceneOf(s, s === 'spring' ? bar.get('spring') : s === 'summer' ? bar.get('summer') : s);
+const NAMES: Record<Season, string> = { autumn: 'осень: Хэллоуин', winter: 'зима: Новый год', spring: 'весна: ханами', summer: 'лето: ярмарка' };
 
 // heroes and ghosts on the board, to see that the dress never hides them
 const pac = new PacmanHero();
@@ -131,14 +77,12 @@ let simT = 0;
 let last = -1;
 
 /** One frame of a built world into `c` at the time `t` (its mood eased to night/storm). */
-function frameOf(c: CanvasRenderingContext2D, b: Built, t: number, L: Layers, night: number, storm: number): void {
+function frameOf(c: CanvasRenderingContext2D, b: Built, t: number, night: number, storm: number): void {
 	const w = b.world;
 	w.setMood(storm, night);
 	w.drawWorld(c);
 	w.drawMood(c);
 	const lay = w.layout;
-	const k = lay.tileSize / T;
-	if (b.sc && L.live && L.props) b.sc.live?.(c, t, { ox: lay.offsetX, oy: lay.offsetY, k, night, storm, vw, vh, grid: GRID_01, lit: b.lit });
 	w.drawFood(c, () => false);
 	const S = lay.tileSize;
 	const at = (tx: number, ty: number) => ({ x: lay.offsetX + tx * S, y: lay.offsetY + ty * S });
@@ -184,13 +128,12 @@ function live(now: number): void {
 	last = now;
 	simT += dt;
 	const t = FROZEN ?? simT;
-	const L = layersNow();
 	const night = Number(bar.get('night'));
 	const storm = Number(bar.get('storm'));
 	const s = season();
 	const mode = bar.get('mode');
-	const nowB = built(s, null, ALL, vw, vh);
-	const newB = built(s, scene(s), L, vw, vh);
+	const nowB = built(s, false, vw, vh);
+	const newB = built(s, true, vw, vh);
 	for (const b of [nowB, newB]) {
 		b.world.setMood(storm, night);
 		b.world.update(dt || 1 / 60);
@@ -203,8 +146,8 @@ function live(now: number): void {
 	ctx.fillStyle = '#000';
 	ctx.fillRect(0, 0, vw, vh);
 	if (mode === 'full') {
-		frameOf(ctx, bar.get('v') === 'now' ? nowB : newB, t, L, night, storm);
-		label(bar.get('v') === 'now' ? `сейчас: ${s}` : `новое: ${scene(s).name}`, 12, bar.height + 22);
+		frameOf(ctx, bar.get('v') === 'without' ? nowB : newB, t, night, storm);
+		label(bar.get('v') === 'without' ? `без сцены: ${s}` : NAMES[s], 12, bar.height + 22);
 	} else {
 		const mid = vw / 2;
 		for (const [b, x0, x1] of [
@@ -215,13 +158,13 @@ function live(now: number): void {
 			ctx.beginPath();
 			ctx.rect(x0, 0, x1 - x0, vh);
 			ctx.clip();
-			frameOf(ctx, b, t, L, night, storm);
+			frameOf(ctx, b, t, night, storm);
 			ctx.restore();
 		}
 		ctx.fillStyle = 'rgba(255,255,255,.85)';
 		ctx.fillRect(mid - 1, 0, 2, vh);
-		label('← сейчас', mid - 12, bar.height + 22, 14, 'right');
-		label(`новое: ${scene(s).name} →`, mid + 12, bar.height + 22, 14);
+		label('← без сцены', mid - 12, bar.height + 22, 14, 'right');
+		label(`${NAMES[s]} →`, mid + 12, bar.height + 22, 14);
 	}
 	bar.setNote(night ? 'ночь: свет окон, фонарей и гирлянд живой (дышит медленнее 1 раза в секунду)' : '');
 }
@@ -230,7 +173,10 @@ function live(now: number): void {
 
 function sheet(): void {
 	const s = season();
-	const rows: Array<{ name: string; sc: Scene | null }> = [{ name: 'сейчас', sc: null }, ...SCENES.filter((x) => x.season === s).map((x) => ({ name: x.name, sc: x }))];
+	const rows: Array<{ name: string; sc: boolean }> = [
+		{ name: 'без сцены', sc: false },
+		{ name: NAMES[s], sc: true }
+	];
 	const top = bar.height + 24;
 	const left = 130;
 	const cols = ['день', 'ночь', 'домик ×3', 'ориентир ×3', 'угол стены ×4'];
@@ -245,7 +191,7 @@ function sheet(): void {
 	cols.forEach((n, i) => label(n, left + i * cw + cw / 2, top - 8, 12, 'center'));
 	rows.forEach((row, j) => {
 		label(row.name, 8, top + j * ch + ch / 2, 12);
-		const b = built(s, row.sc, ALL, FW, FH);
+		const b = built(s, row.sc, FW, FH);
 		const lay = b.world.layout;
 		const k = lay.tileSize / T;
 		const frames = [0, 1].map((night) => {
@@ -255,7 +201,7 @@ function sheet(): void {
 			cv.height = FH * D;
 			const g = cv.getContext('2d') as CanvasRenderingContext2D;
 			g.setTransform(D, 0, 0, D, 0, 0);
-			frameOf(g, b, 3.3, ALL, night, 0);
+			frameOf(g, b, 3.3, night, 0);
 			return cv;
 		});
 		settle(b, 0, 0);
@@ -288,7 +234,7 @@ function sheet(): void {
 			ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
 		});
 	});
-	bar.setNote('ряды: сейчас и концепты; колонки: день, ночь, домик (день), ориентир (ночь), угол лабиринта');
+	bar.setNote('ряды: без сцены и со сценой; колонки: день, ночь, домик (день), ориентир (ночь), угол лабиринта');
 }
 
 function frame(now: number): void {
@@ -324,9 +270,10 @@ requestAnimationFrame(frame);
  *  - wallsChanged: pixels inside the silhouette (2 px in from its edge) that differ between the
  *    scene with its dress off and the game's season as it is: the walls are not repainted (0).
  */
-(window as unknown as Record<string, unknown>).__guard = (id: string) => {
-	const sc = SCENES.find((x) => x.id === id) as Scene;
-	const base = meadowThemeFor(sc.season) as MeadowTheme;
+(window as unknown as Record<string, unknown>).__guard = (id: Season) => {
+	const base = meadowThemeFor(id) as MeadowTheme;
+	const sc = base.bake.scene;
+	const strip = (scene: MeadowTheme['bake']['scene']): MeadowTheme => ({ ...base, bake: { ...base.bake, scene } });
 	const R = GRID_01.length;
 	const C = GRID_01[0].length;
 	const RS = 3;
@@ -338,10 +285,10 @@ requestAnimationFrame(frame);
 		const cv = bakeMeadow(GRID_01, th.bake, x0, y0, w, h, RS);
 		return (cv.getContext('2d') as CanvasRenderingContext2D).getImageData(0, 0, cv.width, cv.height).data;
 	};
-	const lit = (): Lit => ({ bulbs: new Map(), glows: new Map() });
-	const off = bake(sceneTheme(base, sc, { ...ALL, dress: false }, lit()));
-	const on = bake(sceneTheme(base, sc, ALL, lit()));
-	const now = bake(base);
+	// dress off: the scene without its wall pass; on: the game's; bare: no scene at all
+	const off = bake(strip(sc ? { ...sc, wallDress: undefined } : undefined));
+	const on = bake(base);
+	const now = bake(strip(undefined));
 	const W = Math.ceil(w * RS);
 	const H = Math.ceil(h * RS);
 	// the silhouette, the same shape `paintWalls` fills under the stones

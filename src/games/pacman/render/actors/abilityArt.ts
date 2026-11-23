@@ -9,7 +9,7 @@
 //   cold blue with arcs crawling round it, a shake at the end and a puff of smoke on release.
 import { drawCuteGhost } from './cuteGhost';
 import type { CuteShape, Palette } from './cuteGhost';
-import { drawPearlBow } from './hero/MsPacmanHero';
+import { drawIceBow } from './hero/MsPacmanHero';
 import type { HeroSeason } from './hero/heroSeasons';
 
 type Ctx = CanvasRenderingContext2D;
@@ -319,11 +319,11 @@ function paintForm(c: Ctx, f: GhostForm, S: number): void {
 		palette: OWN[f.ms ? 'ms' : 'pac'].body
 	});
 	if (f.ms) {
-		// her pearl bow on the ghost's head, tipped the way she wears it
+		// her ice bow on the ghost's head, tipped the way she wears it
 		c.save();
 		c.translate(-S * 0.2, -S * 0.36);
 		c.rotate(-0.45);
-		drawPearlBow(c, S * 0.39, f.time, 0);
+		drawIceBow(c, S * 0.39, 0);
 		c.restore();
 	}
 }

@@ -70,9 +70,6 @@ class SunProbe extends PacmanHero {
 	aura(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		this.drawAura(ctx, R, p);
 	}
-	behind(ctx: CanvasRenderingContext2D, R: number, k: number): void {
-		this.drawBehind(ctx, R, k);
-	}
 }
 
 class MsProbe extends MsPacmanHero {
@@ -98,19 +95,18 @@ function raging(): SunProbe {
 }
 
 describe('the contained rage', () => {
-	it('keeps the corona within the tile even at full power on the run', () => {
+	it('keeps the corona and its glow within 1.45 radii even at full power on the run', () => {
 		const rec = record();
 		raging().aura(rec.ctx, 10, 1);
-		// the 1.45 radii cap plus the solar wind's shear on the side rays
+		// the outline is capped 0.045 radii inside the reach (its ink), the glow ends at it
 		const max = reach(rec.tips);
-		expect(max).toBeLessThanOrEqual(15.5);
+		expect(max).toBeLessThanOrEqual(14.5 + 1e-9);
 		expect(max).toBeGreaterThan(13);
 	});
 
-	it('keeps the flare between the rays short', () => {
-		const rec = record();
-		raging().behind(rec.ctx, 10, 1);
-		expect(reach(rec.points)).toBeLessThanOrEqual(13);
+	it('has no flickering flare in the rage: the arches erupt instead', () => {
+		const sun = raging() as unknown as { drawBehind?: unknown };
+		expect(sun.drawBehind).toBeUndefined();
 	});
 });
 

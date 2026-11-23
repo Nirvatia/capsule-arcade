@@ -39,42 +39,24 @@ last (see Later).
 
 ## Part I. The main game
 
-1. **Season scenes: a full setting per season, in code** (the current focus; one season per
-   chat, prototype first). Today a season is one shared meadow recoloured, with a single
-   landmark and per-tile random stickers on the walls; the owner wants each season to read as a
-   distinct place — its own wall material and structure, its own dressed background and props —
-   not a hue shift. Plan and per-season themes are agreed with the owner before code.
-   Rules that hold (kept from the dropped winter rounds and the owner's brief):
-   - top-down only, no pseudo-height; the maze silhouette, the corridor width, the food and the
-     heroes' readability unchanged; graphics never fight the gameplay;
-   - the accepted season base (background, ground, pellets, palette) stays the foundation;
-   - decor sits on a surface, moves little, is composed (edge/aware), not sprinkled noise; every
-     important thing reads at one tile;
-   - the static is baked into `MeadowBake`; no new full-screen passes (settled season: High 3,
-     Medium 1, Low 1).
-     Decided with the owner: start with **winter (New Year)**; spring and summer **dress the same
-     meadow** (keep the accepted base, change the wall material and the props into a full setting,
-     not a new layout). Order: winter, autumn (Halloween), then spring, summer.
-     Winter brief (the candidate to prototype first): snow-capped stone walls with the cap on the
-     lit top/left edge and a faint ice sheen (directional, not random drifts); a snowfield ground
-     and a frozen stream/pond with an ice sheen and a snow rim; composed snow piles at wall bases
-     on the downwind side instead of sprinkled specks; the snowman landmark kept and joined by a
-     small decorated New Year tree; warm window light and a string of lights on the cabins/bridge;
-     falling snow kept. All static baked.
-     Done in the game (owner's pick from the `season-winter` prototype, 2026-11-18): the walls —
-     same stone, seams and moss, the snow lies on the lit top/left rim of the silhouette, full
-     caps on lone blocks, base drifts on the lee side, never across the face; a deeper soft drop
-     shadow under the blocks; the corridor floor — one flat slate, no per-tile shade steps, with
-     quiet frost (an ice streak along the run, a rare frozen puddle, frost specks at wall bases);
-     the lair — a frozen crust, a step lighter than the corridor, sheen and thin cracks; the
-     energizer — a Christmas bauble (the snowman stays the meadow landmark). Mechanism: opt-in
-     hooks with the shared painters as fallback — `MeadowBakeTheme.wall.paint` (whole painter),
-     `.floor.paint` and `.lair.paint` (per cell) — other seasons render byte-identical; the
-     default-preserving rule from the brief is kept in code and tested (`meadowBake.test.ts`).
-     Left from the brief: the decorated New Year tree by the snowman, warm window light and the
-     string of lights on the cabins/bridge. Corridor floors were "untouched" in the brief; the
-     owner asked for a winter floor of their own — flat and quiet, nothing that reads at a
-     glance while playing.
+1. **Season scenes: the owner's refinements** (the current focus). The holiday scenes are in the
+   game (the owner's picks of the `season-dress` prototype, 2026-11-23; `DESIGN.md` §6):
+   autumn Halloween, winter New Year, spring hanami, summer fair, on the accepted season base
+   (winter's walls, floor, lair and bauble untouched; autumn, spring and summer share the opaque
+   one-tone corridor with a contact shadow and grass at the walls' feet). The owner will send a
+   list of refinements and wants a separate mock-up with them first (prototype, then the game).
+   Rules that hold: top-down only, no pseudo-height; the maze silhouette, the corridor width, the
+   food and the heroes' readability unchanged; decor sits on a surface, composed, bold details
+   not sprinkled noise; the static is baked into `MeadowBake` (the scene's hooks), no new
+   full-screen passes (settled season: High 3, Medium 1, Low 1), the live bits small sprites,
+   nothing flashing faster than 3 times a second; the walls' stone and rounded corners are never
+   repainted: a wall dress is a pass clipped to their silhouette and must pass the pixel guard
+   (`node prototypes/pacman/season-dress/guard.mjs` after building the page). Open from the
+   port: the night lights of the scenes are steady (the prototype's slow twinkle of the bulbs was
+   dropped to keep them in the world's night lights); the bridge and the top cabin are off a
+   16:9 screen; nobody has measured the scenes' cost on real hardware. To add a season later
+   (two are planned): `HeroSeason` / `SEASON_LOOKS`, `SEASON_GHOST`, the `meadowThemes` registry,
+   a `render/seasons/<season>/` theme and scene, `SeasonCatalog`'s modifiers, the food sprites.
 2. **Abilities: sound and tuning.** Mechanics and art are in (`AbilityService`, `DESIGN.md` §5).
    Left: sounds of their own for the token, a spent ability and a refused press (now borrowed
    wavs); hand-play whether 5 s mask / 3 s shock / 6-tile reach feel "modest but worth it"
@@ -82,7 +64,8 @@ last (see Later).
    beside Clyde at game scale.
 3. **The heroes: the rage bite and a cornering bot.** Left: the ghost's crunch and the chain
    200-1600 rising with the rage; a balance bot that presses turns early so its numbers show the
-   cornering. Kept: no tongue; Ms. Pac-Man's bow, ball and rage as the owner likes them.
+   cornering. Kept: no tongue; the heroes' looks are the owner's picks of `hero-art` (2026-11-23): Pac-Man the
+   sun with the pinwheel corona, Ms. Pac-Man the white comet with the ice bow (`DESIGN.md` §12).
 4. **Mobile: on a real phone.** Swipes/pad/dial/tap/audio-unlock are in and checked in Chromium
    iPhone emulation. Left on real hardware: iOS Safari audio unlock and pinch, swipe threshold
    and pad size under a thumb, notched safe areas, the Auto graphics tier there.
@@ -92,8 +75,11 @@ last (see Later).
 
 ## Part II. Boss levels
 
-1. **The hell: polish and what is left.** The fight is in the game. Left: the hell's music track
-   (the owner brings it) and a balance/polish pass of the whole fight. Start from the `hell` and
+1. **The hell: polish and what is left.** The fight is in the game; the boss's dash is the lava
+   ball (the owner's pick of `hell-dash`, 2026-11-23). Left: the hell's music track (the owner
+   brings it) and a balance/polish pass of the whole fight; whether the dash wants a warning
+   stripe along its line (the turn into the ball now ends the telegraph, the line shows only by
+   his eyes). Start from the `hell` and
    `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks, no height or
    extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
    heartbeat (~2.5 s); the teleport is the iron gateway; night stays `cord`.

@@ -1,14 +1,22 @@
-// Props for the season scenes, every one seen strictly from above (roofs, crowns, the tops of
-// things, a shadow cast to the lower right since the key light is upper left), in world units
-// (one tile = T = 24). Static painters draw into the bake; a few of them also return where their
-// light is, so the live layer can make it glow at night and breathe slowly.
-import { T } from '../../../src/games/pacman/render/seasons/meadow/MeadowBake';
+// The props of the season scenes (`seasonScene`), every one seen strictly from above (roofs,
+// crowns, the tops of things, a shadow cast to the lower right since the key light is upper
+// left), in world units (one tile = 24). They draw into the bake; the strings of lights return
+// their bulbs so the world can light them at night.
 
 export const TAU = Math.PI * 2;
 export type C2 = CanvasRenderingContext2D;
 
 /** A soft shadow on the ground, offset to the lower right (light from the upper left). */
-export function shadow(b: C2, x: number, y: number, rx: number, ry: number, a = 0.32, dx = 0.18, dy = 0.24): void {
+export function shadow(
+	b: C2,
+	x: number,
+	y: number,
+	rx: number,
+	ry: number,
+	a = 0.32,
+	dx = 0.18,
+	dy = 0.24
+): void {
 	const cx = x + rx * dx;
 	const cy = y + ry * dy;
 	const g = b.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry) * 1.15);
@@ -50,9 +58,25 @@ const ball = (b: C2, x: number, y: number, r: number, c0: string, c1: string): v
  * A pumpkin from above: ribbed lobes round a stem. Carved (`lit`): the lid's cut ring glows and
  * the light leaks out onto the ground on the side the face looks to (`face`, radians).
  */
-export function pumpkin(b: C2, x: number, y: number, r: number, lit: boolean, rot: number, face = 0.6): void {
+export function pumpkin(
+	b: C2,
+	x: number,
+	y: number,
+	r: number,
+	lit: boolean,
+	rot: number,
+	face = 0.6
+): void {
 	shadow(b, x, y, r * 1.05, r * 0.95, 0.35);
-	if (lit) lightPool(b, x + Math.cos(face) * r * 1.3, y + Math.sin(face) * r * 1.3, r * 2.6, '255,150,40', 0.28);
+	if (lit)
+		lightPool(
+			b,
+			x + Math.cos(face) * r * 1.3,
+			y + Math.sin(face) * r * 1.3,
+			r * 2.6,
+			'255,150,40',
+			0.28
+		);
 	const N = 8;
 	for (let i = 0; i < N; i += 1) {
 		const a = rot + (i / N) * TAU;
@@ -82,7 +106,14 @@ export function pumpkin(b: C2, x: number, y: number, r: number, lit: boolean, ro
 		b.stroke();
 	}
 	// light from the upper left on the top
-	const hl = b.createRadialGradient(x - r * 0.35, y - r * 0.4, 0, x - r * 0.35, y - r * 0.4, r * 0.7);
+	const hl = b.createRadialGradient(
+		x - r * 0.35,
+		y - r * 0.4,
+		0,
+		x - r * 0.35,
+		y - r * 0.4,
+		r * 0.7
+	);
 	hl.addColorStop(0, 'rgba(255,214,140,.45)');
 	hl.addColorStop(1, 'rgba(255,214,140,0)');
 	b.fillStyle = hl;
@@ -136,7 +167,14 @@ export function candle(b: C2, x: number, y: number, r: number): void {
  * A standing headstone from above: its narrow top (a rounded slab), the long shadow it throws to
  * the lower right; or a flat ledger stone with a cross cut into it.
  */
-export function headstone(b: C2, x: number, y: number, w: number, rot: number, flat: boolean): void {
+export function headstone(
+	b: C2,
+	x: number,
+	y: number,
+	w: number,
+	rot: number,
+	flat: boolean
+): void {
 	b.save();
 	b.translate(x, y);
 	b.rotate(rot);
@@ -221,7 +259,15 @@ export function grassGhost(b: C2, x: number, y: number, s: number, rot: number):
  * A fan of cobweb from a corner hub (`hx`, `hy`) between angles a0..a1: spokes, and sagging
  * threads between them. Muted (it must not read as snow or a light artefact at the corner).
  */
-export function web(b: C2, hx: number, hy: number, r: number, a0: number, a1: number, col = 'rgba(196,190,214,.55)'): void {
+export function web(
+	b: C2,
+	hx: number,
+	hy: number,
+	r: number,
+	a0: number,
+	a1: number,
+	col = 'rgba(196,190,214,.55)'
+): void {
 	const n = 5;
 	b.save();
 	b.strokeStyle = col;
@@ -288,7 +334,15 @@ export function spider(b: C2, x: number, y: number, s: number, rot: number): voi
 }
 
 /** A bat's silhouette (for its shadow, live): wings out, scalloped trailing edge. */
-export function bat(b: C2, x: number, y: number, s: number, rot: number, flap: number, col: string): void {
+export function bat(
+	b: C2,
+	x: number,
+	y: number,
+	s: number,
+	rot: number,
+	flap: number,
+	col: string
+): void {
 	b.save();
 	b.translate(x, y);
 	b.rotate(rot);
@@ -322,7 +376,13 @@ const BULBS = ['255,214,120', '255,90,80', '120,220,140', '120,170,255', '255,24
  * A string of lights along `pts` (world units): a dark wire and a bulb every `gap`. The bulbs are
  * returned so the live layer can light them (slowly, out of step).
  */
-export function lights(b: C2, pts: ReadonlyArray<readonly [number, number]>, gap: number, seed: number, warm = false): Bulb[] {
+export function lights(
+	b: C2,
+	pts: ReadonlyArray<readonly [number, number]>,
+	gap: number,
+	seed: number,
+	warm = false
+): Bulb[] {
 	const out: Bulb[] = [];
 	b.save();
 	b.strokeStyle = 'rgba(24,30,22,.8)';
@@ -340,7 +400,9 @@ export function lights(b: C2, pts: ReadonlyArray<readonly [number, number]>, gap
 			const f = acc / L;
 			const x = x0 + (x1 - x0) * f;
 			const y = y0 + (y1 - y0) * f;
-			const rgb = warm ? BULBS[n % 2 === 0 ? 0 : 4] : BULBS[(((n + seed) % BULBS.length) + BULBS.length) % BULBS.length];
+			const rgb = warm
+				? BULBS[n % 2 === 0 ? 0 : 4]
+				: BULBS[(((n + seed) % BULBS.length) + BULBS.length) % BULBS.length];
 			b.fillStyle = `rgb(${rgb})`;
 			b.beginPath();
 			b.arc(x, y, 1.15, 0, TAU);
@@ -360,7 +422,17 @@ export function lights(b: C2, pts: ReadonlyArray<readonly [number, number]>, gap
 }
 
 /** Warm window light spilling on the ground beside a wall of a house (from above: a soft trapezoid). */
-export function windowSpill(b: C2, x: number, y: number, w: number, len: number, dirX: number, dirY: number, rgb = '255,196,110', a = 0.42): void {
+export function windowSpill(
+	b: C2,
+	x: number,
+	y: number,
+	w: number,
+	len: number,
+	dirX: number,
+	dirY: number,
+	rgb = '255,196,110',
+	a = 0.42
+): void {
 	b.save();
 	b.translate(x, y);
 	b.rotate(Math.atan2(dirY, dirX));
@@ -415,7 +487,15 @@ export function newYearTree(b: C2, x: number, y: number, r: number): Bulb[] {
 			if (Math.cos(a - 3.9) < 0.1) continue;
 			b.fillStyle = 'rgba(240,246,255,.85)';
 			b.beginPath();
-			b.ellipse(x + Math.cos(a) * R0 * 0.88, y + Math.sin(a) * R0 * 0.88, R0 * 0.09, R0 * 0.05, a, 0, TAU);
+			b.ellipse(
+				x + Math.cos(a) * R0 * 0.88,
+				y + Math.sin(a) * R0 * 0.88,
+				R0 * 0.09,
+				R0 * 0.05,
+				a,
+				0,
+				TAU
+			);
 			b.fill();
 		}
 	}
@@ -465,7 +545,16 @@ export function newYearTree(b: C2, x: number, y: number, r: number): Bulb[] {
 }
 
 /** A wrapped present from above: the box's lid, a ribbon cross, a bow at the knot. */
-export function gift(b: C2, x: number, y: number, w: number, h: number, rot: number, box: string, ribbon: string): void {
+export function gift(
+	b: C2,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	rot: number,
+	box: string,
+	ribbon: string
+): void {
 	b.save();
 	b.translate(x, y);
 	b.rotate(rot);
@@ -511,7 +600,16 @@ export function paperLantern(b: C2, x: number, y: number, r: number, col: string
 }
 
 /** A blanket with a check from above, slightly turned, with a soft edge shadow. */
-export function blanket(b: C2, x: number, y: number, w: number, h: number, rot: number, c0: string, c1: string): void {
+export function blanket(
+	b: C2,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	rot: number,
+	c0: string,
+	c1: string
+): void {
 	b.save();
 	b.translate(x, y);
 	b.rotate(rot);
@@ -526,136 +624,6 @@ export function blanket(b: C2, x: number, y: number, w: number, h: number, rot: 
 	for (let j = 0; j * s < h; j += 2) b.fillRect(-w / 2, -h / 2 + j * s, w, s);
 	b.globalAlpha = 1;
 	b.restore();
-}
-
-/** An egg lying on its side, from above: an oval with bands and dots. */
-export function egg(b: C2, x: number, y: number, s: number, rot: number, base: string, band: string): void {
-	b.save();
-	b.translate(x, y);
-	b.rotate(rot);
-	b.fillStyle = 'rgba(10,8,12,.25)';
-	b.beginPath();
-	b.ellipse(s * 0.2, s * 0.25, s * 0.7, s * 0.5, 0, 0, TAU);
-	b.fill();
-	b.fillStyle = base;
-	b.beginPath();
-	b.ellipse(0, 0, s * 0.7, s * 0.5, 0, 0, TAU);
-	b.fill();
-	b.save();
-	b.clip();
-	b.fillStyle = band;
-	b.fillRect(-s * 0.12, -s, s * 0.24, s * 2);
-	b.fillRect(-s * 0.46, -s, s * 0.08, s * 2);
-	b.fillRect(s * 0.38, -s, s * 0.08, s * 2);
-	b.fillStyle = 'rgba(255,255,255,.4)';
-	b.beginPath();
-	b.ellipse(-s * 0.25, -s * 0.2, s * 0.22, s * 0.1, 0, 0, TAU);
-	b.fill();
-	b.restore();
-	b.restore();
-}
-
-/** A nest of twigs from above, a ring of strokes round a hollow. */
-export function nest(b: C2, x: number, y: number, r: number): void {
-	shadow(b, x, y, r, r * 0.9, 0.3);
-	b.fillStyle = '#5a3e22';
-	b.beginPath();
-	b.arc(x, y, r, 0, TAU);
-	b.fill();
-	b.fillStyle = '#3a2614';
-	b.beginPath();
-	b.arc(x, y, r * 0.6, 0, TAU);
-	b.fill();
-	b.strokeStyle = '#8a6a40';
-	b.lineWidth = 0.7;
-	for (let i = 0; i < 26; i += 1) {
-		const a = i * 0.9;
-		const rr = r * (0.65 + 0.3 * ((i * 0.37) % 1));
-		b.beginPath();
-		b.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
-		b.lineTo(x + Math.cos(a + 0.7) * rr * 1.05, y + Math.sin(a + 0.7) * rr * 1.05);
-		b.stroke();
-	}
-}
-
-// ----------------------------------------------------------------------------- summer
-
-/** A beach umbrella from above: a disc of coloured gores, a finial, its shadow beside it. */
-export function umbrella(b: C2, x: number, y: number, r: number, c0: string, c1: string): void {
-	shadow(b, x + r * 0.5, y + r * 0.6, r, r * 0.9, 0.3, 0, 0);
-	const n = 8;
-	for (let i = 0; i < n; i += 1) {
-		const a0 = (i / n) * TAU;
-		const a1 = ((i + 1) / n) * TAU;
-		b.fillStyle = i % 2 ? c0 : c1;
-		b.beginPath();
-		b.moveTo(x, y);
-		b.lineTo(x + Math.cos(a0) * r, y + Math.sin(a0) * r);
-		b.quadraticCurveTo(x + Math.cos((a0 + a1) / 2) * r * 0.9, y + Math.sin((a0 + a1) / 2) * r * 0.9, x + Math.cos(a1) * r, y + Math.sin(a1) * r);
-		b.closePath();
-		b.fill();
-	}
-	const g = b.createRadialGradient(x - r * 0.4, y - r * 0.4, 0, x, y, r);
-	g.addColorStop(0, 'rgba(255,255,255,.3)');
-	g.addColorStop(1, 'rgba(0,0,0,.15)');
-	b.fillStyle = g;
-	b.beginPath();
-	b.arc(x, y, r, 0, TAU);
-	b.fill();
-	ball(b, x, y, r * 0.09, '#ffffff', '#b0a090');
-}
-
-/** A sandcastle from above: a square keep with four round towers, crenellated, on a sand apron. */
-export function sandcastle(b: C2, x: number, y: number, s: number): void {
-	b.fillStyle = '#d8bf86';
-	b.beginPath();
-	b.ellipse(x, y, s * 1.2, s * 1.1, 0, 0, TAU);
-	b.fill();
-	b.fillStyle = 'rgba(80,60,30,.35)';
-	b.fillRect(x - s * 0.45 + 2, y - s * 0.45 + 2.5, s * 0.9, s * 0.9);
-	b.fillStyle = '#e6cf98';
-	b.fillRect(x - s * 0.45, y - s * 0.45, s * 0.9, s * 0.9);
-	b.strokeStyle = '#a88a52';
-	b.lineWidth = 0.8;
-	b.strokeRect(x - s * 0.3, y - s * 0.3, s * 0.6, s * 0.6);
-	for (const [dx, dy] of [
-		[-1, -1],
-		[1, -1],
-		[1, 1],
-		[-1, 1]
-	]) {
-		ball(b, x + dx * s * 0.48, y + dy * s * 0.48, s * 0.22, '#f4e2b4', '#b8995e');
-		b.strokeStyle = '#a88a52';
-		b.beginPath();
-		b.arc(x + dx * s * 0.48, y + dy * s * 0.48, s * 0.12, 0, TAU);
-		b.stroke();
-	}
-	// a little flag on the keep
-	b.fillStyle = '#e04848';
-	b.beginPath();
-	b.moveTo(x, y);
-	b.lineTo(x + s * 0.3, y - s * 0.08);
-	b.lineTo(x, y - s * 0.16);
-	b.closePath();
-	b.fill();
-}
-
-/** A swim ring from above. */
-export function swimRing(b: C2, x: number, y: number, r: number, c0: string): void {
-	shadow(b, x, y, r, r, 0.25);
-	b.lineWidth = r * 0.5;
-	const n = 8;
-	for (let i = 0; i < n; i += 1) {
-		b.strokeStyle = i % 2 ? c0 : '#ffffff';
-		b.beginPath();
-		b.arc(x, y, r * 0.72, (i / n) * TAU, ((i + 1) / n) * TAU);
-		b.stroke();
-	}
-	b.strokeStyle = 'rgba(255,255,255,.45)';
-	b.lineWidth = r * 0.1;
-	b.beginPath();
-	b.arc(x, y, r * 0.72, 3.6, 4.6);
-	b.stroke();
 }
 
 /** A tent from above: a square roof of stripes meeting at the peak, a pennant on the pole. */
@@ -729,5 +697,3 @@ export function balloons(b: C2, x: number, y: number, s: number, seed: number): 
 	}
 	for (const [px, py, i] of pts) ball(b, px, py, s * 0.36, cols[i][0], cols[i][1]);
 }
-
-export { T };

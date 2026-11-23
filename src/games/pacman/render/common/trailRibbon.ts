@@ -1,18 +1,18 @@
-// The dash's trail as pure functions: nothing here draws, nothing keeps state, so the shape can
-// be tested and two frames at the same time always look the same.
+// Trails as pure functions (the hell boss's lava track, the comet's tails): nothing here draws,
+// nothing keeps state, so the shape can be tested and two frames at the same time look the same.
 //
-// The trail is the boss's recent positions (`Sample`: where he was, when, and how strongly his
-// transformed body was shedding there, `emit` 0..1). `ribbon` turns them into a centreline with a
-// half-width and an alpha at every point. The rule the owner set: no tail, trail or track may end
+// A trail is an actor's recent positions (`Sample`: where it was, when, and how strongly it was
+// shedding there, `emit` 0..1). `ribbon` turns them into a centreline with a half-width and an
+// alpha at every point. The rule the owner set: no tail, trail or track may end
 // in a cut. So every factor that shapes the ribbon goes to zero smoothly:
 //   - age: a point lives `life` seconds and fades with `1 - smoothstep(age / life)`; the last
 //     point is interpolated at exactly `age = life`, so the old end is always 0;
 //   - both ends in space: `smoothstep` over `capHead` px from the newest shedding point and over
 //     `capTail` px from the oldest one, so a dash that has just begun or has just stopped tapers
 //     at both ends instead of ending in a square edge;
-//   - emission: a body that is not transformed sheds nothing (`emit` 0), and the transformation
-//     takes 0.25 s, so the shedding fades in and out with it.
-// After the boss stops, the points keep ageing, so the trail goes on fading by itself.
+//   - emission: what does not shed (the boss's body before its 0.25 s turn into the ball, a hero
+//     standing still) lays points with `emit` 0, so the shedding fades in and out with it.
+// After the actor stops, the points keep ageing, so the trail goes on fading by itself.
 
 export interface Sample {
 	readonly x: number;
@@ -70,7 +70,12 @@ export function ageFade(age: number, life: number, bias = 1): number {
  * strongest emission. Returns [] when nothing is left to draw; otherwise the first and last
  * points have `w = 0` and `a = 0`.
  */
-export function ribbon(samples: readonly Sample[], now: number, spec: TrailSpec, merge = 0.75): RibbonPoint[] {
+export function ribbon(
+	samples: readonly Sample[],
+	now: number,
+	spec: TrailSpec,
+	merge = 0.75
+): RibbonPoint[] {
 	const live = samples.filter((s) => s.t <= now).sort((p, q) => q.t - p.t);
 	if (live.length < 2) return [];
 	// cut at exactly age = life, interpolating the end point
@@ -86,7 +91,12 @@ export function ribbon(samples: readonly Sample[], now: number, spec: TrailSpec,
 			const p = live[i - 1];
 			const pa = now - p.t;
 			const k = (spec.life - pa) / (age - pa);
-			pts.push({ x: p.x + (s.x - p.x) * k, y: p.y + (s.y - p.y) * k, t: now - spec.life, emit: p.emit + (s.emit - p.emit) * k });
+			pts.push({
+				x: p.x + (s.x - p.x) * k,
+				y: p.y + (s.y - p.y) * k,
+				t: now - spec.life,
+				emit: p.emit + (s.emit - p.emit) * k
+			});
 		}
 		break;
 	}
@@ -129,13 +139,27 @@ export function ribbon(samples: readonly Sample[], now: number, spec: TrailSpec,
 		const env = ageFade(age, spec.life, spec.ageBias ?? 1);
 		const cap = smoothstep(0, spec.capHead, arc[i]) * smoothstep(0, spec.capTail, total - arc[i]);
 		const k = s.emit * env * cap;
-		out.push({ x: s.x, y: s.y, nx: -dy, ny: dx, w: spec.width * k, a: Math.min(1, s.emit * env) * cap, age, u: arc[i] / total });
+		out.push({
+			x: s.x,
+			y: s.y,
+			nx: -dy,
+			ny: dx,
+			w: spec.width * k,
+			a: Math.min(1, s.emit * env) * cap,
+			age,
+			u: arc[i] / total
+		});
 	}
 	return out;
 }
 
 /** The boss's positions on a fixed time grid (so a sample keeps its birth time frame to frame). */
-export function sampleGrid(now: number, window: number, step: number, at: (t: number) => { x: number; y: number; emit: number }): Sample[] {
+export function sampleGrid(
+	now: number,
+	window: number,
+	step: number,
+	at: (t: number) => { x: number; y: number; emit: number }
+): Sample[] {
 	const out: Sample[] = [];
 	const t1 = Math.floor(now / step) * step;
 	// the newest sample is now itself, so the head follows the body exactly
@@ -173,7 +197,22 @@ export interface Mote {
  * motes with seeded velocities (`speed` px/s, slowing with `drag`/s). Their alpha rises over the
  * first 10 % of life and falls to 0 at its end, so none pops in or out. Pure.
  */
-export function motes(samples: readonly Sample[], now: number, opt: { life: number; per: number; speed: number; drag: number; spread: number; seed: number; step: number; every: number; back?: number; across?: number }): Mote[] {
+export function motes(
+	samples: readonly Sample[],
+	now: number,
+	opt: {
+		life: number;
+		per: number;
+		speed: number;
+		drag: number;
+		spread: number;
+		seed: number;
+		step: number;
+		every: number;
+		back?: number;
+		across?: number;
+	}
+): Mote[] {
 	const out: Mote[] = [];
 	const sorted = [...samples].sort((p, q) => q.t - p.t);
 	for (let i = 0; i < sorted.length - 1; i += 1) {
@@ -190,7 +229,9 @@ export function motes(samples: readonly Sample[], now: number, opt: { life: numb
 			const life = opt.life * (0.55 + 0.45 * hash(seed, 1));
 			if (age > life) continue;
 			const k = age / life;
-			const ang = (moving ? heading + Math.PI : hash(seed, 2) * Math.PI * 2) + (hash(seed, 3) - 0.5) * 2 * opt.spread;
+			const ang =
+				(moving ? heading + Math.PI : hash(seed, 2) * Math.PI * 2) +
+				(hash(seed, 3) - 0.5) * 2 * opt.spread;
 			const v = opt.speed * (0.4 + 0.6 * hash(seed, 4));
 			// distance with exponential drag: v (1 - e^(-d t)) / d
 			const d = opt.drag > 0 ? (v * (1 - Math.exp(-opt.drag * age))) / opt.drag : v * age;

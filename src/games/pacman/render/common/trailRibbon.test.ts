@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ageFade, motes, ribbon, sampleGrid } from './trail';
-import type { RibbonPoint, TrailSpec } from './trail';
+import { ageFade, motes, ribbon, sampleGrid } from './trailRibbon';
+import type { RibbonPoint, TrailSpec } from './trailRibbon';
 
 // a dash like the prototype's: 0.5 s crouch with the transformation's last 0.25 s, a straight run
 // of `tiles` tiles at 9.6 tiles/s, then the return into the body over 0.28 s, then standing still
@@ -68,7 +68,11 @@ describe('the dash trail never ends in a cut', () => {
 			prev = widest;
 		}
 		// the return into the body ends at +0.28 s; its last shed point dies life s later
-		const gone = ribbon(sampleGrid(d.end + 0.28 + SPEC.life + 0.02, 3, 1 / 60, d.at), d.end + 0.28 + SPEC.life + 0.02, SPEC);
+		const gone = ribbon(
+			sampleGrid(d.end + 0.28 + SPEC.life + 0.02, 3, 1 / 60, d.at),
+			d.end + 0.28 + SPEC.life + 0.02,
+			SPEC
+		);
 		expect(gone).toEqual([]);
 	});
 
@@ -93,7 +97,16 @@ describe('the dash trail never ends in a cut', () => {
 
 	it('motes fade in and out: alpha 0 at birth and at the end of life', () => {
 		const d = dash(10);
-		const opt = { life: 0.8, per: 3, speed: 40, drag: 2, spread: 0.6, seed: 1, step: 1 / 60, every: 2 };
+		const opt = {
+			life: 0.8,
+			per: 3,
+			speed: 40,
+			drag: 2,
+			spread: 0.6,
+			seed: 1,
+			step: 1 / 60,
+			every: 2
+		};
 		for (let now = d.start; now < d.end + 1.2; now += 1 / 60) {
 			for (const m of motes(sampleGrid(now, 2, 1 / 60, d.at), now, opt)) {
 				expect(m.a).toBeGreaterThanOrEqual(0);

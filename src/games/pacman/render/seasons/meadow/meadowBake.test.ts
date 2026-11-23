@@ -3,6 +3,9 @@ import type { GridMatrix } from '../../../config/gridConfig';
 import { bakeMeadow, MEADOW_TILE } from './MeadowBake';
 import type { MeadowBakeTheme } from './MeadowTheme';
 import { winterTheme } from '../winter/winterTheme';
+import { autumnTheme } from '../autumn/autumnTheme';
+import { springTheme } from '../spring/springTheme';
+import { summerTheme } from '../summer/summerTheme';
 
 /** A 2D context that only remembers fillRects, with the style they were drawn in. */
 class FakeContext {
@@ -98,7 +101,8 @@ function themed(over: {
 	lair?: MeadowBakeTheme['lair']['paint'];
 	wall?: MeadowBakeTheme['wall']['paint'];
 }): MeadowBakeTheme {
-	const base = winterTheme.bake;
+	// (the holiday scene is left out: these tests are about the paint hooks)
+	const base = { ...winterTheme.bake, scene: undefined };
 	return {
 		...base,
 		wall: { ...base.wall, paint: over.wall },
@@ -153,9 +157,28 @@ describe('MeadowBake theme paint hooks', () => {
 		expect(b.fills.some((d) => d.style === WALL_MARK)).toBe(false);
 	});
 
-	it('winter opts into all three hooks (the other seasons do not)', () => {
+	it('winter opts into all three hooks; the other seasons into the floor only', () => {
 		expect(winterTheme.bake.floor.paint).toBeTypeOf('function');
 		expect(winterTheme.bake.lair.paint).toBeTypeOf('function');
 		expect(winterTheme.bake.wall.paint).toBeTypeOf('function');
+		for (const theme of [autumnTheme, springTheme, summerTheme]) {
+			expect(theme.bake.floor.paint).toBeTypeOf('function');
+			// the walls stay the shared painter, untouched (the scene's dress is a pass of its own)
+			expect(theme.bake.wall.paint).toBeUndefined();
+			expect(theme.bake.lair.paint).toBeUndefined();
+			// the wall painter lays tiles[0] under the rounded corners: it is the corridor's tone
+			expect(new Set(theme.bake.floor.tiles).size).toBe(1);
+		}
+	});
+
+	it('every season carries its holiday scene', () => {
+		for (const theme of [autumnTheme, winterTheme, springTheme, summerTheme]) {
+			expect(theme.bake.scene).toBeDefined();
+		}
+		// the scenes with something on the walls: Halloween (cobwebs), the hanami (petals), the fair (bunting)
+		expect(autumnTheme.bake.scene?.wallDress).toBeTypeOf('function');
+		expect(springTheme.bake.scene?.wallDress).toBeTypeOf('function');
+		expect(summerTheme.bake.scene?.wallDress).toBeTypeOf('function');
+		expect(winterTheme.bake.scene?.wallDress).toBeUndefined();
 	});
 });

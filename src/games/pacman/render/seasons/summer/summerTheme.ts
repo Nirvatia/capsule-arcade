@@ -3,6 +3,7 @@
 // the owner's reviews: white pebbles for pellets and starfish for energizers on a
 // warm dark sand, a faint heat haze and a lighter night, so the food reads at a glance.
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
+import { summerFloor, fairScene } from './summerScene';
 import {
 	glowTexture,
 	lazy,
@@ -78,8 +79,12 @@ export const summerTheme: MeadowTheme = {
 		// muted (owner's review): the ghosts and the Easter egg must read on the lair floor
 		lair: { base: '#4e3a22', tiles: ['#7a603c', '#735a37', '#806642'] },
 		// warm dark sand (owner's reviews; the mock-up's was #dcbd84): the food must pop
+		// the holiday scene's corridor (the owner's pick of `season-dress`): one opaque tone, a
+		// contact shadow and grass at the walls' feet; the tiles are that tone, as the wall
+		// painter lays `tiles[0]` under the rounded corners
 		floor: {
-			tiles: ['#8d6b40', '#87663b', '#937045'],
+			tiles: ['#a68b58', '#a68b58', '#a68b58'],
+			paint: summerFloor,
 			specks: ['#9e7c4e', '#6e5030', '#a6845a']
 		},
 		portal: {
@@ -113,6 +118,7 @@ export const summerTheme: MeadowTheme = {
 			plainDots: ['rgba(214,255,140,.7)', 'rgba(20,70,25,.45)'],
 			drifts: 'rgba(30,80,30,.25)'
 		},
+		scene: fairScene,
 		landmark: {
 			ex: [2.4, 2.2],
 			// a striped beach umbrella
