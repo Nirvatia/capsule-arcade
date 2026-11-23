@@ -4,16 +4,17 @@
 // to lamp, one each side of the maze, two by the picnic blanket; fallen petals on the walls'
 // tops (deep pink, off the outer corners: a light speck there reads as a white corner). The
 // lanterns glow at night.
-import { gardenProps, plasterWalls } from './gardenDress';
 import type { MeadowFrame } from '../meadow/MeadowBake';
 import { blanket, paperLantern } from '../meadow/sceneProps';
-import type { SeasonScene } from '../meadow/seasonScene';
-import { TAU, addLight, hash, nearCorner, rng, spot } from '../meadow/seasonScene';
+import type { FloorTone, SeasonScene } from '../meadow/seasonScene';
+import { TAU, addLight, hash, nearCorner, rng, sceneFloor, spot } from '../meadow/seasonScene';
 import { WORLD_TILE } from '../../common/worldDecor';
 
 const T = WORLD_TILE;
+const SPRING_TONE: FloorTone = { base: '#7b5a3d', grain: ['#a47e55', '#4d3623'], ao: 0.32 };
 
 /** The corridor: one opaque tone, a contact shadow, grass at the walls' feet. */
+export const springFloor = sceneFloor(SPRING_TONE, null);
 
 /** Trees near the maze that show (the meadow's strips and the bands above and below it). */
 const nearTrees = (f: MeadowFrame) =>
@@ -24,8 +25,6 @@ const nearTrees = (f: MeadowFrame) =>
 
 export const hanamiScene: SeasonScene = {
 	wallDress(f, r) {
-		// garden walls: dark roof tiles round the edge, cream plaster over the top (`gardenDress`)
-		plasterWalls(f);
 		// fallen petals on the walls' tops: a few, pink, lying flat
 		for (let row = 0; row < f.R; row += 1) {
 			for (let c = 0; c < f.C; c += 1) {
@@ -55,7 +54,6 @@ export const hanamiScene: SeasonScene = {
 		}
 	},
 	props(f, lit) {
-		gardenProps(f, lit);
 		const b = f.b;
 		const r = rng(12);
 		const trees = nearTrees(f);

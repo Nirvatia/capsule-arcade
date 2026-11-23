@@ -1,8 +1,9 @@
 // Spring, from the owner's CLAUDE_GRID_SPRING mock-up: fresh green meadow, cherry trees,
 // picnic blankets, yellow button pellets and cherry-blossom energizers, a petal-laden wind, a soft night.
+import { springRoof, cloverPatch } from '../meadow/seasonDetails';
+import { stoneWell } from '../meadow/burrows';
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
-import { hanamiScene } from './springScene';
-import { GRAVEL, gardenFloor, gardenLair, pebbleFoot } from './gardenDress';
+import { springFloor, hanamiScene } from './springScene';
 import {
 	glowTexture,
 	lazy,
@@ -13,6 +14,7 @@ import {
 } from '../meadow/meadowSprites';
 import { temari, springPellet } from '../meadow/seasonFood';
 import { paintWalls } from '../meadow/meadowBakeWalls';
+import { greenFoot } from '../meadow/wallFlora';
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 
 const PETALS = [0xffc2d9, 0xffffff, 0xffdde8, 0xf7a8c4];
@@ -69,6 +71,7 @@ export const springTheme: MeadowTheme = {
 		},
 		bridge: { caps: '#8fd05a', middle: 'rgba(255,190,215,.8)' },
 		cabin: {
+			roofDress: springRoof,
 			walls: ['#bb6851', '#a65240', '#87423b', '#6a342f'],
 			roofBlobs: 'rgba(255,190,215,.3)',
 			ridge: '#6a3a2a',
@@ -77,17 +80,17 @@ export const springTheme: MeadowTheme = {
 		},
 		rock: ['#b8b8a8', '#6a6a5a', '#7fbf4a', '#9fd46a'],
 		// muted (owner's review): the ghosts and the Easter egg must read on the lair floor
-		// a Japanese garden (the owner's pick, 2026-11-23): a wooden deck for the lair
-		lair: { base: '#5a4430', tiles: ['#6e5438', '#685034', '#73583b'], paint: gardenLair },
+		lair: { base: '#2e3424', tiles: ['#5a6446', '#535d40', '#606a4c'] },
 		// the holiday scene's corridor (the owner's pick of `season-dress`): one opaque tone, a
 		// contact shadow and grass at the walls' feet; the tiles are that tone, as the wall
 		// painter lays `tiles[0]` under the rounded corners
 		floor: {
-			tiles: [GRAVEL, GRAVEL, GRAVEL],
-			paint: gardenFloor,
+			tiles: ['#7b5a3d', '#7b5a3d', '#7b5a3d'],
+			paint: springFloor,
 			specks: ['#6e5846', '#3a2c20', '#7a6452']
 		},
 		portal: {
+			burrow: stoneWell,
 			trail: (a) => `rgba(60,45,30,${a * 0.55})`,
 			grass: ['#5faa3a', '#86c94f', '#b8e07a'],
 			plate: ['#d8d6c0', '#8f8c70'],
@@ -95,22 +98,29 @@ export const springTheme: MeadowTheme = {
 			ring: '#fff3a0',
 			corners: '#fffbe0'
 		},
-		// the garden walls' stone under the plaster dress; river pebbles along their feet
+		// young moss along the walls' feet, under the stones (`wallFlora`)
+		// spring's walls: the shared stone in light sandstone, young moss in the joints (the
+		// owner's pick, 2026-11-23: so that spring never reads as summer)
 		wall: {
-			paint: (f) => paintWalls(f, { foot: pebbleFoot }),
-			base: '#4a4640',
-			moss: ['#6a665e', '#55514a'],
-			top: ['#8a867c', '#8e8a80', '#86827a'],
-			bottom: ['#615d56', '#66625a', '#5c5852'],
+			paint: (f) =>
+				paintWalls(f, {
+					foot: (g) =>
+						greenFoot(g, 'rgba(46,84,30,.45)', ['#5f9a3a', '#7fb84a', '#4d8230', '#8cc456'], 61)
+				}),
+			base: '#7a6044',
+			moss: ['#cdb184', '#b8996a'],
+			top: ['#dcc49a', '#e2caa0', '#d6bd92'],
+			bottom: ['#b89a6c', '#be9f72', '#b29466'],
 			mossSpecks: ['#ffc2d9', '#f58fb5', '#ffffff'],
-			specks: ['rgba(190,230,130,.3)', 'rgba(15,50,20,.32)'],
-			crack: 'rgba(15,50,20,.28)',
-			joints: 'rgba(15,50,20,.2)',
-			drifts: ['#9a968c', '#a29e94'],
-			light: 'rgba(210,240,160,.35)',
-			dark: 'rgba(10,40,15,.4)',
+			specks: ['rgba(255,245,220,.3)', 'rgba(90,70,40,.25)'],
+			crack: 'rgba(90,70,40,.25)',
+			// young moss in the joints
+			joints: 'rgba(92,140,58,.55)',
+			drifts: ['#e8d4ac', '#cfb488'],
+			light: 'rgba(255,245,220,.35)',
+			dark: 'rgba(80,58,30,.35)',
 			flowers: ['#ffffff', '#ffc2d9', '#f58fb5'],
-			shadow: 'rgba(30,36,24,.5)'
+			shadow: 'rgba(50,40,20,.45)'
 		},
 		edgeGrass: ['#5faa3a', '#86c94f', '#b8e07a'],
 		trees: {
@@ -120,7 +130,7 @@ export const springTheme: MeadowTheme = {
 			accentDots: ['rgba(255,255,255,.85)', 'rgba(150,50,90,.5)'],
 			plainDots: ['rgba(255,255,255,.9)', 'rgba(170,80,110,.4)'],
 			drifts: 'rgba(255,200,220,.5)',
-			// the garden's trees: sakura in bloom, Japanese maples in fresh green
+			// sakura in bloom and maples in fresh green
 			crown: {
 				accent: {
 					kind: 'broad',
@@ -132,20 +142,9 @@ export const springTheme: MeadowTheme = {
 			}
 		},
 		// clipped azaleas in flower (karikomi)
-		shrub: {
-			kind: 'round',
-			leaves: ['#7fb85a', '#4f8a3a', '#2f5a26'],
-			twig: '#4a3a2c',
-			flowers: ['#f25a9a', '#ff8ab8', '#ffffff']
-		},
 		// the cabins as homes (the owner's review: a cozy background)
-		homestead: {
-			path: '#8a9a6a',
-			pathEdge: '#6a7a50',
-			stones: '#9a978e',
-			fence: '#b8a65a',
-			wood: '#7a5a3a'
-		},
+		homestead: { wood: '#7a5a3a' },
+		rockSpot: cloverPatch,
 		scene: hanamiScene,
 		landmark: {
 			ex: [2.4, 2.2],

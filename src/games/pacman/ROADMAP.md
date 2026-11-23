@@ -40,38 +40,22 @@ last (see Later).
 ## Part I. The main game
 
 1. **Season scenes: the owner's refinements** (the current focus; his answers of 2026-11-23 to
-   the season questionnaire). Done, in review: spring as a Japanese garden (plaster walls with a
-   tile edge, raked gravel, a deck lair, pebbles, toro lanterns, koi, temari, a soft petal wind), the tunnel pads (no worn
-   path: a trodden patch fading into the meadow, a rune ring), winter's roofs under one snow cover, the meadow's trees and shrubs
-   per season (`meadow/flora.ts`), the cabins as homes (paths, fences, benches, woodpiles, path
-   lamps; `meadow/homestead.ts`) and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
-   the shared base (snow blanket, thin bank, trodden-snow corridor, tile lair, icicles, the new
-   bauble, a blizzard without a white veil, fresh snow piling up while it blows), the food of every season, autumn's wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
-   ground pools and a storm that never brightens the night (`DESIGN.md` §6). Left, one chat:
-   The owner's review of that pass (2026-11-23) and his decisions, to do next:
-   - **Spring**: the Japanese garden is rejected (other walls, the whole maze glares). Revert
-     `e63845a` (plaster, gravel, deck, pebbles, toro, koi) and give spring the shared stone in
-     light sandstone tones (young moss in the joints), the corridor earth as before; it must not
-     read as summer by colour alone. Keep the temari.
-   - **Winter**: keep the contour round the walls (the bank's shade line) but draw it only along
-     the straight runs, fading out ~8 units before every rounded corner: it makes the corners look
-     sharp.
-   - **Summer**: the ivy plus the bunting on the walls is a mess and the ivy hurts readability.
-     The bunting leaves the maze's frame for festoons between the tents on the meadow; the ivy
-     gives way to Jumanji-like lianas and roots: few, thick, curving stems with big leaves gripping
-     the walls' edges and corners, never a mat over the top.
-   - **Cabins**: remove the paths and the fences (`meadow/homestead.ts`); the bench, the woodpile
-     and the lamps stay (the lamps by the door, not along a path).
-   - **Tunnel pads**: a pad of each season's own, a "burrow" the hero dives into, under the same
-     live ripple: winter an ice hole, autumn a hollow stump, spring a stone well, summer a
-     whirlpool in the sand. The trodden patch without a path stays. (The rune ring is hidden under
-     the live pad and goes.)
-   - **No sticker patches**: the translucent ellipses on the cabins' roofs and the meadow's patches
-     become seasonal: roofs with real fallen leaves and moss in the tile joints (autumn), handfuls
-     of petals (spring), clean sun-faded tiles (summer); the meadow with leaf piles (autumn),
-     clover and dandelions (spring), dry grass patches (summer).
-   - The chimney smoke a little clearer.
-   - The pumpkin and the starfish stay as they are (the owner: not in the plans).
+   the season questionnaire). Done, in review: winter on the shared base (snow blanket, thin
+   bank, trodden-snow corridor, tile lair, icicles, the new bauble, a blizzard without a white
+   veil, fresh snow piling up while it blows, roofs under one snow cover); autumn's wet ground
+   (puddles, sheen, reflections, a careful downpour with leaves, no mist); spring (temari, a soft
+   petal wind with pollen); summer (a slower carousel, heat haze with poplar fluff); the food of
+   every season; the night lights as ground pools and a storm that never brightens the night;
+   the tunnel pads without worn paths; the meadow's trees and shrubs per season
+   (`meadow/flora.ts`); the cabins as homes (`meadow/homestead.ts`) (`DESIGN.md` §6). Then, after the owner's
+   review of that pass (2026-11-23), also in review: the Japanese garden
+   reverted, spring on the shared stone in light sandstone with moss in the joints; winter's
+   snow to the arc on the roundings (the contour on the straight runs only); summer's lianas
+   instead of the ivy and its pennants on the meadow's festoons; the cabins' paths and fences
+   removed (bench, woodpile, a lamp by the door); a burrow pad per season under a small
+   translucent ripple; seasonal roofs and meadow details instead of the sticker patches; a fuller
+   chimney smoke. The pumpkin and the starfish stay as they are (the owner). Next: the owner's
+   review of this pass.
 
    Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
    heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the

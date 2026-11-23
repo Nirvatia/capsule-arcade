@@ -366,7 +366,7 @@ function paintMazeFloor(f: MeadowFrame): void {
 
 	// the tunnel pads (the owner's pick, 2026-11-23): no worn path; the corridor's tone runs out
 	// past the pad as a trodden patch that fades into the meadow with a ragged edge in the
-	// season's colours, and the pad is a stone ring with carved runes round its dark heart
+	// season's colours, and the pad is the season's burrow (a stone ring with runes without one)
 	const tone = P.floor.tiles[0];
 	for (const [x, y, c] of TP) {
 		const dir = c < C / 2 ? -1 : 1;
@@ -392,6 +392,11 @@ function paintMazeFloor(f: MeadowFrame): void {
 			blob(tx, ty, rr(1.4, 2.6), rr(0.9, 1.6), pick(P.portal.grass), rnd() * 3);
 		}
 		blob(px + 1.5, py + 2, 11, 10.5, shade(0.34), 0);
+		if (P.portal.burrow) {
+			// the season's burrow (`burrows`), under the live ripple
+			P.portal.burrow(b, px, py);
+			continue;
+		}
 		// the stone ring
 		b.fillStyle = lin(x, y, x + T, y + T, P.portal.plate[0], P.portal.plate[1]);
 		b.beginPath();

@@ -1,6 +1,8 @@
 // Autumn, from the owner's CLAUDE_GRID_AUTUMN mock-up: golden meadow, maples, hay bales,
 // jack-o'-lantern energizers, amber bead pellets, falling leaves, rain, a grey-violet
 // night.
+import { autumnRoof, leafPile } from '../meadow/seasonDetails';
+import { hollowStump } from '../meadow/burrows';
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
 import { autumnFloor, halloweenScene } from './autumnScene';
 import { autumnWet, leafLitter } from './autumnDress';
@@ -70,6 +72,7 @@ export const autumnTheme: MeadowTheme = {
 		},
 		bridge: { caps: '#e0762a', middle: 'rgba(220,90,30,.8)' },
 		cabin: {
+			roofDress: autumnRoof,
 			walls: ['#bb6851', '#a65240', '#87423b', '#6a342f'],
 			roofBlobs: 'rgba(224,110,30,.5)',
 			ridge: '#6a2f1a',
@@ -88,6 +91,7 @@ export const autumnTheme: MeadowTheme = {
 			specks: ['#5e4634', '#2e2016', '#6b5240']
 		},
 		portal: {
+			burrow: hollowStump,
 			trail: (a) => `rgba(60,42,28,${a * 0.55})`,
 			grass: ['#c9a04a', '#a8762a', '#e0b860'],
 			plate: ['#8a7660', '#4a3a2c'],
@@ -144,7 +148,8 @@ export const autumnTheme: MeadowTheme = {
 			lastLeaves: ['#d26a22', '#e8a030', '#a83c18']
 		},
 		// the cabins as homes (the owner's review: a cozy background)
-		homestead: { path: '#7a6040', pathEdge: '#5e4830', fence: '#5a3c26', wood: '#7a4a28' },
+		homestead: { wood: '#7a4a28' },
+		rockSpot: leafPile,
 		scene: halloweenScene,
 		wet: autumnWet,
 		landmark: {

@@ -1,36 +1,13 @@
-// Plants on the walls and at their feet (the owner's answers, 2026-11-23): creepers that grow
-// over the stone from the top (spring's bindweed with small flowers and young moss, summer's ivy),
-// unevenly (some walls almost covered, some with a shoot or two), and a green band along the walls'
-// feet instead of grass blades. The creepers run inside the walls' silhouette (the scene's wall
-// dress) and stay off the outer corners' curve; the band reaches under 2 units into the corridor.
+// Plants on the walls and at their feet: summer's Jumanji-like lianas along the walls' edges and
+// round their corners (the owner's pick, 2026-11-23), and a band along the walls' feet instead of
+// grass blades (spring's moss, summer's roots). The lianas run inside the walls' silhouette (the
+// scene's wall dress); the band reaches under 2 units into the corridor.
 import type { MeadowFrame } from './MeadowBake';
 import { TAU, hash, nearCorner, rng, wallClip } from './seasonScene';
 import { WORLD_TILE } from '../../common/worldDecor';
 
 const T = WORLD_TILE;
 type C2 = CanvasRenderingContext2D;
-
-export interface CreeperStyle {
-	/** Seed of the growth map: which walls are overgrown. */
-	readonly seed: number;
-	/** Share of the walls the plant reaches, 0..1 (the growth map is shifted by it). */
-	readonly cover: number;
-	readonly stem: string;
-	/** Leaf tones, dark to light. */
-	readonly leaves: readonly string[];
-	/** Leaf size in world units. */
-	readonly leaf: number;
-	/** `ivy`: three-lobed leaves; `heart`: bindweed's heart-shaped ones. */
-	readonly shape: 'ivy' | 'heart';
-	/** Flowers on the stems (bindweed's trumpets), and how many per overgrown tile. */
-	readonly flowers?: {
-		readonly petals: readonly string[];
-		readonly heart: string;
-		readonly rate: number;
-	};
-	/** Soft moss on the stone's edges, under the creepers. */
-	readonly moss?: readonly [string, string];
-}
 
 /** A smooth growth map over the walls, 0..1: value noise on a 4-tile lattice. */
 function growth(seed: number, r: number, c: number): number {
@@ -55,7 +32,7 @@ function leafAt(
 	s: number,
 	rot: number,
 	col: string,
-	shape: CreeperStyle['shape']
+	shape: 'ivy' | 'heart'
 ): void {
 	b.save();
 	b.translate(x, y);
@@ -84,141 +61,6 @@ function leafAt(
 	b.lineTo(0, -s * 0.5);
 	b.stroke();
 	b.restore();
-}
-
-function flowerAt(b: C2, x: number, y: number, s: number, petal: string, heart: string): void {
-	b.fillStyle = 'rgba(30,40,20,.25)';
-	b.beginPath();
-	b.arc(x + 0.4, y + 0.5, s * 1.05, 0, TAU);
-	b.fill();
-	b.fillStyle = petal;
-	b.beginPath();
-	for (let i = 0; i < 5; i += 1) {
-		const a = (i / 5) * TAU;
-		b.moveTo(x + Math.cos(a) * s * 0.55 + s * 0.48, y + Math.sin(a) * s * 0.55);
-		b.arc(x + Math.cos(a) * s * 0.55, y + Math.sin(a) * s * 0.55, s * 0.48, 0, TAU);
-	}
-	b.fill();
-	b.fillStyle = heart;
-	b.beginPath();
-	b.arc(x, y, s * 0.3, 0, TAU);
-	b.fill();
-}
-
-/**
- * Creepers over the walls (call inside the scene's wall dress): the growth map picks how
- * overgrown each wall tile is; overgrown tiles join their overgrown neighbours with a wavy stem
- * and carry leaves (many where the map is high, a few where it is low) and the style's flowers.
- */
-export function creepers(f: MeadowFrame, style: CreeperStyle): void {
-	const { b } = f;
-	const dens = (r: number, c: number) =>
-		f.isW(r, c)
-			? Math.max(0, Math.min(1, (growth(style.seed, r, c) - (1 - style.cover) + 0.15) * 2.2))
-			: 0;
-	const centre = (r: number, c: number, k: () => number): [number, number] => [
-		c * T + T / 2 + (k() - 0.5) * 6,
-		r * T + T / 2 + (k() - 0.5) * 6
-	];
-	// moss first, on the open edges of the overgrown tiles
-	if (style.moss) {
-		for (let r = 0; r < f.R; r += 1) {
-			for (let c = 0; c < f.C; c += 1) {
-				const d = dens(r, c);
-				if (d <= 0.05) continue;
-				const k = rng(hash(r * 13 + c * 59, style.seed + 1) * 1e6);
-				const edges: Array<[number, number, boolean]> = [];
-				if (!f.isW(r - 1, c)) edges.push([c * T + T / 2, r * T + 2.2, true]);
-				if (!f.isW(r + 1, c)) edges.push([c * T + T / 2, (r + 1) * T - 2.2, true]);
-				if (!f.isW(r, c - 1)) edges.push([c * T + 2.2, r * T + T / 2, false]);
-				if (!f.isW(r, c + 1)) edges.push([(c + 1) * T - 2.2, r * T + T / 2, false]);
-				for (const [ex, ey, hz] of edges) {
-					for (let i = 0; i < 3; i += 1) {
-						const mx = ex + (hz ? (k() - 0.5) * (T - 8) : (k() - 0.5) * 2);
-						const my = ey + (hz ? (k() - 0.5) * 2 : (k() - 0.5) * (T - 8));
-						if (nearCorner(f, mx, my, 10)) continue;
-						b.fillStyle = style.moss[i % 2];
-						b.beginPath();
-						b.ellipse(mx, my, hz ? 2.6 + k() * 1.6 : 1.5, hz ? 1.5 : 2.6 + k() * 1.6, 0, 0, TAU);
-						b.fill();
-					}
-				}
-			}
-		}
-	}
-	for (let r = 0; r < f.R; r += 1) {
-		for (let c = 0; c < f.C; c += 1) {
-			const d = dens(r, c);
-			if (d <= 0.05) continue;
-			const k = rng(hash(r * 71 + c * 19, style.seed) * 1e6);
-			const [x, y] = centre(r, c, rng(hash(r * 7 + c * 3, style.seed + 2) * 1e6));
-			// stems to the right and down neighbours that grow too (each joint drawn once)
-			b.strokeStyle = style.stem;
-			b.lineWidth = 0.7;
-			b.lineCap = 'round';
-			const pts: Array<[number, number]> = [[x, y]];
-			for (const [dr, dc] of [
-				[0, 1],
-				[1, 0]
-			] as const) {
-				if (dens(r + dr, c + dc) <= 0.05) continue;
-				const [nx, ny] = centre(
-					r + dr,
-					c + dc,
-					rng(hash((r + dr) * 7 + (c + dc) * 3, style.seed + 2) * 1e6)
-				);
-				const wob = (k() - 0.5) * 8;
-				const qx = (x + nx) / 2 + (dr ? wob : 0);
-				const qy = (y + ny) / 2 + (dc ? wob : 0);
-				b.beginPath();
-				b.moveTo(x, y);
-				b.quadraticCurveTo(qx, qy, nx, ny);
-				b.stroke();
-				for (let i = 1; i < 4; i += 1) {
-					const t = i / 4;
-					pts.push([
-						(1 - t) * (1 - t) * x + 2 * (1 - t) * t * qx + t * t * nx,
-						(1 - t) * (1 - t) * y + 2 * (1 - t) * t * qy + t * t * ny
-					]);
-				}
-			}
-			// a curl of its own where the tile grows alone
-			if (pts.length === 1) {
-				const a = k() * TAU;
-				b.beginPath();
-				b.moveTo(x, y);
-				b.quadraticCurveTo(
-					x + Math.cos(a) * 6,
-					y + Math.sin(a) * 2,
-					x + Math.cos(a + 1) * 7,
-					y + Math.sin(a + 1) * 7
-				);
-				b.stroke();
-				pts.push([x + Math.cos(a + 1) * 5, y + Math.sin(a + 1) * 5]);
-			}
-			// leaves in clusters: a dense mat where the map is high, a few where it is low
-			const n = Math.round(2 + d * 20);
-			for (let i = 0; i < n; i += 1) {
-				const [px, py] = pts[(k() * pts.length) | 0];
-				const lx = px + (k() - 0.5) * (6 + d * 8);
-				const ly = py + (k() - 0.5) * (6 + d * 8);
-				if (nearCorner(f, lx, ly, 10)) continue;
-				const s = style.leaf * (0.8 + k() * 0.45);
-				// a soft shadow under the leaf lifts it off the stone
-				b.fillStyle = 'rgba(20,30,10,.22)';
-				b.beginPath();
-				b.arc(lx + 0.6, ly + 0.8, s * 0.7, 0, TAU);
-				b.fill();
-				leafAt(b, lx, ly, s, k() * TAU, style.leaves[(k() * style.leaves.length) | 0], style.shape);
-			}
-			const fl = style.flowers;
-			if (fl && k() < fl.rate * d) {
-				const [px, py] = pts[(k() * pts.length) | 0];
-				if (!nearCorner(f, px, py, 10))
-					flowerAt(b, px + 1, py - 1, 2.3, fl.petals[(k() * fl.petals.length) | 0], fl.heart);
-			}
-		}
-	}
 }
 
 /**
@@ -267,4 +109,127 @@ export function greenFoot(
 		}
 	}
 	b.restore();
+}
+
+export interface LianaStyle {
+	readonly seed: number;
+	/** Share of the walls the lianas reach, 0..1. */
+	readonly cover: number;
+	readonly stem: string;
+	readonly stemLight: string;
+	readonly leaves: readonly string[];
+	readonly leaf: number;
+}
+
+/**
+ * Jumanji-like lianas (the owner's pick for summer, 2026-11-23): few thick curving stems that
+ * run along the walls' open edges a little inside them and wrap round the rounded corners, big
+ * leaves now and then, a root tendril reaching for the edge. Never a mat over the top: the wall
+ * still reads. Call inside the scene's wall dress.
+ */
+export function lianas(f: MeadowFrame, s: LianaStyle): void {
+	const { b } = f;
+	const inset = 3.4;
+	const on = (r: number, c: number) => f.isW(r, c) && growth(s.seed, r, c) > 1 - s.cover;
+	const wave = (u: number) => 1.5 * Math.sin(u * 0.22 + s.seed);
+	const leaves: Array<[number, number, number]> = [];
+	const stroke = (path: Path2D) => {
+		b.lineCap = 'round';
+		b.lineJoin = 'round';
+		b.strokeStyle = 'rgba(20,30,10,.3)';
+		b.lineWidth = 4.4;
+		b.save();
+		b.translate(0.6, 0.8);
+		b.stroke(path);
+		b.restore();
+		b.strokeStyle = s.stem;
+		b.lineWidth = 3.4;
+		b.stroke(path);
+		b.strokeStyle = s.stemLight;
+		b.lineWidth = 1;
+		b.save();
+		b.translate(-0.7, -0.7);
+		b.stroke(path);
+		b.restore();
+	};
+	const path = new Path2D();
+	for (let r = 0; r < f.R; r += 1) {
+		for (let c = 0; c < f.C; c += 1) {
+			if (!on(r, c)) continue;
+			const oL = !f.isW(r, c - 1);
+			const oU = !f.isW(r - 1, c);
+			const oR = !f.isW(r, c + 1);
+			const oD = !f.isW(r + 1, c);
+			const x = c * T;
+			const y = r * T;
+			// along each open edge, from tile side to tile side (or to the corner's arc)
+			const seg = (hz: boolean, fixed: number, a0: number, a1: number, side: number) => {
+				const n = 8;
+				for (let i = 0; i <= n; i += 1) {
+					const u = a0 + ((a1 - a0) * i) / n;
+					const px = hz ? u : fixed + wave(u) * side;
+					const py = hz ? fixed + wave(u) * side : u;
+					if (i) path.lineTo(px, py);
+					else path.moveTo(px, py);
+				}
+				for (let u = a0 + 4; u < a1 - 2; u += 7) {
+					leaves.push([hz ? u : fixed, hz ? fixed : u, (u * 7 + r * 3 + c) % 2 ? 1 : -1]);
+				}
+			};
+			const cut = 8;
+			if (oU) seg(true, y + inset, x + (oL ? cut : 0), x + T - (oR ? cut : 0), 1);
+			if (oD) seg(true, y + T - inset, x + (oL ? cut : 0), x + T - (oR ? cut : 0), -1);
+			if (oL) seg(false, x + inset, y + (oU ? cut : 0), y + T - (oD ? cut : 0), 1);
+			if (oR) seg(false, x + T - inset, y + (oU ? cut : 0), y + T - (oD ? cut : 0), -1);
+			// round the corners: an arc a step inside the silhouette's own
+			for (const [ok, cx, cy, a0] of [
+				[oU && oL, x + 8, y + 8, Math.PI],
+				[oU && oR, x + T - 8, y + 8, Math.PI * 1.5],
+				[oD && oR, x + T - 8, y + T - 8, 0],
+				[oD && oL, x + 8, y + T - 8, Math.PI * 0.5]
+			] as const) {
+				if (!ok) continue;
+				const rr = 8 - inset;
+				path.moveTo(cx + Math.cos(a0) * rr, cy + Math.sin(a0) * rr);
+				path.arc(cx, cy, rr, a0, a0 + Math.PI / 2);
+			}
+		}
+	}
+	stroke(path);
+	// big leaves on short stalks, alternating sides, a root tendril now and then
+	const k = rng(s.seed * 31 + 7);
+	for (const [lx, ly, side] of leaves) {
+		if (nearCorner(f, lx, ly, 9)) continue;
+		if (k() < 0.2) continue;
+		const a = k() * TAU;
+		const ox = lx + Math.cos(a) * 3 * side;
+		const oy = ly + Math.sin(a) * 3 * side;
+		b.strokeStyle = s.stem;
+		b.lineWidth = 0.8;
+		b.beginPath();
+		b.moveTo(lx, ly);
+		b.lineTo(ox, oy);
+		b.stroke();
+		b.fillStyle = 'rgba(20,30,10,.25)';
+		b.beginPath();
+		b.arc(ox + 0.7, oy + 0.9, s.leaf * 0.6, 0, TAU);
+		b.fill();
+		leafAt(
+			b,
+			ox,
+			oy,
+			s.leaf * (0.85 + k() * 0.35),
+			a + Math.PI / 2,
+			s.leaves[(k() * s.leaves.length) | 0],
+			'heart'
+		);
+		if (k() < 0.2) {
+			b.strokeStyle = s.stem;
+			b.lineWidth = 0.6;
+			b.beginPath();
+			b.moveTo(lx, ly);
+			b.quadraticCurveTo(lx + 2 * side, ly - 2, lx + 3 * side, ly + 2.5);
+			b.stroke();
+		}
+	}
 }

@@ -2,6 +2,8 @@
 // turquoise stream, heat shimmer and fireflies, a violet night. The food is redrawn after
 // the owner's reviews: white pebbles for pellets and starfish for energizers on a
 // warm dark sand, a faint heat haze and a lighter night, so the food reads at a glance.
+import { summerRoof, dryGrass } from '../meadow/seasonDetails';
+import { sandWhirl } from '../meadow/burrows';
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
 import { summerFloor, fairScene } from './summerScene';
 import {
@@ -102,6 +104,7 @@ export const summerTheme: MeadowTheme = {
 		},
 		bridge: { caps: '#8fd05a', middle: 'rgba(90,190,70,.7)' },
 		cabin: {
+			roofDress: summerRoof,
 			walls: ['#f08a4b', '#d9693a', '#c24f2c', '#9b3a22'],
 			roofBlobs: 'rgba(255,214,150,.22)',
 			ridge: '#ffe7a8',
@@ -121,6 +124,7 @@ export const summerTheme: MeadowTheme = {
 			specks: ['#9e7c4e', '#6e5030', '#a6845a']
 		},
 		portal: {
+			burrow: sandWhirl,
 			trail: (a) => `rgba(190,150,90,${a * 0.5})`,
 			grass: ['#7fb34a', '#5f9a3a', '#b8dc6a'],
 			plate: ['#f0dfb0', '#b08d58'],
@@ -170,7 +174,8 @@ export const summerTheme: MeadowTheme = {
 			berries: '#d8323a'
 		},
 		// the cabins as homes (the owner's review: a cozy background)
-		homestead: { path: '#d8c08a', pathEdge: '#b89e6a', fence: '#8a6a44', wood: '#8a5a32' },
+		homestead: { wood: '#8a5a32' },
+		rockSpot: dryGrass,
 		scene: fairScene,
 		landmark: {
 			ex: [2.4, 2.2],

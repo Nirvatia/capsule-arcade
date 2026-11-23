@@ -172,13 +172,13 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   blanket on the walls (the stone a thin rim, the corners' rounding kept), a thin snow bank at
   their feet that leaves the corridor its width, a dark blue-grey corridor of trodden snow, rare
   short icicles under long walls. Autumn (`autumn/autumnDress.ts`): wet leaf litter at the walls'
-  feet, wet moss on their edges and a few stuck leaves. Spring is a **Japanese garden** (the owner's pick,
-  2026-11-23, so that it never reads as summer; `spring/gardenDress.ts`): garden walls of cream
-  plaster with a dark scalloped roof-tile edge, corridors of raked grey gravel (the rake's lines
-  along the way), the lair a wooden deck, a gutter of river pebbles at the walls' feet, stone toro
-  lanterns by the maze that glow at night, koi in the pond. Summer (`meadow/wallFlora.ts`): ivy
-  grows over the stone unevenly by a growth map (some walls almost covered, some with a shoot or
-  two, about half), roots and shoots at the walls' feet. The snowman stays the winter landmark.
+  feet, wet moss on their edges and a few stuck leaves. Spring's walls are the shared stone in light sandstone with young moss in the joints and a moss
+  band at their feet, the corridor earth (the owner's pick, 2026-11-23, after the Japanese garden
+  was rejected: spring must not read as summer, nor glare). Summer's walls carry Jumanji-like
+  lianas (`meadow/wallFlora.ts`): few thick curving stems along the open edges a step inside the
+  silhouette, wrapping round the rounded corners, big leaves now and then, never a mat over the
+  top; roots and shoots at the walls' feet. Winter's snow reaches the arc on the roundings, so
+  the stone contour shows along the straight runs only. The snowman stays the winter landmark.
 - **Holiday scenes** (the owner's picks of the `season-dress` prototype, 2026-11-23; refinements
   to come from his list): each season is a finished holiday scene on the same meadow and layout
   (the pond and the stream where they are), all seen from above and baked, a few moving bits
@@ -196,10 +196,10 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   (the theme's `wet` layer, as autumn's wet ground). Where
   the lair meets its entrance, the corridor's tone runs into its tiles (no hard step). Winter is **New Year** (a
   decorated tree with presents and sparklers beside each snowman, lights round the cabins' roofs
-  and on the bridge, warm window light, holly on the lamps). Spring is a **hanami** in a Japanese garden (every tree in
+  and on the bridge, warm window light, holly on the lamps). Spring is a **hanami** (every tree in
   blossom, petal carpets, blankets, paper lanterns between the trees and in two strings from lamp
   to lamp, petals on the walls). Summer is a **fair** (striped tents, festoons, balloons, a
-  turning carousel beside each umbrella, bunting along the maze's frame). What glows lights up at
+  turning carousel beside each umbrella, pennants along the festoons between the tents, none on the walls). What glows lights up at
   night: the scene's lamps and windows as even pools on the ground without a halo round the lamp;
   the energizers' and portals' light is soft at night; a storm never brightens the night (its
   tint, the mist and the warm light fade out as the night falls, the weather dims). The walls' stone and rounded corners are never repainted: what lies on them is a pass of
@@ -210,16 +210,19 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   motes, summer heat haze with poplar fluff, autumn a careful downpour, winter a blizzard); **night** falls at 75 %.
 - Gameplay tuning (`SeasonCatalog.seasonModifiers`): spring power 6.5 s; summer fruit
   14 s; autumn ghosts ×0.97; winter Pac-Man ×0.97.
-- **Tunnel pads** (baked): a stone ring with eight carved runes round the dark heart, on a
-  trodden patch where the corridor's tone runs out past the pad and fades into the meadow with a
+- **Tunnel pads** (baked): each season's burrow under a small translucent live ripple (winter an ice
+  hole, autumn a hollow stump, spring a sandstone well, summer a whirlpool in the sand;
+  `meadow/burrows.ts`), on a trodden patch where the corridor's tone runs out past the pad and fades into the meadow with a
   ragged edge of the season's ground cover (no worn path). Winter's cabin roofs lie under one
   snow cover with a dark ridge. The meadow's trees and shrubs are the season's own (`meadow/flora.ts`):
   winter firs with snow on the lit tips and bare frosted shrubs, autumn half-bare russet crowns with
   the branches showing and twiggy shrubs with last leaves, spring sakura and fresh maples with
-  clipped azaleas in flower, summer thick green crowns and shrubs with red berries. The cabins are homes
-  (`meadow/homestead.ts`): a path from each door toward the maze (stepping stones in the garden), a
-  low fence round the plot with a gap for it, a bench by the door, a woodpile against the wall, two
-  small lamps along the path that light it as pools at night.
+  azaleas in flower, summer thick green crowns and shrubs with red berries. The cabins are homes
+  (`meadow/homestead.ts`): a bench by the door, a woodpile against the far wall, a small lamp by
+  the door that lights the ground as a pool at night (paths and fences were tried and dropped).
+  No sticker patches (`meadow/seasonDetails.ts`): the roofs carry fallen leaves and moss in the
+  joints (autumn), handfuls of petals (spring), sun-faded tiles (summer); the meadow's stones give
+  way to leaf piles, clover with dandelions, dry grass. The chimney smoke is a touch fuller.
 - **Tunnel** (the pads at the maze's sides): two tiles before a pad the hero curls into a
   rolling ball of his own kind and flashes: Pac-Man a gold ball with fire swirls, fire drops
   circling it and fire sparks behind; Ms. Pac-Man a pearl ball with one continuous silver-white

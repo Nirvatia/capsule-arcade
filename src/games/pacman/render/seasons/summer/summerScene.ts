@@ -4,10 +4,10 @@
 // with a scalloped valance and lights turns live, slowly), bunting laid along the top of the
 // maze's frame (no white flag and none on the corners: light specks there read as white
 // corners). The festoons glow at night.
-import { creepers } from '../meadow/wallFlora';
+import { lianas } from '../meadow/wallFlora';
 import { balloons, lights, shadow, tent } from '../meadow/sceneProps';
 import type { FloorTone, SeasonScene } from '../meadow/seasonScene';
-import { TAU, addBulbs, addMark, nearCorner, sceneFloor, spot } from '../meadow/seasonScene';
+import { TAU, addBulbs, addMark, sceneFloor, spot } from '../meadow/seasonScene';
 import { WORLD_TILE } from '../../common/worldDecor';
 
 const T = WORLD_TILE;
@@ -18,43 +18,16 @@ export const summerFloor = sceneFloor(SUMMER_TONE, null);
 
 export const fairScene: SeasonScene = {
 	wallDress(f) {
-		// ivy over the walls, uneven: some almost covered, some with a shoot or two (about half)
-		creepers(f, {
+		// Jumanji-like lianas: few thick stems along the edges and round the corners, big leaves
+		// (the bunting moved to the festoons on the meadow: on the walls it made a mess)
+		lianas(f, {
 			seed: 29,
-			cover: 0.55,
-			stem: 'rgba(60,44,24,.85)',
-			leaves: ['#1f5a26', '#2c7032', '#3d8a3a', '#28642c'],
-			leaf: 3.8,
-			shape: 'ivy'
+			cover: 0.3,
+			stem: '#5a4a22',
+			stemLight: 'rgba(170,150,90,.6)',
+			leaves: ['#2c7032', '#3d8a3a', '#256a2c'],
+			leaf: 6
 		});
-		// bunting laid along the top of the maze's frame: small flags in turn
-		// (no white flag: it would read as a light speck on the stone)
-		const cols = ['#e04a5a', '#e8b828', '#2a8ad0', '#3ab070', '#c060c0'];
-		let n = 0;
-		for (let c = 1; c < f.C - 1; c += 1) {
-			for (const r of [1, f.R - 2]) {
-				if (!f.isW(r, c)) continue;
-				for (let j = 0; j < 3; j += 1) {
-					const x = c * T + 4 + j * 7;
-					const y = r * T + T / 2;
-					const dn = r === 1 ? 1 : -1;
-					if (nearCorner(f, x, y, 11)) continue;
-					f.b.fillStyle = cols[n++ % cols.length];
-					f.b.beginPath();
-					f.b.moveTo(x - 3, y - dn * 3);
-					f.b.lineTo(x + 3, y - dn * 3);
-					f.b.lineTo(x, y + dn * 4);
-					f.b.closePath();
-					f.b.fill();
-				}
-				f.b.strokeStyle = 'rgba(40,30,20,.6)';
-				f.b.lineWidth = 0.5;
-				f.b.beginPath();
-				f.b.moveTo(c * T, r * T + T / 2 - (r === 1 ? 3 : -3));
-				f.b.lineTo((c + 1) * T, r * T + T / 2 - (r === 1 ? 3 : -3));
-				f.b.stroke();
-			}
-		}
 	},
 	landmark(k, o, lit, i) {
 		// a carousel's base beside the umbrella (its roof turns live)
@@ -105,6 +78,24 @@ export const fairScene: SeasonScene = {
 				]);
 			}
 			addBulbs(lit, lights(b, pts, 7, i, true));
+			// pennants along the festoon, between the bulbs
+			const cols = ['#e04a5a', '#e8b828', '#2a8ad0', '#3ab070', '#c060c0'];
+			for (let j = 0; j < pts.length - 1; j += 1) {
+				const [ax, ay] = pts[j];
+				const [bx, by] = pts[j + 1];
+				const mx = (ax + bx) / 2;
+				const my = (ay + by) / 2;
+				const nx = -(by - ay);
+				const ny = bx - ax;
+				const nl = Math.hypot(nx, ny) || 1;
+				b.fillStyle = cols[(j + i) % cols.length];
+				b.beginPath();
+				b.moveTo(mx - (bx - ax) * 0.22, my - (by - ay) * 0.22);
+				b.lineTo(mx + (bx - ax) * 0.22, my + (by - ay) * 0.22);
+				b.lineTo(mx + (nx / nl) * 4, my + (ny / nl) * 4);
+				b.closePath();
+				b.fill();
+			}
 		}
 		for (const [tx, ty] of [
 			[-2.8, 9],

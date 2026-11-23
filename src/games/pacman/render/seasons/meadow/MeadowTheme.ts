@@ -70,6 +70,8 @@ export interface MeadowBakeTheme {
 		readonly ridge: string;
 		readonly ridgeShadow: string;
 		readonly chimneyCap: string;
+		/** The roof's seasonal details instead of `roofBlobs` patches (`seasonDetails`). */
+		readonly roofDress?: (k: BakeKit, X: number, Y: number, w: number, h: number) => void;
 		/** One snow cover over the whole roof instead of `roofBlobs` patches (winter). */
 		readonly roofSnow?: boolean;
 	};
@@ -94,6 +96,8 @@ export interface MeadowBakeTheme {
 		readonly core: Three;
 		readonly ring: string;
 		readonly corners: string;
+		/** The season's burrow under the live pad (`burrows`): ice hole, stump, well, whirlpool. */
+		readonly burrow?: (b: CanvasRenderingContext2D, x: number, y: number) => void;
 	};
 	readonly wall: {
 		readonly base: string;
@@ -125,6 +129,8 @@ export interface MeadowBakeTheme {
 	};
 	/** The cabins as homes (`homestead`): a path, a fence, a bench, a woodpile, lamps. */
 	readonly homestead?: HomesteadStyle;
+	/** The season's own detail where a grey stone would lie on the meadow (`seasonDetails`). */
+	readonly rockSpot?: (k: BakeKit, o: MeadowDecor) => void;
 	/** The season's own shrub (`flora`) instead of the round bush. */
 	readonly shrub?: ShrubStyle;
 	/** The landmark that stands in for the winter snowman (two of them, by the maze). */

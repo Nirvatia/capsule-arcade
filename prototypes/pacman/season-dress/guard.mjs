@@ -1,6 +1,6 @@
 // The walls' guard. Build first: node prototypes/pacman/build.mjs season-dress; then
 // node prototypes/pacman/season-dress/guard.mjs: for every scene, the wall dress never leaves the stone (outside the
-// silhouette byte-equal with the dress off), makes no light corners (on the stone rim of the outer corners: a dress may cover the top, never the rim), and the walls themselves are
+// silhouette byte-equal with the dress off), makes no light corners (nothing light outside a rounded corner's arc: a dress may cover the top up to the arc), and the walls themselves are
 // the game's (inside the silhouette equal to the season as it is). Exit code 1 on a failure.
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';

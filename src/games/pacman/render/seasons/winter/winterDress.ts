@@ -89,6 +89,26 @@ export function snowBank(f: MeadowFrame): void {
 export function snowBlanket(f: MeadowFrame, r: () => number): void {
 	const { b } = f;
 	const cover = wallClip(f, 2.3);
+	// on the roundings the snow reaches the silhouette's arc: the stone contour shows along the
+	// straight runs only (the owner's review: on the corners it made them look sharp)
+	for (let rr = 0; rr < f.R; rr += 1) {
+		for (let c = 0; c < f.C; c += 1) {
+			if (!f.isW(rr, c)) continue;
+			const [oL, oU, oR, oD] = openSides(f, rr, c);
+			for (const [ok, sx, sy] of [
+				[oU && oL, 0, 0],
+				[oU && oR, 1, 0],
+				[oD && oL, 0, 1],
+				[oD && oR, 1, 1]
+			] as const) {
+				if (!ok) continue;
+				const cx = c * T + (sx ? T - 8 : 8);
+				const cy = rr * T + (sy ? T - 8 : 8);
+				cover.moveTo(cx + 7.4, cy);
+				cover.arc(cx, cy, 7.4, 0, TAU);
+			}
+		}
+	}
 	for (let rr = 0; rr < f.R; rr += 1) {
 		for (let c = 0; c < f.C; c += 1) {
 			if (!f.isW(rr, c)) continue;

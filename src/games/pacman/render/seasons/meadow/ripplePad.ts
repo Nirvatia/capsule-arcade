@@ -1,11 +1,12 @@
-// The tunnel pad: a soft translucent lens that ripples like water after a drop, with a white
+// The tunnel pad's live ripple over the season's burrow (`burrows`): a soft translucent lens that ripples like water after a drop, with a white
 // rim, two glints on it and a bright heart, in the season's colour. Light only, no ink.
 import { hexChannels } from '../../common/textures';
 
 type Ctx = CanvasRenderingContext2D;
 
 /** The pad's radius in world units (a tile is ~25). */
-export const PAD_RADIUS = 9.72;
+// small enough to lie on the water inside the season's burrow, its rim showing round it
+export const PAD_RADIUS = 6.8;
 
 const TAU = Math.PI * 2;
 
@@ -40,12 +41,13 @@ export function drawRipplePad(
 	c.translate(x, y);
 	c.globalAlpha = 1;
 	c.globalCompositeOperation = 'lighter';
-	glowDisc(c, glow, r * 1.7, 0.4 + 0.12 * Math.sin(t * 1.8 + phase));
+	glowDisc(c, glow, r * 1.5, 0.16 + 0.06 * Math.sin(t * 1.8 + phase));
 	c.globalCompositeOperation = 'source-over';
 	const lens = c.createRadialGradient(0, r * 0.1, 0, 0, 0, r);
-	lens.addColorStop(0, rgba(deep, 0.75));
-	lens.addColorStop(0.7, rgba(glow, 0.28));
-	lens.addColorStop(1, rgba(glow, 0.5));
+	// translucent, so the season's burrow baked under it shows through
+	lens.addColorStop(0, rgba(deep, 0.3));
+	lens.addColorStop(0.7, rgba(glow, 0.12));
+	lens.addColorStop(1, rgba(glow, 0.3));
 	c.beginPath();
 	c.arc(0, 0, r * 0.98, 0, TAU);
 	c.fillStyle = lens;
@@ -59,7 +61,7 @@ export function drawRipplePad(
 	c.lineWidth = r * 0.07;
 	for (let k = 0; k < 4; k++) {
 		const u = (t * 0.45 + k / 4 + phase * 0.37) % 1;
-		c.strokeStyle = `rgba(255,255,255,${((1 - u) * 0.85).toFixed(2)})`;
+		c.strokeStyle = `rgba(255,255,255,${((1 - u) * 0.5).toFixed(2)})`;
 		c.beginPath();
 		c.arc(0, 0, r * (0.06 + u * 0.95), 0, TAU);
 		c.stroke();
@@ -69,7 +71,7 @@ export function drawRipplePad(
 	c.globalCompositeOperation = 'lighter';
 	c.beginPath();
 	c.arc(0, 0, r * 0.99, 0, TAU);
-	c.strokeStyle = 'rgba(255,255,255,.75)';
+	c.strokeStyle = 'rgba(255,255,255,.45)';
 	c.lineWidth = r * 0.07;
 	c.stroke();
 	c.lineCap = 'round';

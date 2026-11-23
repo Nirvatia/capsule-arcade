@@ -1,5 +1,6 @@
 // Winter, from the owner's CLAUDE_GRID_WINTER mock-up: snowy meadow, frozen stream,
 // snowmen, ice-drop pellets and snowman energizers, a blizzard, a blue night.
+import { iceHole } from '../meadow/burrows';
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
 import { newYearScene } from './winterScene';
 import {
@@ -74,6 +75,7 @@ export const winterTheme: MeadowTheme = {
 			paint: winterFloor
 		},
 		portal: {
+			burrow: iceHole,
 			trail: (a) => `rgba(86,98,116,${a * 0.55})`,
 			grass: ['#b9c4a6', '#8a9a7a', '#e8eef2'],
 			plate: ['#aeb9c6', '#6c7a8c'],
@@ -133,13 +135,7 @@ export const winterTheme: MeadowTheme = {
 			frost: '#f4f9fd'
 		},
 		// the cabins as homes (the owner's review: a cozy background)
-		homestead: {
-			path: '#c4d0de',
-			pathEdge: '#a6b4c6',
-			fence: '#6a4e3c',
-			snow: '#f4f9fd',
-			wood: '#7a5034'
-		},
+		homestead: { wood: '#7a5034', snow: '#f4f9fd' },
 		// fresh snow piles up a little while the blizzard blows (the theme's `wet` layer)
 		wet: freshSnow,
 		scene: newYearScene,

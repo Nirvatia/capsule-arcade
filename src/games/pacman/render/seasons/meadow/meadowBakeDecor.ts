@@ -133,6 +133,8 @@ export function paintDecor(f: MeadowFrame): void {
 				}
 				b.fillStyle = lin(X, o.y, X, Y + oh, 'rgba(110,135,175,0)', 'rgba(110,135,175,.3)');
 				b.fillRect(X, o.y, ow, oh / 2);
+			} else if (P.cabin.roofDress) {
+				P.cabin.roofDress(kit, X, Y, ow, oh);
 			} else {
 				for (let i = 0; i < 16; i++) {
 					blob(X + rnd() * ow, Y + rnd() * oh, rr(8, 18), rr(4, 8), P.cabin.roofBlobs);
@@ -165,6 +167,8 @@ export function paintDecor(f: MeadowFrame): void {
 			b.fillStyle = '#2b2523';
 			b.fillRect(cx - 3.5, cy - 3.5, 7, 7);
 			blob(cx - 4, cy - 5, 3, 1.5, P.cabin.chimneyCap, 0);
+		} else if (o.k === 'rock' && P.rockSpot) {
+			P.rockSpot(kit, o);
 		} else if (o.k === 'rock') {
 			blob(o.x + 3, o.y + 5, r * 1.1, r * 0.7, shade(0.35), 0);
 			b.fillStyle = lin(o.x - r, o.y - r, o.x + r, o.y + r, P.rock[0], P.rock[1]);

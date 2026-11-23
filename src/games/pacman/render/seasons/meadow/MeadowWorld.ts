@@ -705,9 +705,10 @@ export class MeadowWorld {
 		puffs: ReadonlyArray<{ cx: number; cy: number; u: number; ph: number }>
 	): void {
 		const t = this.t;
-		const puff = glowTexture(0xf2f6fa);
+		// a touch greyer and fuller, so it reads over snow and light ground (the owner's review)
+		const puff = glowTexture(0xdde3ea);
 		for (const q of puffs) {
-			const s = 8 + q.u * 22;
+			const s = 9 + q.u * 26;
 			sprite(
 				ctx,
 				puff,
@@ -715,7 +716,7 @@ export class MeadowWorld {
 				q.cy - q.u * 34,
 				s,
 				s,
-				(1 - q.u) * 0.5 * Math.min(1, q.u * 8)
+				(1 - q.u) * 0.7 * Math.min(1, q.u * 8)
 			);
 		}
 		ctx.globalAlpha = 1;
