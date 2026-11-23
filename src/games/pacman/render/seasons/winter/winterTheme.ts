@@ -108,7 +108,29 @@ export const winterTheme: MeadowTheme = {
 			plain: ['#f4f9fd', '#b4c8d8', '#5a7a8e'],
 			accentDots: ['rgba(255,255,255,.85)', 'rgba(40,90,70,.5)'],
 			plainDots: ['rgba(255,255,255,.8)', 'rgba(70,95,115,.45)'],
-			drifts: 'rgba(255,255,255,.55)'
+			drifts: 'rgba(255,255,255,.55)',
+			// firs with snow on the lit tips (the owner's review: no bubble crowns)
+			crown: {
+				accent: {
+					kind: 'fir',
+					leaves: ['#4f7a62', '#36604c', '#21443a'],
+					branch: '#4a3a30',
+					snow: '#f4f9fd'
+				},
+				plain: {
+					kind: 'fir',
+					leaves: ['#5c7f74', '#3f6358', '#284840'],
+					branch: '#4a3a30',
+					snow: '#eef4fa'
+				}
+			}
+		},
+		// bare shrubs with frost on the twigs' ends
+		shrub: {
+			kind: 'bare',
+			leaves: ['#ffffff', '#ffffff', '#ffffff'],
+			twig: '#6a5a52',
+			frost: '#f4f9fd'
 		},
 		scene: newYearScene,
 		landmark: {

@@ -42,16 +42,14 @@ last (see Later).
 1. **Season scenes: the owner's refinements** (the current focus; his answers of 2026-11-23 to
    the season questionnaire). Done, in review: spring as a Japanese garden (plaster walls with a
    tile edge, raked gravel, a deck lair, pebbles, toro lanterns, koi, temari, a soft petal wind), the tunnel pads (no worn
-   path: a trodden patch fading into the meadow, a rune ring), winter's roofs under one snow cover and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
+   path: a trodden patch fading into the meadow, a rune ring), winter's roofs under one snow cover, the meadow's trees and shrubs
+   per season (`meadow/flora.ts`) and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
    the shared base (snow blanket, thin bank, trodden-snow corridor, tile lair, icicles, the new
    bauble, a blizzard), the food of every season, autumn's wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
    ground pools and a storm that never brightens the night (`DESIGN.md` §6). Left, one chat:
    - **Winter**: the snow on the walls and at their feet grows a little while the blizzard blows.
    - The pumpkin and the starfish brought to the new food's style.
-   - **The background as a cozy place** (the owner agreed to all, 2026-11-23): the
-     bubble bushes replaced per season (winter firs and frosted bare shrubs, autumn half-bare
-     russet shrubs, spring flowering shrubs, summer thick green with berries); trees with a
-     readable crown from above (branches, a shadow to one side); paths from the cabins to the
+   - **The background as a cozy place** (the owner agreed to all, 2026-11-23): paths from the cabins to the
      maze, fences or hedges round the plots, chimney smoke a little clearer, benches and a
      woodpile by the houses, lamps along the paths lighting the ground as pools at night.
 

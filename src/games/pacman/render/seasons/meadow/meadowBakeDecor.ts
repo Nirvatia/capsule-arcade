@@ -1,4 +1,5 @@
 import type { MeadowFrame } from './MeadowBake';
+import { shrub } from './flora';
 
 /** Meadow life: the decorations around the maze (`worldDecor`), back to front. */
 export function paintDecor(f: MeadowFrame): void {
@@ -10,6 +11,8 @@ export function paintDecor(f: MeadowFrame): void {
 		const r = o.r ?? 0;
 		if (o.k === 'fl') {
 			P.flowerPatch(kit, o);
+		} else if (o.k === 'bush' && P.shrub) {
+			shrub(kit, o, P.shrub);
 		} else if (o.k === 'bush') {
 			blob(o.x + 3, o.y + 4, r, r * 0.7, shade(0.3), 0);
 			for (let i = 0; i < 4; i++) {

@@ -5,6 +5,7 @@ import type { SeasonScene } from './seasonScene';
 import type { DecayPalette } from '../../transitions/decay/DecayPass';
 import type { WorldDecor as MeadowDecor } from '../../common/worldDecor';
 import type { MeadowFrame } from './MeadowBake';
+import type { CrownStyle, ShrubStyle } from './flora';
 
 /** One path cell handed to a season's own path painter (the shared bake calls it per cell). */
 export interface MeadowPathCell {
@@ -118,7 +119,11 @@ export interface MeadowBakeTheme {
 		readonly accentDots: readonly [string, string];
 		readonly plainDots: readonly [string, string];
 		readonly drifts: string;
+		/** The season's own crowns (`flora`), for the accent and the plain trees. */
+		readonly crown?: { readonly accent: CrownStyle; readonly plain: CrownStyle };
 	};
+	/** The season's own shrub (`flora`) instead of the round bush. */
+	readonly shrub?: ShrubStyle;
 	/** The landmark that stands in for the winter snowman (two of them, by the maze). */
 	readonly landmark: {
 		/** Keep-out radius in tiles for the scatter around each copy. */

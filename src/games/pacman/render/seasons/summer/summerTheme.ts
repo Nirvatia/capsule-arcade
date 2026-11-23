@@ -155,7 +155,19 @@ export const summerTheme: MeadowTheme = {
 			plain: ['#b6ee6e', '#5fae3e', '#2a6a2a'],
 			accentDots: ['rgba(255,140,40,.95)', 'rgba(20,70,25,.5)'],
 			plainDots: ['rgba(214,255,140,.7)', 'rgba(20,70,25,.45)'],
-			drifts: 'rgba(30,80,30,.25)'
+			drifts: 'rgba(30,80,30,.25)',
+			// thick green crowns with the branches just showing
+			crown: {
+				accent: { kind: 'broad', leaves: ['#8ccc58', '#4f9a36', '#2a6224'], branch: '#4a3a26' },
+				plain: { kind: 'broad', leaves: ['#a8d460', '#6aa83c', '#3a7228'], branch: '#4a3a26' }
+			}
+		},
+		// thick green shrubs with red berries
+		shrub: {
+			kind: 'round',
+			leaves: ['#7cbc4c', '#4a8a32', '#2a5a22'],
+			twig: '#4a3a26',
+			berries: '#d8323a'
 		},
 		scene: fairScene,
 		landmark: {

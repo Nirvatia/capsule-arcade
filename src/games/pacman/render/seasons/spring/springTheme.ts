@@ -119,7 +119,24 @@ export const springTheme: MeadowTheme = {
 			plain: ['#fff4f7', '#f8cadb', '#d98aa8'],
 			accentDots: ['rgba(255,255,255,.85)', 'rgba(150,50,90,.5)'],
 			plainDots: ['rgba(255,255,255,.9)', 'rgba(170,80,110,.4)'],
-			drifts: 'rgba(255,200,220,.5)'
+			drifts: 'rgba(255,200,220,.5)',
+			// the garden's trees: sakura in bloom, Japanese maples in fresh green
+			crown: {
+				accent: {
+					kind: 'broad',
+					leaves: ['#ffd3e2', '#f4a6c2', '#c77395'],
+					branch: '#4a3236',
+					blossom: ['#ffffff', '#ffe6ef']
+				},
+				plain: { kind: 'broad', leaves: ['#a8d870', '#74ad48', '#477a30'], branch: '#4a3a2c' }
+			}
+		},
+		// clipped azaleas in flower (karikomi)
+		shrub: {
+			kind: 'round',
+			leaves: ['#7fb85a', '#4f8a3a', '#2f5a26'],
+			twig: '#4a3a2c',
+			flowers: ['#f25a9a', '#ff8ab8', '#ffffff']
 		},
 		scene: hanamiScene,
 		landmark: {

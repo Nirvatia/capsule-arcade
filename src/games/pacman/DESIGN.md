@@ -211,7 +211,10 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
 - **Tunnel pads** (baked): a stone ring with eight carved runes round the dark heart, on a
   trodden patch where the corridor's tone runs out past the pad and fades into the meadow with a
   ragged edge of the season's ground cover (no worn path). Winter's cabin roofs lie under one
-  snow cover with a dark ridge.
+  snow cover with a dark ridge. The meadow's trees and shrubs are the season's own (`meadow/flora.ts`):
+  winter firs with snow on the lit tips and bare frosted shrubs, autumn half-bare russet crowns with
+  the branches showing and twiggy shrubs with last leaves, spring sakura and fresh maples with
+  clipped azaleas in flower, summer thick green crowns and shrubs with red berries.
 - **Tunnel** (the pads at the maze's sides): two tiles before a pad the hero curls into a
   rolling ball of his own kind and flashes: Pac-Man a gold ball with fire swirls, fire drops
   circling it and fire sparks behind; Ms. Pac-Man a pearl ball with one continuous silver-white

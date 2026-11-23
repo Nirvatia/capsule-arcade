@@ -119,7 +119,29 @@ export const autumnTheme: MeadowTheme = {
 			plain: ['#fff0a0', '#f0a82a', '#b8641a'],
 			accentDots: ['rgba(255,230,120,.85)', 'rgba(100,20,10,.5)'],
 			plainDots: ['rgba(255,248,190,.8)', 'rgba(120,60,10,.45)'],
-			drifts: 'rgba(230,120,30,.5)'
+			drifts: 'rgba(230,120,30,.5)',
+			// broad crowns, half bare: russet and orange masses with the branches showing
+			crown: {
+				accent: {
+					kind: 'broad',
+					leaves: ['#f0a040', '#d26a22', '#9a3e16'],
+					branch: '#4a3020',
+					gaps: 0.35
+				},
+				plain: {
+					kind: 'broad',
+					leaves: ['#e8c04a', '#c08a2a', '#7a5a1e'],
+					branch: '#4a3020',
+					gaps: 0.3
+				}
+			}
+		},
+		// half-bare russet shrubs: twigs with a few last leaves
+		shrub: {
+			kind: 'bare',
+			leaves: ['#d26a22', '#a04a1a', '#6a3014'],
+			twig: '#5a3a26',
+			lastLeaves: ['#d26a22', '#e8a030', '#a83c18']
 		},
 		scene: halloweenScene,
 		wet: autumnWet,

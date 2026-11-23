@@ -9,6 +9,7 @@ import type { BakeKit, MeadowBakeTheme } from './MeadowTheme';
 import { WORLD_TILE, streamY, tileRandom, tunnelRowOf, worldDecor } from '../../common/worldDecor';
 import { paintDecor } from './meadowBakeDecor';
 import { paintWalls } from './meadowBakeWalls';
+import { crown } from './flora';
 import type { SceneLit } from './seasonScene';
 import { TAU, newSceneLit, onWalls } from './seasonScene';
 
@@ -447,6 +448,10 @@ function paintTreeCrowns(f: MeadowFrame): void {
 	for (const o of DEC) {
 		const r = o.r ?? 0;
 		if (o.k !== 'tree' || !vis(o.x, o.y, r * 2)) {
+			continue;
+		}
+		if (TR.crown) {
+			crown(f.kit, o, o.pk ? TR.crown.accent : TR.crown.plain);
 			continue;
 		}
 		const k = tileRandom(o.s ?? 0, 7);
