@@ -10,6 +10,7 @@ import { WORLD_TILE, streamY, tileRandom, tunnelRowOf, worldDecor } from '../../
 import { paintDecor } from './meadowBakeDecor';
 import { paintWalls } from './meadowBakeWalls';
 import { crown } from './flora';
+import { homestead } from './homestead';
 import type { SceneLit } from './seasonScene';
 import { TAU, newSceneLit, onWalls } from './seasonScene';
 
@@ -39,6 +40,7 @@ export function bakeMeadow(
 	paintGround(f);
 	paintStream(f);
 	paintDecor(f);
+	if (P.homestead) homestead(f, P.homestead);
 	paintMazeFloor(f);
 	(P.wall.paint ?? paintWalls)(f);
 	const scene = P.scene;

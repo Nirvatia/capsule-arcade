@@ -143,6 +143,8 @@ export const autumnTheme: MeadowTheme = {
 			twig: '#5a3a26',
 			lastLeaves: ['#d26a22', '#e8a030', '#a83c18']
 		},
+		// the cabins as homes (the owner's review: a cozy background)
+		homestead: { path: '#7a6040', pathEdge: '#5e4830', fence: '#5a3c26', wood: '#7a4a28' },
 		scene: halloweenScene,
 		wet: autumnWet,
 		landmark: {

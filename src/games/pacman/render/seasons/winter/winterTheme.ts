@@ -132,6 +132,14 @@ export const winterTheme: MeadowTheme = {
 			twig: '#6a5a52',
 			frost: '#f4f9fd'
 		},
+		// the cabins as homes (the owner's review: a cozy background)
+		homestead: {
+			path: '#c4d0de',
+			pathEdge: '#a6b4c6',
+			fence: '#6a4e3c',
+			snow: '#f4f9fd',
+			wood: '#7a5034'
+		},
 		scene: newYearScene,
 		landmark: {
 			ex: [1.8, 1.6],

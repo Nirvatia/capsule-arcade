@@ -6,6 +6,7 @@ import type { DecayPalette } from '../../transitions/decay/DecayPass';
 import type { WorldDecor as MeadowDecor } from '../../common/worldDecor';
 import type { MeadowFrame } from './MeadowBake';
 import type { CrownStyle, ShrubStyle } from './flora';
+import type { HomesteadStyle } from './homestead';
 
 /** One path cell handed to a season's own path painter (the shared bake calls it per cell). */
 export interface MeadowPathCell {
@@ -122,6 +123,8 @@ export interface MeadowBakeTheme {
 		/** The season's own crowns (`flora`), for the accent and the plain trees. */
 		readonly crown?: { readonly accent: CrownStyle; readonly plain: CrownStyle };
 	};
+	/** The cabins as homes (`homestead`): a path, a fence, a bench, a woodpile, lamps. */
+	readonly homestead?: HomesteadStyle;
 	/** The season's own shrub (`flora`) instead of the round bush. */
 	readonly shrub?: ShrubStyle;
 	/** The landmark that stands in for the winter snowman (two of them, by the maze). */

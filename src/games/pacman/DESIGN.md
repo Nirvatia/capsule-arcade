@@ -214,7 +214,10 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   snow cover with a dark ridge. The meadow's trees and shrubs are the season's own (`meadow/flora.ts`):
   winter firs with snow on the lit tips and bare frosted shrubs, autumn half-bare russet crowns with
   the branches showing and twiggy shrubs with last leaves, spring sakura and fresh maples with
-  clipped azaleas in flower, summer thick green crowns and shrubs with red berries.
+  clipped azaleas in flower, summer thick green crowns and shrubs with red berries. The cabins are homes
+  (`meadow/homestead.ts`): a path from each door toward the maze (stepping stones in the garden), a
+  low fence round the plot with a gap for it, a bench by the door, a woodpile against the wall, two
+  small lamps along the path that light it as pools at night.
 - **Tunnel** (the pads at the maze's sides): two tiles before a pad the hero curls into a
   rolling ball of his own kind and flashes: Pac-Man a gold ball with fire swirls, fire drops
   circling it and fire sparks behind; Ms. Pac-Man a pearl ball with one continuous silver-white

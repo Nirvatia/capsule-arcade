@@ -43,15 +43,14 @@ last (see Later).
    the season questionnaire). Done, in review: spring as a Japanese garden (plaster walls with a
    tile edge, raked gravel, a deck lair, pebbles, toro lanterns, koi, temari, a soft petal wind), the tunnel pads (no worn
    path: a trodden patch fading into the meadow, a rune ring), winter's roofs under one snow cover, the meadow's trees and shrubs
-   per season (`meadow/flora.ts`) and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
+   per season (`meadow/flora.ts`), the cabins as homes (paths, fences, benches, woodpiles, path
+   lamps; `meadow/homestead.ts`) and summer (ivy, a slower carousel, heat haze with poplar fluff); winter on
    the shared base (snow blanket, thin bank, trodden-snow corridor, tile lair, icicles, the new
    bauble, a blizzard), the food of every season, autumn's wet ground (puddles, sheen, reflections, thin rain with leaves, no mist), the night lights as
    ground pools and a storm that never brightens the night (`DESIGN.md` §6). Left, one chat:
    - **Winter**: the snow on the walls and at their feet grows a little while the blizzard blows.
    - The pumpkin and the starfish brought to the new food's style.
-   - **The background as a cozy place** (the owner agreed to all, 2026-11-23): paths from the cabins to the
-     maze, fences or hedges round the plots, chimney smoke a little clearer, benches and a
-     woodpile by the houses, lamps along the paths lighting the ground as pools at night.
+   - The chimney smoke a little clearer (the owner's cozy-background list).
 
    Rules that hold: top-down only; the maze silhouette, the corridor width, the food and the
    heroes' readability unchanged; nothing new hides the walls or narrows the corridors; the

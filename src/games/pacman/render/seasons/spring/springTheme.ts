@@ -138,6 +138,14 @@ export const springTheme: MeadowTheme = {
 			twig: '#4a3a2c',
 			flowers: ['#f25a9a', '#ff8ab8', '#ffffff']
 		},
+		// the cabins as homes (the owner's review: a cozy background)
+		homestead: {
+			path: '#8a9a6a',
+			pathEdge: '#6a7a50',
+			stones: '#9a978e',
+			fence: '#b8a65a',
+			wood: '#7a5a3a'
+		},
 		scene: hanamiScene,
 		landmark: {
 			ex: [2.4, 2.2],

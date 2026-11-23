@@ -169,6 +169,8 @@ export const summerTheme: MeadowTheme = {
 			twig: '#4a3a26',
 			berries: '#d8323a'
 		},
+		// the cabins as homes (the owner's review: a cozy background)
+		homestead: { path: '#d8c08a', pathEdge: '#b89e6a', fence: '#8a6a44', wood: '#8a5a32' },
 		scene: fairScene,
 		landmark: {
 			ex: [2.4, 2.2],
