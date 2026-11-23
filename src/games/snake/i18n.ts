@@ -1,170 +1,158 @@
-import { writable, type Readable } from 'svelte/store';
-import type { Op } from './sim/types';
+// Тексты игры на трёх языках. Язык общий с залом игр ($shared/i18n).
 
-export type Lang = 'ru' | 'en' | 'es';
-export const LANGS: readonly Lang[] = ['ru', 'en', 'es'];
+import { LANGS, i18n, setLang, type Lang } from '$shared/i18n/i18n.svelte';
 
-const DICT = {
-	ru: {
-		name: 'УДАВ',
-		sub: 'Храм четырёх печатей',
-		score: 'Очки',
-		seal: 'Печать',
-		act: 'Акт',
-		streak: 'Серия',
-		ring: 'Кольцо',
-		ok: 'Удар пройдёт',
-		fail: 'Удар не пройдёт',
-		hiding: 'Альфа прячется',
-		encircle: 'Окружите Альфу',
-		leave: 'Покинуть храм',
-		hall: 'Зал игр',
-		begin: 'Начать охоту',
-		language: 'Язык: Русский',
-		soundOn: 'Звук: вкл',
-		soundOff: 'Звук: выкл',
-		best: 'Рекорд',
-		press: 'Нажмите Enter',
-		paused: 'Пауза',
-		resume: 'Продолжить',
-		restart: 'Заново',
-		mainmenu: 'В меню',
-		spacehint: 'Пробел — продолжить',
-		over: 'Охота окончена',
-		record: 'Новый рекорд',
-		alphas: 'Альф',
-		length: 'Длина',
-		again: 'Ещё раз',
-		pause: 'Пауза',
-		hint: 'Окружите Альфу телом. Печать решает, пройдёт ли удар.',
-		or: 'хотя бы одна единица',
-		and: 'все щитки — единицы',
-		xor: 'нечётное число единиц',
-		mixed: 'печати сменяются'
-	},
-	en: {
-		name: 'BOA',
-		sub: 'Temple of Four Seals',
-		score: 'Score',
-		seal: 'Seal',
-		act: 'Act',
-		streak: 'Streak',
-		ring: 'Ring',
-		ok: 'Strike will land',
-		fail: 'Strike will fail',
-		hiding: 'The Alpha is hiding',
-		encircle: 'Encircle the Alpha',
-		leave: 'Leave the temple',
-		hall: 'Game hall',
-		begin: 'Begin the hunt',
-		language: 'Language: English',
-		soundOn: 'Sound: on',
-		soundOff: 'Sound: off',
-		best: 'Best',
-		press: 'Press Enter',
-		paused: 'Paused',
-		resume: 'Resume',
-		restart: 'Restart',
-		mainmenu: 'Main menu',
-		spacehint: 'Space to resume',
-		over: 'The hunt is over',
-		record: 'New record',
-		alphas: 'Alphas',
-		length: 'Length',
-		again: 'Again',
-		pause: 'Pause',
-		hint: 'Encircle the Alpha with your body. The seal decides if the strike lands.',
-		or: 'at least one 1',
-		and: 'every shield is 1',
-		xor: 'an odd number of 1s',
-		mixed: 'the seals keep changing'
-	},
-	es: {
-		name: 'BOA',
-		sub: 'Templo de los Cuatro Sellos',
-		score: 'Puntos',
-		seal: 'Sello',
-		act: 'Acto',
-		streak: 'Racha',
-		ring: 'Anillo',
-		ok: 'El golpe acertará',
-		fail: 'El golpe fallará',
-		hiding: 'El alfa se esconde',
-		encircle: 'Rodea al alfa',
-		leave: 'Salir del templo',
-		hall: 'Sala de juegos',
-		begin: 'Comenzar la caza',
-		language: 'Idioma: Español',
-		soundOn: 'Sonido: sí',
-		soundOff: 'Sonido: no',
-		best: 'Récord',
-		press: 'Pulsa Enter',
-		paused: 'Pausa',
-		resume: 'Continuar',
-		restart: 'Reiniciar',
-		mainmenu: 'Menú principal',
-		spacehint: 'Espacio para continuar',
-		over: 'La caza ha terminado',
-		record: 'Nuevo récord',
-		alphas: 'Alfas',
-		length: 'Longitud',
-		again: 'Otra vez',
-		pause: 'Pausa',
-		hint: 'Rodea al alfa con tu cuerpo. El sello decide si el golpe acierta.',
-		or: 'al menos un 1',
-		and: 'todos los escudos son 1',
-		xor: 'un número impar de unos',
-		mixed: 'los sellos cambian'
-	}
-} as const;
+const ru = {
+	name: 'Дрейф',
+	sub: 'спокойная змейка · без поражений',
+	play: 'Плыть',
+	album: 'Альбом',
+	language: 'Язык: Русский',
+	soundOn: 'Звук: вкл',
+	soundOff: 'Звук: выкл',
+	leave: 'В зал игр',
+	resume: 'Продолжить',
+	mainmenu: 'В меню',
+	back: 'Назад',
+	paused: 'Пауза',
+	sparks: 'искры',
+	picture: 'Рисунок',
+	tide: 'Прилив',
+	albumEmpty: 'Пока пусто. Первый рисунок ждёт в течении.',
+	inProgress: 'рисуется',
+	unknown: 'ещё не найден',
+	keySwim: 'плыть и поворачивать',
+	keyStairs: 'две стрелки — лесенкой',
+	keyCall: 'зов искр',
+	keyPause: 'пауза',
+	hintCurrent: 'Стрелки — плыть. Собирайте искры. Пробел — зов',
+	hintCurrentTouch: 'Ведите пальцем — плыть. Тап — зов искр',
+	hintOpen: 'Портал открыт — плывите в него',
+	hintPond: 'Начните со звёздочки и обведите линию клетка за клеткой',
+	hintPondTouch: 'Начните со звёздочки и обведите линию: палец задаёт поворот',
+	hintStairs: 'Зажмите две стрелки — змейка пойдёт лесенкой по линии',
+	hintStairsTouch: 'Палец по диагонали — змейка пойдёт лесенкой по линии',
+	hintLost: 'Сбились — линию можно начать заново с любой звёздочки',
+	cleared: 'Линии зажжены',
+	clearedSub: 'рисунок проступает',
+	revealed: 'записано в альбом',
+	'pic.fish': 'Рыбка',
+	'pic.jelly': 'Медуза',
+	'pic.starfish': 'Морская звезда',
+	'pic.whale': 'Кит',
+	'pic.turtle': 'Черепаха',
+	'pic.octopus': 'Осьминог',
+	'pic.manta': 'Скат',
+	'pic.crab': 'Краб'
+};
 
-export type TextKey = keyof (typeof DICT)['ru'];
+export type TextKey = keyof typeof ru;
 
-const STORAGE_KEY = 'neo_arcade_lang';
+const en: Record<TextKey, string> = {
+	name: 'Drift',
+	sub: 'a calm snake · no losing',
+	play: 'Swim',
+	album: 'Album',
+	language: 'Language: English',
+	soundOn: 'Sound: on',
+	soundOff: 'Sound: off',
+	leave: 'Game hall',
+	resume: 'Resume',
+	mainmenu: 'Main menu',
+	back: 'Back',
+	paused: 'Paused',
+	sparks: 'sparks',
+	picture: 'Picture',
+	tide: 'Tide',
+	albumEmpty: 'Empty for now. The first picture waits in the current.',
+	inProgress: 'in progress',
+	unknown: 'not found yet',
+	keySwim: 'swim and turn',
+	keyStairs: 'two arrows — a staircase',
+	keyCall: 'call the sparks',
+	keyPause: 'pause',
+	hintCurrent: 'Arrows to swim. Gather sparks. Space to call them',
+	hintCurrentTouch: 'Drag to swim. Tap to call the sparks',
+	hintOpen: 'The portal is open — swim into it',
+	hintPond: 'Start at a star and trace the line cell by cell',
+	hintPondTouch: 'Start at a star and trace the line: your finger sets the turn',
+	hintStairs: 'Hold two arrows — the snake follows the line as a staircase',
+	hintStairsTouch: 'Drag diagonally — the snake follows the line as a staircase',
+	hintLost: 'Off the line — start again from either star',
+	cleared: 'The lines are lit',
+	clearedSub: 'the picture emerges',
+	revealed: 'added to the album',
+	'pic.fish': 'Fish',
+	'pic.jelly': 'Jellyfish',
+	'pic.starfish': 'Starfish',
+	'pic.whale': 'Whale',
+	'pic.turtle': 'Turtle',
+	'pic.octopus': 'Octopus',
+	'pic.manta': 'Manta ray',
+	'pic.crab': 'Crab'
+};
 
-function initialLang(): Lang {
-	if (typeof window === 'undefined') return 'ru';
-	try {
-		const saved = localStorage.getItem(STORAGE_KEY);
-		if (saved === 'ru' || saved === 'en' || saved === 'es') return saved;
-	} catch {
-		// хранилище недоступно — берём язык браузера
-	}
-	const nav = navigator.language.slice(0, 2);
-	return nav === 'en' || nav === 'es' ? nav : 'ru';
+const es: Record<TextKey, string> = {
+	name: 'Deriva',
+	sub: 'una serpiente tranquila · sin derrotas',
+	play: 'Nadar',
+	album: 'Álbum',
+	language: 'Idioma: Español',
+	soundOn: 'Sonido: sí',
+	soundOff: 'Sonido: no',
+	leave: 'Sala de juegos',
+	resume: 'Continuar',
+	mainmenu: 'Menú principal',
+	back: 'Volver',
+	paused: 'Pausa',
+	sparks: 'chispas',
+	picture: 'Dibujo',
+	tide: 'Marea',
+	albumEmpty: 'Vacío por ahora. El primer dibujo espera en la corriente.',
+	inProgress: 'en curso',
+	unknown: 'aún sin descubrir',
+	keySwim: 'nadar y girar',
+	keyStairs: 'dos flechas — en escalera',
+	keyCall: 'llamar a las chispas',
+	keyPause: 'pausa',
+	hintCurrent: 'Flechas para nadar. Recoge chispas. Espacio para llamarlas',
+	hintCurrentTouch: 'Arrastra para nadar. Toca para llamar a las chispas',
+	hintOpen: 'El portal está abierto: nada hacia él',
+	hintPond: 'Empieza en una estrella y repasa la línea casilla a casilla',
+	hintPondTouch: 'Empieza en una estrella y repasa la línea: tu dedo marca el giro',
+	hintStairs: 'Mantén dos flechas: la serpiente seguirá la línea en escalera',
+	hintStairsTouch: 'Arrastra en diagonal: la serpiente seguirá la línea en escalera',
+	hintLost: 'Te saliste: empieza de nuevo desde cualquier estrella',
+	cleared: 'Las líneas brillan',
+	clearedSub: 'el dibujo aparece',
+	revealed: 'añadido al álbum',
+	'pic.fish': 'Pez',
+	'pic.jelly': 'Medusa',
+	'pic.starfish': 'Estrella de mar',
+	'pic.whale': 'Ballena',
+	'pic.turtle': 'Tortuga',
+	'pic.octopus': 'Pulpo',
+	'pic.manta': 'Manta raya',
+	'pic.crab': 'Cangrejo'
+};
+
+const DICT: Record<Lang, Record<TextKey, string>> = { ru, en, es };
+
+export function tr(key: TextKey): string {
+	return DICT[i18n.lang][key];
 }
 
-const langStore = writable<Lang>(initialLang());
-export const lang: Readable<Lang> = langStore;
-
-let current: Lang = initialLang();
-langStore.subscribe((l) => (current = l));
-
-export function setLang(l: Lang): void {
-	langStore.set(l);
-	try {
-		localStorage.setItem(STORAGE_KEY, l);
-	} catch {
-		// не критично
-	}
+export function picName(id: string): string {
+	const key = `pic.${id}` as TextKey;
+	return key in ru ? tr(key) : id;
 }
 
 export function nextLang(): void {
-	setLang(LANGS[(LANGS.indexOf(current) + 1) % LANGS.length]);
+	const i = LANGS.findIndex((l) => l.id === i18n.lang);
+	setLang(LANGS[(i + 1) % LANGS.length].id);
 }
 
-export function tr(key: TextKey, l: Lang = current): string {
-	return DICT[l][key];
-}
-
-export const OP_NAME: Record<Op, string> = { or: 'OR', and: 'AND', xor: 'XOR' };
-
-const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 export function roman(n: number): string {
 	return ROMAN[n] ?? String(n);
-}
-
-/** 12840 → «12 840». */
-export function formatScore(n: number): string {
-	return String(Math.max(0, Math.floor(n))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }

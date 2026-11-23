@@ -1,11 +1,11 @@
 # neo-arcade
 
-Work happens in Pac-Man only: `src/games/pacman/` and `prototypes/pacman/`.
-Do not read, search or change `src/games/snake/` or `src/games/tetris/` (also not through
-Bash `cat`/`grep`/`find`); scope searches to the Pac-Man folders.
+Work happens in Snake only: `src/games/snake/` and `prototypes/snake/`.
+Do not read, search or change `src/games/pacman/` or `src/games/tetris/` (also not through
+Bash `cat`/`grep`/`find`); scope searches to the Snake folders.
 
-Start from `src/games/pacman/ROADMAP.md` (the plan and the working agreement); read only
-the parts of `DESIGN.md` and `ARCHITECTURE.md` the step needs. Branch: `feat/pacman`.
+Start from `src/games/snake/ROADMAP.md` (the plan and the working agreement); read only
+the parts of `DESIGN.md` the step needs.
 
 Checks: `npm run check`, `npm test`, `npm run lint`.
 

@@ -1,52 +1,57 @@
-<!-- src/routes/games/snake/+page.svelte -->
+<!-- src/routes/games/snake/+page.svelte — «Дрейф», спокойная змейка. -->
 <script lang="ts">
-	import GameStage from '$shared/ui/GameStage.svelte';
-	import SnakeOverlay from '$games/snake/ui/SnakeOverlay.svelte';
-	import SnakeHud from '$games/snake/ui/SnakeHud.svelte';
-	import SnakeBackdrop from '$games/snake/ui/SnakeBackdrop.svelte';
-	import { SnakeGame } from '$games/snake/SnakeGame';
+	import { onMount } from 'svelte';
+	import DriftHud from '$games/snake/ui/DriftHud.svelte';
+	import DriftOverlay from '$games/snake/ui/DriftOverlay.svelte';
+	import { DriftGame } from '$games/snake/DriftGame';
+	import { tr } from '$games/snake/i18n';
 
-	let game: SnakeGame | null = $state(null);
+	let stage = $state<HTMLDivElement | undefined>(undefined);
+
+	onMount(() => {
+		if (!stage) return;
+		const game = new DriftGame();
+		void game.init(stage).catch((e) => console.error('[Drift] init failed', e));
+		if (new URLSearchParams(location.search).has('debug'))
+			(window as unknown as { __drift?: DriftGame }).__drift = game;
+		return () => game.destroy();
+	});
 </script>
 
 <svelte:head>
-	<title>SNAKE · Capsule Arcade</title>
+	<title>{tr('name')} · Capsule Arcade</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link
 		rel="stylesheet"
-		href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@500&family=Alegreya+Sans+SC:wght@500;700;800&family=Forum&display=swap"
+		href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400&display=swap"
 	/>
 </svelte:head>
 
-{#snippet hudTop()}
-	<SnakeHud />
-{/snippet}
+<main class="drift">
+	<div class="stage" bind:this={stage}></div>
+	<DriftHud />
+	<DriftOverlay />
+</main>
 
-{#snippet overlay()}
-	<SnakeOverlay />
-{/snippet}
+<style>
+	.drift {
+		--d-ink: #cfe6ea;
+		--d-dim: #7f9fab;
+		position: fixed;
+		inset: 0;
+		overflow: hidden;
+		background: #02070d;
+		color: var(--d-ink);
+		font-family: 'Raleway', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+		font-weight: 300;
+		touch-action: none;
+		user-select: none;
+		-webkit-user-select: none;
+	}
 
-<SnakeBackdrop />
-
-<GameStage
-	showBack={false}
-	init={(el) => {
-		const g = new SnakeGame();
-		game = g;
-
-		void g.init(el).catch((e) => console.error('[Snake] init failed', e));
-
-		return () => {
-			game = null;
-			g.destroy();
-		};
-	}}
-	touch={{
-		direction: (dir) => game?.touchDirection(dir),
-		pause: () => game?.touchPause(),
-		mute: () => game?.touchMute()
-	}}
-	{hudTop}
-	{overlay}
-/>
+	.stage {
+		position: absolute;
+		inset: 0;
+	}
+</style>

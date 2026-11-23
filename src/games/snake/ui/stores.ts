@@ -1,64 +1,60 @@
 import { writable } from 'svelte/store';
-import type { Op } from '../sim/types';
+import type { TextKey } from '../i18n';
+
+export type Screen = 'title' | 'pause' | 'album' | null;
+export type MenuItem =
+	'play' | 'resume' | 'album' | 'language' | 'sound' | 'mainmenu' | 'leave' | 'back';
+
+export interface AlbumCard {
+	id: string;
+	hue: number;
+	/** SVG-пути гладкого рисунка в координатах сетки (viewBox 0 0 COLS ROWS). */
+	paths: string[];
+	dots: { x: number; y: number }[];
+	state: 'done' | 'progress' | 'unknown';
+	tides: number[];
+}
 
 export interface HudState {
 	visible: boolean;
-	width: number;
-	score: number;
-	act: number;
-	streak: number;
-	op: Op | null;
-	touching: number;
-	total: number;
-	ok: boolean;
+	mode: 'current' | 'pond' | 'reveal';
+	/** Номер рисунка, с единицы. */
+	pic: number;
+	/** Состояние штрихов рисунка: горит, ждёт в этом заходе, ещё впереди. */
+	strokes: ('lit' | 'now' | 'later')[];
+	got: number;
+	need: number;
+	tide: number;
 }
 
-export const hudStore = writable<HudState>({
-	visible: false,
-	width: 0,
-	score: 0,
-	act: 1,
-	streak: 0,
-	op: null,
-	touching: 0,
-	total: 0,
-	ok: false
-});
-
-export type Screen = 'title' | 'pause' | 'over' | null;
-export type MenuItem =
-	'begin' | 'language' | 'sound' | 'resume' | 'restart' | 'mainmenu' | 'again' | 'leave';
-
-export interface ScreenState {
+export interface UiState {
 	screen: Screen;
 	items: MenuItem[];
 	sel: number;
 	muted: boolean;
-	score: number;
-	best: number;
-	isRecord: boolean;
-	alphas: number;
-	maxLen: number;
-	act: number;
+	touch: boolean;
+	hud: HudState;
+	hint: { id: number; key: TextKey | null };
+	banner: { id: number; title: string; sub: string } | null;
+	album: AlbumCard[];
 }
 
-export const screenStore = writable<ScreenState>({
+export const ui = writable<UiState>({
 	screen: null,
 	items: [],
 	sel: 0,
 	muted: false,
-	score: 0,
-	best: 0,
-	isRecord: false,
-	alphas: 0,
-	maxLen: 0,
-	act: 1
+	touch: false,
+	hud: { visible: false, mode: 'current', pic: 1, strokes: [], got: 0, need: 0, tide: 0 },
+	hint: { id: 0, key: null },
+	banner: null,
+	album: []
 });
 
-export interface SnakeActions {
+export interface Actions {
 	select(i: number): void;
 	hover(i: number): void;
 	pause(): void;
 }
 
-export const actionsStore = writable<SnakeActions | null>(null);
+export const actions = writable<Actions | null>(null);
