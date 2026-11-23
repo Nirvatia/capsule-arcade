@@ -75,6 +75,8 @@ export class Renderer {
 	grid = { cell: 40, x: 0, y: 0 };
 	/** Пикселей на единицу поля Течения. */
 	unit = 1;
+	/** Сглаженный угол головы на Полотне: на углах сетки нос поворачивает плавно. */
+	private pondAng: number | null = null;
 
 	constructor(parent: HTMLElement) {
 		this.view = document.createElement('canvas');
@@ -311,8 +313,8 @@ export class Renderer {
 		}
 		curSub.push(P(cur));
 		subs.push(curSub);
-		const R = clamp(10 * u * 1.15, 6, 13);
-		this.drawSnake(this.sample(subs, 4), R, cur.ang, true, f, 1);
+		const R = clamp(8.5 * u, 5, 11);
+		this.drawSnake(this.sample(subs, 3), R, cur.ang, 0.6, f, 1);
 	}
 
 	private drawGate(x: number, y: number, R: number, open: boolean, hue: number, t: number): void {
@@ -388,7 +390,11 @@ export class Renderer {
 		if (fade > 0) {
 			const pts = this.sample(this.pondPath(pond), c * 0.13);
 			const last = pts[pts.length - 1];
-			this.drawSnake(pts, c * 0.24, Math.atan2(last.ty, last.tx), false, f, fade);
+			const want = Math.atan2(last.ty, last.tx);
+			if (this.pondAng === null) this.pondAng = want;
+			const d = Math.atan2(Math.sin(want - this.pondAng), Math.cos(want - this.pondAng));
+			this.pondAng += d * 0.3;
+			this.drawSnake(pts, c * 0.2, this.pondAng, 0.3, f, fade);
 		}
 	}
 
@@ -694,116 +700,202 @@ export class Renderer {
 		return out;
 	}
 
+	/**
+	 * Морская змея: узкое тело, сходящееся в острый хвост, светлые поперечные кольца,
+	 * отдельная вытянутая голова с глазами по бокам и изредка — язык.
+	 * `R` — полуширина тела в самом толстом месте.
+	 */
 	private drawSnake(
 		pts: SnakePt[],
 		R: number,
 		headAng: number,
-		undulate: boolean,
+		wave: number,
 		f: FrameState,
 		alpha: number
 	): void {
 		const { ctx } = this;
 		const n = pts.length;
-		if (!n || alpha <= 0) return;
+		if (n < 2 || alpha <= 0) return;
 		const hue = SNAKE_HUE;
 		const t = f.t;
-		if (undulate)
+		// извивы: бегущая волна, у головы гаснет, чтобы нос смотрел ровно
+		if (wave > 0)
 			for (const p of pts) {
-				const off = Math.sin(p.sh * 0.05 - t * 4.6) * R * 0.5 * clamp(p.sh / 110, 0, 1);
+				const k = clamp(p.sh / (R * 6), 0, 1);
+				const off = Math.sin(p.sh / (R * 5.5) - t * 4.2) * R * wave * k;
 				p.x += -p.ty * off;
 				p.y += p.tx * off;
 			}
-		const wave = (t - f.pulseAt) * 0.9;
+		const pulse = (t - f.pulseAt) * 0.9;
 		const boost = (u: number): number => {
-			const d = (u - (1 - wave)) / 0.13;
-			return wave < 1.4 ? Math.exp(-d * d) : 0;
+			const d = (u - (1 - pulse)) / 0.13;
+			return pulse < 1.4 ? Math.exp(-d * d) : 0;
 		};
-		const rad = (u: number): number => R * (0.38 + 0.62 * Math.pow(u, 0.55));
+		// полуширина: острый хвост, ровное тело, лёгкая шея перед головой
+		const half = (u: number): number => {
+			const tail = 0.1 + 0.9 * (1 - Math.pow(1 - clamp(u / 0.5, 0, 1), 2));
+			const neck = 1 - 0.18 * clamp((u - 0.9) / 0.1, 0, 1);
+			return R * tail * neck;
+		};
+		const side = pts.map((p) => {
+			const w = half(p.u);
+			return { lx: p.x - p.ty * w, ly: p.y + p.tx * w, rx: p.x + p.ty * w, ry: p.y - p.tx * w, w };
+		});
+		const outline = (): void => {
+			ctx.beginPath();
+			ctx.moveTo(side[0].lx, side[0].ly);
+			for (let i = 1; i < n; i++) ctx.lineTo(side[i].lx, side[i].ly);
+			for (let i = n - 1; i >= 0; i--) ctx.lineTo(side[i].rx, side[i].ry);
+			ctx.closePath();
+		};
 		ctx.globalAlpha = alpha;
+		ctx.lineJoin = 'round';
+		ctx.lineCap = 'round';
+
+		// мягкое свечение воды вокруг тела (и волна света, когда змейка что-то подобрала)
 		ctx.globalCompositeOperation = 'lighter';
-		for (let i = 0; i < n; i += 2) {
+		for (let i = 0; i < n; i += 3) {
 			const p = pts[i];
-			this.glow(
-				lerp(hue + 50, hue, p.u),
-				p.x,
-				p.y,
-				rad(p.u) * 2.4,
-				(0.02 + 0.07 * p.u + 0.14 * boost(p.u)) * alpha
-			);
+			this.glow(hue, p.x, p.y, R * 3, (0.025 + 0.03 * p.u + 0.16 * boost(p.u)) * alpha);
 		}
 		ctx.globalCompositeOperation = 'source-over';
-		ctx.globalAlpha = alpha;
-		for (const p of pts) {
-			const b = boost(p.u);
-			ctx.fillStyle = `hsl(${lerp(hue + 50, hue, p.u)},${45 + 20 * p.u}%,${10 + 22 * p.u + 16 * b}%)`;
-			ctx.beginPath();
-			ctx.arc(p.x, p.y, rad(p.u), 0, TAU);
-			ctx.fill();
-		}
-		for (const p of pts) {
-			const b = boost(p.u);
-			const r = rad(p.u);
-			ctx.fillStyle = `hsla(${hue - 6},60%,${52 + 12 * p.u + 10 * b}%,${(0.12 + 0.3 * p.u + 0.25 * b) * alpha})`;
-			ctx.beginPath();
-			ctx.arc(p.x - p.ty * r * 0.22, p.y + p.tx * r * 0.22, r * 0.45, 0, TAU);
-			ctx.fill();
-		}
-		// пятна-огоньки вдоль тела
-		ctx.globalCompositeOperation = 'lighter';
-		const sp = R * 3.6;
-		let pk = -1;
-		for (const p of pts) {
-			const k = Math.floor(p.sh / sp);
-			if (k === pk || k === 0) continue;
-			pk = k;
-			const tw = 0.5 + 0.5 * Math.sin(t * 2.2 + k * 1.7);
-			const r = rad(p.u);
-			const side = k % 2 ? 1 : -1;
-			this.glow(
-				hue + 24,
-				p.x - p.ty * r * 0.55 * side,
-				p.y + p.tx * r * 0.55 * side,
-				R * 0.7,
-				(0.15 + 0.35 * tw) * p.u * alpha
-			);
-		}
-		ctx.globalCompositeOperation = 'source-over';
-		// голова
-		const hd = pts[n - 1];
-		const hr = R * 1.28;
-		ctx.globalCompositeOperation = 'lighter';
-		this.glow(hue, hd.x, hd.y, hr * 3, (0.22 + 0.15 * boost(1)) * alpha);
-		ctx.globalCompositeOperation = 'source-over';
-		const g = ctx.createRadialGradient(
-			hd.x - hr * 0.25,
-			hd.y - hr * 0.3,
-			hr * 0.08,
-			hd.x,
-			hd.y,
-			hr
-		);
-		g.addColorStop(0, `hsl(${hue - 6},70%,74%)`);
-		g.addColorStop(0.55, `hsl(${hue},55%,46%)`);
-		g.addColorStop(1, `hsl(${hue + 24},55%,24%)`);
-		ctx.fillStyle = g;
-		ctx.beginPath();
-		ctx.arc(hd.x, hd.y, hr, 0, TAU);
+
+		// тело
+		outline();
+		ctx.fillStyle = `hsl(${hue + 8},42%,15%)`;
 		ctx.fill();
-		const ca = Math.cos(headAng);
-		const sa = Math.sin(headAng);
-		for (const side of [-1, 1]) {
-			const ex = hd.x + ca * hr * 0.34 - sa * side * hr * 0.5;
-			const ey = hd.y + sa * hr * 0.34 + ca * side * hr * 0.5;
-			ctx.fillStyle = '#04121c';
+
+		// светлые кольца, привязанные к телу (едут вместе с ним)
+		const B = R * 2.6;
+		ctx.fillStyle = `hsla(${hue - 4},38%,34%,0.75)`;
+		let i = 0;
+		while (i < n - 1) {
+			const ph = (pts[i].sh % B) / B;
+			if (ph > 0.42 || pts[i].sh < R * 1.2) {
+				i++;
+				continue;
+			}
+			let j = i;
+			while (j < n - 1 && (pts[j].sh % B) / B <= 0.42 && pts[j].sh >= R * 1.2) j++;
 			ctx.beginPath();
-			ctx.arc(ex, ey, hr * 0.22, 0, TAU);
+			ctx.moveTo(side[i].lx, side[i].ly);
+			for (let k = i + 1; k <= j; k++) ctx.lineTo(side[k].lx, side[k].ly);
+			for (let k = j; k >= i; k--) ctx.lineTo(side[k].rx, side[k].ry);
+			ctx.closePath();
 			ctx.fill();
-			ctx.fillStyle = 'rgba(200,236,240,0.8)';
+			i = j + 1;
+		}
+
+		// блик вдоль спины — тело кажется круглым
+		ctx.beginPath();
+		for (let k = 0; k < n; k++) {
+			const p = pts[k];
+			const w = side[k].w * 0.35;
+			const x = p.x - p.ty * w;
+			const y = p.y + p.tx * w;
+			if (k) ctx.lineTo(x, y);
+			else ctx.moveTo(x, y);
+		}
+		ctx.strokeStyle = `hsla(${hue - 10},55%,72%,0.16)`;
+		ctx.lineWidth = Math.max(1, R * 0.35);
+		ctx.stroke();
+
+		// огоньки по хребту, по одному в каждом тёмном промежутке
+		ctx.globalCompositeOperation = 'lighter';
+		let last = -1;
+		for (const p of pts) {
+			const k = Math.floor(p.sh / B);
+			if (k === last || p.sh < B) continue;
+			if ((p.sh % B) / B < 0.68) continue;
+			last = k;
+			const tw = 0.55 + 0.45 * Math.sin(t * 2 + k * 1.9);
+			this.glow(hue + 14, p.x, p.y, R * 1.3, (0.18 + 0.3 * tw + 0.3 * boost(p.u)) * p.u * alpha);
+		}
+		ctx.globalCompositeOperation = 'source-over';
+
+		// контур — чтобы силуэт читался на тёмной воде
+		outline();
+		ctx.strokeStyle = `hsla(${hue + 20},50%,6%,0.75)`;
+		ctx.lineWidth = 1;
+		ctx.stroke();
+
+		this.drawHead(pts[n - 1], R, headAng, t, boost(1), alpha);
+		ctx.globalAlpha = 1;
+	}
+
+	private drawHead(hd: Pt, R: number, ang: number, t: number, boost: number, alpha: number): void {
+		const { ctx } = this;
+		const hue = SNAKE_HUE;
+		const hl = R * 2.5;
+		const hw = R * 1.3;
+		ctx.save();
+		ctx.translate(hd.x, hd.y);
+		ctx.rotate(ang);
+		ctx.globalAlpha = alpha;
+
+		ctx.globalCompositeOperation = 'lighter';
+		this.glow(hue, hl * 0.35, 0, R * 3.2, (0.16 + 0.2 * boost) * alpha);
+		ctx.globalCompositeOperation = 'source-over';
+
+		// язык: короткий раздвоенный взмах раз в несколько секунд
+		const ph = (t % 3.7) / 3.7;
+		if (ph < 0.09) {
+			const out = Math.sin((ph / 0.09) * Math.PI);
+			const x0 = hl * 0.95;
+			const x1 = x0 + R * 1.5 * out;
+			ctx.strokeStyle = `hsla(350,55%,62%,${0.85 * alpha})`;
+			ctx.lineWidth = Math.max(1, R * 0.14);
 			ctx.beginPath();
-			ctx.arc(ex - hr * 0.05, ey - hr * 0.06, hr * 0.07, 0, TAU);
+			ctx.moveTo(x0, 0);
+			ctx.lineTo(x1, 0);
+			ctx.lineTo(x1 + R * 0.45 * out, -R * 0.3 * out);
+			ctx.moveTo(x1, 0);
+			ctx.lineTo(x1 + R * 0.45 * out, R * 0.3 * out);
+			ctx.stroke();
+		}
+
+		// голова: шире шеи, вытянутая, с закруглённой мордой
+		ctx.beginPath();
+		ctx.moveTo(-hl * 0.35, -hw * 0.72);
+		ctx.bezierCurveTo(-hl * 0.05, -hw * 1.02, hl * 0.45, -hw * 1.0, hl * 0.78, -hw * 0.6);
+		ctx.quadraticCurveTo(hl * 1.02, -hw * 0.2, hl, 0);
+		ctx.quadraticCurveTo(hl * 1.02, hw * 0.2, hl * 0.78, hw * 0.6);
+		ctx.bezierCurveTo(hl * 0.45, hw * 1.0, -hl * 0.05, hw * 1.02, -hl * 0.35, hw * 0.72);
+		ctx.closePath();
+		const g = ctx.createLinearGradient(-hl * 0.35, 0, hl, 0);
+		g.addColorStop(0, `hsl(${hue + 8},42%,15%)`);
+		g.addColorStop(0.6, `hsl(${hue + 2},40%,${21 + 10 * boost}%)`);
+		g.addColorStop(1, `hsl(${hue - 4},42%,${30 + 10 * boost}%)`);
+		ctx.fillStyle = g;
+		ctx.fill();
+		ctx.strokeStyle = `hsla(${hue + 20},50%,6%,0.75)`;
+		ctx.lineWidth = 1;
+		ctx.stroke();
+
+		// светлое кольцо на затылке и блик на темени
+		ctx.fillStyle = `hsla(${hue - 4},38%,34%,0.7)`;
+		ctx.beginPath();
+		ctx.ellipse(-hl * 0.12, 0, hl * 0.1, hw * 0.86, 0, 0, TAU);
+		ctx.fill();
+		ctx.fillStyle = `hsla(${hue - 10},55%,72%,0.14)`;
+		ctx.beginPath();
+		ctx.ellipse(hl * 0.42, -hw * 0.22, hl * 0.3, hw * 0.22, 0, 0, TAU);
+		ctx.fill();
+
+		// глаза по бокам, ближе к морде
+		for (const s of [-1, 1]) {
+			const ex = hl * 0.55;
+			const ey = s * hw * 0.62;
+			ctx.fillStyle = '#020a10';
+			ctx.beginPath();
+			ctx.ellipse(ex, ey, R * 0.32, R * 0.26, 0, 0, TAU);
+			ctx.fill();
+			ctx.fillStyle = `hsla(${hue},60%,74%,0.9)`;
+			ctx.beginPath();
+			ctx.arc(ex + R * 0.08, ey - s * R * 0.06, R * 0.09, 0, TAU);
 			ctx.fill();
 		}
-		ctx.globalAlpha = 1;
+		ctx.restore();
 	}
 
 	// ------------------------------------------------------------------ эффекты

@@ -167,7 +167,7 @@ export class Current {
 			let d = want - this.ang;
 			d = Math.atan2(Math.sin(d), Math.cos(d));
 			const max = CURRENT.TURN * dt;
-			this.ang += Math.max(-max, Math.min(max, d * (1 - Math.exp(-8 * dt)) * 3));
+			this.ang += Math.max(-max, Math.min(max, d * (1 - Math.exp(-CURRENT.STEER * dt)) * 2));
 		}
 
 		const dx = Math.cos(this.ang);

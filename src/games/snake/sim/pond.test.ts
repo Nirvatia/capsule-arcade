@@ -38,6 +38,7 @@ describe('pond movement', () => {
 
 	it('queues turns and ignores reversing', () => {
 		const p = pond([], { x: 2, y: 2 }, 1);
+		p.t = 0.5; // середина шага: поворот ждёт следующей клетки
 		p.press(3);
 		p.press(2);
 		steps(p, 2);
@@ -146,16 +147,30 @@ describe('forgiveness', () => {
 		expect(p.strokes[0].lit).toBe(true);
 	});
 
-	it('does not rewrite the step when the late turn would not help', () => {
+	it('turns at once when pressed just after the centre, even off the strokes', () => {
 		const p = pond([], { x: 2, y: 2 }, 1);
 		steps(p, 1);
 		p.t = 0.1;
 		p.press(2);
-		expect(p.next).toMatchObject({ x: 4, y: 2 });
+		expect(p.next).toMatchObject({ x: 3, y: 3 });
 		steps(p, 1);
-		expect(p.head).toMatchObject({ x: 4, y: 2 });
-		steps(p, 1);
-		expect(p.head).toMatchObject({ x: 4, y: 3 });
+		expect(p.head).toMatchObject({ x: 3, y: 3 });
+	});
+
+	it('does not break a tracing step for a turn that leaves the stroke', () => {
+		const p = pond([L], { x: 2, y: 2 }, 1);
+		steps(p, 2); // голова на (4, 2), шаг ведёт к (5, 2) по штриху
+		p.t = 0.1;
+		p.press(0);
+		expect(p.next).toMatchObject({ x: 5, y: 2 });
+	});
+
+	it('never rewrites a step that crosses the edge', () => {
+		const p = pond([], { x: 10, y: 2 }, 1);
+		steps(p, 1); // шаг от (11, 2) через край
+		p.t = 0.1;
+		p.press(2);
+		expect(p.next).toMatchObject({ x: 0, y: 2, w: true });
 	});
 
 	it('is not applied once the head is too far past the centre', () => {

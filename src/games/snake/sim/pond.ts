@@ -148,14 +148,19 @@ export class Pond {
 		return this.strokes.some((s) => ok(s, cell));
 	}
 
+	/**
+	 * Поворот, нажатый сразу после центра клетки, перестраивает текущий шаг — иначе он
+	 * ждал бы следующей клетки и ощущался бы как задержка. Шаг, который ведёт обводку,
+	 * ломается только ради поворота, который тоже ведёт обводку.
+	 */
 	private tryLateTurn(d: Dir): boolean {
-		if (this.lateUsed || this.t > POND.LATE_TURN) return false;
+		if (this.lateUsed || this.t > POND.LATE_TURN || this.next.w) return false;
 		const head = this.head;
-		// Текущий шаг уже ведёт по штриху — не ломаем его.
-		if (this.helps(head, this.dir)) return false;
-		if (!this.helps(head, d)) return false;
+		const target = this.step(head, d);
+		if (target.w) return false;
+		if (this.helps(head, this.dir) && !this.helps(head, d)) return false;
 		this.dir = d;
-		this.next = this.step(head, d);
+		this.next = target;
 		this.lateUsed = true;
 		return true;
 	}
@@ -257,14 +262,13 @@ export class Pond {
 		return { n: best, rev: bestRev };
 	}
 
-	/** Голова рядом с необведённым штрихом или ведёт обводку. */
+	/** Голова ведёт обводку или следующая клетка лежит на необведённом штрихе (или рядом по стороне). */
 	private near(): boolean {
 		const c = this.next;
 		for (const s of this.strokes) {
 			if (s.lit) continue;
-			if (s.n > 0) return true;
-			for (const p of s.cells)
-				if (Math.abs(p.x - c.x) <= 1 && Math.abs(p.y - c.y) <= 1) return true;
+			if (s.n > 1) return true;
+			for (const p of s.cells) if (Math.abs(p.x - c.x) + Math.abs(p.y - c.y) <= 1) return true;
 		}
 		return false;
 	}
