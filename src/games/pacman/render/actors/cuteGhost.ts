@@ -1,6 +1,6 @@
 // The season ghosts: one cel-style painter (ink outline, a belly shade, a highlight, bean feet
 // that step with the ground covered, a face that slides toward the heading) and a body shape
-// per season: a water drop in summer, a hedgehog in autumn, a bunny in winter, a tulip bud in spring, a turtle in summer (the drop is kept). No tentacles and no wavy skirt.
+// per season: a water drop in summer, a hedgehog in autumn, a bunny in winter, a ladybug in spring, a turtle in summer (the drop is kept). No tentacles and no wavy skirt.
 // Pure drawing: the caller picks the state (`cuteStateFor`), the shape and the colour.
 import type { GhostKind, GhostState } from '../../logic/actors/GhostModel';
 import type { HypnosisMode } from '../../logic/rules/HypnosisService';
@@ -9,7 +9,7 @@ type Ctx = CanvasRenderingContext2D;
 /** A body colour and its shade (the belly, the feet). */
 export type Palette = { b: string; s: string };
 
-export type CuteShape = 'drop' | 'hedgehog' | 'bunny' | 'tulip' | 'turtle';
+export type CuteShape = 'drop' | 'hedgehog' | 'bunny' | 'ladybug' | 'turtle';
 export type CuteState = 'normal' | 'scared' | 'overdrive' | 'eyes' | 'rage' | 'feeder' | 'hunter';
 
 export interface CuteOptions {
@@ -190,6 +190,7 @@ const HEDGEHOG: GhostShape = {
 };
 
 /** The winter bunny: a round body and two long ears with a pink inside. */
+/** The winter bunny, its ears about a third shorter (the owner's pick of `animals`, 2026-11-24). */
 const BUNNY: GhostShape = {
 	paths: [
 		(c) => {
@@ -198,24 +199,24 @@ const BUNNY: GhostShape = {
 		},
 		(c) => {
 			c.beginPath();
-			c.ellipse(-4.8, -9.6, 2.9, 6, -0.16, 0, TAU);
+			c.ellipse(-4.8, -7.6, 3, 4.2, -0.2, 0, TAU);
 		},
 		(c) => {
 			c.beginPath();
-			c.ellipse(4.8, -9.6, 2.9, 6, 0.16, 0, TAU);
+			c.ellipse(4.8, -7.6, 3, 4.2, 0.2, 0, TAU);
 		}
 	],
 	over: (c) => {
 		for (const side of [-1, 1]) {
 			c.beginPath();
-			c.ellipse(side * 4.8, -9.2, 1.4, 4.2, side * 0.16, 0, TAU);
+			c.ellipse(side * 4.8, -7.6, 1.5, 2.8, side * 0.2, 0, TAU);
 			c.fillStyle = 'rgba(255,190,215,.92)';
 			c.fill();
 		}
 	},
 	lid: (pal) => pal.b,
-	dy: 2.6,
-	scale: 0.86,
+	dy: 1.8,
+	scale: 0.9,
 	highlight: [-5, -0.4],
 	ring: 15.4,
 	ey: 3,
@@ -232,48 +233,47 @@ function polygon(c: Ctx, points: ReadonlyArray<readonly [number, number]>): void
 	c.closePath();
 }
 
-/** The spring tulip bud: a round cup under three pointed petals, with green stalk-feet. */
-const TULIP: GhostShape = {
+/**
+ * The spring ladybug (the owner's pick of `animals`, 2026-11-24): a round shell in the ghost's
+ * colour with a parting line and dark spots, two antennae with ball tips, dark feet.
+ */
+const LADYBUG: GhostShape = {
 	paths: [
 		(c) => {
 			c.beginPath();
-			c.ellipse(0, 3.2, 9.8, 7.8, 0, 0, TAU);
-		},
-		(c) =>
-			polygon(c, [
-				[-9.2, 0],
-				[-8.6, -10.6],
-				[-2.6, -3.4]
-			]),
-		(c) =>
-			polygon(c, [
-				[-4.2, -3],
-				[0, -13],
-				[4.2, -3]
-			]),
-		(c) =>
-			polygon(c, [
-				[9.2, 0],
-				[8.6, -10.6],
-				[2.6, -3.4]
-			])
+			c.ellipse(0, 2.4, 10.4, 9.4, 0, 0, TAU);
+		}
 	],
+	back: (c) => {
+		for (const s of [-1, 1]) {
+			line(c, s * 2.6, -5.6, s * 5.4, -11.4, INK, 1.1);
+			ellipse(c, s * 5.6, -11.8, 1.5, 1.5, INK);
+		}
+	},
 	over: (c) => {
-		line(c, -6.6, -7.4, -5.6, -2, 'rgba(60,10,30,.35)', 0.8);
-		line(c, 0, -9.6, 0, -4.4, 'rgba(60,10,30,.35)', 0.8);
-		line(c, 6.6, -7.4, 5.6, -2, 'rgba(60,10,30,.35)', 0.8);
+		line(c, 0, -6.8, 0, -1.4, 'rgba(36,20,24,.55)', 0.9);
+		for (const [x, y, r] of [
+			[-6.4, -3, 1.7],
+			[6.4, -3, 1.7],
+			[-8, 3.2, 1.3],
+			[8, 3.2, 1.3],
+			[-3.4, -5.8, 1.1],
+			[3.4, -5.8, 1.1]
+		] as const) {
+			ellipse(c, x, y, r, r, 'rgba(36,20,24,.8)');
+		}
 	},
 	lid: (pal) => pal.b,
-	foot: () => '#4fae3a',
+	foot: () => '#3a2630',
 	dy: 2,
-	scale: 0.94,
-	highlight: [-5, 0],
+	scale: 0.92,
+	highlight: [-5.4, -1.6],
 	ring: 15.4,
-	ey: 2.4,
-	ex: 4.1,
-	rx: 3.1,
-	ry: 3.5,
-	my: 5,
+	ey: 1.8,
+	ex: 3.9,
+	rx: 3,
+	ry: 3.4,
+	my: 6.2,
 	nose: false
 };
 
@@ -335,7 +335,7 @@ const TURTLE: GhostShape = {
 
 /** The ghost of each season (the mask turns the hero into it too). */
 export const SEASON_GHOST: Readonly<Record<string, CuteShape>> = {
-	spring: 'tulip',
+	spring: 'ladybug',
 	summer: 'turtle',
 	autumn: 'hedgehog',
 	winter: 'bunny'
@@ -345,7 +345,7 @@ export const GHOST_SHAPES: Record<CuteShape, GhostShape> = {
 	drop: DROP,
 	hedgehog: HEDGEHOG,
 	bunny: BUNNY,
-	tulip: TULIP,
+	ladybug: LADYBUG,
 	turtle: TURTLE
 };
 
