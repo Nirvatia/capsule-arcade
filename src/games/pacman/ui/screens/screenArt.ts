@@ -78,7 +78,8 @@ export function coinArt(t: SeasonTheme, ms: boolean, selected: boolean): string 
 	s += `<circle r="34" fill="${t.shade}" stroke="${t.ink}" stroke-width="4"/>`;
 	s += `<circle r="29" fill="${t.mid}"/>`;
 	s += `<path d="M-24 -8 A26 26 0 0 1 8 -24" fill="none" stroke="${t.light}" stroke-width="4" stroke-linecap="round" opacity=".85"/>`;
-	s += heroImageArt(ms, t.key, 62);
+	// inside the coin's face (r 29), her bow included
+	s += heroImageArt(ms, t.key, 52);
 	return s;
 }
 

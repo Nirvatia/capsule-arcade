@@ -14,7 +14,7 @@ describe('the menu coins', () => {
 		expect(s).toContain('<image href="data:image/png;base64,TEST"');
 		expect(s).toContain('data-ms="false"');
 		expect(s).toContain('data-season="summer"');
-		expect(s).toContain('width="62"');
+		expect(s).toContain('width="52"');
 		expect(s).not.toContain('#ffaa24');
 	});
 

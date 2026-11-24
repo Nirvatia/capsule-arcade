@@ -126,7 +126,7 @@
 		<g class="sway" style:--rot="-.8deg">
 			{@html boardArt(theme, 'scr-death', 20, 8, 280, 62, { seed: 5, drop: 14 })}
 		</g>
-		<g transform="translate({lives === 1 ? 54 : 56} 40) scale(.85)"
+		<g transform="translate({lives === 1 ? 54 : 56} 39) scale(.7)"
 			>{@html heroImageArt(ms, theme.key)}</g
 		>
 		{#if lives === 1}
@@ -536,7 +536,7 @@
 					<g class="lift">
 						<g class="sway hang" style:--rot="-.4deg">
 							{@html plankArt(theme, 'scr-swap', 100, 394, 280, 58, { seed: 8 })}
-							<g transform="translate(138 423) scale(.7)">{@html heroImageArt(!ms, theme.key)}</g>
+							<g transform="translate(138 423) scale(.6)">{@html heroImageArt(!ms, theme.key)}</g>
 							<text class="num" x="262" y="434" font-size="26" text-anchor="middle"
 								>{ms ? 'PAC-MAN' : 'MS. PAC-MAN'}</text
 							>
