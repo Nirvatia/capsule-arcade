@@ -173,7 +173,6 @@ export class GameMain implements GameModule {
 			pause: () => input.pressPause(),
 			menu: () => input.pressMenu(),
 			profile: () => input.pressProfile(),
-			restart: () => director.restartLevel(),
 			fire: () => input.pressFire(),
 			steer: (direction) => input.steer(direction)
 		});

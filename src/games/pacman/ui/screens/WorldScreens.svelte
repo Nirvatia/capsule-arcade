@@ -54,9 +54,9 @@
 	);
 
 	const SIZE = {
-		menu: { w: 520, h: 668 },
+		menu: { w: 520, h: 726 },
 		ready: { w: 540, h: 356 },
-		pause: { w: 460, h: 520 },
+		pause: { w: 460, h: 442 },
 		over: { w: 480, h: 552 }
 	} as const;
 	const VEIL = { menu: 0.4, ready: 0.18, pause: 0.5, over: 0.55 } as const;
@@ -348,6 +348,20 @@
 						'hang'
 					)}
 				{/if}
+				{@render ropes(180, 340, 662, 180, 340, 682)}
+				{@render plank(
+					'scr-games-menu',
+					140,
+					682,
+					240,
+					38,
+					$t('gameSelect'),
+					20,
+					gameSelect,
+					false,
+					10,
+					'hang'
+				)}
 			{:else if screen === 'ready'}
 				<g transform="translate(0 {retry ? RETRY_LIFT : 0})">
 					<g class="sway" style:--rot="0deg">
@@ -394,23 +408,9 @@
 				)}
 				{@render ropes(124, 336, 228, 130, 330, 250)}
 				{@render plank(
-					'scr-restart',
-					100,
-					250,
-					260,
-					56,
-					$t('restart'),
-					32,
-					actions.restart,
-					false,
-					8,
-					'hang'
-				)}
-				{@render ropes(130, 330, 306, 130, 330, 328)}
-				{@render plank(
 					'scr-menu',
 					100,
-					328,
+					250,
 					260,
 					56,
 					$t('menu'),
@@ -420,12 +420,12 @@
 					9,
 					'hang b'
 				)}
-				{@render knob(408, 362, langLabel, 18, $t('language'), toggleLang)}
-				{@render ropes(140, 320, 384, 140, 320, 404)}
+				{@render knob(408, 284, langLabel, 18, $t('language'), toggleLang)}
+				{@render ropes(140, 320, 306, 140, 320, 326)}
 				{@render plank(
 					'scr-games',
 					100,
-					404,
+					326,
 					260,
 					40,
 					$t('gameSelect'),
@@ -436,11 +436,11 @@
 					'hang'
 				)}
 				{#if $touchDevice}
-					{@render ropes(90, 370, 444, 90, 370, 464)}
+					{@render ropes(90, 370, 366, 90, 370, 386)}
 					{@render plank(
 						'scr-gfx',
 						14,
-						464,
+						386,
 						210,
 						40,
 						graphicsLabel,
@@ -453,7 +453,7 @@
 					{@render plank(
 						'scr-ctl',
 						236,
-						464,
+						386,
 						210,
 						40,
 						controlsLabel,
@@ -464,11 +464,11 @@
 						'hang b'
 					)}
 				{:else}
-					{@render ropes(140, 320, 444, 140, 320, 464)}
+					{@render ropes(140, 320, 366, 140, 320, 386)}
 					{@render plank(
 						'scr-gfx',
 						110,
-						464,
+						386,
 						240,
 						40,
 						graphicsLabel,

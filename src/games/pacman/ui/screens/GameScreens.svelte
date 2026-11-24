@@ -43,7 +43,6 @@
 				<button type="button" tabindex={-1} class="primary" onclick={act(actions.pause)}
 					>{$t('resume')}</button
 				>
-				<button type="button" tabindex={-1} onclick={act(actions.restart)}>{$t('restart')}</button>
 				<button type="button" tabindex={-1} onclick={act(actions.menu)}>{$t('menu')}</button>
 				<button type="button" tabindex={-1} onclick={act(gameSelect)}>{$t('gameSelect')}</button>
 				<button type="button" tabindex={-1} class="ghost" onclick={act(toggleLang)}

@@ -1,6 +1,9 @@
 import { derived, writable } from 'svelte/store';
 
-export type Lang = 'en' | 'ru';
+export type Lang = 'en' | 'ru' | 'es';
+
+/** The language knob goes round in this order. */
+const ORDER: readonly Lang[] = ['en', 'ru', 'es'];
 
 const STORAGE_KEY = 'pacman.lang';
 
@@ -38,7 +41,6 @@ const EN = {
 	start: 'START',
 	playAgain: 'PLAY AGAIN',
 	resume: 'RESUME',
-	restart: 'RESTART',
 	menu: 'MENU',
 	gameSelect: 'GAME SELECT',
 	ready: 'READY!',
@@ -106,7 +108,6 @@ const RU: Record<I18nKey, string> = {
 	start: 'СТАРТ',
 	playAgain: 'ЕЩЁ РАЗ',
 	resume: 'ПРОДОЛЖИТЬ',
-	restart: 'ЗАНОВО',
 	menu: 'МЕНЮ',
 	gameSelect: 'ВЫБОР ИГР',
 	ready: 'ГОТОВЬСЯ!',
@@ -117,7 +118,7 @@ const RU: Record<I18nKey, string> = {
 	lastLife: 'последняя жизнь',
 	pressEnter: 'Enter — старт · Стрелки / WASD — движение · Пробел — пауза · H — герой · M — звук',
 	fire: 'F / Shift — выстрел (ад)',
-	language: 'ENGLISH',
+	language: 'ESPAÑOL',
 	world_spring: 'Весна',
 	world_summer: 'Лето',
 	world_autumn: 'Осень',
@@ -140,15 +141,84 @@ const RU: Record<I18nKey, string> = {
 	gfx_low: 'НИЗКАЯ'
 };
 
+const ES: Record<I18nKey, string> = {
+	score: 'PUNTOS',
+	high: 'RÉCORD',
+	level: 'NIVEL',
+	lives: 'VIDAS',
+	weapon: 'ARMA',
+	boss: 'JEFE',
+	phase: 'FASE',
+	hp: 'SALUD',
+	power: 'PODER',
+	overdrive: 'SOBRECARGA',
+	echo: 'ECO',
+	mask: 'MÁSCARA',
+	shock: 'DESCARGA',
+	abilityKey: 'F:',
+	abilityTap: 'TOCA:',
+	controls: 'CONTROLES',
+	ctl_swipe: 'DESLIZAR',
+	ctl_pad: 'CRUCETA',
+	pressTouch: 'Toca INICIO · Desliza por el laberinto para moverte · ❚❚ pausa',
+	fireTouch: 'El dial: tu habilidad (en el infierno, disparar)',
+	berserk: 'FURIA',
+	bfg: 'BFG',
+	barrel: 'BARRIL',
+	none: '—',
+	charge: 'CARGA',
+	rewardHint: 'Toma el corazón (+1 vida) o la salida',
+	weather: 'mal tiempo',
+	night: 'noche',
+	start: 'INICIO',
+	playAgain: 'OTRA VEZ',
+	resume: 'CONTINUAR',
+	menu: 'MENÚ',
+	gameSelect: 'ELEGIR JUEGO',
+	ready: '¡LISTO!',
+	paused: 'PAUSA',
+	gameOver: 'FIN DEL JUEGO',
+	newRecord: 'NUEVO RÉCORD',
+	livesLeft: 'vidas restantes',
+	lastLife: 'última vida',
+	pressEnter:
+		'Enter para empezar · Flechas / WASD para mover · Espacio pausa · H héroe · M sonido',
+	fire: 'F / Shift — disparar (infierno)',
+	language: 'ENGLISH',
+	world_spring: 'Primavera',
+	world_summer: 'Verano',
+	world_autumn: 'Otoño',
+	world_winter: 'Invierno',
+	world_hell: 'Infierno',
+	world_secret: 'Secreto',
+	boss_hell: 'SEÑOR INFERNAL',
+	oneUp: '1UP',
+	highScore: 'HIGH SCORE',
+	round: 'RONDA',
+	mute: 'Silenciar',
+	unmute: 'Activar sonido',
+	volume: 'Volumen',
+	pause: 'Pausa',
+	food: 'COMIDA',
+	graphics: 'GRÁFICOS',
+	gfx_auto: 'AUTO',
+	gfx_high: 'ALTA',
+	gfx_medium: 'MEDIA',
+	gfx_low: 'BAJA'
+};
+
+const TABLES: Record<Lang, Record<I18nKey, string>> = { en: EN, ru: RU, es: ES };
+
 function initial(): Lang {
 	try {
-		return localStorage.getItem(STORAGE_KEY) === 'ru' ? 'ru' : 'en';
+		const stored = localStorage.getItem(STORAGE_KEY);
+		return ORDER.find((l) => l === stored) ?? 'en';
 	} catch {
 		return 'en';
 	}
 }
 
-/** Interface language: English by default, Russian on request, remembered per viewer. */
+/** Interface language: English by default, Russian or Spanish on request, remembered per viewer. */
 export const lang = writable<Lang>(typeof window === 'undefined' ? 'en' : initial());
 
 lang.subscribe((value) => {
@@ -159,8 +229,9 @@ lang.subscribe((value) => {
 	}
 });
 
+/** The knob: the next language in `ORDER` (each table's `language` names the one it goes to). */
 export function toggleLang(): void {
-	lang.update((value) => (value === 'en' ? 'ru' : 'en'));
+	lang.update((value) => ORDER[(ORDER.indexOf(value) + 1) % ORDER.length]);
 }
 
 /** `$t('score')` in components. */
@@ -168,5 +239,5 @@ export const t = derived(
 	lang,
 	(value) =>
 		(key: I18nKey): string =>
-			value === 'ru' ? RU[key] : EN[key]
+			TABLES[value][key]
 );
