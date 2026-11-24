@@ -1,7 +1,7 @@
 // Prototype: the echo bonus in its own look (echo wisps, `render/actors/EchoCloneView`), played
 // by the real services on a real season world at game scale: a riot set off again and again
-// from above the hero's start (`AbilityService.echo`), and a token waiting on the board. Buttons: the four seasons, quarter
-// speed. Query: ?season=winter&capture (capture: window.__advance(seconds) steps 1/60 s).
+// from above the hero's start (`AbilityService.echo`), with the season's ghosts. Buttons: the four seasons, quarter
+// speed. Query: ?season=winter&capture (capture: window.__advance(seconds) steps 1/60 s), ?look=<candidate> (`looks.ts`).
 import { EventBus } from '../../../src/games/pacman/engine/EventBus';
 import type { PacmanEventMap } from '../../../src/games/pacman/core/Events';
 import { buildLevelSession } from '../../../src/games/pacman/logic/level/LevelSession';
@@ -9,6 +9,9 @@ import type { LevelSession } from '../../../src/games/pacman/logic/level/LevelSe
 import { seasonForLevel } from '../../../src/games/pacman/logic/level/SeasonCatalog';
 import { EchoCloneView } from '../../../src/games/pacman/render/actors/EchoCloneView';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
+import { GhostView } from '../../../src/games/pacman/render/actors/GhostView';
+import { SEASON_GHOST } from '../../../src/games/pacman/render/actors/cuteGhost';
+import { applyLook } from './looks';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
@@ -28,13 +31,11 @@ let vw = 0;
 let vh = 0;
 let world: MeadowWorld;
 let riot: LevelSession;
-/** The token's tile centre and the seconds it has left (it blinks in its last two). */
-let tokenAt = { x: 0.5, y: 0.5 };
-let tokenLeft = 8;
 let pause = 0;
 let time = 0;
+applyLook(EchoCloneView, q.get('look'));
 const riotView = new EchoCloneView();
-const tokenView = new EchoCloneView();
+const ghostView = new GhostView();
 const hero = new PacmanHero();
 
 function session(): LevelSession {
@@ -53,7 +54,8 @@ function session(): LevelSession {
 function startRiot(): void {
 	riot = session();
 	const s = riot.grid.playerSpawn;
-	riot.abilities.echo.start({ x: s.x, y: s.y - 2 });
+	const up = riot.grid.isWalkable(s.x, s.y - 2);
+	riot.abilities.echo.start({ x: s.x, y: up ? s.y - 2 : s.y });
 }
 
 function build(): void {
@@ -63,20 +65,6 @@ function build(): void {
 	world.setMood(0, 0);
 	for (let i = 0; i < 40; i++) world.update(0.1);
 	startRiot();
-	// the token on a dot tile a few steps from the hero's start
-	const g = riot.grid;
-	const s = g.playerSpawn;
-	outer: for (let d = 6; d < 20; d++) {
-		for (let y = 0; y < g.height; y++) {
-			for (let x = 0; x < g.width; x++) {
-				if (g.tileAt(x, y) === 'DT' && Math.abs(x - s.x) + Math.abs(y - s.y) === d) {
-					tokenAt = { x: x + 0.5, y: y + 0.5 };
-					break outer;
-				}
-			}
-		}
-	}
-	tokenLeft = 8;
 	for (const b of document.querySelectorAll<HTMLButtonElement>('[data-season]')) {
 		b.setAttribute('aria-pressed', String(b.dataset.season === season));
 	}
@@ -108,6 +96,7 @@ function frame(realDt: number): void {
 	time += dt;
 	world.update(dt);
 	if (riot.abilities.echo.phase === 'riot') {
+		riot.ghosts.update(dt);
 		riot.abilities.echo.update(dt, { ghosts: riot.ghosts, fruit: riot.fruit });
 	} else {
 		pause += dt;
@@ -115,10 +104,6 @@ function frame(realDt: number): void {
 			pause = 0;
 			startRiot();
 		}
-	}
-	tokenLeft -= dt;
-	if (tokenLeft <= 0) {
-		tokenLeft = 8;
 	}
 	const L = world.layout;
 	const S = L.tileSize;
@@ -128,7 +113,9 @@ function frame(realDt: number): void {
 	world.drawWorld(ctx);
 	world.drawMood(ctx);
 	world.drawFood(ctx, (x, y) => riot.progress.isCollected(x, y));
-	tokenView.drawToken(ctx, tokenAt, tokenLeft, L, time);
+	ghostView.style = SEASON_GHOST[season] ?? 'disc';
+	ghostView.time = time;
+	ghostView.draw(ctx, riot.ghosts, L, 0, false);
 	riotView.draw(ctx, riot.abilities.echo, L, time);
 	const s = riot.grid.playerSpawn;
 	hero.setRadius(S * 0.39);
@@ -143,6 +130,16 @@ function frame(realDt: number): void {
 	});
 	hero.draw(ctx);
 	world.drawOverlay(ctx);
+	if (q.has('portrait')) {
+		// the wisp large: four headings, the mouth shut to open (?portrait)
+		const R = 30;
+		ctx.fillStyle = '#c9a874';
+		ctx.fillRect(0, 0, 8 * R * 2.4, R * 3.4);
+		const body = (riotView as unknown as { body: (...a: unknown[]) => void }).body.bind(riotView);
+		[0, Math.PI / 2, Math.PI, -Math.PI / 2].forEach((a, i) => {
+			body(ctx, R * 1.6 + i * R * 2.6, R * 1.7, R, a, 0.12 + 0.1 * i);
+		});
+	}
 }
 
 window.addEventListener('resize', layout);

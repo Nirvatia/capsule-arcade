@@ -53,7 +53,7 @@ Most pages read the query string and/or show buttons. Common ones:
 | `death` | the death transitions |
 | `shift` | the season-turn transition |
 | `level-clear` | the level-clear flow |
-| `echo` | the echo bonus wisps on a season world |
+| `echo` | the echo bonus's wisps played by the real services on a season world at game scale, with the season's ghosts; `?look=A|B|C` swaps in a candidate look from `echo/looks.ts` (cel teal disc with echoes / spirit flame / crystal; no halo or threads), `?portrait` adds the wisp large in four headings; `?capture` exposes `window.__advance(seconds)` |
 | `easter-egg` | the easter egg |
 | `arcade` | the secret arcade level |
 | `hounds` | the station's hound pack to play (the owner's pick over the fluid swarm): the same maze, look, torch, beacons and escape as `swarm`, the pack from `logic/station/HoundPack`; R restarts (`?high` for High) |
