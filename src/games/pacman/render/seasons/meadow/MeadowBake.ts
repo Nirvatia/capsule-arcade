@@ -357,7 +357,7 @@ function paintMazeFloor(f: MeadowFrame): void {
 			} else {
 				paintPathCell(f, x, y, k);
 			}
-			// the lair gate is live (MeadowWorld.drawGates): it slides open for the Easter egg
+			// the lair gate is live (lairGate.ts via MeadowWorld): it slides open for the Easter egg and the ghosts
 			if (isTeleportToken(t)) {
 				TP.push([x, y, c]);
 			}

@@ -24,6 +24,7 @@ import type { MeadowTheme, WeatherParticle } from './MeadowTheme';
 import { glowTexture, rayTexture } from './meadowSprites';
 import { poolTexture } from '../../common/textures';
 import { drawRipplePad, PAD_RADIUS } from './ripplePad';
+import { drawLairGate, LAIR_GATE_REACH } from './lairGate';
 import { MoodBuffer } from '../../common/moodBuffer';
 import { hexChannels } from '../../common/textures';
 import { settle } from '../../common/math';
@@ -662,11 +663,11 @@ export class MeadowWorld {
 		const live = this.theme.live;
 		for (const g of this.gates) {
 			this.liveObjects.push({
-				x: g.x0 - 1,
-				y: g.y - 10,
-				w: g.x1 - g.x0 + 2,
-				h: 18,
-				draw: (ctx) => this.drawGate(ctx, g)
+				x: g.x0 - LAIR_GATE_REACH.x,
+				y: g.y - LAIR_GATE_REACH.above,
+				w: g.x1 - g.x0 + 2 * LAIR_GATE_REACH.x,
+				h: LAIR_GATE_REACH.above + LAIR_GATE_REACH.below,
+				draw: (ctx) => drawLairGate(ctx, g, this.gateOpen, this.theme)
 			});
 		}
 		const reach = PAD_RADIUS * 1.75;
@@ -792,52 +793,6 @@ export class MeadowWorld {
 			sprite(ctx, enIm, o.x, o.y, en.size * s, en.size * s, 1, rot);
 		}
 		ctx.restore();
-	}
-
-	/**
-	 * The lair gate, as the bake used to paint it: a plank bar between two dark posts with a
-	 * flower in the middle. Opening, each half slides into its post and the flower fades.
-	 */
-	private drawGate(
-		ctx: CanvasRenderingContext2D,
-		g: { readonly x0: number; readonly x1: number; readonly y: number }
-	): void {
-		const o = this.gateOpen;
-		const mid = (g.x0 + g.x1) / 2;
-		const half = (mid - g.x0) * (1 - o);
-		for (const [from, dir] of [
-			[g.x0, 1],
-			[g.x1, -1]
-		] as const) {
-			const left = dir > 0 ? from : from - half;
-			if (half > 0.01) {
-				ctx.fillStyle = '#7a5636';
-				ctx.fillRect(left, g.y - 5, half, 10);
-				ctx.fillStyle = '#a07848';
-				for (let i = 0; i < 3; i++) {
-					ctx.fillRect(left, g.y - 4 + i * 3.3, half, 1.2);
-				}
-			}
-			ctx.fillStyle = '#4f3622';
-			ctx.fillRect(dir > 0 ? from : from - 4, g.y - 6, 4, 12);
-		}
-		if (o < 1) {
-			ctx.save();
-			ctx.globalAlpha *= 1 - o;
-			const r = 2.6;
-			ctx.fillStyle = '#d9333a';
-			for (let k = 0; k < 5; k++) {
-				const a = k * 1.2566 + 0.3;
-				ctx.beginPath();
-				ctx.arc(mid + Math.cos(a) * r * 0.7, g.y - 5 + Math.sin(a) * r * 0.7, r * 0.6, 0, 7);
-				ctx.fill();
-			}
-			ctx.fillStyle = '#ffffff';
-			ctx.beginPath();
-			ctx.arc(mid, g.y - 5, r * 0.38, 0, 7);
-			ctx.fill();
-			ctx.restore();
-		}
 	}
 
 	/**

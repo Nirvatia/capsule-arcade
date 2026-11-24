@@ -215,6 +215,12 @@ blanket, beach umbrella, snowman), meadow decoration, food sprites and weather
   motes, summer heat haze with poplar fluff, autumn a careful downpour, winter a blizzard); **night** falls at 75 %.
 - Gameplay tuning (`SeasonCatalog.seasonModifiers`): spring power 6.5 s; summer fruit
   14 s; autumn ghosts ×0.97; winter Pac-Man ×0.97.
+- **The lair gate** (live, `meadow/lairGate.ts`; the owner's pick A of `lair-gate`, 2026-11-24):
+  a wooden double gate in the walls' 3/4 view (boards, a Z brace, iron hinges, a ring latch)
+  between two stone posts in the season's wall stone (summer a warm stone beside the hedge),
+  dressed by the season: spring a blossoming twig and a flower on each post, summer a vine with
+  a yellow flower and leaf tufts, autumn caught leaves and a small pumpkin on each post, winter
+  a thin snow line with icicles and snow caps. Opening, each leaf slides into its post.
 - **Tunnel pads** (baked): each season's burrow under a small translucent live ripple (winter an ice
   hole, autumn a hollow stump, spring a sandstone well, summer a whirlpool in the sand;
   `meadow/burrows.ts`), on a trodden patch where the corridor's tone runs out past the pad and fades into the meadow with a
