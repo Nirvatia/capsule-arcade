@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Машина Тьюринга с нуля</title>
+<!-- Собрано из src/games/turing/trainer (node src/games/turing/trainer/build.mjs). Правьте исходники, не этот файл. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/*STYLE*/
+</style>
+</head>
+<body>
+<canvas id="worldBg" aria-hidden="true"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
+
+<header class="game-header">
+  <div class="game-brand"><span class="logo" aria-hidden="true"><i></i><i></i><i></i></span><div><strong>МАСТЕРСКАЯ ЛЕНТЫ</strong><span>Машина Тьюринга с нуля</span></div></div>
+  <div class="hud-stats">
+    <div class="rank-block"><span class="hud-label">Ранг</span><b id="hudRank">Стажёр</b></div>
+    <div class="xp-block"><div><span id="hudLevel">Уровень 1</span><span id="hudXp">0 XP</span></div><div class="xp-track"><i id="hudXpBar"></i></div></div>
+    <div class="streak-block"><span class="hud-label">Серия</span><b id="hudStreak">0</b></div>
+  </div>
+  <div class="hud-actions">
+    <button class="hud-btn" id="bAchievements" aria-expanded="false">Награды <span id="achievementCount">0/6</span></button>
+    <button class="hud-btn" id="bSound" aria-pressed="true">Звук: вкл.</button>
+    <button class="hud-btn" id="bTheme">Тема</button>
+  </div>
+</header>
+
+<section class="achievement-panel" id="achievementPanel" hidden>
+  <div><div class="eyebrow">Коллекция</div><h2>Награды миссии</h2></div>
+  <div class="achievement-grid" id="achievementGrid"></div>
+</section>
+
+<div class="app">
+  <nav aria-label="Уровни">
+    <div class="brand"><span class="logo" aria-hidden="true"><i></i><i></i><i></i></span><b>Карта миссий</b></div>
+    <div class="mode-switch" role="group" aria-label="Раздел"><button data-navmode="course" class="on">Курс</button><button data-navmode="func">Функции</button><button data-navmode="pdf">PDF · 28</button></div>
+    <button class="navtest" id="navtest"><span>Пробный тест</span><span class="clock" id="navclock"></span></button>
+    <div class="prog" id="prog"></div>
+    <div class="lvlist" id="lvlist"></div>
+  </nav>
+
+  <main>
+    <div class="testbar" id="testbar" hidden>
+      <span class="clock" id="clock">40:00</span>
+      <div class="tabs" id="tabs"></div>
+      <button class="btn primary" id="bSubmit">Сдать тест</button>
+    </div>
+
+    <section class="card" id="testintro" hidden>
+      <div class="eyebrow">Пробный тест</div>
+      <h1 style="margin:6px 0 12px">Функция + задача из задачника</h1>
+      <div class="theory">
+        <p>Как на настоящем тесте: <b>одна задача на функцию</b> и <b>одна задача из задачника</b> (28 подзадач PDF), обе случайные.</p>
+        <p><b>Как на тесте:</b> подсказок и готовых решений нет. Сначала реши на бумаге, потом перенеси таблицу сюда. Запускать машину можно только на примере из условия — как трассировка на листочке. Полная проверка будет после того, как сдашь тест.</p>
+      </div>
+      <div class="durs" id="durs"></div>
+    </section>
+
+    <section class="card" id="testres" hidden></section>
+
+    <section class="card story" id="story">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="title"></h1>
+      <div class="theory" id="theory"></div>
+      <div class="goal"><span class="tag">Задание</span><div id="goal"></div></div>
+      <div class="tasks" id="tasks"></div>
+    </section>
+
+    <section class="card quiz" id="quiz" hidden></section>
+
+    <section class="card machine" id="machine" aria-label="Лента">
+      <div class="scene-shell">
+        <div class="scene-topline"><span>Уровень <b id="sceneSector">01</b></span><span class="scene-online">Механик Т-1</span><span>Состояние <b id="sceneState">q1</b></span></div>
+        <canvas id="gameScene" width="960" height="250" aria-label="Робот перемещается по ленте машины Тьюринга"></canvas>
+        <div class="scene-bottomline"><span id="sceneMission">TAPE EXPLORER</span><span id="sceneSteps">000000 STEPS</span></div>
+      </div>
+      <div class="inputs" id="inputs"></div>
+      <div class="tape-wrap" id="tapewrap"><div class="tape" id="tape"></div></div>
+      <div class="cfg" id="cfg"></div>
+      <div class="controls" id="controls">
+        <button class="btn" id="bStep">Шаг</button>
+        <button class="btn" id="bRun">▶ Пуск</button>
+        <button class="btn ghost" id="bReset">↺ Сначала</button>
+        <label class="speed" for="speed">медленно <input type="range" id="speed" min="0" max="100" value="55"> быстро</label>
+      </div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="card" id="tracer" hidden></section>
+
+    <section class="card rules" id="rules">
+      <h2>Таблица команд</h2>
+      <p class="sub" id="rulesSub"></p>
+      <div class="notes" id="notes"></div>
+      <div class="tbl"><table class="rt" id="rt"><thead id="rthead"></thead><tbody id="rows"></tbody></table></div>
+      <div class="rule-pager" id="rulePager" hidden><button class="btn" id="bRulesPrev">← Назад</button><span id="rulePageLabel"></span><button class="btn" id="bRulesNext">Вперёд →</button></div>
+      <div class="empty" id="empty" hidden>Таблица пуста — добавь первую команду.</div>
+      <div class="rowbtns" id="rowbtns">
+        <button class="btn" id="bAdd">+ команда</button>
+        <button class="btn ghost" id="bHint">Подсказка</button>
+        <button class="btn ghost" id="bSol">Показать решение</button>
+        <button class="btn ghost" id="bClear">Очистить</button>
+      </div>
+      <ol class="hints" id="hints"></ol>
+    </section>
+
+    <section class="card check" id="check">
+      <h2>Проверка</h2>
+      <p class="sub">Машина прогоняется на всех примерах уровня. На ленте должен остаться ровно ответ, без дырок и лишних символов.</p>
+      <button class="btn primary" id="bCheck">Проверить на всех примерах</button>
+      <div class="res" id="res"></div>
+      <div id="win"></div>
+    </section>
+
+    <section class="card" id="histcard">
+      <details class="hist" id="hist"><summary>Запись конфигураций — как писать в тетради</summary>
+        <p class="sub" style="margin-top:8px">Конфигурация — лента, в которую перед клеткой под головкой вставлено состояние. Шаги соединяются знаком ⊢. Это запись текущего прогона.</p>
+        <div class="trace" id="trace"></div>
+      </details>
+    </section>
+  </main>
+</div>
+
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<div class="welcome-backdrop" id="welcome" hidden>
+  <section class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <div class="eyebrow">Тренажёр · машина Тьюринга</div>
+    <canvas class="welcome-scene" id="welcomeScene" width="520" height="150" aria-hidden="true"></canvas>
+    <h2 id="welcomeTitle">Программируй машину. Проходи миссии.</h2>
+    <p>Начни с простых команд, освой перенос и челнок. Потом — функции палочками (числа как на лекции: n+1 единиц) и все 28 задач из PDF. В пробном тесте — одна функция и одна задача, как на настоящем.</p>
+    <div class="welcome-features"><span>7 функций</span><span>28 задач PDF</span><span>проверенные решения</span><span>прогресс сохраняется</span></div>
+    <button class="btn primary" id="bStartGame">Начать миссию</button>
+  </section>
+</div>
+
+
+<script>
+/*SCRIPTS*/
+</script>
+</body>
+</html>

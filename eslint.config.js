@@ -10,6 +10,8 @@ const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
+	// The Turing trainer is plain browser scripts sharing globals, inlined into one page by its build.
+	{ ignores: ['src/games/turing/trainer/'] },
 	js.configs.recommended,
 	ts.configs.recommended,
 	svelte.configs.recommended,
