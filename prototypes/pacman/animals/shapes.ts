@@ -297,6 +297,40 @@ export const FOX: GhostShape = {
 	my: 6.6
 };
 
+/** Winter: the current bunny with its ears about a third shorter (the owner: the ears are too long). */
+export const BUNNY_SHORT: GhostShape = {
+	...base,
+	nose: true,
+	paths: [
+		(c) => {
+			c.beginPath();
+			c.ellipse(0, 2, 10.2, 9.2, 0, 0, TAU);
+		},
+		(c) => {
+			c.beginPath();
+			c.ellipse(-4.8, -7.6, 3, 4.2, -0.2, 0, TAU);
+		},
+		(c) => {
+			c.beginPath();
+			c.ellipse(4.8, -7.6, 3, 4.2, 0.2, 0, TAU);
+		}
+	],
+	over: (c) => {
+		for (const side of [-1, 1]) {
+			ellipse(c, side * 4.8, -7.6, 1.5, 2.8, 'rgba(255,190,215,.92)', side * 0.2);
+		}
+	},
+	lid: (pal) => pal.b,
+	dy: 1.8,
+	scale: 0.9,
+	highlight: [-5, -0.4],
+	ey: 3,
+	ex: 3.9,
+	rx: 3,
+	ry: 3.4,
+	my: 5
+};
+
 export const CANDIDATES = {
 	spring: { now: 'tulip', frog: FROG, chick: CHICK, ladybug: LADYBUG },
 	winter: { now: 'bunny', penguin: PENGUIN, owl: OWL, fox: FOX }

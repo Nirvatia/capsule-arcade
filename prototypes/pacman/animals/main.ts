@@ -12,14 +12,14 @@ import {
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
-import { CHICK, FOX, FROG, LADYBUG, OWL, PENGUIN } from './shapes';
+import { BUNNY_SHORT, CHICK, FOX, FROG, LADYBUG, OWL, PENGUIN } from './shapes';
 
 type Kind = 'BLINKY' | 'PINKY' | 'INKY' | 'CLYDE';
 const KINDS: Kind[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
 
 // the candidates join the game's shapes under their own names
 const SHAPES = GHOST_SHAPES as unknown as Record<string, GhostShape>;
-Object.assign(SHAPES, { frog: FROG, chick: CHICK, ladybug: LADYBUG, penguin: PENGUIN, owl: OWL, fox: FOX });
+Object.assign(SHAPES, { frog: FROG, chick: CHICK, ladybug: LADYBUG, penguin: PENGUIN, owl: OWL, fox: FOX, bunnyShort: BUNNY_SHORT });
 
 const BLOCKS: Array<{ season: 'spring' | 'winter'; title: string; rows: Array<[string, string]> }> = [
 	{
@@ -37,6 +37,7 @@ const BLOCKS: Array<{ season: 'spring' | 'winter'; title: string; rows: Array<[s
 		title: 'Зима — вместо зайца',
 		rows: [
 			['bunny', 'заяц (сейчас)'],
+			['bunnyShort', 'заяц, уши короче'],
 			['penguin', 'пингвин'],
 			['owl', 'совёнок'],
 			['fox', 'лисёнок']
@@ -50,7 +51,7 @@ const D = Math.min(window.devicePixelRatio || 1, 2);
 const W = 1180;
 const ROW = 104;
 const HEAD = 40;
-const H = BLOCKS.length * (HEAD + ROW * 4) + 16;
+const H = BLOCKS.reduce((h, b) => h + HEAD + ROW * b.rows.length, 0) + 16;
 view.width = W * D;
 view.height = H * D;
 view.style.width = `${W}px`;
