@@ -14,7 +14,7 @@ import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/Mea
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import { Bar } from '../common/ui';
-import { drawHero as hfHero, drawTrail as hfTrail, type Elem } from './heatFrost';
+import { EmberAshHero, FrostMistHero, HF_BODY_RATIO } from './geminiHeatFrost';
 
 type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 interface Cand {
@@ -22,6 +22,8 @@ interface Cand {
 	readonly name: string;
 	readonly ms: boolean;
 	readonly make: () => Hero;
+	/** Body radius in tiles (the game's 0.33 by default). */
+	readonly r?: number;
 }
 const mk = (h: Hero): Hero => {
 	h.setFeel(GAME_FEEL);
@@ -29,7 +31,9 @@ const mk = (h: Hero): Hero => {
 };
 const CANDS: readonly Cand[] = [
 	{ id: 'pac', name: 'Pac-Man: солнце', ms: false, make: () => mk(new PacmanHero()) },
-	{ id: 'ms', name: 'Ms. Pac-Man: комета', ms: true, make: () => mk(new MsPacmanHero()) }
+	{ id: 'ms', name: 'Ms. Pac-Man: комета', ms: true, make: () => mk(new MsPacmanHero()) },
+	{ id: 'g-heat', name: 'Gemini: Пламя', ms: false, r: HF_BODY_RATIO, make: () => mk(new EmberAshHero() as Hero) },
+	{ id: 'g-frost', name: 'Gemini: Пар', ms: true, r: HF_BODY_RATIO, make: () => mk(new FrostMistHero() as Hero) }
 ];
 
 const view = document.getElementById('view') as HTMLCanvasElement;
@@ -38,7 +42,7 @@ const D = Math.min(window.devicePixelRatio || 1, 2);
 
 const bar = new Bar(
 	[
-		{ key: 'mode', label: 'вид', options: [{ id: 'sheet', label: 'сетка: варианты × моменты' }, { id: 'portrait', label: 'портреты' }, { id: 'live', label: 'живое' }, { id: 'hf', label: 'Жар и Стужа' }] },
+		{ key: 'mode', label: 'вид', options: [{ id: 'sheet', label: 'сетка: варианты × моменты' }, { id: 'portrait', label: 'портреты' }, { id: 'live', label: 'живое' }] },
 		{ key: 'who', label: 'герои', options: [{ id: 'both', label: 'оба' }, { id: 'pac', label: 'Pac-Man' }, { id: 'ms', label: 'Ms. Pac-Man' }] },
 		{ key: 'season', label: 'коридор', options: [{ id: 'spring', label: 'весна' }, { id: 'summer', label: 'лето' }, { id: 'autumn', label: 'осень' }, { id: 'winter', label: 'зима' }] },
 		{ key: 'zoom', label: 'крупно', options: [{ id: '2', label: '×2' }, { id: '3', label: '×3' }, { id: '4', label: '×4' }] },
@@ -115,7 +119,7 @@ function pose(m: Moment, t: number): Pose {
 /** Plays a fresh hero through the moment's script and returns it frozen at the moment. */
 function played(c: Cand, m: Moment, t1: number, S: number, ox: number, oy: number): Hero {
 	const h = c.make();
-	h.setRadius(S * 0.33);
+	h.setRadius(S * (c.r ?? 0.33));
 	const dt = 1 / 60;
 	let lastAngle = 0;
 	for (let t = 0; t <= t1 + 1e-6; t += dt) {
@@ -248,7 +252,7 @@ function live(now: number): void {
 	const S = lay.tileSize;
 	if (!liveHero) {
 		liveHero = c.make();
-		liveHero.setRadius(S * 0.33);
+		liveHero.setRadius(S * (c.r ?? 0.33));
 	}
 	const dt = last < 0 ? 0 : Math.min(0.05, (now - last) / 1000) * Number(bar.get('speed'));
 	last = now;
@@ -347,95 +351,12 @@ function frame(now: number): void {
 	if (bar.get('mode') === 'live') live(now);
 	else if (dirty) {
 		if (bar.get('mode') === 'portrait') portraits();
-		else if (bar.get('mode') === 'hf') hfSheet();
 		else sheet();
 		dirty = false;
 	}
 	requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-
-// ------------------------------------------------------------------- Heat and Frost (candidate)
-
-let nightWorld: HTMLCanvasElement | null = null;
-/** The summer world at night (the mood drawn in), baked like `worldOf`. */
-function summerNight(): HTMLCanvasElement {
-	if (nightWorld) return nightWorld;
-	const world = new MeadowWorld(GRID_01, meadowThemeFor('summer') as MeadowTheme);
-	world.resize(WV.w, WV.h, BAKE);
-	world.setMood(0, 1);
-	world.setLairGate(0);
-	for (let i = 0; i < 60; i += 1) world.update(0.1);
-	const canvas = document.createElement('canvas');
-	canvas.width = WV.w * BAKE;
-	canvas.height = WV.h * BAKE;
-	const g = canvas.getContext('2d') as CanvasRenderingContext2D;
-	g.setTransform(BAKE, 0, 0, BAKE, 0, 0);
-	world.drawWorld(g);
-	world.drawMood(g);
-	world.drawFood(g, (x, y) => y === 24 && x <= 17);
-	nightWorld = canvas;
-	return canvas;
-}
-
-/** A crop of a baked world around tile (tx, ty) at `zoom`, into (dx, dy, dw, dh); returns the projection. */
-function crop(canvas: HTMLCanvasElement, tx: number, ty: number, zoom: number, dx: number, dy: number, dw: number, dh: number) {
-	const lay = worldOf('summer').world.layout;
-	const S = lay.tileSize;
-	const cx = lay.offsetX + tx * S;
-	const cy = lay.offsetY + ty * S;
-	const sx = cx - dw / zoom / 2;
-	const sy = cy - dh / zoom / 2;
-	ctx.save();
-	ctx.beginPath();
-	ctx.rect(dx, dy, dw, dh);
-	ctx.clip();
-	ctx.drawImage(canvas, sx * BAKE, sy * BAKE, (dw / zoom) * BAKE, (dh / zoom) * BAKE, dx, dy, dw, dh);
-	ctx.restore();
-	return { S: S * zoom, X: (x: number) => dx + (lay.offsetX + x * S - sx) * zoom, Y: (y: number) => dy + (lay.offsetY + y * S - sy) * zoom };
-}
-
-function hfSheet(): void {
-	ctx.fillStyle = '#07090a';
-	ctx.fillRect(0, 0, vw, vh);
-	const t = 0.4;
-	// portraits: running with the trail, then the rage
-	const P: Array<[Elem, boolean, string]> = [
-		['heat', false, 'Жар'],
-		['heat', true, 'Жар: ярость'],
-		['frost', false, 'Стужа'],
-		['frost', true, 'Стужа: ярость']
-	];
-	P.forEach(([elem, rage, name], i) => {
-		const dx = 10 + i * 250;
-		const pr = crop(worldOf('summer').canvas, 10.5, 24.5, 4, dx, 100, 240, 200);
-		const R = 0.39 * pr.S;
-		const x = dx + 140;
-		const y = 100 + 108;
-		const ang = elem === 'heat' ? 0 : Math.PI;
-		const hx = elem === 'heat' ? x : x - 40;
-		if (!rage) hfTrail(ctx, hx, y, R, ang, elem, t);
-		hfHero(ctx, hx, y, R, ang, 0.5, elem, rage, t);
-		label(name, dx + 6, 92, 13);
-	});
-	// game scale x2: four worlds, both heroes running toward each other on row 24
-	const W: Array<[string, HTMLCanvasElement]> = [
-		['лето', worldOf('summer').canvas],
-		['зима', worldOf('winter').canvas],
-		['осень', worldOf('autumn').canvas],
-		['лето, ночь', summerNight()]
-	];
-	W.forEach(([name, canvas], i) => {
-		const dx = 10 + i * 250;
-		const pr = crop(canvas, 9.5, 24.5, 2, dx, 340, 240, 150);
-		const R = 0.39 * pr.S;
-		hfTrail(ctx, pr.X(8.1), pr.Y(24.5), R, 0, 'heat', t);
-		hfHero(ctx, pr.X(8.1), pr.Y(24.5), R, 0, 0.45, 'heat', false, t);
-		hfTrail(ctx, pr.X(10.9), pr.Y(24.5), R, Math.PI, 'frost', t);
-		hfHero(ctx, pr.X(10.9), pr.Y(24.5), R, Math.PI, 0.45, 'frost', false, t);
-		label(name + ' · ×2 к игре', dx + 6, 332, 12);
-	});
-}
 
 // for scripts: how far each hero's corona / coma and glow reach (body radii), the trail left
 // out; and how wide the comet's tails spread across the run line (tiles)
