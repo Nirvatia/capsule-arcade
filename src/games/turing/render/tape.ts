@@ -25,19 +25,19 @@ export function drawBelt(
 	const top = y - pad;
 	const h = tileH(s) + pad * 2;
 	const g = ctx.createLinearGradient(0, top, 0, top + h);
-	g.addColorStop(0, '#1d2547');
-	g.addColorStop(0.5, '#10162e');
-	g.addColorStop(1, '#0b1024');
+	g.addColorStop(0, '#1d2230');
+	g.addColorStop(0.5, '#11151f');
+	g.addColorStop(1, '#0b0e16');
 	ctx.fillStyle = g;
 	ctx.fillRect(x0, top, x1 - x0, h);
-	ctx.fillStyle = 'rgba(160,175,230,.18)';
+	ctx.fillStyle = 'rgba(190,200,220,.12)';
 	ctx.fillRect(x0, top, x1 - x0, 1.5);
 	ctx.fillStyle = 'rgba(0,0,0,.45)';
 	ctx.fillRect(x0, top + h - 2, x1 - x0, 2);
 	// sprocket holes, top and bottom rows
 	const step = s * 0.5;
 	const off = (((shift % step) + step) % step) - step;
-	ctx.fillStyle = '#05081a';
+	ctx.fillStyle = '#06080e';
 	for (let x = x0 + off; x < x1 + step; x += step) {
 		for (const hy of [top + pad * 0.45, top + h - pad * 0.45]) {
 			ctx.beginPath();
@@ -81,7 +81,7 @@ export function drawSymbol(
 		ctx.stroke();
 	} else {
 		const marker = MARKERS.has(sym);
-		ctx.fillStyle = marker ? '#6a4fe0' : C.ink;
+		ctx.fillStyle = marker ? '#4b5fb5' : C.ink;
 		const size = font === 'head' ? s * 0.5 : s * 0.6;
 		ctx.font = `${font === 'head' ? 700 : 800} ${size}px ${font === 'head' ? FONT_HEAD : FONT_MONO}`;
 		ctx.textAlign = 'center';
@@ -89,7 +89,7 @@ export function drawSymbol(
 		ctx.fillText(sym, cx, cy + s * (font === 'head' ? 0.03 : 0.02));
 		if (marker) {
 			// markers wear a small violet underline so they never pass for answer symbols
-			ctx.fillStyle = 'rgba(106,79,224,.35)';
+			ctx.fillStyle = 'rgba(75,95,181,.35)';
 			ctx.fillRect(cx - s * 0.22, cy + s * 0.3, s * 0.44, s * 0.05);
 		}
 	}
@@ -144,8 +144,8 @@ export function drawTile(
 	ctx.lineTo(x + s - r, y + (h - depth) * 0.18);
 	ctx.stroke();
 	if (look.flash) {
-		ctx.globalAlpha = look.flash;
-		ctx.fillStyle = C.glow;
+		ctx.globalAlpha = look.flash * 0.55;
+		ctx.fillStyle = '#ffffff';
 		ctx.beginPath();
 		ctx.roundRect(x, y, s, h - depth, r);
 		ctx.fill();

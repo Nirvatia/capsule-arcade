@@ -1,13 +1,13 @@
 // The shared look of «Каретка»: one palette and three fonts for the canvas and the UI.
 export const C = {
-	night: '#080c1b',
-	night2: '#0e1530',
-	wall: '#141d3c',
-	wall2: '#1b2652',
-	steel: '#2b3763',
-	steelHi: '#46558c',
-	steelLo: '#1a2245',
-	rail: '#9aa6d1',
+	night: '#0a0d16',
+	night2: '#0e121c',
+	wall: '#151a27',
+	wall2: '#1b2131',
+	steel: '#2f3648',
+	steelHi: '#4a536a',
+	steelLo: '#1c212e',
+	rail: '#a3abbf',
 	glow: '#4fe3ff',
 	mint: '#45f0ad',
 	pink: '#ff4f93',
@@ -22,6 +22,22 @@ export const C = {
 	paperEdge: '#a8987a',
 	ink: '#1a2140',
 	screen: '#0a1226'
+} as const;
+
+/** Interface tokens: neutral panels, one accent (the carriage), yellow = «сейчас», green/red only for results. */
+export const U = {
+	panel: '#161b27',
+	panelHi: '#1d2332',
+	socket: '#10141d',
+	line: 'rgba(255,255,255,.07)',
+	lineHi: 'rgba(255,255,255,.16)',
+	text: '#e9edf5',
+	muted: '#7f889b',
+	dim: '#454c5e',
+	accent: '#ff6a4d',
+	now: '#ffd24a',
+	ok: '#45d98f',
+	bad: '#ff5a6e'
 } as const;
 
 export const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace";

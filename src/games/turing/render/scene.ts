@@ -8,6 +8,8 @@ export interface SceneState {
 	t: number;
 	cells: string[];
 	head: number;
+	/** fractional head position while the carriage drives (default: head) */
+	headPos?: number;
 	state: string;
 	mood: Mood;
 	arm?: Arm;
@@ -45,7 +47,7 @@ export function layoutScene(w: number, h: number, s: SceneState): SceneLayout {
 		tapeX,
 		tapeY,
 		size,
-		robotX: tapeX + (s.head + 0.5) * p,
+		robotX: tapeX + ((s.headPos ?? s.head) + 0.5) * p,
 		tipY: tapeY - size * 0.16,
 		scale
 	};

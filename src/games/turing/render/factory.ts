@@ -46,7 +46,7 @@ function lamp(
 	t: number,
 	i: number
 ) {
-	ctx.strokeStyle = '#2a3460';
+	ctx.strokeStyle = '#262d3d';
 	ctx.lineWidth = 2;
 	ctx.beginPath();
 	ctx.moveTo(x, 0);
@@ -70,7 +70,7 @@ function lamp(
 	ctx.fill();
 	ctx.restore();
 	// shade
-	ctx.fillStyle = '#2e3a6c';
+	ctx.fillStyle = '#2b3244';
 	ctx.beginPath();
 	ctx.moveTo(x - 7, y - 4);
 	ctx.lineTo(x + 7, y - 4);
@@ -122,7 +122,7 @@ function neonSign(
 	ctx.fillText(text, x, y + 1);
 	ctx.restore();
 	// two hanging wires
-	ctx.strokeStyle = '#2a3460';
+	ctx.strokeStyle = '#262d3d';
 	ctx.lineWidth = 1.5;
 	ctx.beginPath();
 	ctx.moveTo(x - w / 2 + 14, 0);
@@ -144,9 +144,9 @@ export function drawFactory(ctx: CanvasRenderingContext2D, w: number, h: number,
 	// wall panels with rivets
 	const pw = 132;
 	for (let x = -((t * 4) % pw), i = 0; x < w; x += pw, i++) {
-		ctx.fillStyle = i % 2 ? 'rgba(40,54,110,.22)' : 'rgba(40,54,110,.12)';
+		ctx.fillStyle = i % 2 ? 'rgba(70,80,105,.16)' : 'rgba(70,80,105,.08)';
 		ctx.fillRect(x + 3, h * 0.12, pw - 6, floorY - h * 0.12);
-		ctx.fillStyle = 'rgba(150,165,230,.16)';
+		ctx.fillStyle = 'rgba(170,180,205,.1)';
 		for (const ry of [h * 0.12 + 8, floorY - 8]) {
 			ctx.beginPath();
 			ctx.arc(x + 12, ry, 2, 0, Math.PI * 2);
@@ -156,19 +156,19 @@ export function drawFactory(ctx: CanvasRenderingContext2D, w: number, h: number,
 	}
 
 	// slow gears
-	ctx.fillStyle = 'rgba(70,85,150,.22)';
+	ctx.fillStyle = 'rgba(90,100,125,.12)';
 	ctx.strokeStyle = 'rgba(8,12,27,.5)';
 	gear(ctx, w * 0.07, floorY * 0.42, floorY * 0.36, 14, t * 0.12);
 	gear(ctx, w * 0.07 + floorY * 0.52, floorY * 0.2, floorY * 0.2, 9, -t * 0.22 + 0.2);
 	gear(ctx, w * 0.93, floorY * 0.5, floorY * 0.3, 12, -t * 0.1);
 
 	// a pipe across the top with joints
-	ctx.fillStyle = '#1f2a55';
+	ctx.fillStyle = '#1c2231';
 	ctx.fillRect(0, h * 0.07, w, 9);
-	ctx.fillStyle = 'rgba(150,165,230,.2)';
+	ctx.fillStyle = 'rgba(170,180,205,.12)';
 	ctx.fillRect(0, h * 0.07, w, 2);
 	for (let x = 60; x < w; x += 220) {
-		ctx.fillStyle = '#2b3770';
+		ctx.fillStyle = '#262d3d';
 		ctx.fillRect(x, h * 0.07 - 3, 14, 15);
 	}
 
@@ -177,19 +177,19 @@ export function drawFactory(ctx: CanvasRenderingContext2D, w: number, h: number,
 	for (let i = 0; x < w + 40; i++) {
 		const mw = 70 + hash(i) * 90;
 		const mh = floorY * (0.25 + hash(i + 9) * 0.3);
-		ctx.fillStyle = i % 2 ? '#121a38' : '#0f1631';
+		ctx.fillStyle = i % 2 ? '#121722' : '#10141e';
 		ctx.beginPath();
 		ctx.roundRect(x, floorY - mh, mw, mh, [8, 8, 0, 0]);
 		ctx.fill();
-		ctx.fillStyle = 'rgba(120,140,220,.07)';
+		ctx.fillStyle = 'rgba(170,180,205,.05)';
 		ctx.fillRect(x + 8, floorY - mh + 10, mw - 16, 3);
 		const n = 1 + Math.floor(hash(i + 3) * 3);
 		for (let k = 0; k < n; k++) {
-			const colors = [C.mint, C.pink, C.sun, C.glow];
+			const colors = ['#ffb35c', '#ffb35c', '#6f7890', '#ffb35c'];
 			const col = colors[Math.floor(hash(i * 7 + k) * 4)];
 			const on = Math.sin(t * (1 + hash(i + k) * 2) + i * 3 + k) > -0.2;
 			ctx.save();
-			ctx.globalAlpha = on ? 0.95 : 0.2;
+			ctx.globalAlpha = on ? 0.45 : 0.12;
 			ctx.shadowColor = col;
 			ctx.shadowBlur = on ? 8 : 0;
 			ctx.fillStyle = col;
@@ -211,7 +211,7 @@ export function drawFactory(ctx: CanvasRenderingContext2D, w: number, h: number,
 
 	// floor
 	const fg = ctx.createLinearGradient(0, floorY, 0, h);
-	fg.addColorStop(0, '#0d1330');
+	fg.addColorStop(0, '#0d111b');
 	fg.addColorStop(1, '#060915');
 	ctx.fillStyle = fg;
 	ctx.fillRect(0, floorY, w, h - floorY);
@@ -244,7 +244,7 @@ export function drawFactory(ctx: CanvasRenderingContext2D, w: number, h: number,
 
 /** The steel rail the carriage rides on, with brackets up to the ceiling. */
 export function drawRail(ctx: CanvasRenderingContext2D, w: number, y: number, shift: number) {
-	ctx.fillStyle = '#26305c';
+	ctx.fillStyle = '#232a3a';
 	for (let x = (((shift % 240) + 240) % 240) - 120; x < w + 40; x += 240) {
 		ctx.fillRect(x - 3, 0, 6, y);
 		ctx.fillRect(x - 12, y - 10, 24, 6);
