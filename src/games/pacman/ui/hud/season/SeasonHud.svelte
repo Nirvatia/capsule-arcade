@@ -9,7 +9,6 @@
 	import { clamp01, fmt } from './seasonFormat';
 	import {
 		DIAL,
-		ENERGIZER_ART,
 		ringLength,
 		boardArt,
 		bannerArt,
@@ -23,6 +22,7 @@
 	import { LIVES_ICON } from './livesLayout';
 	import { SEASON_THEMES } from './seasonThemes';
 	import AbilitySlot from './AbilitySlot.svelte';
+	import PowerBadge from './PowerBadge.svelte';
 	import { touchDevice } from '../../controlsSetting';
 	import type { SeasonKey } from './seasonThemes';
 
@@ -45,7 +45,6 @@
 		banner: bannerArt(theme),
 		lives: boardArt(theme, 'lives', 1076, 206, 142, 46, { seed: 17, drop: 22, r: 11, j: 3 }),
 		dial: dialArt(theme),
-		energizer: ENERGIZER_ART[theme.energizer],
 		knob: knobArt(theme)
 	});
 
@@ -58,20 +57,16 @@
 	);
 	// the dial shows what runs; an ability waiting in the slot (placeholder until its own art)
 	/** The ability waiting in the slot, or the one running: the dial shows its icon. */
-	const slot = $derived(
-		snap.ability ??
-			(snap.timer && snap.timer.kind !== 'power' && snap.timer.kind !== 'overdrive'
-				? snap.timer.kind
-				: null)
-	);
+	const slot = $derived(snap.ability ?? snap.timer?.kind ?? null);
+	/** The energizer's own little dial, beside the ability's. */
+	const POWER_DIAL = { cx: 1110, cy: 418, r: 24 };
 	const timerLabel = $derived(
 		snap.timer
 			? $t(snap.timer.kind)
 			: snap.ability
 				? `${$touchDevice ? $t('abilityTap') : $t('abilityKey')} ${$t(snap.ability)}`
-				: $t('power')
-	);
-	/** The world's own night starts at three quarters of the dots; the board dims with it. */
+				: ''
+	); /** The world's own night starts at three quarters of the dots; the board dims with it. */
 	const night = $derived(snap.dots >= 0.75);
 	const ms = $derived(snap.profile === 'ms-pacman');
 	const lives = $derived(Math.max(0, snap.lives));
@@ -183,10 +178,6 @@
 				<foreignObject x={DIAL.cx - 30} y={DIAL.cy - 32} width="60" height="60">
 					<AbilitySlot kind={slot} size={60} {scale} />
 				</foreignObject>
-			{:else}
-				<g class:idle={!snap.timer} transform="translate({DIAL.cx} {DIAL.cy - 2}) scale(.5)">
-					<g class="bob">{@html art.energizer}</g>
-				</g>
 			{/if}
 			<text class="lab" x={DIAL.cx} y={DIAL.cy + DIAL.r + 28} font-size="9" text-anchor="middle"
 				>{timerLabel}</text
@@ -195,6 +186,9 @@
 				<text class="num" x={DIAL.cx} y={DIAL.cy + 22} font-size="16" text-anchor="middle"
 					>{snap.timer.remaining.toFixed(1)}s</text
 				>
+			{/if}
+			{#if snap.power}
+				<PowerBadge power={snap.power} world={snap.world} {theme} dial={POWER_DIAL} />
 			{/if}
 			<!-- the dial is the ability's button (a shot in the hell): F on a keyboard, a tap on a phone -->
 			<circle
@@ -300,9 +294,6 @@
 	.ring {
 		transition: stroke-dashoffset 0.1s linear;
 	}
-	.idle {
-		opacity: 0.35;
-	}
 	.knob {
 		pointer-events: all;
 		cursor: pointer;
@@ -330,9 +321,6 @@
 		transform-box: fill-box;
 		transform-origin: 50% 100%;
 		animation: bob 2.4s ease-in-out infinite;
-	}
-	.idle :global(.bob) {
-		animation: none;
 	}
 	@keyframes sway {
 		0%,

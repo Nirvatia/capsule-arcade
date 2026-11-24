@@ -1,5 +1,5 @@
 /** The four season worlds' materials for the side HUD (the owner's mock-up): a wooden or icy
- *  board, painted numerals, a cloth banner, and the world's own energizer and pellets. */
+ *  board, painted numerals, a cloth banner, and the world's pellets (the energizer is baked from the board's own, energizerIcon). */
 export type SeasonKey = 'spring' | 'summer' | 'autumn' | 'winter';
 
 export interface SeasonTheme {
@@ -29,7 +29,6 @@ export interface SeasonTheme {
 	readonly emblem: 'sun' | 'leaf' | 'flake' | 'flower' | 'skull';
 	/** A bone rim round the boards (the hell's). */
 	readonly edge?: string;
-	readonly energizer: 'starfish' | 'pumpkin' | 'snowman' | 'blossom';
 }
 
 export const SEASON_THEMES: Record<SeasonKey, SeasonTheme> = {
@@ -51,8 +50,7 @@ export const SEASON_THEMES: Record<SeasonKey, SeasonTheme> = {
 		pelletInk: '#6b5a3a',
 		rope: '#e9d7a5',
 		post: '#b88548',
-		emblem: 'sun',
-		energizer: 'starfish'
+		emblem: 'sun'
 	},
 	autumn: {
 		key: 'autumn',
@@ -72,8 +70,7 @@ export const SEASON_THEMES: Record<SeasonKey, SeasonTheme> = {
 		pelletInk: '#5a3410',
 		rope: '#c9a463',
 		post: '#7a4a24',
-		emblem: 'leaf',
-		energizer: 'pumpkin'
+		emblem: 'leaf'
 	},
 	winter: {
 		key: 'winter',
@@ -93,8 +90,7 @@ export const SEASON_THEMES: Record<SeasonKey, SeasonTheme> = {
 		pelletInk: '#2d5878',
 		rope: '#d8e8f2',
 		post: '#8fb0cc',
-		emblem: 'flake',
-		energizer: 'snowman'
+		emblem: 'flake'
 	},
 	spring: {
 		key: 'spring',
@@ -114,8 +110,7 @@ export const SEASON_THEMES: Record<SeasonKey, SeasonTheme> = {
 		pelletInk: '#6a5410',
 		rope: '#f2d9a8',
 		post: '#c99978',
-		emblem: 'flower',
-		energizer: 'blossom'
+		emblem: 'flower'
 	}
 };
 
@@ -139,8 +134,6 @@ export const HELL_THEME: SeasonTheme = {
 	rope: '#2a0e10',
 	post: '#d9c9a8',
 	emblem: 'skull',
-	// unused: the hell's dial holds a weapon, not an energizer
-	energizer: 'starfish',
 	edge: '#e8d9bd'
 };
 

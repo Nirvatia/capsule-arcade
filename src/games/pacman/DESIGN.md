@@ -397,9 +397,12 @@ chiptune sound (`config/arcadeConfig.ts`).
   and cloth; the owner's mock-up). Left: a score board on two stakes and a record tag hung under
   it. Right: a level board with the world's emblem, a cloth banner with its name, a lives
   counter (the hero, fully inside the board through its bob, and a painted number), a trail of the season's pellets for the food left
-  (eaten ones are holes), a dial with the season's energizer and a ring that runs down (the
-  seconds inside; the night, at three quarters of the dots, dims the whole HUD with the world), and
-  a pause knob in the corner. The boards sway, the hero and the energizer bob. No fruit row (the
+  (eaten ones are holes), the ability's dial (the ability carried or running, its ring running
+  down with the seconds inside; an empty well otherwise) and beside it, only while the power or
+  her overdrive runs, a small badge with the board's own energizer (`energizerIcon`, baked from
+  the season's painter) and its own ring and seconds (2026-11-24: the two never share a dial);
+  the night, at three quarters of the dots, dims the whole HUD with the world; and a pause knob
+  in the corner. The boards sway, the hero bobs. No fruit row (the
   owner dropped it). The sound switch is a knob of the same stuff at the bottom left, in every
   world. On a tall or squarish screen the same things are smaller and in two bands, one above the maze
   and one below it (top: score board and record tag, level board with banner, lives; bottom:

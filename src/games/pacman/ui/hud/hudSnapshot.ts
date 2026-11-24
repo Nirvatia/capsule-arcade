@@ -9,9 +9,9 @@ import type { AbilityKind } from '../../config/abilityConfig';
 
 export type HudWorld = 'spring' | 'summer' | 'autumn' | 'winter' | 'hell' | 'secret';
 
-/** A running timer the HUD shows as a draining bar. */
-export interface HudTimer {
-	readonly kind: 'power' | 'overdrive' | AbilityKind;
+/** A running timer the HUD shows as a draining ring. */
+export interface HudTimer<K extends string = 'power' | 'overdrive' | AbilityKind> {
+	readonly kind: K;
 	readonly remaining: number;
 	readonly duration: number;
 }
@@ -57,7 +57,10 @@ export interface HudSnapshot {
 	readonly lives: number;
 	/** 0..1 of the dots eaten (weather at 0.5, night at 0.75). */
 	readonly dots: number;
-	readonly timer: HudTimer | null;
+	/** The ability running now (its dial drains); null when none runs. */
+	readonly timer: HudTimer<AbilityKind> | null;
+	/** The energizer's power (Ms. Pac-Man: her overdrive), on its own badge; null when off. */
+	readonly power: HudTimer<'power' | 'overdrive'> | null;
 	/** The ability in the hero's slot, waiting for the F key; null when the slot is empty. */
 	readonly ability: AbilityKind | null;
 	/** The fruits of the last levels up to this one, oldest first (arcade style). */
@@ -81,7 +84,9 @@ export function buildHudSnapshot(
 		: level.hellMode
 			? 'hell'
 			: ((season?.name ?? 'spring') as HudWorld);
-	let timer: HudTimer | null = null;
+	// the ability and the power run side by side: each has its own dial
+	let timer: HudTimer<AbilityKind> | null = null;
+	let power: HudTimer<'power' | 'overdrive'> | null = null;
 	const abilities = level.abilities;
 	const hypnosis = level.hypnosis;
 	if (abilities && abilities.phase === 'active') {
@@ -90,10 +95,11 @@ export function buildHudSnapshot(
 			remaining: abilities.timer,
 			duration: Math.max(abilities.timer, abilities.duration)
 		};
-	} else if (hypnosis?.overdriveActive) {
-		timer = { kind: 'overdrive', remaining: hypnosis.overdriveTimer, duration: 5 };
+	}
+	if (hypnosis?.overdriveActive) {
+		power = { kind: 'overdrive', remaining: hypnosis.overdriveTimer, duration: 5 };
 	} else if (combat?.isPowerActive) {
-		timer = { kind: 'power', remaining: combat.powerTimer, duration: combat.powerDuration };
+		power = { kind: 'power', remaining: combat.powerTimer, duration: combat.powerDuration };
 	}
 	const doom = level.doom;
 	const bossService = level.doomBoss;
@@ -144,6 +150,7 @@ export function buildHudSnapshot(
 		lives: (secret ? combat?.tries : combat?.lives) ?? 0,
 		dots: level.progress?.collectionRatio ?? 0,
 		timer,
+		power,
 		ability:
 			abilities && abilities.phase === 'carried' && !secret && !level.hellMode
 				? abilities.kind

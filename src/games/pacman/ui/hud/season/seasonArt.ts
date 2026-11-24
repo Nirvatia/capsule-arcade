@@ -1,6 +1,6 @@
 /**
  * The shapes of the season HUD as SVG markup (the owner's mock-up, in code): signboards on
- * stakes, a rope tag, a cloth banner, a log, a pellet trail, a dial with the world's energizer,
+ * stakes, a rope tag, a cloth banner, a log, a pellet trail, the ability's dial and the energizer's badge,
  * a knob. Cel style like the heroes: hard tone bands, a thick ink line, a rim glint, a shadow
  * on the ground. Static per world; the numbers and the ring are drawn by the component.
  */
@@ -210,7 +210,7 @@ export function trailArt(
 	return s;
 }
 
-/** The dial the energizer sits in: a stone ring in the ground with a dark well. */
+/** A dial (the ability's, the energizer's badge): a stone ring in the ground with a dark well. */
 export interface Dial {
 	readonly cx: number;
 	readonly cy: number;
@@ -238,22 +238,6 @@ export function ringLength(d: Dial = DIAL): number {
 export function knobArt(t: SeasonTheme): string {
 	return `<circle r="23" fill="${t.mid}" stroke="${t.ink}" stroke-width="4"/><path d="M-17 -8 A19 19 0 0 1 8 -17" fill="none" stroke="${t.light}" stroke-width="4" stroke-linecap="round" opacity=".85"/>`;
 }
-
-export const ENERGIZER_ART: Record<SeasonTheme['energizer'], string> = {
-	starfish:
-		'<path d="M0 -34 L9 -11 L34 -10 L14 5 L21 30 L0 16 L-21 30 L-14 5 L-34 -10 L-9 -11Z" fill="#ff8a2a" stroke="#4a1f08" stroke-width="4" stroke-linejoin="round"/><path d="M0 -26 L6 -9 M-24 -8 L-9 -4 M24 -8 L9 -4 M-15 22 L-8 8 M15 22 L8 8" stroke="#ffd08a" stroke-width="3" stroke-linecap="round" fill="none"/><g fill="#ffe0a8"><circle cx="0" cy="-3" r="3"/><circle cx="-16" cy="-8" r="2"/><circle cx="16" cy="-8" r="2"/></g>',
-	pumpkin:
-		'<ellipse cx="0" cy="4" rx="34" ry="28" fill="#ff7a1a" stroke="#4a1f08" stroke-width="4"/><path d="M-12 -22 Q-16 4 -10 30 M12 -22 Q16 4 10 30 M0 -24 V32" stroke="#c2480a" stroke-width="3" fill="none"/><rect x="-5" y="-34" width="10" height="12" rx="3" fill="#4a7a22" stroke="#16300f" stroke-width="3"/><path d="M-18 -2 L-8 -2 L-13 -12Z M8 -2 L18 -2 L13 -12Z" fill="#ffe05a" stroke="#4a1f08" stroke-width="2"/><path d="M-16 12 Q0 26 16 12 L12 8 L8 14 L0 8 L-8 14 L-12 8Z" fill="#ffe05a" stroke="#4a1f08" stroke-width="2"/>',
-	snowman:
-		'<circle cx="0" cy="14" r="22" fill="#fff" stroke="#10202c" stroke-width="4"/><circle cx="0" cy="-12" r="15" fill="#fff" stroke="#10202c" stroke-width="4"/><rect x="-11" y="-36" width="22" height="14" rx="2" fill="#2a3a52" stroke="#10202c" stroke-width="3"/><rect x="-16" y="-24" width="32" height="5" rx="2" fill="#2a3a52" stroke="#10202c" stroke-width="3"/><path d="M0 -12 L16 -9 L0 -6Z" fill="#ff8a2a" stroke="#4a1f08" stroke-width="2" stroke-linejoin="round"/><circle cx="-5" cy="-17" r="2" fill="#10202c"/><circle cx="5" cy="-17" r="2" fill="#10202c"/><g fill="#10202c"><circle cx="0" cy="8" r="2.4"/><circle cx="0" cy="17" r="2.4"/></g><ellipse cx="-9" cy="6" rx="4" ry="7" fill="#cfeaff" opacity=".6"/>',
-	blossom: (() => {
-		let p = '';
-		for (let i = 0; i < 5; i += 1) {
-			p += `<ellipse cx="0" cy="-20" rx="14" ry="18" transform="rotate(${i * 72})" fill="#ffb3d2" stroke="#4a1d36" stroke-width="4"/>`;
-		}
-		return `${p}<circle r="9" fill="#ffe45a" stroke="#4a1d36" stroke-width="3"/><g stroke="#c2487a" stroke-width="2" stroke-linecap="round"><path d="M0 -4 V-12"/><path d="M4 -1 L10 -4"/><path d="M-4 -1 L-10 -4"/></g>`;
-	})()
-};
 
 export const EMBLEM_ART: Record<SeasonTheme['emblem'], string> = {
 	sun: (() => {
