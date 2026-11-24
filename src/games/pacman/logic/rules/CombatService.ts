@@ -419,7 +419,7 @@ export class CombatService {
 	}
 
 	/**
-	 * Pac-Man's speed under the energizer: a dash fading as it runs out. Not Ms. Pac-Man's
+	 * Pac-Man's speed under the energizer: a dash, then a smaller lead. Not Ms. Pac-Man's
 	 * overdrive (the balance bot: a faster heroine rams more ghosts into hypnosis and dies far
 	 * more), not the arcade (its own speeds).
 	 */
@@ -428,7 +428,7 @@ export class CombatService {
 			return 1;
 		}
 		return this.powerTimerValue > 0 && this.powerDurationValue > 0
-			? rageSpeed(this.powerTimerValue / this.powerDurationValue)
+			? rageSpeed(this.powerDurationValue - this.powerTimerValue)
 			: 1;
 	}
 

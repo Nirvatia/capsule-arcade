@@ -216,7 +216,7 @@ A turn pressed within `CORNER_WINDOW` (0.4 of a tile) of a junction is cut: `Pla
 counts the hero on the junction (its food eaten) and keeps where he really is as a corner offset
 that every step on the new axis shrinks as much, so he runs the corner on the diagonal (the
 arcade's cornering; not into a tunnel's pad). `CombatService` sets Pac-Man's rage speed each
-frame (`RAGE`, `rageSpeed` in `config/actorConfig`: +22 % fading to +10 % with the power; not
+frame (`RAGE`, `rageSpeed` in `config/actorConfig`: +20 % for the first second, then +10 %, a step; not
 her overdrive, not the arcade). Taking an energizer never stops play; only eating a ghost has
 its separate hit-stop.
 Tests: `logic/actors/playerControl.test.ts`, `logic/actors/playerCorner.test.ts`.

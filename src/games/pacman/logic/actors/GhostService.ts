@@ -6,6 +6,7 @@ import type { GhostDirection, GhostKind, GhostState, GhostTile } from './GhostMo
 import { isLairTile, resolveExitTarget } from '../maze/LairExit';
 import type { ArcadeRoundTuning } from '../../config/arcadeConfig';
 import { HYPNOSIS } from '../../config/hypnosisConfig';
+import { shortestRoute } from './ghostRoutes';
 import type { RouteWorld } from './ghostRoutes';
 import { arcadeChaseTarget } from './arcadeTargets';
 import {
@@ -535,6 +536,15 @@ export class GhostService {
 			ghost.setForceReverse(false);
 			return candidates[0];
 		}
+		if (ghost.state === 'eyes') {
+			// home by the shortest way, turning back if that is it (greedy steering sends the
+			// eyes round the lair whenever its wall stands between them and the spawn)
+			ghost.setForceReverse(false);
+			const home = this.homeDirection(ghost);
+			if (home && candidates.includes(home)) {
+				return home;
+			}
+		}
 		if (ghost.forceReverse && opposite && candidates.includes(opposite)) {
 			ghost.setForceReverse(false);
 			return opposite;
@@ -562,6 +572,24 @@ export class GhostService {
 		}
 		ghost.setForceReverse(false);
 		return best ?? choices[0];
+	}
+
+	/** The first step of the shortest way from the eyes' tile to their spawn in the lair. */
+	private homeDirection(ghost: GhostModel): GhostDirection | null {
+		const spawn = this.spawnFor(ghost);
+		if (!spawn) {
+			return null;
+		}
+		const world: RouteWorld = {
+			walkable: (x, y) => this.grid.isGhostWalkable(x, y, true),
+			teleport: (x, y) => this.grid.teleportDestination(x, y)
+		};
+		const route = shortestRoute(
+			world,
+			{ tile: ghost.tile, facing: null },
+			(x, y) => x === spawn.x && y === spawn.y
+		);
+		return route?.directions[0] ?? null;
 	}
 
 	private currentTargetTile(ghost: GhostModel): GhostTile {

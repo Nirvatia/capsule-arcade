@@ -82,11 +82,11 @@ describe('cornering', () => {
 });
 
 describe('the rage', () => {
-	it('dashes at the start and fades to a smaller lead at the end', () => {
-		expect(rageSpeed(1)).toBeCloseTo(RAGE.dashStart);
-		expect(rageSpeed(0)).toBeCloseTo(RAGE.dashEnd);
-		expect(rageSpeed(0.5)).toBeGreaterThan(RAGE.dashEnd);
-		expect(rageSpeed(0.5)).toBeLessThan(RAGE.dashStart);
+	it('dashes +20 % for the first second, then steps down to +10 % with no blend', () => {
+		expect(rageSpeed(0)).toBe(1.2);
+		expect(rageSpeed(0.99)).toBe(1.2);
+		expect(rageSpeed(1)).toBe(1.1);
+		expect(rageSpeed(5)).toBe(1.1);
 	});
 
 	for (const profile of ['pacman', 'ms-pacman'] as const) {
@@ -110,7 +110,11 @@ describe('the rage', () => {
 			progress.collectAt(at!.x, at!.y);
 			combat.update(1 / 60);
 			expect(combat.consumeHitStop()).toBe(0);
-			if (profile === 'pacman') expect(player.rageSpeed).toBeGreaterThan(RAGE.dashStart - 0.01);
+			if (profile === 'pacman') expect(player.rageSpeed).toBe(RAGE.dash);
+			else expect(player.rageSpeed).toBe(1);
+			// a second in: the step down, no blend
+			for (let i = 0; i < 60; i++) combat.update(1 / 60);
+			if (profile === 'pacman') expect(player.rageSpeed).toBe(RAGE.lead);
 			else expect(player.rageSpeed).toBe(1);
 			// it fades and ends with the power
 			for (let i = 0; i < 60 * 30; i++) combat.update(1 / 60);

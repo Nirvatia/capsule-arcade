@@ -64,8 +64,8 @@ size of one tile.
   for a perfect clear (no death, no dot lost).
 - **Energizer (Pac-Man)**: the ghosts turn scared and turn round for the season's power time
   (6–6.5 s); they flash in the last 2 s. Eaten ghosts give 200, 400, 800, 1600 within one
-  energizer and run home as eyes. Pac-Man dashes while it lasts: +22 % speed as it starts,
-  fading to +10 % at its end (not in the arcade).
+  energizer and run home as eyes. Pac-Man dashes while it lasts: +20 % speed for its first
+  second, then +10 % to its end, a step with no blend (not in the arcade).
 - **The energizer's blow (both heroes)**: the play stops for 0.1 s as it is eaten (§9).
 - **Overdrive (Ms. Pac-Man)**: instead of scaring, an energizer starts a 5 s overdrive.
   Touching a ghost hypnotises it for 4 s (+200). Touching another moves the hypnosis over

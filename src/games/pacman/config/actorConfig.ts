@@ -12,18 +12,19 @@ export const EAT_REACH = 0.3;
 export const CORNER_WINDOW = 0.4;
 
 /**
- * The rage. `dashStart` / `dashEnd`: Pac-Man's speed under the energizer, a factor on his
- * own, as it begins and as it runs out (the season levels only; the arcade keeps its own
- * speeds, Ms. Pac-Man's overdrive none: the balance bot found her dying far more). Taking an
- * energizer never stops play; only eating a ghost has its own separate hit-stop.
+ * The rage. Pac-Man's speed under the energizer, a factor on his own: `dash` for its first
+ * `dashTime` seconds, then `lead` to its end, a step with no blend (the season levels only;
+ * the arcade keeps its own speeds, Ms. Pac-Man's overdrive none: the balance bot found her
+ * dying far more). Taking an energizer never stops play; only eating a ghost has its own
+ * separate hit-stop.
  */
 export const RAGE = {
-	dashStart: 1.22,
-	dashEnd: 1.1
+	dash: 1.2,
+	dashTime: 1,
+	lead: 1.1
 } as const;
 
-/** The rage's speed factor with `left` of it to run (1 as it starts, 0 at its end). */
-export function rageSpeed(left: number): number {
-	const k = Math.max(0, Math.min(1, left));
-	return RAGE.dashEnd + (RAGE.dashStart - RAGE.dashEnd) * k;
+/** The rage's speed factor `elapsed` seconds after the energizer was eaten. */
+export function rageSpeed(elapsed: number): number {
+	return elapsed < RAGE.dashTime ? RAGE.dash : RAGE.lead;
 }
