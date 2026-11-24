@@ -1,7 +1,7 @@
 // Prototype: the echo bonus in its own look (echo wisps, `render/actors/EchoCloneView`), played
 // by the real services on a real season world at game scale: a riot set off again and again
 // from above the hero's start (`AbilityService.echo`), with the season's ghosts. Buttons: the four seasons, quarter
-// speed. Query: ?season=winter&capture (capture: window.__advance(seconds) steps 1/60 s), ?look=<candidate> (`looks.ts`).
+// speed. Query: ?season=winter&capture (capture: window.__advance(seconds) steps 1/60 s), ?portrait (the wisp large).
 import { EventBus } from '../../../src/games/pacman/engine/EventBus';
 import type { PacmanEventMap } from '../../../src/games/pacman/core/Events';
 import { buildLevelSession } from '../../../src/games/pacman/logic/level/LevelSession';
@@ -11,7 +11,6 @@ import { EchoCloneView } from '../../../src/games/pacman/render/actors/EchoClone
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { GhostView } from '../../../src/games/pacman/render/actors/GhostView';
 import { SEASON_GHOST } from '../../../src/games/pacman/render/actors/cuteGhost';
-import { applyLook } from './looks';
 import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/MeadowWorld';
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meadow/MeadowTheme';
@@ -33,7 +32,6 @@ let world: MeadowWorld;
 let riot: LevelSession;
 let pause = 0;
 let time = 0;
-applyLook(EchoCloneView, q.get('look'));
 const riotView = new EchoCloneView();
 const ghostView = new GhostView();
 const hero = new PacmanHero();
@@ -62,7 +60,7 @@ function build(): void {
 	const level = SEASONS.indexOf(season) + 1;
 	world = new MeadowWorld(seasonForLevel(level).grid, meadowThemeFor(season) as MeadowTheme);
 	world.resize(vw, vh, D);
-	world.setMood(0, 0);
+	world.setMood(0, q.has('night') ? 1 : 0);
 	for (let i = 0; i < 40; i++) world.update(0.1);
 	startRiot();
 	for (const b of document.querySelectorAll<HTMLButtonElement>('[data-season]')) {
@@ -137,7 +135,7 @@ function frame(realDt: number): void {
 		ctx.fillRect(0, 0, 8 * R * 2.4, R * 3.4);
 		const body = (riotView as unknown as { body: (...a: unknown[]) => void }).body.bind(riotView);
 		[0, Math.PI / 2, Math.PI, -Math.PI / 2].forEach((a, i) => {
-			body(ctx, R * 1.6 + i * R * 2.6, R * 1.7, R, a, 0.12 + 0.1 * i);
+			body(ctx, R * 1.6 + i * R * 2.6, R * 1.7, R, a, 0.12 + 0.1 * i, time);
 		});
 	}
 }
