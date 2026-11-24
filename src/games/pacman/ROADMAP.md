@@ -52,14 +52,15 @@ last (see Later).
    iPhone emulation. Left on real hardware: iOS Safari audio unlock and pinch, swipe threshold
    and pad size under a thumb, notched safe areas, the Auto graphics tier there.
 4. **Mazes**: the owner reworks the weak ones.
-5. **Music track support** (blocked: the owner is working out how to generate the music). A
-   looped ogg/mp3 from `static/` per world under the same volume; the hell's track is part II.
+5. **Music**: the support is in (`WORLD_MUSIC`, `OST.md`: the format, the briefs, the prompts).
+   Left: the owner's real tracks (the hell's replaces the synthesised placeholder; the station
+   next; the seasons optional).
 
 ## Part II. Boss levels
 
 1. **The hell: polish and what is left.** The fight is in the game; the boss's dash is the lava
-   ball (the owner's pick of `hell-dash`, 2026-11-23). Left: the hell's music track (the owner
-   brings it) and a balance/polish pass of the whole fight; whether the dash wants a warning
+   ball (the owner's pick of `hell-dash`, 2026-11-23). Left: the hell's real music track (a
+   synthesised placeholder plays now, `OST.md`) and a balance/polish pass of the whole fight; whether the dash wants a warning
    stripe along its line (the turn into the ball now ends the telegraph, the line shows only by
    his eyes). Start from the `hell` and
    `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks, no height or

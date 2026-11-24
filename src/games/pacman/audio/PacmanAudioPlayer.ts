@@ -5,6 +5,18 @@ import { muted, volume } from './audioSettings';
 
 /** Is the arcade (secret level) running, and how far its dots are eaten (0..1). */
 export type ArcadeProbe = () => { readonly active: boolean; readonly urgency: number };
+/** The world being played ('hell', 'station', a season's name…), or null before a level. */
+export type WorldProbe = () => string | null;
+
+/**
+ * A world's own music, looped under the play in place of the siren (OST.md): paused, not lost,
+ * while the power's fright plays, a pause, a death; started over on a new game.
+ */
+export const WORLD_MUSIC: Readonly<
+	Record<string, { readonly file: string; readonly volume: number }>
+> = {
+	hell: { file: '/assets/pacman/music/hell.ogg', volume: 0.5 }
+};
 
 const AUDIO_BASE = '/assets/pacman/sfx/';
 
@@ -65,10 +77,14 @@ export class PacmanAudioPlayer {
 	private readonly arcade: ArcadeProbe;
 	private arcadeUrgency = 0;
 	private arcadePower = false;
+	private readonly world: WorldProbe;
+	/** The world music playing or paused now, null when none. */
+	private music: HTMLAudioElement | null = null;
 
 	constructor(
 		events: EventBus<PacmanEventMap>,
-		arcade: ArcadeProbe = () => ({ active: false, urgency: 0 })
+		arcade: ArcadeProbe = () => ({ active: false, urgency: 0 }),
+		world: WorldProbe = () => null
 	) {
 		if (!events) {
 			console.error('PacmanAudioPlayer.constructor', 'missing event bus');
@@ -76,6 +92,7 @@ export class PacmanAudioPlayer {
 		}
 		this.events = events;
 		this.arcade = arcade;
+		this.world = world;
 		this.available = typeof window !== 'undefined' && typeof Audio !== 'undefined';
 		this.unsubscribeState = events.on('ui:stateChanged', (payload) => {
 			this.handleState(payload.state);
@@ -98,6 +115,7 @@ export class PacmanAudioPlayer {
 		this.unsubscribeState();
 		this.unsubscribeCue();
 		this.stopBackground();
+		this.stopMusic();
 		this.synth.destroy();
 		for (const audio of this.sounds.values()) {
 			audio.pause();
@@ -160,6 +178,7 @@ export class PacmanAudioPlayer {
 		}
 		if (next === 'menu' || next === 'game-over') {
 			this.powerActive = false;
+			this.stopMusic();
 		}
 		this.state = next;
 		this.updateBackground();
@@ -321,15 +340,56 @@ export class PacmanAudioPlayer {
 	}
 
 	private updateBackground(): void {
+		const track = WORLD_MUSIC[this.world() ?? ''] ?? null;
 		if (this.state !== 'playing') {
 			this.stopBackground();
+			this.pauseMusic();
 			return;
 		}
 		if (this.powerActive) {
+			this.pauseMusic();
 			this.startLoop('fright.wav', 0.3);
 			return;
 		}
+		if (track) {
+			this.stopBackground();
+			this.playMusic(track.file, track.volume);
+			return;
+		}
+		this.stopMusic();
 		this.startLoop('siren0.wav', 0.25);
+	}
+
+	/** The world's track from where it was paused (from the start for another track). */
+	private playMusic(file: string, volume: number): void {
+		const audio = this.sound(file);
+		if (!audio) {
+			return;
+		}
+		if (this.music !== audio) {
+			this.stopMusic();
+			audio.currentTime = 0;
+			this.music = audio;
+		}
+		this.claim(audio);
+		audio.loop = true;
+		this.setLevel(audio, volume);
+		if (audio.paused) {
+			void audio.play().catch(() => undefined);
+		}
+	}
+
+	private pauseMusic(): void {
+		this.music?.pause();
+	}
+
+	private stopMusic(): void {
+		if (!this.music) {
+			return;
+		}
+		this.music.pause();
+		this.music.currentTime = 0;
+		this.music = null;
 	}
 
 	private startLoop(name: string, volume: number): void {
@@ -437,7 +497,8 @@ export class PacmanAudioPlayer {
 		}
 		let audio = this.sounds.get(name);
 		if (!audio) {
-			audio = new Audio(AUDIO_BASE + name);
+			// a sample's name, or an absolute path (the world music)
+			audio = new Audio(name.startsWith('/') ? name : AUDIO_BASE + name);
 			audio.preload = 'auto';
 			this.sounds.set(name, audio);
 		}
