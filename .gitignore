@@ -51,3 +51,6 @@ prototypes/pacman/season-look.html
 prototypes/pacman/hero-art.html
 prototypes/pacman/season-dress.html
 prototypes/pacman/power-icons.html
+
+# Turing prototype pages are built on demand (node prototypes/turing/build.mjs <name>)
+prototypes/turing/*.html
