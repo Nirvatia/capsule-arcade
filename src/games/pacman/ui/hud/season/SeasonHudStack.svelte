@@ -36,7 +36,8 @@
 
 	const theme = $derived(SEASON_THEMES[snap.world as SeasonKey]);
 
-	const DIAL: Dial = { cx: 200, cy: 116, r: 30 };
+	// the ability's dial under the right thumb (the stick has the left, TouchPad)
+	const DIAL: Dial = { cx: 318, cy: 108, r: 36 };
 	const TRAIL: TrailBox = { x0: 24, x1: 376, y: 34, amp: 6 };
 	const RING = ringLength(DIAL);
 	const PELLETS = 20;
@@ -63,7 +64,7 @@
 	/** The ability waiting in the slot, or the one running: the dial shows its icon. */
 	const slot = $derived(snap.ability ?? snap.timer?.kind ?? null);
 	/** The energizer's own little dial, beside the ability's. */
-	const POWER_DIAL = { cx: 128, cy: 120, r: 21 };
+	const POWER_DIAL = { cx: 244, cy: 116, r: 21 };
 	const timerLabel = $derived(
 		snap.timer
 			? $t(snap.timer.kind)
@@ -143,72 +144,10 @@
 			<text class="lab" x="278" y="136" font-size="8">{$t('lives')}</text>
 			<text class="num" x="346" y="154" font-size="22" text-anchor="end">×{lives}</text>
 		</g>
-	</svg>
-
-	<svg
-		class="bottom"
-		viewBox="0 0 {HUD_STACK_WIDTH} {HUD_STACK_BAND}"
-		width={HUD_STACK_WIDTH * scale}
-		height={HUD_STACK_BAND * scale}
-		aria-hidden="true"
-	>
-		{@html trail}
-		<text class="lab" x="24" y="60" font-size="10">{$t('food')}</text>
-		<text class="num" x="376" y="64" font-size="18" text-anchor="end"
-			>{Math.round(clamp01(snap.dots) * 100)}%</text
-		>
-
-		{@html art.dial}
-		<circle
-			class="ring"
-			cx={DIAL.cx}
-			cy={DIAL.cy}
-			r={DIAL.r - 5}
-			fill="none"
-			stroke={theme.ring}
-			stroke-width="6"
-			stroke-linecap="round"
-			stroke-dasharray={RING}
-			stroke-dashoffset={RING * (1 - ratio)}
-			transform="rotate(-90 {DIAL.cx} {DIAL.cy})"
-		/>
-		{#if slot}
-			<foreignObject x={DIAL.cx - 26} y={DIAL.cy - 28} width="52" height="52">
-				<AbilitySlot kind={slot} size={52} {scale} />
-			</foreignObject>
-		{/if}
-		<text class="lab" x={DIAL.cx} y={DIAL.cy + DIAL.r + 24} font-size="9" text-anchor="middle"
-			>{timerLabel}</text
-		>
-		{#if snap.timer}
-			<text class="num" x={DIAL.cx} y={DIAL.cy + 19} font-size="13" text-anchor="middle"
-				>{snap.timer.remaining.toFixed(1)}s</text
-			>
-		{/if}
-		{#if snap.power}
-			<PowerBadge power={snap.power} world={snap.world} {theme} dial={POWER_DIAL} />
-		{/if}
-		<!-- the dial is the ability's button (a shot in the hell): F on a keyboard, a tap on a phone -->
-		<circle
-			class="dialhit"
-			cx={DIAL.cx}
-			cy={DIAL.cy}
-			r={DIAL.r + 8}
-			fill="transparent"
-			role="button"
-			tabindex="-1"
-			aria-label={timerLabel}
-			data-no-swipe
-			onpointerdown={(event) => {
-				event.preventDefault();
-				onfire();
-			}}
-			onkeydown={() => {}}
-		/>
-
+		<!-- the pause knob up here: the bottom band is the thumbs' (the stick, the dial) -->
 		<g
 			class="knob"
-			transform="translate(352 132) scale(.9)"
+			transform="translate(380 143) scale(.7)"
 			role="button"
 			tabindex="-1"
 			aria-label={$t('pause')}
@@ -239,6 +178,68 @@
 				stroke-width="2"
 			/>
 		</g>
+	</svg>
+
+	<svg
+		class="bottom"
+		viewBox="0 0 {HUD_STACK_WIDTH} {HUD_STACK_BAND}"
+		width={HUD_STACK_WIDTH * scale}
+		height={HUD_STACK_BAND * scale}
+		aria-hidden="true"
+	>
+		{@html trail}
+		<text class="lab" x="24" y="60" font-size="10">{$t('food')}</text>
+		<text class="num" x="376" y="64" font-size="18" text-anchor="end"
+			>{Math.round(clamp01(snap.dots) * 100)}%</text
+		>
+
+		{@html art.dial}
+		<circle
+			class="ring"
+			cx={DIAL.cx}
+			cy={DIAL.cy}
+			r={DIAL.r - 5}
+			fill="none"
+			stroke={theme.ring}
+			stroke-width="6"
+			stroke-linecap="round"
+			stroke-dasharray={RING}
+			stroke-dashoffset={RING * (1 - ratio)}
+			transform="rotate(-90 {DIAL.cx} {DIAL.cy})"
+		/>
+		{#if slot}
+			<foreignObject x={DIAL.cx - 31} y={DIAL.cy - 33} width="62" height="62">
+				<AbilitySlot kind={slot} size={62} {scale} />
+			</foreignObject>
+		{/if}
+		<text class="lab" x={DIAL.cx} y={DIAL.cy + DIAL.r + 24} font-size="9" text-anchor="middle"
+			>{timerLabel}</text
+		>
+		{#if snap.timer}
+			<text class="num" x={DIAL.cx} y={DIAL.cy + 19} font-size="13" text-anchor="middle"
+				>{snap.timer.remaining.toFixed(1)}s</text
+			>
+		{/if}
+		{#if snap.power}
+			<PowerBadge power={snap.power} world={snap.world} {theme} dial={POWER_DIAL} />
+		{/if}
+		<!-- the dial is the ability's button (a shot in the hell): F on a keyboard, a tap on a phone -->
+		<circle
+			class="dialhit"
+			cx={DIAL.cx}
+			cy={DIAL.cy}
+			r={DIAL.r + 8}
+			fill="transparent"
+			role="button"
+			tabindex="-1"
+			aria-label={timerLabel}
+			data-no-swipe
+			onpointerdown={(event) => {
+				event.preventDefault();
+				onfire();
+			}}
+			onkeydown={() => {}}
+		/>
 	</svg>
 </div>
 

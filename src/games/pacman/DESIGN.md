@@ -29,9 +29,14 @@ size of one tile.
 - **Touch screens** (a phone, a tablet): a swipe anywhere on the game steers, and the finger
   kept down keeps steering, as a held key does; a drag that bends turns again without lifting
   the finger. The HUD's dial is the button: it spends the ability on a season level and fires
-  in the hell. The menu's CONTROLS plank (touch screens only, remembered) adds an on-screen pad
-  low on the left (in the margin on a landscape screen, in the lower HUD band on a tall one,
-  never over the maze). START, the pause knob and the screens' planks are tapped. The page does
+  in the hell. The menu's CONTROLS plank (touch screens only, remembered) adds an on-screen stick
+  (the owner's pick A, 2026-11-24): a floating stick under the left thumb, no small arrows; a
+  finger anywhere in its zone (the left of the lower HUD band on a tall screen, the left margin
+  on a landscape one, never over the maze) sets the base there, the knob's lean steers, a drag
+  past the rim pulls the base along; at rest a faint stick waits. The ability's dial is a big
+  button under the right thumb; on a tall screen the pause knob sits up by the lives board; on a
+  touch screen the sound knob leaves the play and waits in the pause. START, the pause knob and
+  the screens' planks are tapped. The page does
   not scroll, zoom or select under the fingers; the first touch starts the sound. The menu's
   chalk board shows the touch help instead of the keys.
 - The sound knob sits in the bottom-left corner; hovering it slides out a volume slider (on a

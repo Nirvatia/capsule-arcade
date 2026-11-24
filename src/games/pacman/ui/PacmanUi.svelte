@@ -30,7 +30,10 @@
 	/>
 </svelte:head>
 
-<MuteButton />
+<!-- on a touch screen the sound knob leaves the play (the thumbs own the corners); the pause has it -->
+{#if !($touchDevice && $hudFrame && ($hudFrame.state === 'playing' || $hudFrame.state === 'ready'))}
+	<MuteButton />
+{/if}
 
 {#if $hudFrame}
 	<!-- the arcade shift hides the HUD: either one would belong to the world it is leaving -->

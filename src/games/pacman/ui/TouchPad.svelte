@@ -1,8 +1,9 @@
-<!-- The on-screen pad (a touch screen with the PAD control scheme): a round wooden pad with four
-	arrows. A finger on it steers toward the side it is on and keeps steering while it stays;
-	sliding round turns, letting go stops. It stands low on the left, under the left thumb: in the
-	left margin on a landscape screen, inside the lower HUD band (right of the sound knob) on a
-	tall one, never over the maze. -->
+<!-- The on-screen stick (a touch screen with the STICK control scheme; the owner's pick A,
+	2026-11-24): a floating stick, no small arrows. A finger anywhere in the zone under the left
+	thumb (the left of the lower HUD band on a tall screen, the left margin on a landscape one)
+	sets the stick's base there; dragging steers toward the side the knob leans to and keeps
+	steering while the finger stays; a drag past the rim pulls the base along; letting go stops.
+	At rest a faint stick waits where the thumb usually lands. Never over the maze. -->
 <script lang="ts">
 	import { HUD_STACK_BAND, type HudMode } from '../config/hudLayout';
 
@@ -16,27 +17,27 @@
 
 	let active: Direction | null = $state(null);
 	let pointer: number | null = null;
-	let pad: HTMLDivElement | undefined = $state();
+	let zone: HTMLDivElement | undefined = $state();
+	/** The base and the knob, px inside the zone; null base: the resting hint. */
+	let base: { x: number; y: number } | null = $state(null);
+	let knob = $state({ x: 0, y: 0 });
 
-	/** The lower HUD band of a tall screen (`hudLayout`): the pad stays inside it, off the maze. */
+	/** The lower HUD band of a tall screen (`hudLayout`): the zone stays inside it, off the maze. */
 	const band = $derived(HUD_STACK_BAND * scale);
-	const size = $derived(
+	/** The base's radius, px. */
+	const R = $derived(
 		mode === 'stack'
-			? Math.round(Math.min(120, Math.max(92, band * 0.64)))
-			: Math.round(Math.min(150, Math.max(104, 128 * scale)))
+			? Math.round(Math.min(64, Math.max(44, band * 0.3)))
+			: Math.round(Math.min(72, Math.max(52, 62 * scale)))
 	);
-	const lift = $derived(mode === 'stack' ? Math.round(Math.max(8, band - size - 24)) : 96);
-
-	/** The side of the pad the finger is on; none in the middle. */
-	function directionAt(event: PointerEvent): Direction | null {
-		if (!pad) return null;
-		const r = pad.getBoundingClientRect();
-		const dx = event.clientX - (r.left + r.width / 2);
-		const dy = event.clientY - (r.top + r.height / 2);
-		if (Math.hypot(dx, dy) < r.width * 0.12) return null;
-		if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'RIGHT' : 'LEFT';
-		return dy > 0 ? 'DOWN' : 'UP';
-	}
+	/** The zone: under the left thumb, px. */
+	const zoneW = $derived(mode === 'stack' ? '58vw' : '30vw');
+	const zoneH = $derived(mode === 'stack' ? `${Math.round(band * 0.78)}px` : '72vh');
+	/** Where the resting hint stands inside the zone. */
+	let size = $state({ w: 0, h: 0 });
+	const rest = $derived({ x: Math.min(size.w / 2, R * 1.6 + 8), y: size.h - R - 10 });
+	const at = $derived(base ?? rest);
+	const lean = $derived(base ? knob : { x: 0, y: 0 });
 
 	function set(direction: Direction | null): void {
 		if (direction === active) return;
@@ -44,25 +45,54 @@
 		steer(direction);
 	}
 
+	function local(event: PointerEvent): { x: number; y: number } {
+		const r = zone?.getBoundingClientRect();
+		return r ? { x: event.clientX - r.left, y: event.clientY - r.top } : { x: 0, y: 0 };
+	}
+
+	/** Lean the knob toward the finger; a finger past the rim drags the base along. */
+	function lead(p: { x: number; y: number }): void {
+		if (!base) return;
+		let dx = p.x - base.x;
+		let dy = p.y - base.y;
+		const d = Math.hypot(dx, dy);
+		if (d > R) {
+			base = { x: p.x - (dx / d) * R, y: p.y - (dy / d) * R };
+			dx = (dx / d) * R;
+			dy = (dy / d) * R;
+		}
+		knob = { x: dx, y: dy };
+		// a small dead zone; inside it the last way holds (a thumb resting should not stop him)
+		if (Math.hypot(dx, dy) < R * 0.28) return;
+		if (Math.abs(dx) >= Math.abs(dy)) set(dx > 0 ? 'RIGHT' : 'LEFT');
+		else set(dy > 0 ? 'DOWN' : 'UP');
+	}
+
 	function down(event: PointerEvent): void {
 		if (pointer !== null) return;
 		event.preventDefault();
 		pointer = event.pointerId;
-		pad?.setPointerCapture(event.pointerId);
-		set(directionAt(event));
+		zone?.setPointerCapture(event.pointerId);
+		const p = local(event);
+		// the base under the thumb, but whole inside the zone
+		base = {
+			x: Math.min(Math.max(p.x, R), Math.max(R, size.w - R)),
+			y: Math.min(Math.max(p.y, R), Math.max(R, size.h - R))
+		};
+		knob = { x: 0, y: 0 };
+		lead(p);
 	}
 
 	function move(event: PointerEvent): void {
 		if (event.pointerId !== pointer) return;
 		event.preventDefault();
-		const direction = directionAt(event);
-		// the middle keeps the last way: a thumb rolling over it should not stop the hero
-		if (direction) set(direction);
+		lead(local(event));
 	}
 
 	function up(event: PointerEvent): void {
 		if (event.pointerId !== pointer) return;
 		pointer = null;
+		base = null;
 		set(null);
 	}
 
@@ -75,71 +105,91 @@
 </script>
 
 <div
-	class="pad"
+	class="zone"
 	class:stack={mode === 'stack'}
-	bind:this={pad}
+	bind:this={zone}
+	bind:clientWidth={size.w}
+	bind:clientHeight={size.h}
 	data-no-swipe
 	role="group"
-	aria-label="pad"
-	style:width="{size}px"
-	style:height="{size}px"
-	style:--lift="{lift}px"
+	aria-label="stick"
+	style:width={zoneW}
+	style:height={zoneH}
 	onpointerdown={down}
 	onpointermove={move}
 	onpointerup={up}
 	onpointercancel={up}
 	onlostpointercapture={up}
 >
-	<svg viewBox="-60 -60 120 120" width={size} height={size} aria-hidden="true">
+	<svg
+		class="stick"
+		class:resting={!base}
+		width={R * 2 + 16}
+		height={R * 2 + 16}
+		viewBox="{-R - 8} {-R - 8} {R * 2 + 16} {R * 2 + 16}"
+		style:left="{at.x - R - 8}px"
+		style:top="{at.y - R - 8}px"
+		aria-hidden="true"
+	>
 		<defs>
-			<radialGradient id="pad-wood" cx="0.4" cy="0.35" r="0.75">
+			<radialGradient id="stick-wood" cx="0.4" cy="0.35" r="0.75">
 				<stop offset="0" stop-color="#f3cf95" />
 				<stop offset="0.7" stop-color="#d49a5a" />
 				<stop offset="1" stop-color="#a86a34" />
 			</radialGradient>
 		</defs>
-		<circle r="56" fill="rgba(36,20,24,.35)" transform="translate(0 4)" />
-		<circle r="55" fill="url(#pad-wood)" stroke="#241418" stroke-width="4" />
-		<circle r="40" fill="none" stroke="rgba(120,70,30,.45)" stroke-width="2" />
-		<circle r="13" fill="#b77a40" stroke="#241418" stroke-width="3" />
+		<circle r={R} fill="rgba(36,20,24,.32)" stroke="#241418" stroke-width="3" />
+		<circle
+			r={R * 0.72}
+			fill="none"
+			stroke="rgba(255,240,220,.4)"
+			stroke-width="2"
+			stroke-dasharray="4 6"
+		/>
 		{#each ARROWS as a (a.d)}
 			<g transform="rotate({a.rot})">
 				<path
-					d="M0 -47 L15 -26 L6 -26 L6 -18 L-6 -18 L-6 -26 L-15 -26 Z"
-					fill={active === a.d ? '#fff2a8' : '#fff8ea'}
+					d="M0 {-R * 0.95} L{R * 0.16} {-R * 0.74} L{-R * 0.16} {-R * 0.74} Z"
+					fill={active === a.d ? '#ffe08a' : 'rgba(255,244,224,.7)'}
 					stroke="#241418"
-					stroke-width="3.2"
+					stroke-width="2"
 					stroke-linejoin="round"
-					class:on={active === a.d}
 				/>
 			</g>
 		{/each}
+		<circle cx={lean.x + 3} cy={lean.y + 5} r={R * 0.44} fill="rgba(0,0,0,.25)" />
+		<circle
+			cx={lean.x}
+			cy={lean.y}
+			r={R * 0.44}
+			fill="url(#stick-wood)"
+			stroke="#241418"
+			stroke-width="4"
+		/>
+		<circle cx={lean.x - R * 0.12} cy={lean.y - R * 0.14} r={R * 0.16} fill="#f6dcae" />
 	</svg>
 </div>
 
 <style>
-	.pad {
+	.zone {
 		position: fixed;
 		z-index: 30;
-		left: calc(env(safe-area-inset-left, 0px) + 28px);
-		bottom: calc(env(safe-area-inset-bottom, 0px) + var(--lift, 96px));
+		left: env(safe-area-inset-left, 0px);
+		bottom: calc(env(safe-area-inset-bottom, 0px) + 12vh);
 		touch-action: none;
 		user-select: none;
 		-webkit-user-select: none;
-		opacity: 0.92;
 	}
-	.pad.stack {
-		/* right of the sound knob */
-		left: calc(env(safe-area-inset-left, 0px) + 74px);
+	.zone.stack {
+		bottom: env(safe-area-inset-bottom, 0px);
 	}
-	svg {
+	.stick {
+		position: absolute;
 		display: block;
 		overflow: visible;
+		pointer-events: none;
 	}
-	path {
-		transition: fill 0.08s;
-	}
-	path.on {
-		filter: drop-shadow(0 0 6px rgba(255, 220, 120, 0.9));
+	.stick.resting {
+		opacity: 0.55;
 	}
 </style>
