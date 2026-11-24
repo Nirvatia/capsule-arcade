@@ -181,8 +181,7 @@ const ES: Record<I18nKey, string> = {
 	newRecord: 'NUEVO RÉCORD',
 	livesLeft: 'vidas restantes',
 	lastLife: 'última vida',
-	pressEnter:
-		'Enter para empezar · Flechas / WASD para mover · Espacio pausa · H héroe · M sonido',
+	pressEnter: 'Enter para empezar · Flechas / WASD para mover · Espacio pausa · H héroe · M sonido',
 	fire: 'F / Shift — disparar (infierno)',
 	language: 'ENGLISH',
 	world_spring: 'Primavera',
