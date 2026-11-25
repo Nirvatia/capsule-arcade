@@ -8,6 +8,7 @@ import type { GridLayout } from '../maze/GridView';
 import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../RenderFrame';
 import type { SharedLayers } from '../SharedLayers';
 import { B7World } from './b7/B7World';
+import { bakeVeins } from './b7/b7Veins';
 import type { B7Light } from './b7/B7World';
 import { drawAlbino } from './albino';
 import { CreatureMotion } from './creatureMotion';
@@ -147,7 +148,6 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 			this.drawPulse(ctx, run, hero, sx, sy, S);
 			this.drawHurt(ctx, run, frame.width, frame.height);
 			this.drawWords(ctx, run, sx, sy, S);
-			this.drawReadout(ctx, run, layout);
 		}
 		world.drawGrain(ctx, time);
 		return layout;
@@ -156,7 +156,10 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 	/** The station before the level: no actors, every spore in place, the quarantine's light. */
 	preview(frame: PreviewFrame): GridLayout {
 		if (!this.previewWorld || this.previewWorld.grid !== frame.season.grid) {
-			this.previewWorld = { grid: frame.season.grid, world: new B7World(frame.season.grid) };
+			this.previewWorld = {
+				grid: frame.season.grid,
+				world: new B7World(frame.season.grid, (sc) => bakeVeins(sc, frame.season.grid))
+			};
 			this.previewWorld.world.setQuality(this.quality);
 		}
 		const world = this.previewWorld.world;
@@ -174,7 +177,10 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 	private worldFor(grid: GridMatrix): B7World {
 		if (this.world?.grid !== grid) {
 			const preview = this.previewWorld;
-			const world = preview && preview.grid === grid ? preview.world : new B7World(grid);
+			const world =
+				preview && preview.grid === grid
+					? preview.world
+					: new B7World(grid, (sc) => bakeVeins(sc, grid));
 			world.setQuality(this.quality);
 			this.world = { grid, world };
 			this.previewWorld = null;
@@ -477,27 +483,6 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		g.addColorStop(1, `rgba(200,20,20,${a})`);
 		ctx.fillStyle = g;
 		ctx.fillRect(0, 0, w, h);
-		ctx.restore();
-	}
-
-	/** Until the station's HUD (its own step): the HP, the hatch's charge, the infection, the lures. */
-	private drawReadout(ctx: CanvasRenderingContext2D, run: StationRun, layout: GridLayout): void {
-		const S = layout.tileSize;
-		const x = layout.offsetX + S * 1.2;
-		const y = layout.offsetY + S * 0.62;
-		const e = run.escape;
-		const hits = '●'.repeat(Math.max(0, run.hp)) + '○'.repeat(Math.max(0, RUN_TUNE.hp - run.hp));
-		const tail =
-			e.state === 'running' ? `  LURE ${run.lures}` : e.state === 'armed' ? '  TO THE CONSOLE' : '';
-		ctx.save();
-		ctx.font = `700 ${Math.max(9, Math.round(S * 0.36))}px ui-monospace, monospace`;
-		ctx.textBaseline = 'middle';
-		ctx.fillStyle = 'rgba(214,236,226,0.92)';
-		ctx.fillText(
-			`B-7  HP ${hits}  HATCH ${Math.round(e.charge * 100)}%  INFECTION ${Math.round(run.infection * 100)}%${tail}`,
-			x,
-			y
-		);
 		ctx.restore();
 	}
 }

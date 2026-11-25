@@ -12,8 +12,8 @@ const cache = new Map<string, string>();
  * The hero's icon baked crisp into a data URL. `season` stays in the signature (the callers
  * pass their world's season); the classic sprite is the same in every world.
  */
-export function heroPortrait(ms: boolean, season: HeroSeason): string {
-	void season;
+export function heroPortrait(ms: boolean, world: HeroSeason | 'station'): string {
+	void world;
 	const key = ms ? 'ms' : 'pac';
 	const hit = cache.get(key);
 	if (hit) return hit;
@@ -23,7 +23,7 @@ export function heroPortrait(ms: boolean, season: HeroSeason): string {
 }
 
 /** The baked hero as an SVG image centred at the origin, `size` units across. */
-export function heroImageArt(ms: boolean, season: HeroSeason, size = 75): string {
+export function heroImageArt(ms: boolean, season: HeroSeason | 'station', size = 75): string {
 	const url = heroPortrait(ms, season);
 	return `<image href="${url}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>`;
 }

@@ -7,7 +7,7 @@
 	import { muted, volume } from '../audio/audioSettings';
 	import { t } from './i18n';
 	import { hudFrame } from './hud/hudFrame';
-	import { HELL_THEME, SEASON_THEMES, isSeasonKey } from './hud/season/seasonThemes';
+	import { HELL_THEME, SEASON_THEMES, STATION_THEME, isSeasonKey } from './hud/season/seasonThemes';
 	import { hudLayoutFor } from '../config/hudLayout';
 
 	let innerWidth = $state(1280);
@@ -17,7 +17,9 @@
 	const theme = $derived(
 		$hudFrame?.world === 'hell'
 			? HELL_THEME
-			: SEASON_THEMES[$hudFrame && isSeasonKey($hudFrame.world) ? $hudFrame.world : 'autumn']
+			: $hudFrame?.world === 'station'
+				? STATION_THEME
+				: SEASON_THEMES[$hudFrame && isSeasonKey($hudFrame.world) ? $hudFrame.world : 'autumn']
 	);
 	const layout = $derived(hudLayoutFor(innerWidth, innerHeight));
 	// stacked, the knob stands in the bottom band's row with the dial and the pause knob

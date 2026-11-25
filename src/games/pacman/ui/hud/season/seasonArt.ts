@@ -86,6 +86,21 @@ function material(
 		}
 		return s;
 	}
+	if (t.key === 'station') {
+		// brushed steel: fine straight lines, and a rivet in each corner
+		for (let gy = y + 6; gy < y + h - 4; gy += 5) {
+			s += `<path d="M${x + 4} ${gy + q() * 0.8} H${x + w - 4}" stroke="${t.grain}" stroke-width="1" opacity="${0.12 + q() * 0.12}"/>`;
+		}
+		for (const [rx, ry] of [
+			[x + 8, y + 8],
+			[x + w - 8, y + 8],
+			[x + 8, y + h - 8],
+			[x + w - 8, y + h - 8]
+		]) {
+			s += `<circle cx="${rx}" cy="${ry}" r="2.6" fill="${t.shade}" stroke="${t.ink}" stroke-width="1.2"/><circle cx="${rx - 0.7}" cy="${ry - 0.7}" r="0.9" fill="#fff" opacity=".5"/>`;
+		}
+		return s;
+	}
 	if (t.key === 'winter') {
 		for (let i = 0; i < 3; i += 1) {
 			const fx = x + 30 + q() * (w - 80);
@@ -257,6 +272,14 @@ export const EMBLEM_ART: Record<SeasonTheme['emblem'], string> = {
 	})(),
 	skull:
 		'<path d="M-20 -4 C-24 -26 24 -26 20 -4 C20 4 14 8 12 12 V22 H-12 V12 C-14 8 -20 4 -20 -4Z" fill="#e8d9bd" stroke="#16060a" stroke-width="3.4" stroke-linejoin="round"/><ellipse cx="-8" cy="-2" rx="5" ry="6" fill="#16060a"/><ellipse cx="8" cy="-2" rx="5" ry="6" fill="#16060a"/><path d="M-4 8 H4 M-5 22 V14 M0 22 V14 M5 22 V14" stroke="#16060a" stroke-width="2.4" stroke-linecap="round"/><ellipse cx="-8" cy="-2" rx="2" ry="2.4" fill="#ff5a2a"/><ellipse cx="8" cy="-2" rx="2" ry="2.4" fill="#ff5a2a"/>',
+	hazard: (() => {
+		// the biohazard's three blades round a ring, in hazard amber
+		let p = '';
+		for (let i = 0; i < 3; i += 1) {
+			p += `<path d="M0 -6 C-9 -12 -11 -22 -4 -27 C-1 -21 1 -21 4 -27 C11 -22 9 -12 0 -6Z" transform="rotate(${i * 120})" fill="#ffb54a" stroke="#0b1110" stroke-width="2.6" stroke-linejoin="round"/>`;
+		}
+		return `${p}<circle r="7" fill="none" stroke="#ffb54a" stroke-width="3"/><circle r="3" fill="#0b1110"/>`;
+	})(),
 	flower: (() => {
 		let p = '';
 		for (let i = 0; i < 5; i += 1) {

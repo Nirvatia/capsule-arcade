@@ -142,12 +142,16 @@ last (see Later).
          is one value from the hatch's charge and slowly the time, revealing the infestation from
          the lair out and sinking the light (lamps fail one by one, the beacons rise); the power
          cells are cold blue-white plasma; synthesised music (calm, a dread layer by the
-         infection, the escape) and effects (`audio/StationSynth`, OST.md). **Awaiting the
-         owner** (`prototypes/pacman/station-b7`): the infestation B, the infection in the
-         bulkheads (`veins.ts`: veins under the wall plates, sick amber wall edges, spores on a few
-         crests, the floor clean but a thin stain), to replace the mock-up's once approved
-         (`B7World`'s `bakeHive`); the station's HUD (`hudLook.ts`: HP cells that crack, the
-         hatch's charge, the infection, the alarm and the lures), into the game's HUD after.
+         infection, the escape) and effects (`audio/StationSynth`, OST.md). The owner's second look
+         (2026-11-25): the infestation B is in the game (`render/station/b7/b7Veins`: veins under
+         the wall plates, sick amber wall edges, spores on a few crests, the floor clean but a thin
+         stain; to be refined later); the station has its own HUD (`StationHud`: the game's boards
+         in riveted steel, square and still, smaller; `StationBar` above the maze: the hatch's
+         charge and the infection, the alarm in the escape; the HP as hearts, the one just lost
+         flashing; the lure's dial in the escape); the in-canvas readout is gone. **Awaiting the
+         owner**: the power cell's warm colour (the cold one did not fit): gold, ember or rose
+         (`prototypes/pacman/station-b7?cell=`); `B7World`'s scene takes it through
+         `setCellPalette`.
       4. A fourth tactic if the three need company (the tripwire or the shadow).
       5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors

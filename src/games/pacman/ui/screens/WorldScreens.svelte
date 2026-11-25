@@ -12,7 +12,12 @@
 	import type { ScreenActions } from './screenActions';
 	import { boardArt, trailArt } from '../hud/season/seasonArt';
 	import { heroImageArt } from '../hud/season/heroPortrait';
-	import { HELL_THEME, SEASON_THEMES, isSeasonKey } from '../hud/season/seasonThemes';
+	import {
+		HELL_THEME,
+		SEASON_THEMES,
+		STATION_THEME,
+		isSeasonKey
+	} from '../hud/season/seasonThemes';
 	import {
 		bannerSpanArt,
 		chalkArt,
@@ -35,9 +40,11 @@
 	const theme = $derived(
 		snap.world === 'hell'
 			? HELL_THEME
-			: isSeasonKey(snap.world)
-				? SEASON_THEMES[snap.world]
-				: SEASON_THEMES.autumn
+			: snap.world === 'station'
+				? STATION_THEME
+				: isSeasonKey(snap.world)
+					? SEASON_THEMES[snap.world]
+					: SEASON_THEMES.autumn
 	);
 	const ms = $derived(snap.profile === 'ms-pacman');
 	const record = $derived(snap.score > 0 && snap.score >= snap.highScore);

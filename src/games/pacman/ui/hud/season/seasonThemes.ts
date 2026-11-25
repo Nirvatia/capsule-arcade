@@ -3,7 +3,7 @@
 export type SeasonKey = 'spring' | 'summer' | 'autumn' | 'winter';
 
 export interface SeasonTheme {
-	readonly key: SeasonKey | 'hell';
+	readonly key: SeasonKey | 'hell' | 'station';
 	/** The ink line of every shape. */
 	readonly ink: string;
 	/** A board's lit band, mid tone and shadow band, and its grain. */
@@ -26,7 +26,7 @@ export interface SeasonTheme {
 	readonly pelletInk: string;
 	readonly rope: string;
 	readonly post: string;
-	readonly emblem: 'sun' | 'leaf' | 'flake' | 'flower' | 'skull';
+	readonly emblem: 'sun' | 'leaf' | 'flake' | 'flower' | 'skull' | 'hazard';
 	/** A bone rim round the boards (the hell's). */
 	readonly edge?: string;
 }
@@ -135,6 +135,31 @@ export const HELL_THEME: SeasonTheme = {
 	post: '#d9c9a8',
 	emblem: 'skull',
 	edge: '#e8d9bd'
+};
+
+/**
+ * The station's plates (the owner: the game's own HUD, stricter, neater, smaller): brushed steel
+ * with rivets, square corners, no stakes or ropes, cream numerals, a hazard emblem.
+ */
+export const STATION_THEME: SeasonTheme = {
+	key: 'station',
+	ink: '#0b1110',
+	light: '#8a9a95',
+	mid: '#55635f',
+	shade: '#2a3331',
+	grain: '#b4c4be',
+	numTop: '#ffffff',
+	num: '#eef4ee',
+	numInk: '#0b1110',
+	label: '#d6e6df',
+	cloth: '#3b4a46',
+	clothShade: '#232c2a',
+	ring: '#ffb54a',
+	pellet: '#ffcf7a',
+	pelletInk: '#5a3a10',
+	rope: '#2a3331',
+	post: '#3a4643',
+	emblem: 'hazard'
 };
 
 export function isSeasonKey(world: string): world is SeasonKey {

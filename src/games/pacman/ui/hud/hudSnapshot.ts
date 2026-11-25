@@ -6,8 +6,12 @@ import { fruitForLevel } from '../../logic/bonuses/fruitCatalog';
 import { BOSS_HP, PHASE_THRESHOLDS, PLAYER_MAX_HP } from '../../logic/doom/DoomBalance';
 import { arcadeRound } from '../../config/arcadeConfig';
 import type { AbilityKind } from '../../config/abilityConfig';
+import { RUN_TUNE } from '../../logic/station/StationRun';
 
-export type HudWorld = 'spring' | 'summer' | 'autumn' | 'winter' | 'hell' | 'secret';
+/** How long a lost heart flashes, s. */
+const HURT_FLASH = 0.9;
+
+export type HudWorld = 'spring' | 'summer' | 'autumn' | 'winter' | 'hell' | 'station' | 'secret';
 
 /** A running timer the HUD shows as a draining ring. */
 export interface HudTimer<K extends string = 'power' | 'overdrive' | AbilityKind> {
@@ -32,6 +36,21 @@ export interface HudBoss {
 	readonly defeated: boolean;
 	/** The heart and the exit are on the board. */
 	readonly rewardOffered: boolean;
+}
+
+/** The station level's own readings (its HUD). */
+export interface HudStation {
+	readonly hp: number;
+	readonly hpMax: number;
+	/** 1 just hit, fading to 0 (the lost heart's flash). */
+	readonly hurt: number;
+	/** The hatch's charge and the infection, 0..1. */
+	readonly charge: number;
+	readonly infection: number;
+	/** The escape is on: the alarm, the lures. */
+	readonly escape: boolean;
+	readonly lures: number;
+	readonly luresMax: number;
 }
 
 /** Everything the HUD and the screens show, read once per frame. Plain data. */
@@ -66,6 +85,7 @@ export interface HudSnapshot {
 	/** The fruits of the last levels up to this one, oldest first (arcade style). */
 	readonly fruits: readonly FruitKind[];
 	readonly boss: HudBoss | null;
+	readonly station: HudStation | null;
 }
 
 const FRUIT_ROW = 7;
@@ -83,7 +103,9 @@ export function buildHudSnapshot(
 		? 'secret'
 		: level.hellMode
 			? 'hell'
-			: ((season?.name ?? 'spring') as HudWorld);
+			: level.stationMode
+				? 'station'
+				: ((season?.name ?? 'spring') as HudWorld);
 	// the ability and the power run side by side: each has its own dial
 	let timer: HudTimer<AbilityKind> | null = null;
 	let power: HudTimer<'power' | 'overdrive'> | null = null;
@@ -120,6 +142,19 @@ export function buildHudSnapshot(
 					rewardOffered: Boolean(level.bossReward?.offered)
 				}
 			: null;
+	const run = level.stationRun;
+	const station: HudStation | null = run
+		? {
+				hp: Math.max(0, run.hp),
+				hpMax: RUN_TUNE.hp,
+				hurt: run.hurt >= 0 && run.hurt < HURT_FLASH ? 1 - run.hurt / HURT_FLASH : 0,
+				charge: run.escape.charge,
+				infection: run.infection,
+				escape: run.escape.state === 'running',
+				lures: run.lures,
+				luresMax: RUN_TUNE.lures
+			}
+		: null;
 	const secret = level.secretMode;
 	const fruits: FruitKind[] = [];
 	if (secret) {
@@ -156,6 +191,7 @@ export function buildHudSnapshot(
 				? abilities.kind
 				: null,
 		fruits,
-		boss
+		boss,
+		station
 	};
 }

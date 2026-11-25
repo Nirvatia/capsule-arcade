@@ -3237,6 +3237,27 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 	}
 
 	// --- UNMISTAKABLE, ICONIC ENERGIZERS (EU): HEAVY LAB POWER CELLS / CONTAINMENT CANISTERS ---
+	/** The power cell's colours (rgb triples for the glows, css colours for the core and ring). */
+	interface CellPalette {
+		readonly aura: string;
+		readonly halo: string;
+		readonly rim: string;
+		readonly core: readonly [string, string, string];
+		readonly ring: string;
+		readonly light: string;
+	}
+	let cell: CellPalette = {
+		aura: '214, 240, 255',
+		halo: '122, 190, 255',
+		rim: '60, 120, 220',
+		core: ['#e6f6ff', '#7cc8ff', '#2a5fb8'],
+		ring: 'rgba(200, 238, 255, 0.95)',
+		light: '150, 205, 255'
+	};
+	const setCellPalette = (p: CellPalette) => {
+		cell = p;
+	};
+
 	function drawLabPowerCellsEU(g: CanvasRenderingContext2D, time: number) {
 		const R = 11.0; // ~22px diameter (~64% of 34px tile)
 		const octPath = (cx: number, cy: number, rad: number) => {
@@ -3261,9 +3282,9 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 			g.save();
 			// A cold localized plasma aura (the game: the owner's pick, cold blue-white, 2026-11-25)
 			const aura = g.createRadialGradient(cx, cy, 3, cx, cy, R * 2.15);
-			aura.addColorStop(0, `rgba(214, 240, 255, ${0.34 + 0.14 * pulse})`);
-			aura.addColorStop(0.55, `rgba(122, 190, 255, ${0.14 + 0.08 * pulse})`);
-			aura.addColorStop(1, 'rgba(60, 120, 220, 0)');
+			aura.addColorStop(0, `rgba(${cell.aura}, ${0.34 + 0.14 * pulse})`);
+			aura.addColorStop(0.55, `rgba(${cell.halo}, ${0.14 + 0.08 * pulse})`);
+			aura.addColorStop(1, `rgba(${cell.rim}, 0)`);
 			g.fillStyle = aura;
 			g.beginPath();
 			g.arc(cx, cy, R * 2.15, 0, TAU);
@@ -3317,9 +3338,9 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 			const coreR = R * 0.61;
 			const core = g.createRadialGradient(cx - 1.2, cy - 1.3, 0.4, cx, cy, coreR);
 			core.addColorStop(0, '#ffffff');
-			core.addColorStop(0.32, '#e6f6ff');
-			core.addColorStop(0.72, '#7cc8ff');
-			core.addColorStop(1, '#2a5fb8');
+			core.addColorStop(0.32, cell.core[0]);
+			core.addColorStop(0.72, cell.core[1]);
+			core.addColorStop(1, cell.core[2]);
 			g.fillStyle = core;
 			g.globalAlpha = 0.88 + 0.12 * pulse;
 			g.beginPath();
@@ -3332,7 +3353,7 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 			// the slow ring: bright arcs turning round the plasma
 			g.rotate(time * 0.35 + i * 0.8);
 			g.globalAlpha = 0.85;
-			g.strokeStyle = 'rgba(200, 238, 255, 0.95)';
+			g.strokeStyle = cell.ring;
 			g.lineWidth = 1.1;
 			for (let s = 0; s < 3; s++) {
 				const a0 = (s / 3) * TAU;
@@ -3647,7 +3668,7 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 					toX(tcx(x)),
 					toY(tcy(y)),
 					R(TILE * 4.4),
-					'150, 205, 255',
+					cell.light,
 					(phase === 3 ? 0.96 : 0.86) * fl
 				);
 			}
@@ -3794,6 +3815,7 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 		radialLight,
 		setExtraLights,
 		setInfection,
+		setCellPalette,
 		infectionDistance
 	};
 }

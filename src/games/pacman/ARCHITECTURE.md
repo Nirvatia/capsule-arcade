@@ -80,7 +80,7 @@ render/
                    the hull and baked architecture as one screen layer per resize, the phase's
                    infestation one per phase change, the live props in stage space, the light
                    map of sprite lights with the flashlight, bloom by downscale, grain on High),
-                   albino (the squad's creature, from Station_Mimics_2), squadMarks (the plays'
+                   b7Veins (the infestation in the bulkheads, the owner's pick), albino (the squad's creature, from Station_Mimics_2), creatureMotion (how it glides off the rails), squadMarks (the plays'
                    and the escape's marks). The older style B, kept for the prototypes until
                    the owner has played B-7:
                    StationBake (the scene baked once at a scale fitted
@@ -114,8 +114,8 @@ audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth; a wor
              see OST.md), ArcadeSynth, audioSettings (mute and master volume, in localStorage)
 ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the HUD of the
              four season worlds, `SeasonHud` in the side margins and `SeasonHudStack` in two bands
-             on a taller screen, over `seasonArt` and `seasonThemes`; `BossHud`, the boss levels' one, over
-             `hellArt`; ArcadeHud; hudSnapshot, hudFrame; the coins and life icons bake the real hero via `heroPortrait`,
+             on a taller screen, over `seasonArt` and `seasonThemes`; `BossHud`, the hell's, over
+             `hellArt`; `StationHud`, the station's (steel `STATION_THEME`, `StationBar`, `stationArt`); ArcadeHud; hudSnapshot, hudFrame; the coins and life icons bake the real hero via `heroPortrait`,
              with the Lives board's icon geometry shared in `livesLayout`), screens/ (`WorldScreens` over `screenArt` for the
              seasons and the hell; `GameScreens`, the older cards, for the arcade; both pause screens'
              Game Select button uses `goto(resolve('/'))`),

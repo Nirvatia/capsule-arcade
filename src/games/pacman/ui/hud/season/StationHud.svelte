@@ -1,0 +1,550 @@
+<!-- The station's HUD (the owner: the game's own HUD, stricter, neater and smaller): the boss HUD's
+	skeleton in brushed steel plates with rivets, square, still (no swaying, no stakes or ropes).
+	Above the maze, in the boss bar's place, the station's strip: the hatch's charge and the
+	infection (`StationBar`), the alarm in the escape. Beside the maze: the score and record, the
+	level, the lives, the hero's three HP as hearts on a steel shelf (the one just lost flashes
+	red), and a dial with the lure in the escape (its ring: the lures left; the fire key throws it). -->
+<script lang="ts">
+	import type { HudSnapshot } from '../hudSnapshot';
+	import { t } from '../../i18n';
+	import {
+		HUD_BOSS_BAR_SIDE,
+		HUD_BOSS_BAR_STACK,
+		HUD_STACK_BAND,
+		HUD_STACK_WIDTH
+	} from '../../../config/hudLayout';
+	import type { HudMode } from '../../../config/hudLayout';
+	import { clamp01, fmt } from './seasonFormat';
+	import { bannerArt, boardArt, dialArt, emblemArt, knobArt, ringLength } from './seasonArt';
+	import { heroImageArt } from './heroPortrait';
+	import { LIVES_ICON } from './livesLayout';
+	import type { Dial } from './seasonArt';
+	import { STATION_THEME } from './seasonThemes';
+	import { heartArt } from './hellArt';
+	import { LURE_ART, stationRailArt } from './stationArt';
+	import StationBar from './StationBar.svelte';
+
+	let {
+		snap,
+		scale,
+		mode,
+		onpause,
+		onfire
+	}: {
+		snap: HudSnapshot;
+		scale: number;
+		mode: HudMode;
+		onpause: () => void;
+		onfire: () => void;
+	} = $props();
+
+	const theme = STATION_THEME;
+	const station = $derived(snap.station);
+	const ms = $derived(snap.profile === 'ms-pacman');
+	const lives = $derived(Math.max(0, snap.lives));
+	/** The dial: the lure in the escape, its ring the lures left. */
+	const ring = $derived({
+		ratio: station && station.escape ? clamp01(station.lures / station.luresMax) : 0,
+		color: '#96e6ff'
+	});
+	const weaponKey = $derived(station && station.escape ? 'lure' : null);
+	const weaponLabel = $derived(weaponKey ? $t('lure') : $t('none'));
+	const weaponValue = $derived(station && station.escape ? `${station.lures}` : '');
+	const hearts = $derived(
+		station ? Array.from({ length: station.hpMax }, (_, i) => i < station.hp) : []
+	);
+	/** The heart just lost flashes red for a moment. */
+	const flashing = $derived(station && station.hurt > 0 ? station.hp : -1);
+
+	/** The dial: round and a little bigger beside the maze, where the food trail is not needed. */
+	const SIDE_DIAL: Dial = { cx: 121, cy: 330, r: 40 };
+	const STACK_DIAL: Dial = { cx: 200, cy: 116, r: 30 };
+	const dial = $derived(mode === 'side' ? SIDE_DIAL : STACK_DIAL);
+	const RING_SIDE = ringLength(SIDE_DIAL);
+	const RING_STACK = ringLength(STACK_DIAL);
+	const ringLen = $derived(mode === 'side' ? RING_SIDE : RING_STACK);
+
+	const art = $derived({
+		banner:
+			mode === 'side'
+				? bannerArt(theme, { x: 60, y: 20, w: 480, h: 36 })
+				: bannerArt(theme, { x: 30, y: 14, w: 340, h: 30 }),
+		dial: dialArt(theme, dial),
+		knob: knobArt(theme),
+		emblem: emblemArt(theme),
+		weapon: weaponKey ? LURE_ART : '',
+		// the side layout, in the coordinates of the season HUD (the groups are translated)
+		sScore: boardArt(theme, 'score', 28, 46, 210, 88, { seed: 5, posts: false, r: 6, j: 0 }),
+		sRopes: '',
+		sTag: boardArt(theme, 'tag', 52, 160, 162, 42, { seed: 11, posts: false, r: 6, j: 0 }),
+		sRail: stationRailArt(theme, 40, 250, 198),
+		sLevel: boardArt(theme, 'level', 1042, 46, 210, 88, { seed: 9, posts: false, r: 6, j: 0 }),
+		sBanner: bannerArt(theme),
+		sLives: boardArt(theme, 'lives', 1076, 206, 142, 46, { seed: 17, posts: false, r: 6, j: 0 }),
+		// the stacked layout
+		kScore: boardArt(theme, 'kscore', 10, 12, 178, 66, { seed: 5, posts: false, r: 6, j: 0 }),
+		kRopes: '',
+		kTag: boardArt(theme, 'ktag', 28, 96, 140, 34, { seed: 11, posts: false, r: 6, j: 0 }),
+		kLevel: boardArt(theme, 'klevel', 206, 12, 184, 66, { seed: 9, posts: false, r: 6, j: 0 }),
+		kBanner: bannerArt(theme, { x: 230, y: 90, w: 136, h: 24 }),
+		kLives: boardArt(theme, 'klives', 236, 124, 118, 38, { seed: 17, posts: false, r: 6, j: 0 }),
+		kRail: stationRailArt(theme, 110, 66, 180)
+	});
+</script>
+
+<!-- The {@html} below is the HUD's own static art (`seasonArt`, `hellArt`, built from constants):
+	no text of the player or the network ever goes into it, so the XSS rule does not apply. -->
+<!-- eslint-disable svelte/no-at-html-tags -->
+
+{#snippet bar(w: number)}
+	{#if station}
+		<StationBar
+			{w}
+			charge={station.charge}
+			infection={station.infection}
+			escape={station.escape}
+			hatchLabel={$t('hatch')}
+			infectionLabel={$t('infection')}
+			alarmLabel={`■ ${$t('hatch')}`}
+			uid="station-bar-{mode}"
+		/>
+	{/if}
+{/snippet}
+
+{#snippet pauseKnob(x: number, y: number, k: number)}
+	<g
+		class="knob"
+		transform="translate({x} {y}) scale({k})"
+		role="button"
+		tabindex="-1"
+		aria-label={$t('pause')}
+		onmousedown={(event) => event.preventDefault()}
+		onclick={onpause}
+		onkeydown={() => {}}
+	>
+		<circle r="30" fill="transparent" />
+		{@html art.knob}
+		<rect
+			x="-8"
+			y="-9"
+			width="5"
+			height="18"
+			rx="2"
+			fill={theme.num}
+			stroke={theme.ink}
+			stroke-width="2"
+		/>
+		<rect
+			x="3"
+			y="-9"
+			width="5"
+			height="18"
+			rx="2"
+			fill={theme.num}
+			stroke={theme.ink}
+			stroke-width="2"
+		/>
+	</g>
+{/snippet}
+
+{#snippet weaponDial(fs: number, k: number)}
+	{@html art.dial}
+	<circle
+		class="ring"
+		cx={dial.cx}
+		cy={dial.cy}
+		r={dial.r - 5}
+		fill="none"
+		stroke={ring.color}
+		stroke-width="6"
+		stroke-linecap="round"
+		stroke-dasharray={ringLen}
+		stroke-dashoffset={ringLen * (1 - ring.ratio)}
+		transform="rotate(-90 {dial.cx} {dial.cy})"
+	/>
+	<g class:idle={!weaponKey} transform="translate({dial.cx} {dial.cy - 2}) scale({k})">
+		<g class="bob">{@html art.weapon}</g>
+	</g>
+	<text
+		class="lab"
+		x={dial.cx}
+		y={dial.cy + dial.r + (mode === 'side' ? 28 : 24)}
+		font-size={fs}
+		text-anchor="middle">{weaponLabel}</text
+	>
+	{#if weaponValue}
+		<text
+			class="num"
+			x={dial.cx}
+			y={dial.cy + dial.r * 0.62}
+			font-size={mode === 'side' ? 17 : 13}
+			text-anchor="middle">{weaponValue}</text
+		>
+	{/if}
+	<!-- the dial fires (F on a keyboard, a tap on a phone) -->
+	<circle
+		class="dialhit"
+		cx={dial.cx}
+		cy={dial.cy}
+		r={dial.r + 8}
+		fill="transparent"
+		role="button"
+		tabindex="-1"
+		aria-label={weaponLabel}
+		data-no-swipe
+		onpointerdown={(event) => {
+			event.preventDefault();
+			onfire();
+		}}
+		onkeydown={() => {}}
+	/>
+{/snippet}
+
+<div
+	class="shud station"
+	style:--ink={theme.ink}
+	style:--label={theme.label}
+	style:--num-ink={theme.numInk}
+	aria-label="HUD"
+>
+	<span class="sr">
+		{$t('score')}
+		{fmt(snap.score)}, {$t('level')}
+		{snap.level}
+		{$t('world_station')}, {$t('lives')}
+		{lives}{station ? `, ${$t('hp')} ${station.hp}/${station.hpMax}` : ''}
+	</span>
+
+	{#if mode === 'side'}
+		<svg
+			class="boss"
+			viewBox="0 0 600 {HUD_BOSS_BAR_SIDE}"
+			width={600 * scale}
+			height={HUD_BOSS_BAR_SIDE * scale}
+			aria-hidden="true"
+		>
+			{@render bar(600)}
+		</svg>
+
+		<svg
+			class="left"
+			viewBox="0 0 250 262"
+			width={250 * scale}
+			height={262 * scale}
+			aria-hidden="true"
+		>
+			<defs>
+				<linearGradient id="shud-num" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0" stop-color={theme.numTop} />
+					<stop offset="1" stop-color={theme.num} />
+				</linearGradient>
+			</defs>
+			<g transform="translate(-10 -30)">
+				<g class="sway" style:--rot="-1.4deg">
+					{@html art.sScore}
+					<text class="lab" x="46" y="74" font-size="12">{$t('score')}</text>
+					<text class="num" x="224" y="120" font-size="42" text-anchor="end">{fmt(snap.score)}</text
+					>
+				</g>
+				<g class="sway hang b" style:--rot="1deg">
+					{@html art.sRopes}
+					{@html art.sTag}
+					<text class="lab" x="66" y="177" font-size="10">{$t('high')}</text>
+					<text class="num" x="200" y="193" font-size="22" text-anchor="end"
+						>{fmt(snap.highScore)}</text
+					>
+				</g>
+				<g>
+					{@html art.sRail}
+					<text class="lab" x="52" y="280" font-size="9">{$t('hp')}</text>
+					{#each hearts as full, i (i)}
+						<g transform="translate({92 + i * 46} 238)">
+							<g class:lost={i === flashing}>{@html heartArt(full)}</g>
+						</g>
+					{/each}
+				</g>
+			</g>
+		</svg>
+
+		<svg
+			class="right"
+			viewBox="0 0 240 480"
+			width={240 * scale}
+			height={480 * scale}
+			aria-hidden="true"
+		>
+			<g transform="translate(-1026 0)">
+				<g class="sway b" style:--rot="1.3deg">
+					{@html art.sLevel}
+					<g transform="translate(1076 90) scale(.78)">{@html art.emblem}</g>
+					<text class="lab" x="1106" y="74" font-size="12">{$t('level')}</text>
+					<text class="num" x="1232" y="118" font-size="46" text-anchor="end">{snap.level}</text>
+				</g>
+				<g class="sway hang" style:--rot="-1deg">
+					{@html art.sBanner}
+					<text class="lab" x="1147" y="165" font-size="13" text-anchor="middle"
+						>{$t('world_station').toUpperCase()}</text
+					>
+				</g>
+				<g class="sway c" style:--rot=".8deg">
+					{@html art.sLives}
+					<g
+						transform="translate({LIVES_ICON.side.x} {LIVES_ICON.side.y}) scale({LIVES_ICON.side
+							.scale})"
+						><g class="bob">{@html heroImageArt(ms, theme.key, LIVES_ICON.side.size)}</g></g
+					>
+					<text class="lab" x="1124" y="223" font-size="9">{$t('lives')}</text>
+					<text class="num" x="1214" y="248" font-size="28" text-anchor="end">×{lives}</text>
+				</g>
+				<g transform="translate(1026 0)"
+					>{#if weaponKey}
+						{@render weaponDial(10, 0.62)}
+					{/if}</g
+				>
+			</g>
+			{@render pauseKnob(214, 24, 0.8)}
+		</svg>
+	{:else}
+		<svg
+			class="top"
+			viewBox="0 0 {HUD_STACK_WIDTH} {HUD_STACK_BAND + HUD_BOSS_BAR_STACK}"
+			width={HUD_STACK_WIDTH * scale}
+			height={(HUD_STACK_BAND + HUD_BOSS_BAR_STACK) * scale}
+			aria-hidden="true"
+		>
+			<defs>
+				<linearGradient id="shud-num" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0" stop-color={theme.numTop} />
+					<stop offset="1" stop-color={theme.num} />
+				</linearGradient>
+			</defs>
+			{@render bar(400)}
+			<g transform="translate(0 {HUD_BOSS_BAR_STACK})">
+				<g class="sway" style:--rot="-1.4deg">
+					{@html art.kScore}
+					<text class="lab" x="26" y="34" font-size="10">{$t('score')}</text>
+					<text class="num" x="176" y="68" font-size="36" text-anchor="end">{fmt(snap.score)}</text>
+				</g>
+				<g class="sway hang b" style:--rot="1deg">
+					{@html art.kRopes}
+					{@html art.kTag}
+					<text class="lab" x="42" y="111" font-size="8">{$t('high')}</text>
+					<text class="num" x="156" y="124" font-size="18" text-anchor="end"
+						>{fmt(snap.highScore)}</text
+					>
+				</g>
+				<g class="sway b" style:--rot="1.3deg">
+					{@html art.kLevel}
+					<g transform="translate(232 46) scale(.56)">{@html art.emblem}</g>
+					<text class="lab" x="260" y="34" font-size="10">{$t('level')}</text>
+					<text class="num" x="378" y="68" font-size="38" text-anchor="end">{snap.level}</text>
+				</g>
+				<g class="sway hang" style:--rot="-1deg">
+					{@html art.kBanner}
+					<text class="lab" x="298" y="106" font-size="11" text-anchor="middle"
+						>{$t('world_station').toUpperCase()}</text
+					>
+				</g>
+				<g class="sway c" style:--rot=".8deg">
+					{@html art.kLives}
+					<g
+						transform="translate({LIVES_ICON.stack.x} {LIVES_ICON.stack.y}) scale({LIVES_ICON.stack
+							.scale})"
+						><g class="bob">{@html heroImageArt(ms, theme.key, LIVES_ICON.stack.size)}</g></g
+					>
+					<text class="lab" x="278" y="136" font-size="8">{$t('lives')}</text>
+					<text class="num" x="346" y="154" font-size="22" text-anchor="end">×{lives}</text>
+				</g>
+			</g>
+		</svg>
+
+		<svg
+			class="bottom"
+			viewBox="0 0 {HUD_STACK_WIDTH} {HUD_STACK_BAND}"
+			width={HUD_STACK_WIDTH * scale}
+			height={HUD_STACK_BAND * scale}
+			aria-hidden="true"
+		>
+			{@html art.kRail}
+			<text class="lab" x="24" y="46" font-size="10">{$t('hp')}</text>
+			{#each hearts as full, i (i)}
+				<g transform="translate({152 + i * 48} 44) scale(.9)">
+					<g class:lost={i === flashing}>{@html heartArt(full)}</g>
+				</g>
+			{/each}
+			{#if weaponKey}
+				{@render weaponDial(9, 0.44)}
+			{/if}
+			{@render pauseKnob(352, 132, 0.9)}
+		</svg>
+	{/if}
+</div>
+
+<style>
+	.dialhit {
+		pointer-events: all;
+		cursor: pointer;
+	}
+	.shud {
+		position: fixed;
+		inset: 0;
+		z-index: 20;
+		pointer-events: none;
+	}
+	svg {
+		position: absolute;
+		display: block;
+		overflow: visible;
+	}
+	.boss,
+	.top,
+	.bottom {
+		left: 50%;
+		translate: -50% 0;
+	}
+	.boss,
+	.top {
+		top: 0;
+	}
+	.bottom {
+		bottom: 0;
+	}
+	.left {
+		top: 0;
+		left: env(safe-area-inset-left, 0px);
+	}
+	.right {
+		top: 0;
+		right: env(safe-area-inset-right, 0px);
+	}
+	.lab {
+		font-family: Fredoka, 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+		font-weight: 600;
+		letter-spacing: 2.2px;
+		fill: var(--label);
+		stroke: var(--ink);
+		stroke-width: 3px;
+		paint-order: stroke;
+		stroke-linejoin: round;
+	}
+	.num {
+		font-family: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+		font-weight: 800;
+		fill: url(#shud-num);
+		stroke: var(--num-ink);
+		stroke-width: 0.17em;
+		paint-order: stroke;
+		stroke-linejoin: round;
+		font-variant-numeric: tabular-nums;
+		filter: drop-shadow(0 0 3px rgba(255, 90, 42, 0.55));
+		animation: ember 2.5s ease-in-out infinite;
+	}
+	.ring {
+		transition: stroke-dashoffset 0.1s linear;
+	}
+	.idle {
+		opacity: 0.35;
+	}
+	.knob {
+		pointer-events: all;
+		cursor: pointer;
+	}
+	.knob:hover {
+		filter: brightness(1.12);
+	}
+	.sway {
+		transform-box: fill-box;
+		transform-origin: 50% 100%;
+		animation: sway 5.5s ease-in-out infinite;
+	}
+	.sway.hang {
+		transform-origin: 50% 0%;
+	}
+	.sway.b {
+		animation-duration: 6.8s;
+		animation-delay: -2s;
+	}
+	.sway.c {
+		animation-duration: 7.4s;
+		animation-delay: -4s;
+	}
+	:global(.shud .bob) {
+		transform-box: fill-box;
+		transform-origin: 50% 100%;
+		animation: bob 2.4s ease-in-out infinite;
+	}
+	.idle :global(.bob) {
+		animation: none;
+	}
+	@keyframes sway {
+		0%,
+		100% {
+			transform: rotate(calc(var(--rot, 0deg) - 0.7deg));
+		}
+		50% {
+			transform: rotate(calc(var(--rot, 0deg) + 0.7deg));
+		}
+	}
+	@keyframes bob {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-3px);
+		}
+	}
+	/* the hell's heartbeat: a strong beat and a weaker one, every 2.5 s */
+	@keyframes beat {
+		0%,
+		30%,
+		100% {
+			transform: scale(1);
+		}
+		8% {
+			transform: scale(1.14);
+		}
+		18% {
+			transform: scale(1.06);
+		}
+	}
+	@keyframes ember {
+		0%,
+		100% {
+			opacity: 0.88;
+		}
+		8% {
+			opacity: 1;
+		}
+	}
+	.sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.sway,
+		.lost,
+		.num,
+		:global(.shud .bob) {
+			animation: none;
+		}
+	}
+	/* the station is still: its plates do not sway, nothing bobs */
+	.station .sway,
+	.station :global(.bob) {
+		animation: none;
+	}
+	/* the heart just lost flashes red */
+	.lost {
+		animation: lost 0.3s steps(2, jump-none) infinite;
+	}
+	@keyframes lost {
+		50% {
+			filter: brightness(2.2) saturate(2);
+		}
+	}
+</style>

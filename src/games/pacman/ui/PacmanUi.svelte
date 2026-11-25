@@ -7,6 +7,7 @@
 	import SeasonHud from './hud/season/SeasonHud.svelte';
 	import SeasonHudStack from './hud/season/SeasonHudStack.svelte';
 	import BossHud from './hud/season/BossHud.svelte';
+	import StationHud from './hud/season/StationHud.svelte';
 	import { isSeasonKey } from './hud/season/seasonThemes';
 	import GameScreens from './screens/GameScreens.svelte';
 	import WorldScreens from './screens/WorldScreens.svelte';
@@ -51,6 +52,15 @@
 			<SeasonHudStack
 				snap={$hudFrame}
 				scale={layout.scale}
+				onpause={() => $screenActions?.pause()}
+				onfire={() => $screenActions?.fire()}
+			/>
+		{:else if $hudFrame.world === 'station'}
+			<!-- the station's HUD is smaller: it hides less of the station -->
+			<StationHud
+				snap={$hudFrame}
+				scale={bossLayout.scale * 0.85}
+				mode={bossLayout.mode}
 				onpause={() => $screenActions?.pause()}
 				onfire={() => $screenActions?.fire()}
 			/>

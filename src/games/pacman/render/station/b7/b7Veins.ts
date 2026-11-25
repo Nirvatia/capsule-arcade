@@ -1,10 +1,10 @@
-// Candidate B for the station's infestation (the owner's pick of the idea, 2026-11-25): the
+// The station's infestation (the owner's pick, 2026-11-25, in place of the mock-up's roots): the
 // infection lives inside the bulkheads. Veins run under the wall plates from module to module
 // (continuous across tiles: they meet at each edge's midpoint), the walls' edges along the
 // corridors turn a sick amber, clusters of spores sit on a few crests, veins drip down the south
 // facades; the floor stays clean but for a thin dark stain at the walls' feet. Baked once at its
 // fullest; the game reveals it from the lair out like the mock-up's (`B7World`).
-import type { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
+import type { createB7Scene } from './b7Scene';
 
 type Scene = ReturnType<typeof createB7Scene>;
 const SCALE = 1.5;
@@ -70,7 +70,9 @@ export function bakeVeins(scene: Scene, rows: readonly (readonly string[])[]): H
 		const ey = y + (dy === 1 ? 1 : 0);
 		const r = rng(hash(ex * 2 + (dx !== 0 ? 1 : 0), ey * 2 + (dy !== 0 ? 1 : 0)))();
 		const w = (r - 0.5) * 8;
-		return dx !== 0 ? { x: tx(ex), y: ty(y) + TILE / 2 + w } : { x: tx(x) + TILE / 2 + w, y: ty(ey) };
+		return dx !== 0
+			? { x: tx(ex), y: ty(y) + TILE / 2 + w }
+			: { x: tx(x) + TILE / 2 + w, y: ty(ey) };
 	};
 	const stroke = (path: () => void) => {
 		for (const [w, col] of [
@@ -123,7 +125,12 @@ export function bakeVeins(scene: Scene, rows: readonly (readonly string[])[]): H
 				stroke(() => {
 					g.beginPath();
 					g.moveTo(cx, cy);
-					g.quadraticCurveTo(cx + Math.cos(a + 0.6) * len * 0.6, cy + Math.sin(a + 0.6) * len * 0.6, cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+					g.quadraticCurveTo(
+						cx + Math.cos(a + 0.6) * len * 0.6,
+						cy + Math.sin(a + 0.6) * len * 0.6,
+						cx + Math.cos(a) * len,
+						cy + Math.sin(a) * len
+					);
 				});
 			}
 			// the knot where they meet, swollen
