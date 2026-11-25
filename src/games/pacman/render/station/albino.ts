@@ -1,7 +1,8 @@
 // The squad's creature: the glass albino (concept 02 of the owner's mock-up "Station_Mimics_2.html",
 // 2026-11-25), carried over as drawn: a milky blind eel from the flask, a dark heart, a glowing
 // nerve cord and ribs through the wet skin; five states (hunt, the tell, frightened, rage, the
-// mimicry's fold into a spore), a soft drop shadow, strictly inside its tile. The fold is the
+// mimicry's fold into a spore), a soft drop shadow, strictly inside its tile. In the game its
+// shake is a slow sway (the mock-up's was 40-58 Hz) and its swim runs on `bodyTime`. The fold is the
 // mock-up's; the disguise itself is the level's own spore painted by the caller (`opts.spore`).
 export type SquadKind = 'BLINKY' | 'PINKY' | 'INKY' | 'CLYDE';
 export type AlbinoState = 'hunt' | 'tell' | 'frightened' | 'rage' | 'mimic';
@@ -12,6 +13,8 @@ export interface AlbinoOpts {
 	/** The fold into the disguise, 0 the creature .. 1 the spore (the mimicry state). */
 	readonly mimicK?: number;
 	readonly speed?: number;
+	/** The body's clock (the swim's wave): runs with the creature's travel, not the wall clock. */
+	readonly bodyTime?: number;
 	/** Paints the disguise at the creature's point, with this alpha and scale. */
 	readonly spore?: (
 		ctx: CanvasRenderingContext2D,
@@ -111,8 +114,8 @@ function resolveMimicState(kind: SquadKind, state: AlbinoState, t: number, opts:
 		accentRgb = mixRgb(spec.rgb, [255, 226, 122], 0.42 + 0.58 * tellPulse);
 		accentHi = '#fff7cc';
 		scale = 1 - 0.06 * tellPulse;
-		jx = Math.sin(t * 44) * 0.009 * tellPulse;
-		jy = Math.cos(t * 39) * 0.009 * tellPulse;
+		jx = Math.sin(t * 2.6) * 0.008 * tellPulse;
+		jy = Math.cos(t * 2.2) * 0.008 * tellPulse;
 	} else if (state === 'frightened') {
 		fright = 1;
 		const fw = Math.sin(t * TIMING.FRIGHT_BLINK_HZ * TAU);
@@ -120,15 +123,15 @@ function resolveMimicState(kind: SquadKind, state: AlbinoState, t: number, opts:
 		accentRgb = mixRgb([39, 73, 184], [220, 234, 255], frightFlash);
 		accentHi = frightFlash > 0.5 ? '#ffffff' : '#98b8ff';
 		scale = 0.89;
-		jx = Math.sin(t * 48) * 0.024;
-		jy = Math.cos(t * 41) * 0.024;
+		jx = Math.sin(t * 3.1) * 0.014;
+		jy = Math.cos(t * 2.7) * 0.014;
 	} else if (state === 'rage') {
 		rage = 1;
 		accentRgb = [255, 59, 40];
 		accentHi = '#ffd7cf';
 		scale = 1.0;
-		jx = Math.sin(t * 58) * 0.012;
-		jy = Math.cos(t * 51) * 0.012;
+		jx = Math.sin(t * 2.4) * 0.008;
+		jy = Math.cos(t * 2.1) * 0.008;
 	} else if (state === 'mimic') {
 		if (typeof opts.mimicK === 'number') {
 			mimicK = clamp(opts.mimicK, 0, 1);
@@ -250,7 +253,7 @@ function renderStrictAbyssal(
 	ctx.translate(cx, cy);
 	ctx.rotate(angle);
 
-	paintFn(ctx, R, lim, size, st, lx, ly, t);
+	paintFn(ctx, R, lim, size, st, lx, ly, opts.bodyTime ?? t);
 
 	ctx.restore();
 }

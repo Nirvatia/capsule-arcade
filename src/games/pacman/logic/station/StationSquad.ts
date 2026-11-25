@@ -159,6 +159,8 @@ export class StationSquad implements SquadGuide {
 	private route: (() => readonly GhostTile[]) | null = null;
 	/** The escape in a rage (no 'from behind', no interceptions): the lit lane they may not step on. */
 	rage: { lane: (x: number, y: number) => boolean } | null = null;
+	/** The escape's lure: while it glows, the enraged run to it instead of at him. */
+	lure: GhostTile | null = null;
 	leader: GhostKind | null = null;
 	readonly trail: GhostTile[] = [];
 	private last: SquadTactic | null = null;
@@ -193,6 +195,7 @@ export class StationSquad implements SquadGuide {
 		this.chasing = false;
 		this.ahead = null;
 		this.rage = null;
+		this.lure = null;
 	}
 
 	/**
@@ -922,6 +925,7 @@ export class StationSquad implements SquadGuide {
 	}
 
 	private chaseStep(ghost: GhostModel): GhostDirection | null {
+		if (this.rage && this.lure) return this.stepTo(ghost, this.lure);
 		if (this.rage) {
 			// in a rage: the even ones at him, the odd ones at his way ahead
 			const order = this.hunters().sort((a, b) => a.kind.localeCompare(b.kind));

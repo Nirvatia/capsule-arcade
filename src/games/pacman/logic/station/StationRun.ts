@@ -1,14 +1,16 @@
 // The station's rules in the game (DESIGN.md §7a), lifted from the squad prototype: the squad
-// (`StationSquad`) hunts with its tactics; the food charges the hatch (`StationEscape`); a power
-// cell breaks the play and the squad can be eaten; a lurker's bite holds the hero; a hunter's
-// touch costs one of the station's three hits (the third ends the level without its reward).
-// Then the escape: the squad in a rage and 1-4 more breaking out (`EscapeRush`); the first
-// touch sets off his pulse, the second starts the escape over from the console; his
-// breakthrough (the fire key, two per escape) lights the way out as a lane. Out through the
-// hatch: the level is won.
+// (`StationSquad`) hunts with its tactics; the food charges the hatch (`StationEscape`) and the
+// infection grows with it (and slowly with time); a power cell breaks the play and the squad can
+// be eaten; a lurker's bite holds the hero; a hunter's touch costs one of his three HP (the
+// hell's rule, the owner 2026-11-25): no restart, he flashes and is safe for a moment, the one that
+// bit is thrown back and those round him stunned; at none the level ends without its reward.
+// Then the escape: the squad in a rage and 1-4 more breaking out (`EscapeRush`); a touch costs HP
+// there too; his lure (the fire key, two per escape) glows far off his way and draws them to it,
+// round him. Out through the hatch: the level is won.
 import type { GridPoint } from '../maze/GridModel';
 import { GridService } from '../maze/GridService';
 import type { GhostService } from '../actors/GhostService';
+import type { GhostModel } from '../actors/GhostModel';
 import type { PlayerService } from '../actors/PlayerService';
 import type { LevelProgress } from '../level/LevelProgress';
 import type { ScoreModel } from '../level/ScoreModel';
@@ -18,20 +20,26 @@ import { StationEscape } from './StationEscape';
 import { EscapeRush } from './EscapeRush';
 
 export const RUN_TUNE = {
-	hits: 3,
+	hp: 3,
 	/** The power cell, s. */
 	power: 6,
-	/** A hit's pause before he is back at the start, s. */
-	death: 1.4,
 	contact: 0.6,
-	/** The pulse: how long it stuns the squad, s; how far it reaches, tiles. */
+	/** A hit: his safe time, s; the stun on the one that bit and those round him, s; the reach, tiles. */
+	safe: 1.5,
+	bitStun: 1.6,
 	stun: 1.2,
 	pulseReach: 3,
-	/** The escape: the hero's head start, s; a restart's stun on the squad, s. */
+	/** The escape: the hero's head start, s. */
 	headStart: 1.5,
-	restartStun: 3,
-	/** The breakthrough's stun on those it throws off, s. */
-	laneStun: 1.5,
+	/** The lure: per escape; how long it glows, s; how far from him, steps; how far off his way, tiles. */
+	lures: 2,
+	lureTime: 4,
+	lureNear: 10,
+	lureFar: 20,
+	lureOff: 3,
+	/** The infection: its share from the hatch's charge, and the time it takes to fill by itself, s. */
+	infectionCharge: 0.85,
+	infectionTime: 300,
 	/** Where the breakout comes from: above the containment's door, the vents' mouths. */
 	doors: [
 		{ x: 12, y: 10 },
@@ -71,7 +79,7 @@ export class StationGrid extends GridService {
 	}
 }
 
-/** A word over the board (TO THE CONSOLE, RUN, PULSE, GRABBED, a score). */
+/** A word over the board (TO THE CONSOLE, RUN, -1, GRABBED, LURE, a score). */
 export interface StationPopup {
 	readonly x: number;
 	readonly y: number;
@@ -80,19 +88,32 @@ export interface StationPopup {
 }
 
 const under = (p: { x: number; y: number }) => ({ x: Math.floor(p.x), y: Math.floor(p.y) });
+const SIDES = [
+	[1, 0],
+	[-1, 0],
+	[0, 1],
+	[0, -1]
+] as const;
 
 export class StationRun {
 	readonly squad: StationSquad;
 	readonly escape: StationEscape;
 	readonly rush: EscapeRush;
-	hits: number = RUN_TUNE.hits;
-	/** Seconds into a hit's pause, or -1. */
-	dying = -1;
+	hp: number = RUN_TUNE.hp;
+	/** His safe time after a hit, s. */
+	safe = 0;
+	/** Seconds since the last hit, or -1 (the damage's flash). */
+	hurt = -1;
 	power = 0;
 	private chain = 0;
 	grab = 0;
-	/** Seconds since the pulse went off, or -1. */
+	/** Seconds since a hit's push went off, or -1. */
 	pulse = -1;
+	/** 0 clean .. 1 overrun: the hatch's charge and, slowly, the time; never back. */
+	infection = 0;
+	/** The lure: where it glows and for how long yet; the lures left in this escape. */
+	lure: { x: number; y: number; left: number } | null = null;
+	lures: number = RUN_TUNE.lures;
 	end: 'out' | 'taken' | null = null;
 	popups: StationPopup[] = [];
 	time = 0;
@@ -136,18 +157,19 @@ export class StationRun {
 		this.total = progress.remainingDots;
 	}
 
-	/** A fresh attempt at the level: the hits back, the squad calm, the hero at the start. */
+	/** A fresh attempt at the level: the HP back, the squad calm, the hero at the start. */
 	reset(): void {
-		this.hits = RUN_TUNE.hits;
+		this.hp = RUN_TUNE.hp;
+		this.safe = 0;
+		this.hurt = -1;
 		this.end = null;
-		this.dying = -1;
 		this.pulse = -1;
+		this.lure = null;
+		this.lures = RUN_TUNE.lures;
+		this.infection = 0;
+		this.time = 0;
 		this.popups = [];
 		this.total = this.progress.remainingDots;
-		this.respawn();
-	}
-
-	private respawn(): void {
 		this.player.reset();
 		this.ghosts.reset();
 		this.squad.reset(this.ghosts);
@@ -166,25 +188,14 @@ export class StationRun {
 		for (const p of this.popups) p.age += dt;
 		this.popups = this.popups.filter((p) => p.age < 1.2);
 		if (this.pulse >= 0) this.pulse += dt;
+		if (this.hurt >= 0) this.hurt += dt;
+		this.safe = Math.max(0, this.safe - dt);
 		if (this.end) return;
-		if (this.dying >= 0) {
-			this.dying += dt;
-			if (this.dying >= RUN_TUNE.death) {
-				this.dying = -1;
-				this.hits -= 1;
-				if (this.hits <= 0) {
-					this.end = 'taken';
-					return;
-				}
-				this.respawn();
-			}
-			return;
-		}
 		if (this.grab > 0) {
 			this.grab -= dt;
 			this.player.setMovementLocked(this.grab > 0);
 		}
-		if (fire && this.escape.state === 'running') this.breakthrough();
+		if (fire && this.escape.state === 'running') this.throwLure();
 		this.player.update(dt);
 		this.ghosts.update(dt);
 		const hero = under(this.player.position);
@@ -204,6 +215,15 @@ export class StationRun {
 			}
 		}
 		this.escape.setFood(this.total - this.progress.remainingDots, this.total);
+		this.infection = Math.max(
+			this.infection,
+			Math.min(
+				1,
+				RUN_TUNE.infectionCharge * this.escape.charge +
+					(1 - RUN_TUNE.infectionCharge) * Math.min(1, this.time / RUN_TUNE.infectionTime)
+			)
+		);
+		if (this.escape.state === 'running') this.infection = Math.min(1, this.infection + dt / 6);
 		const ev = this.escape.update(dt, hero);
 		if (ev.armed) this.popup(RUN_TUNE.console.x + 0.5, RUN_TUNE.console.y - 0.4, 'TO THE CONSOLE');
 		if (ev.started) {
@@ -215,14 +235,20 @@ export class StationRun {
 			this.end = 'out';
 			return;
 		}
+		if (this.lure) {
+			this.lure.left -= dt;
+			if (this.lure.left <= 0) this.lure = null;
+		}
+		this.squad.lure = this.lure ? { x: this.lure.x, y: this.lure.y } : null;
 		const sev = this.squad.update(dt, this.ghosts, hero, this.player.facing);
 		if (this.escape.state === 'running') {
+			const lure = this.lure;
 			this.rush.update(
 				dt,
-				hero,
-				this.escape.route,
+				lure ? { x: lure.x, y: lure.y } : hero,
+				lure ? [] : this.escape.route,
 				this.ghosts.baseSpeed * SQUAD_TUNE.rage,
-				(x, y) => this.escape.laneBlocks(x, y)
+				(x, y) => this.blocked(x, y)
 			);
 		}
 		if (sev.grab > 0) {
@@ -233,6 +259,15 @@ export class StationRun {
 		this.touches();
 	}
 
+	/** Where the enraged may not step: the lit lane, and while the lure glows, his way and round him. */
+	private blocked(x: number, y: number): boolean {
+		if (this.escape.laneBlocks(x, y)) return true;
+		if (!this.lure) return false;
+		const hero = under(this.player.position);
+		if (Math.abs(x - hero.x) + Math.abs(y - hero.y) <= 1) return true;
+		return this.escape.onRoute(x, y);
+	}
+
 	private touches(): void {
 		const p = this.player.position;
 		if (this.escape.state === 'running') {
@@ -240,7 +275,8 @@ export class StationRun {
 				if (rn.stun > 0) continue;
 				const rp = this.rush.position(rn);
 				if (Math.hypot(rp.x - p.x, rp.y - p.y) >= RUN_TUNE.contact) continue;
-				this.touched(p);
+				this.hit(p, null);
+				if (this.safe > 0) rn.stun = RUN_TUNE.bitStun;
 				return;
 			}
 		}
@@ -261,15 +297,50 @@ export class StationRun {
 				this.squad.harmless(ghost.kind)
 			)
 				continue;
-			// stunned by the pulse or held by the alarm: it does not bite
+			// stunned or held by the alarm: it does not bite
 			if (this.ghosts.frozenFor(ghost.kind) > 0) continue;
-			if (this.escape.state === 'running') {
-				this.touched(p);
-				return;
-			}
-			this.dying = 0;
+			this.hit(p, ghost.kind);
 			return;
 		}
+	}
+
+	/**
+	 * A touch: one HP, unless he is still safe from the last. The one that bit is thrown back a
+	 * tile and stunned, those round him stunned too; at none the level is taken.
+	 */
+	private hit(p: { x: number; y: number }, biter: GhostModel['kind'] | null): void {
+		if (this.safe > 0) return;
+		this.hp -= 1;
+		this.safe = RUN_TUNE.safe;
+		this.hurt = 0;
+		this.pulse = 0;
+		this.popup(p.x, p.y - 0.5, '-1');
+		const hero = under(p);
+		for (const g of this.ghosts.list) {
+			const near = Math.hypot(g.position.x - p.x, g.position.y - p.y) < RUN_TUNE.pulseReach;
+			if (g.kind === biter) {
+				// thrown back a tile, away from him
+				for (const [dx, dy] of SIDES) {
+					const x = g.tile.x + dx;
+					const y = g.tile.y + dy;
+					const away =
+						Math.abs(x - hero.x) + Math.abs(y - hero.y) >
+						Math.abs(g.tile.x - hero.x) + Math.abs(g.tile.y - hero.y);
+					if (away && GridService.prototype.isGhostWalkable.call(this.grid, x, y, false)) {
+						g.teleportTo({ x, y });
+						break;
+					}
+				}
+				this.ghosts.freeze(g.kind, RUN_TUNE.bitStun);
+			} else if (near) {
+				this.ghosts.freeze(g.kind, RUN_TUNE.stun);
+			}
+		}
+		for (const rn of this.rush.runners) {
+			const rp = this.rush.position(rn);
+			if (Math.hypot(rp.x - p.x, rp.y - p.y) < RUN_TUNE.pulseReach) rn.stun = RUN_TUNE.stun;
+		}
+		if (this.hp <= 0) this.end = 'taken';
 	}
 
 	/** The alarm: the squad holds a moment (his head start). */
@@ -281,57 +352,64 @@ export class StationRun {
 
 	/** The alarm's chase: the squad enraged, and 1-4 more breaking out of the door and the vents. */
 	private startChase(): void {
+		this.lures = RUN_TUNE.lures;
+		this.lure = null;
 		this.squad.chase(this.ghosts, null, () => this.escape.route, {
-			lane: (x, y) => this.escape.laneBlocks(x, y)
+			lane: (x, y) => this.blocked(x, y)
 		});
 		this.rush.start(1 + Math.floor(this.random() * 4), RUN_TUNE.doors);
 	}
 
-	/** The breakthrough: the way to the hatch lit; whoever stands on it is thrown off and stunned. */
-	breakthrough(): void {
-		const hero = under(this.player.position);
-		if (!this.escape.useLane(hero)) return;
-		const lane = (x: number, y: number) => this.escape.laneBlocks(x, y);
-		for (const g of this.ghosts.list) {
-			if (g.state !== 'active' || !lane(g.tile.x, g.tile.y)) continue;
-			for (const [dx, dy] of [
-				[1, 0],
-				[-1, 0],
-				[0, 1],
-				[0, -1]
-			]) {
-				const x = g.tile.x + dx;
-				const y = g.tile.y + dy;
-				if (GridService.prototype.isGhostWalkable.call(this.grid, x, y, false) && !lane(x, y)) {
-					g.teleportTo({ x, y });
-					break;
-				}
-			}
-			this.ghosts.freeze(g.kind, RUN_TUNE.laneStun);
-		}
-		this.rush.knockOff(lane, RUN_TUNE.laneStun);
-		this.popup(hero.x + 0.5, hero.y - 0.4, 'BREAKTHROUGH');
+	/**
+	 * The lure: it glows on a tile far from him (`lureNear`..`lureFar` steps) and off his way to
+	 * the hatch (`lureOff` tiles at least), on the far side from it when it can; the enraged run to
+	 * it round him for `lureTime`.
+	 */
+	throwLure(): boolean {
+		if (this.lures <= 0 || this.lure || this.escape.state !== 'running') return false;
+		const spot = this.lureSpot();
+		if (!spot) return false;
+		this.lures -= 1;
+		this.lure = { x: spot.x, y: spot.y, left: RUN_TUNE.lureTime };
+		this.popup(spot.x + 0.5, spot.y - 0.4, 'LURE');
+		return true;
 	}
 
-	/** A touch in the escape: the first sets off the pulse, the second starts it over. */
-	private touched(p: { x: number; y: number }): void {
-		if (this.escape.touch() === 'pulse') {
-			// the pulse throws off only those close round him; the rest come on
-			this.pulse = 0;
-			const near = (x: number, y: number) => Math.hypot(x - p.x, y - p.y) < RUN_TUNE.pulseReach;
-			for (const g of this.ghosts.list)
-				if (near(g.position.x, g.position.y)) this.ghosts.freeze(g.kind, RUN_TUNE.stun);
-			for (const rn of this.rush.runners) {
-				const rp = this.rush.position(rn);
-				if (near(rp.x, rp.y)) rn.stun = RUN_TUNE.stun;
+	/** Where the lure goes (see `throwLure`), or null. */
+	lureSpot(): { x: number; y: number } | null {
+		const start = under(this.player.position);
+		const W = this.rows[0].length;
+		const H = this.rows.length;
+		const route = this.escape.route;
+		const offWay = (x: number, y: number) => {
+			let d = Infinity;
+			for (const t of route) d = Math.min(d, Math.abs(t.x - x) + Math.abs(t.y - y));
+			return d;
+		};
+		const dist = new Int32Array(W * H).fill(-1);
+		const queue = [start];
+		dist[start.y * W + start.x] = 0;
+		let best: { x: number; y: number; score: number } | null = null;
+		for (let i = 0; i < queue.length; i += 1) {
+			const c = queue[i];
+			const d = dist[c.y * W + c.x];
+			if (d >= RUN_TUNE.lureNear && d <= RUN_TUNE.lureFar && this.rows[c.y][c.x] !== 'WL') {
+				const off = offWay(c.x, c.y);
+				if (off >= RUN_TUNE.lureOff) {
+					const score = Math.min(off, 8) * 2 + d;
+					if (!best || score > best.score) best = { x: c.x, y: c.y, score };
+				}
 			}
-			this.popup(p.x, p.y - 0.5, 'PULSE');
-			return;
+			if (d >= RUN_TUNE.lureFar) continue;
+			for (const [dx, dy] of SIDES) {
+				const x = c.x + dx;
+				const y = c.y + dy;
+				if (x < 0 || y < 0 || x >= W || y >= H || dist[y * W + x] >= 0) continue;
+				if (!GridService.prototype.isPlayerWalkable.call(this.grid, x, y)) continue;
+				dist[y * W + x] = d + 1;
+				queue.push({ x, y });
+			}
 		}
-		this.player.placeAt(RUN_TUNE.console);
-		this.startChase();
-		this.seal(RUN_TUNE.restartStun);
-		for (const rn of this.rush.runners) rn.stun = RUN_TUNE.restartStun;
-		this.popup(RUN_TUNE.console.x + 0.5, RUN_TUNE.console.y - 0.4, 'AGAIN');
+		return best ? { x: best.x, y: best.y } : null;
 	}
 }
