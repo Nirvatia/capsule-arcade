@@ -39,6 +39,13 @@ export const SQUAD_TUNE = {
 	grab: 0.8,
 	harmless: 1.4,
 	fade: 0.5,
+	/**
+	 * The run's first lurker teaches: it folds into food slowly (s), settles at least this far
+	 * along his way, and its tells start this much stronger, fading out over `lessons` ambushes.
+	 */
+	lessonFade: 1.5,
+	lessonSettle: 5,
+	lessons: 3,
 	/** The lurker creeps a tile along the eaten corridors when he does not look, every so often. */
 	creep: 2.2,
 	/** The vent: the shaft's glow before it comes out; how near he must pass; its longest wait. */
@@ -88,6 +95,10 @@ export interface Hidden {
 	readonly as: 'food' | 'cell' | 'vent';
 	state: 'fading' | 'hidden' | 'glow';
 	time: number;
+	/** How long it takes to fold out of sight, s. */
+	readonly fade: number;
+	/** The lesson: 1 on the run's first lurker, down to 0 over `SQUAD_TUNE.lessons` ambushes. */
+	readonly lesson: number;
 	/** The lurker's next creep, s. */
 	creepIn: number;
 }
@@ -151,6 +162,8 @@ export class StationSquad implements SquadGuide {
 	leader: GhostKind | null = null;
 	readonly trail: GhostTile[] = [];
 	private last: SquadTactic | null = null;
+	/** Lurkers laid so far this level (the first ones teach). */
+	private ambushes = 0;
 	private fenceCache: Array<{ axis: 'row' | 'col'; at: number }> | null = null;
 	private graph: { adj: Int32Array[]; seen: Uint32Array; stamp: number; stack: Int32Array } | null =
 		null;
@@ -443,8 +456,11 @@ export class StationSquad implements SquadGuide {
 				as: this.world.cell(spot.x, spot.y) ? 'cell' : 'food',
 				state: 'fading',
 				time: 0,
+				fade: this.ambushes === 0 ? SQUAD_TUNE.lessonFade : SQUAD_TUNE.fade,
+				lesson: Math.max(0, 1 - this.ambushes / SQUAD_TUNE.lessons),
 				creepIn: SQUAD_TUNE.creep
 			});
+			this.ambushes += 1;
 			byDist
 				.slice(0, -1)
 				.forEach((e, i) => this.roles.set(e.g.kind, i === 0 ? 'hunter' : 'cutter'));
@@ -462,6 +478,8 @@ export class StationSquad implements SquadGuide {
 				as: 'vent',
 				state: 'fading',
 				time: 0,
+				fade: SQUAD_TUNE.fade,
+				lesson: 0,
 				creepIn: 0
 			});
 			byDist
@@ -632,7 +650,9 @@ export class StationSquad implements SquadGuide {
 
 	/** An eaten tile along his way, some steps on: where a lurker passes for food. */
 	private ambushSpot(): GhostTile | null {
-		const [near, far] = SQUAD_TUNE.settle;
+		const [first, far] = SQUAD_TUNE.settle;
+		// the first lurker settles farther on: he has time to see it fold
+		const near = this.ambushes === 0 ? Math.max(first, SQUAD_TUNE.lessonSettle) : first;
 		for (let i = near; i < Math.min(far, this.foreseen.length); i += 1) {
 			const t = this.foreseen[i];
 			if (this.world.eaten(t.x, t.y) && !this.world.vent(t.x, t.y)) return t;
@@ -757,7 +777,7 @@ export class StationSquad implements SquadGuide {
 			h.time += dt;
 			const ghost = this.ghosts.find((g) => g.kind === h.kind);
 			if (!ghost) continue;
-			if (h.state === 'fading' && h.time >= SQUAD_TUNE.fade) {
+			if (h.state === 'fading' && h.time >= h.fade) {
 				h.state = 'hidden';
 				h.time = 0;
 				ghost.teleportTo(h.as === 'vent' ? this.mouth({ x: h.x, y: h.y }) : { x: h.x, y: h.y });

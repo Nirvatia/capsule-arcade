@@ -42,11 +42,23 @@ export class PlayingState implements GameState {
 			ctx.director.showGameOver();
 			return;
 		}
-		const station = session.stationRules;
-		if (station?.rewinding) {
-			// the rewind: the hero is pulled back along his trail, the world stands still
-			ctx.level.consumeFireRequest();
-			station.update(dt, false);
+		const station = session.stationRun;
+		if (station) {
+			// the station plays by its own rules (the squad, the escape): they move the hero and the squad
+			station.update(dt, ctx.level.consumeFireRequest());
+			if (!combat.endRequested && station.end === 'out') {
+				combat.completeHellLevel(false);
+			} else if (!combat.endRequested && station.end === 'taken') {
+				// the third hit: the level ends without its reward, the run goes on (the hell's rule)
+				combat.killPlayerInHell();
+				ctx.director.showDeath();
+				return;
+			}
+			combat.update(dt);
+			this.emitHud(ctx);
+			if (combat.endRequested && combat.result === 'win') {
+				ctx.director.showLevelClear();
+			}
 			return;
 		}
 		lairCode.update(dt);
@@ -54,12 +66,11 @@ export class PlayingState implements GameState {
 		player.update(dt);
 		fruit.update(dt, player);
 		const fireRequested = ctx.level.consumeFireRequest();
-		// the arcade is plain Pac-Man: no Easter egg, no abilities; the hell fires instead; the
-		// station has its own kit
-		if (!ctx.level.secretMode && !station) {
+		// the arcade is plain Pac-Man: no Easter egg, no abilities; the hell fires instead
+		if (!ctx.level.secretMode) {
 			egg.update(dt, player);
 		}
-		if (!ctx.level.secretMode && !session.doom && !station) {
+		if (!ctx.level.secretMode && !session.doom) {
 			const world = {
 				player,
 				ghosts,
@@ -105,24 +116,6 @@ export class PlayingState implements GameState {
 		} else {
 			ghosts.update(dt);
 		}
-		if (station) {
-			station.update(dt, fireRequested);
-			if (!combat.endRequested && station.consumeCaught()) {
-				combat.killPlayerInHell();
-				ctx.director.showDeath();
-				return;
-			}
-			// the nest: the hatch and the heart open; taking either ends the level
-			const reward = session.bossReward;
-			if (!combat.endRequested && station.phase === 3 && reward) {
-				reward.offer(player.tile);
-				reward.update(player);
-				const choice = reward.consumeChoice();
-				if (choice) {
-					combat.completeHellLevel(choice === 'life');
-				}
-			}
-		}
 		combat.update(dt);
 		this.hitStop = combat.consumeHitStop();
 		if (combat.deathActive) {
@@ -132,18 +125,22 @@ export class PlayingState implements GameState {
 			ctx.director.showDeath();
 			return;
 		}
-		const hud = ctx.level.hudPayload();
-		const hudKey = JSON.stringify(hud);
-		if (hudKey !== this.lastHudKey) {
-			this.lastHudKey = hudKey;
-			ctx.events.emit('ui:hudChanged', hud);
-		}
+		this.emitHud(ctx);
 		if (combat.endRequested) {
 			if (combat.result === 'win') {
 				ctx.director.showLevelClear();
 				return;
 			}
 			ctx.director.showGameOver();
+		}
+	}
+
+	private emitHud(ctx: GameStateContext): void {
+		const hud = ctx.level.hudPayload();
+		const hudKey = JSON.stringify(hud);
+		if (hudKey !== this.lastHudKey) {
+			this.lastHudKey = hudKey;
+			ctx.events.emit('ui:hudChanged', hud);
 		}
 	}
 

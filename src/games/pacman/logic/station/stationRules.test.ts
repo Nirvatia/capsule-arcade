@@ -7,11 +7,17 @@ import type { LevelSession } from '../level/LevelSession';
 import { stationSeason } from '../level/SeasonCatalog';
 import type { GhostKind } from '../actors/GhostModel';
 import type { PlayerDirection } from '../actors/PlayerModel';
-import type { StationService } from './StationService';
+import { StationService } from './StationService';
+import { SpawnLocator } from '../maze/SpawnLocator';
 
+/**
+ * The older ghost version of the station's rules (no longer in the level since the squad came
+ * in, `StationRun`), built on a station session the way the level used to build it.
+ */
 function station(): { session: LevelSession; rules: StationService } {
+	const events = new EventBus<PacmanEventMap>();
 	const session = buildLevelSession({
-		events: new EventBus<PacmanEventMap>(),
+		events,
 		level: 5,
 		profile: 'pacman',
 		season: stationSeason(),
@@ -20,10 +26,17 @@ function station(): { session: LevelSession; rules: StationService } {
 		secret: false,
 		godMode: false
 	});
-	const rules = session.stationRules;
-	if (!rules) {
-		throw new Error('the station level has no station rules');
-	}
+	const { grid, ghosts, player, progress, combat } = session;
+	const rules = new StationService(
+		grid,
+		ghosts,
+		player,
+		progress,
+		new SpawnLocator(grid, progress),
+		events
+	);
+	ghosts.setSquadGuide(null);
+	combat.setStationHit((g) => rules.hit(g));
 	return { session, rules };
 }
 

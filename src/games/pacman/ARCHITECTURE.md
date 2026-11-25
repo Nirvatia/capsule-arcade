@@ -35,7 +35,10 @@ logic/
              (Ms. Pac-Man overdrive and hypnosis: feeder / hunter, guides the ghost), LairCodeService
   bonuses/   fruit, Easter egg, AbilityService (the season levels' abilities: the token, the
              slot, the F key, the mask, the shock; it owns the EchoCloneService riot), boss reward
-  station/   the station's rules: StationSquad (the squad's brain: it reads the hero's way,
+  station/   the station's rules: StationRun (the level in the game: the squad, the hatch's charge,
+             the power cells, the lurker's hold, the three hits, the escape with the rush, the
+             pulse, the breakthrough; StationGrid puts the doors and beams in the way),
+             MimicTells (a lurker's tells, pure), StationSquad (the squad's brain: it reads the hero's way,
              gives roles, runs the fence (a search for two lines over the maze graph), the
              ambush and the vent, the phantom, the escape's chase and interceptions; it steers
              the hunting ghosts through GhostService.setSquadGuide), EscapeRush (the escape's breakout: 1-4 more running at the hero
@@ -72,7 +75,15 @@ render/
                    (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX;
                    the boss's dash (doomDashFx: LavaDash, the body turned into a rolling lava
                    ball that lays a cooling track, its timing read from the telegraph's run)
-  station/         the station (style B): StationBake (the scene baked once at a scale fitted
+  station/         the station in the game: StationLevelRenderer over b7/ (b7Scene: the owner's
+                   mock-up Station_Level_v2 carried over as drawn on the game's maze; B7World:
+                   the hull and baked architecture as one screen layer per resize, the phase's
+                   infestation one per phase change, the live props in stage space, the light
+                   map of sprite lights with the flashlight, bloom by downscale, grain on High),
+                   albino (the squad's creature, from Station_Mimics_2), squadMarks (the plays'
+                   and the escape's marks). The older style B, kept for the prototypes until
+                   the owner has played B-7:
+                   StationBake (the scene baked once at a scale fitted
                    to the screen, in layers: base, the surround's glow, the walls' safety edge
                    and light strip, the resin per phase; painted by stationPaint / stationMarks /
                    stationProps / stationSurround / stationMaze / stationWalls), StationWorld
@@ -305,6 +316,9 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   last 0.25 s (whatever its length), smoothly, and back into the body over 0.28 s after the stop.
 - `render/actors/hero/heroWake.test.ts` — the comet's tails: both ends 0 through a turn and
   after the stop, gone a life later.
+- `logic/station/stationRun.test.ts` — the station level: three hits and the level taken; out
+  through the hatch in the escape. `logic/station/mimicTells.test.ts` — a lurker's tells (off
+  the centre, the shadow, the rare blink, the tremble only near, stronger while it teaches).
 - `render/actors/hero/vesselHero.test.ts` — the vessels' stream is not drawn across a tunnel
   jump (the mock-up's did).
 - `logic/actors/playerControl.test.ts` — reversal, late turns, held keys.

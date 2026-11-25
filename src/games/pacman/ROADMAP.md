@@ -115,8 +115,25 @@ last (see Later).
          only on eaten tiles already). The owner has a mock-up of the level and is making one
          of the mimics with Gemini (one HTML file of Canvas2D code: the creature's states and
          effects per tactic); both come to the next chat to be reproduced in code.
-      3. **The creatures' look**: tile-sized, no legs, four tempers; a prototype (the void
-         jellyfish of the `creatures` page is a starting point), the owner picks.
+         **In the game (2026-11-25, the dev panel's Station)**, the owner's call to try it so
+         and tune after: the level's look is his mock-up `Station_Level_v2.html` carried over as
+         drawn on `grid_station` (`render/station/b7`); the squad are the glass albinos of his
+         `Station_Mimics_2.html` (`render/station/albino`); the rules are the prototype's, now
+         `logic/station/StationRun` in place of `StationService`; a lurker lies as one of the
+         level's spores with the tells of `MimicTells` (a shadow, off the centre, its eyes now and
+         then, a tremble when he is near, the breathing out of step; the run's first lurkers teach:
+         a slow fold, farther along his way, stronger tells); the escape is dark (the alarm's light)
+         with a flashlight round the hero; the fire key is the breakthrough. Left, from the
+         owner's play: the tells' contrast (they read subtle at game scale) and whether he wants
+         the hero's glance as a tell; the fence still lights whole lines through walls (the cut on
+         the maze graph needs sectors: `grid_station` has no 60-75% split with 2-3 seals, the
+         best takes 6-7; waits on his answer); the station's HUD (a text readout stands in); the
+         level's first frame blocks ~0.8 s in the bake (the base and three infestation layers).
+         The old `StationService` (and its tests), `render/station`'s style-B files and the
+         squad prototype stay until the owner has played this; then delete them with the
+         hounds and the swarm.
+      3. **The creatures' look**: done in the game as the glass albino (above); tuning after
+         the owner's play.
       4. A fourth tactic if the three need company (the tripwire or the shadow).
       5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors

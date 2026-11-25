@@ -211,6 +211,42 @@ describe('the ambush', () => {
 	});
 });
 
+describe('the first lurkers teach', () => {
+	it('fold slowly, settle farther on and carry the lesson, fading over the ambushes', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 2);
+		s.ghosts.setSquadGuide(squad);
+		// he ate all but the top rows: his way to the food runs long over eaten tiles
+		for (let y = 6; y < s.grid.height; y += 1)
+			for (let x = 0; x < s.grid.width; x += 1)
+				if (s.grid.tileAt(x, y) === 'DT') s.eaten.add(`${x},${y}`);
+		const hero = { x: 12, y: 24 };
+		const lessons: number[] = [];
+		for (let i = 0; i < 4; i += 1) {
+			(squad as unknown as { pick: () => string }).pick = () => 'ambush';
+			squad.left = 0;
+			squad.update(0.01, s.ghosts, hero, 'LEFT');
+			const h = squad.hiddenList.find((hh) => hh.as !== 'vent');
+			expect(h).toBeDefined();
+			if (i === 0) {
+				expect(h!.fade).toBe(SQUAD_TUNE.lessonFade);
+				// at least `lessonSettle` steps along his way
+				expect(Math.abs(h!.x - hero.x) + Math.abs(h!.y - hero.y)).toBeGreaterThanOrEqual(
+					SQUAD_TUNE.lessonSettle
+				);
+			} else {
+				expect(h!.fade).toBe(SQUAD_TUNE.fade);
+			}
+			lessons.push(h!.lesson);
+			squad.reset(s.ghosts);
+		}
+		expect(lessons[0]).toBe(1);
+		expect(lessons[1]).toBeLessThan(lessons[0]);
+		expect(lessons[3]).toBe(0);
+	});
+});
+
 describe('the vent', () => {
 	it('waits in a shaft on his way, its eyes glow as he nears, then it comes out', () => {
 		const s = station();

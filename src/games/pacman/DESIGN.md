@@ -356,6 +356,20 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   sound. Nothing flashes faster than three times a second, no full-screen flash.
 - **The HUD**: the station's own on the boss HUD's skeleton: the hatch charge, the three hits,
   the pulse in the escape.
+- **In the game (2026-11-25)**: the look is the owner's mock-up `Station_Level_v2.html` (the
+  biolab B-7: the hull round the maze, the biolab with its tanks, the observation deck with the
+  storm planet, 2.5D bulkhead walls as engineering modules, the sunken lair pit, the
+  infestation creeping per phase, amber bio-spores for food, lab power cells), on the game's
+  maze. Its phase follows the hatch: containment, the breakout from half the charge, the
+  absorption in the escape; the light is the quarantine's, the alarm's (dark, red beacons) in
+  the escape, with **a flashlight round the hero** (the owner) so the dark maze reads. The squad
+  are **glass albinos** (`Station_Mimics_2.html`, concept 02: milky blind eels with a dark heart
+  and a glowing nerve cord, tile-sized; hunt, tell (gold), frightened, rage, the fold into a
+  spore). A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
+  its eyes opening for a moment every few seconds, a tremble when he comes within 3 tiles, the
+  breathing out of step; the run's first lurkers teach (a slow fold of 1.5 s at least 5 steps
+  along his way, every tell stronger, fading over three ambushes). The tells are the logic's
+  (`MimicTells`), any body can take them.
 - **Art**: the approved style B (2026-11-22), lit: the quarantine lab (scorched bulkheads with
   claw gouges and soot, heavy deck plates with drag trails, the specimen tanks, the hull breach,
   the dead crew, the window in the deck onto the storm below), a cold grade, light grain. The

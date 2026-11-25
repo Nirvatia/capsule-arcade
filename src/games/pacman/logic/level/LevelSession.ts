@@ -14,7 +14,7 @@ import { AbilityService } from '../bonuses/AbilityService';
 import { DoomBossService } from '../doom/DoomBossService';
 import { DoomAbilityService } from '../doom/DoomAbilityService';
 import { BossRewardService } from '../bonuses/BossRewardService';
-import { StationService } from '../station/StationService';
+import { RUN_TUNE, StationGrid, StationRun } from '../station/StationRun';
 import type { GameProfile } from '../rules/HypnosisService';
 import type { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
@@ -55,8 +55,8 @@ export interface LevelSession {
 	readonly lairCode: LairCodeService;
 	/** Present on the hell level only. */
 	readonly doom: DoomSession | null;
-	/** The station's rules, on the station level only. */
-	readonly stationRules: StationService | null;
+	/** The station's rules (the squad, the escape), on the station level only. */
+	readonly stationRun: StationRun | null;
 	/** Boss levels only: the bonus life and the exit offered when the boss dies. */
 	readonly bossReward: BossRewardService | null;
 }
@@ -78,7 +78,9 @@ export interface LevelSessionRequest {
 export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 	const { events, level, profile, season, hell, secret } = request;
 	const station = Boolean(request.station);
-	const grid = new GridService(new GridModel(season.grid));
+	const grid = station
+		? new StationGrid(new GridModel(season.grid))
+		: new GridService(new GridModel(season.grid));
 	if (hell) {
 		grid.setLairOpen(true);
 	}
@@ -114,13 +116,12 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 	combat.setProfile(profile);
 	combat.setHellMode(hell);
 	combat.setStationMode(station);
-	let stationRules: StationService | null = null;
-	if (station) {
-		// the station's own kit only: no fruit, no abilities, no egg (PlayingState skips them)
+	let stationRun: StationRun | null = null;
+	if (station && grid instanceof StationGrid) {
+		// the station's own kit only: no fruit, no abilities, no egg; its rules take the touches
 		fruit.setEnabled(false);
-		stationRules = new StationService(grid, ghosts, player, progress, locator, events);
-		const rules = stationRules;
-		combat.setStationHit((ghost) => rules.hit(ghost));
+		stationRun = new StationRun(grid, ghosts, player, progress, score, season.grid);
+		combat.setStationHit(null);
 	}
 	const mods = seasonModifiers(season.name);
 	fruit.setFruitDuration(mods.fruitDuration);
@@ -150,6 +151,10 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		hypnosis.setOverdriveSeconds(tuning.overdrive);
 		player.setSpeedModifier(mods.playerSpeedModifier);
 	}
+	if (stationRun) {
+		// the squad is out of its containment quickly: it plays as four
+		ghosts.setTuning(ghosts.waves.scatter, ghosts.waves.chase, RUN_TUNE.exitScale);
+	}
 	return {
 		season,
 		hell,
@@ -167,7 +172,7 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		abilities,
 		lairCode,
 		doom,
-		stationRules,
+		stationRun,
 		bossReward: hell || station ? new BossRewardService(grid, events) : null
 	};
 }
@@ -185,7 +190,7 @@ export function resetLevelSession(session: LevelSession): void {
 	session.doom?.boss.reset();
 	session.doom?.abilities.reset();
 	session.bossReward?.reset();
-	session.stationRules?.reset();
+	session.stationRun?.reset();
 	session.lairCode.reset();
 }
 
@@ -201,6 +206,6 @@ export function resetForNextLevel(session: LevelSession): void {
 	session.doom?.boss.reset();
 	session.doom?.abilities.reset();
 	session.bossReward?.reset();
-	session.stationRules?.reset();
+	session.stationRun?.reset();
 	session.combat.nextLevel();
 }
