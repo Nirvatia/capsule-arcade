@@ -120,9 +120,12 @@ last (see Later).
       islands change. Playful; palette clear of the hell's reds.
    3. **A Bomberman world, "the demolition yard"** (the next focus). The idea and the look are
       proposed (`DESIGN.md` §13, 2026-11-25) and await the owner's answer: the open question is a
-      boss bomber or none. The master assets are prototyped (`prototypes/pacman/yard`, 2026-11-25:
-      ground, barrier walls with a yellow curb, crates, nuts, bomb, blast, soot, planks; day and
-      night) and await the owner's approval; the surround (cabin, masts, machines) comes after. Then, one step per chat: the design page settled in `DESIGN.md`
+      boss bomber or none. The master assets are approved (2026-11-25; the owner's fixes: dark
+      asphalt corridors and brass nuts for contrast, crates square to the grid, the pipe in the
+      tunnel's own tile) and the minimal playable prototype is built (`prototypes/pacman/yard`:
+      the game's hero and ghosts, `logic/yard/YardRules` tested; win = every nut, so every crate
+      over one goes). Awaits the owner's play. Not in it yet: the big fuse and the run to the
+      exit, the yard's ghosts (hard hats), the surround (cabin, masts, machines), sound, touch. Then, one step per chat: the design page settled in `DESIGN.md`
       (§7b); bombs, blasts and crates as game code on placeholder art (`logic/yard/`, tested),
       routed by `BOSS_ROTATION`; a look prototype of a few master assets (the floor, a wall, a
       crate, a bomb, the blast); the art in code.

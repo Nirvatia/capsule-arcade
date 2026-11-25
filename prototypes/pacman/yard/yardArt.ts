@@ -7,6 +7,7 @@
 import type { GridMatrix, TileType } from '../../../src/games/pacman/config/gridConfig';
 import { isLairToken } from '../../../src/games/pacman/logic/maze/LairExit';
 import { seededRandom } from '../../../src/games/pacman/render/common/random';
+import type { YardArm, YardPickup } from '../../../src/games/pacman/logic/yard/YardRules';
 
 type Ctx = CanvasRenderingContext2D;
 type Rng = () => number;
@@ -15,13 +16,13 @@ export const P = {
 	ground: '#c9a46c',
 	groundLight: 'rgba(255,236,200,',
 	groundDark: 'rgba(104,70,36,',
-	path: '#d6b884',
+	asphalt: { a: '#4d4a45', b: '#3f3c38' },
 	pebbles: ['#9a8f80', '#b3a793', '#7d7368', '#cfc5b3', '#8c7a63'],
 	concrete: { a: '#c4c0b6', b: '#a9a59b', c: '#8f8b82' },
 	paint: '#f4b70c',
 	ink: '#2b2824',
 	wood: { light: '#e8a75a', mid: '#cf8a43', dark: '#8a5428', frame: '#8e4f21', edge: '#4a2812' },
-	shadow: 'rgba(58,38,16,0.42)',
+	shadow: 'rgba(16,12,8,0.55)',
 	night: 'rgba(34,48,104,0.86)'
 } as const;
 
@@ -215,16 +216,68 @@ function paintCorridors(g: Ctx, f: Frame, map: YardMap, rnd: Rng): void {
 			m.fillRect(ox + c * s - s * 0.05, oy + r * s - s * 0.05, s * 1.1, s * 1.1);
 		}
 	}
+	// asphalt: dark, so the pale walls, the wood and the brass stand off it
 	const [pc, p] = canvas(W, H);
-	p.filter = `blur(${s * 0.12}px)`;
+	p.filter = `blur(${s * 0.03}px)`;
 	p.drawImage(mc, 0, 0);
 	p.filter = 'none';
 	p.globalCompositeOperation = 'source-in';
-	p.fillStyle = P.path;
+	const ag = p.createLinearGradient(0, 0, W, H);
+	ag.addColorStop(0, P.asphalt.a);
+	ag.addColorStop(1, P.asphalt.b);
+	p.fillStyle = ag;
 	p.fillRect(0, 0, W, H);
-	g.globalAlpha = 0.6;
+	p.globalCompositeOperation = 'source-atop';
+	const k = seededRandom(909);
+	const tiles = (W * H) / (s * s);
+	// patched and worn patches
+	for (let i = 0; i < tiles * 0.5; i += 1) {
+		const x = k() * W;
+		const y = k() * H;
+		const r = s * (0.5 + k() * 1.6);
+		const gr = p.createRadialGradient(x, y, 0, x, y, r);
+		const light = k() < 0.5;
+		gr.addColorStop(0, light ? 'rgba(150,146,138,0.09)' : 'rgba(10,10,12,0.14)');
+		gr.addColorStop(1, 'rgba(0,0,0,0)');
+		p.fillStyle = gr;
+		p.fillRect(x - r, y - r, r * 2, r * 2);
+	}
+	// the aggregate: pale stones in the tar
+	for (let i = 0; i < tiles * 90; i += 1) {
+		const z = s * (0.02 + k() * 0.035);
+		const v = k();
+		p.fillStyle = v < 0.55 ? `rgba(170,164,152,${0.18 + k() * 0.3})` : v < 0.85 ? `rgba(20,19,18,${0.3 + k() * 0.3})` : `rgba(214,206,190,${0.35 + k() * 0.3})`;
+		p.fillRect(k() * W, k() * H, z, z);
+	}
+	// tar-sealed cracks
+	p.strokeStyle = 'rgba(18,17,16,0.55)';
+	p.lineWidth = Math.max(0.8, s * 0.03);
+	for (let i = 0; i < tiles * 0.05; i += 1) {
+		let x = k() * W;
+		let y = k() * H;
+		p.beginPath();
+		p.moveTo(x, y);
+		const a0 = k() * Math.PI * 2;
+		for (let j = 0; j < 6; j += 1) {
+			const a = a0 + (k() - 0.5) * 1.2;
+			x += Math.cos(a) * s * 0.2;
+			y += Math.sin(a) * s * 0.2;
+			p.lineTo(x, y);
+		}
+		p.stroke();
+	}
+	// the edge where the asphalt meets the sand: a little sand blown over it
+	const [ec, e] = canvas(W, H);
+	e.drawImage(mc, 0, 0);
+	e.globalCompositeOperation = 'destination-out';
+	e.filter = `blur(${s * 0.12}px)`;
+	e.drawImage(mc, 0, 0);
+	e.filter = 'none';
+	e.globalCompositeOperation = 'source-in';
+	e.fillStyle = 'rgba(214,184,132,0.55)';
+	e.fillRect(0, 0, W, H);
 	g.drawImage(pc, 0, 0);
-	g.globalAlpha = 1;
+	g.drawImage(ec, 0, 0);
 	// on it: a few things of a working yard (rare, quiet)
 	for (let r = 0; r < map.R; r += 1) {
 		for (let c = 0; c < map.C; c += 1) {
@@ -236,25 +289,25 @@ function paintCorridors(g: Ctx, f: Frame, map: YardMap, rnd: Rng): void {
 			if (v < 0.05) {
 				// an old oil spot
 				const gr = g.createRadialGradient(x, y, 0, x, y, s * 0.32);
-				gr.addColorStop(0, 'rgba(52,40,34,0.32)');
-				gr.addColorStop(0.7, 'rgba(52,40,34,0.18)');
-				gr.addColorStop(1, 'rgba(52,40,34,0)');
+				gr.addColorStop(0, 'rgba(14,12,16,0.45)');
+				gr.addColorStop(0.7, 'rgba(40,34,52,0.25)');
+				gr.addColorStop(1, 'rgba(14,12,16,0)');
 				g.fillStyle = gr;
 				g.beginPath();
 				g.ellipse(x, y, s * 0.34, s * 0.24, k() * 3, 0, Math.PI * 2);
 				g.fill();
 			} else if (v < 0.1) {
-				// a boot print, the heel toward the light
+				// a dusty boot print, carried in from the sand
 				g.save();
 				g.translate(x, y);
 				g.rotate(((k() * 4) | 0) * (Math.PI / 2) + (k() - 0.5) * 0.4);
-				g.fillStyle = 'rgba(120,84,46,0.22)';
+				g.fillStyle = 'rgba(200,168,118,0.2)';
 				g.beginPath();
 				g.ellipse(0, -s * 0.06, s * 0.06, s * 0.09, 0, 0, Math.PI * 2);
 				g.ellipse(0, s * 0.1, s * 0.05, s * 0.05, 0, 0, Math.PI * 2);
 				g.fill();
 				g.restore();
-			} else if (v < 0.16) {
+			} else if (v < 0.13) {
 				pebble(g, x, y, s * 0.07, k);
 			}
 		}
@@ -365,48 +418,75 @@ function paintBoom(g: Ctx, f: Frame, map: YardMap): void {
 	}
 }
 
-/** The tunnel's mouth: a corrugated drain pipe. */
-function paintPipes(g: Ctx, f: Frame, map: YardMap): void {
-	const { s, ox, oy } = f;
+/**
+ * The tunnel: a corrugated drain pipe lying in the tunnel's own tile, its open end toward the
+ * corridor, its far end sunk in a heap of sand at the maze's edge. Drawn over the actors: the
+ * hero and the ghosts crawl in under it.
+ */
+export function drawPipes(g: Ctx, map: YardMap, ox: number, oy: number, s: number): void {
 	for (let r = 0; r < map.R; r += 1) {
 		for (let c = 0; c < map.C; c += 1) {
 			if (!map.teleport(c, r)) continue;
-			const left = !map.open(c - 1, r);
-			const x = ox + (left ? c : c + 1) * s;
+			const inward = map.open(c + 1, r) ? 1 : -1;
+			// the mouth's x, the pipe runs from it outward one tile and a half
+			const mx = ox + (c + 0.5 + inward * 0.42) * s;
 			const y = oy + (r + 0.5) * s;
-			const dir = left ? -1 : 1;
 			g.save();
-			g.translate(x, y);
-			g.scale(dir, 1);
-			// the pipe running out under the edge
-			const L = s * 1.6;
-			const R = s * 0.62;
-			g.fillStyle = 'rgba(58,38,16,0.35)';
-			g.fillRect(-s * 0.1 + s * 0.06, -R + s * 0.1, L, R * 2);
-			const gr = g.createLinearGradient(0, -R, 0, R);
-			gr.addColorStop(0, '#dfe2e2');
-			gr.addColorStop(0.35, '#b7bcbd');
-			gr.addColorStop(1, '#7d8384');
-			g.fillStyle = gr;
-			g.fillRect(-s * 0.1, -R, L, R * 2);
-			g.strokeStyle = 'rgba(60,64,66,0.45)';
-			g.lineWidth = Math.max(1, s * 0.04);
-			for (let i = 0; i < 9; i += 1) {
-				const px = -s * 0.04 + i * s * 0.18;
-				g.beginPath();
-				g.moveTo(px, -R);
-				g.lineTo(px, R);
-				g.stroke();
-			}
-			// its open end: dark inside, a lit rim
-			g.fillStyle = '#1d1a17';
+			g.translate(mx, y);
+			g.scale(-inward, 1);
+			// it ends on the maze's outer edge, not past it
+			const L = s * 0.9;
+			const R = s * 0.47;
+			// shadow
+			g.fillStyle = P.shadow;
 			g.beginPath();
-			g.ellipse(-s * 0.1, 0, s * 0.16, R * 0.86, 0, 0, Math.PI * 2);
+			g.roundRect(s * 0.06, -R + s * 0.1, L, R * 2, R * 0.3);
 			g.fill();
-			g.strokeStyle = '#c9cdcd';
-			g.lineWidth = s * 0.08;
+			// the body: a cylinder lit from above-left
+			const gr = g.createLinearGradient(0, -R, 0, R);
+			gr.addColorStop(0, '#f3f5f4');
+			gr.addColorStop(0.22, '#d2d7d6');
+			gr.addColorStop(0.6, '#a3aaab');
+			gr.addColorStop(1, '#6b7273');
+			g.fillStyle = gr;
+			g.fillRect(0, -R, L, R * 2);
+			// corrugation: ribs across it, each lit on one side
+			for (let x = s * 0.07; x < L; x += s * 0.11) {
+				g.fillStyle = 'rgba(60,66,68,0.35)';
+				g.fillRect(x, -R, s * 0.035, R * 2);
+				g.fillStyle = 'rgba(255,255,255,0.35)';
+				g.fillRect(x + s * 0.035, -R, s * 0.02, R * 2);
+			}
+			// the far end under a heap of sand
+			const sg = g.createLinearGradient(L - s * 0.35, 0, L + s * 0.1, 0);
+			sg.addColorStop(0, 'rgba(201,164,108,0)');
+			sg.addColorStop(0.55, 'rgba(201,164,108,0.95)');
+			sg.addColorStop(1, P.ground);
+			g.fillStyle = sg;
 			g.beginPath();
-			g.ellipse(-s * 0.1, 0, s * 0.18, R * 0.9, 0, 0, Math.PI * 2);
+			g.ellipse(L - s * 0.05, 0, s * 0.3, R * 1.1, 0, 0, Math.PI * 2);
+			g.fill();
+			const k = tileRng(c, r, 5);
+			for (let i = 0; i < 8; i += 1) pebble(g, L - s * 0.25 + k() * s * 0.25, (k() - 0.5) * R * 1.8, s * 0.04, k);
+			// the open end: a rolled rim and the dark inside
+			g.fillStyle = '#16191a';
+			g.beginPath();
+			g.ellipse(0, 0, s * 0.13, R * 0.9, 0, 0, Math.PI * 2);
+			g.fill();
+			const ig = g.createLinearGradient(0, 0, s * 0.3, 0);
+			ig.addColorStop(0, 'rgba(10,12,14,0.55)');
+			ig.addColorStop(1, 'rgba(10,12,14,0)');
+			g.fillStyle = ig;
+			g.fillRect(0, -R, s * 0.3, R * 2);
+			g.strokeStyle = '#e8ebea';
+			g.lineWidth = s * 0.07;
+			g.beginPath();
+			g.ellipse(0, 0, s * 0.14, R * 0.93, 0, 0, Math.PI * 2);
+			g.stroke();
+			g.strokeStyle = 'rgba(70,76,78,0.6)';
+			g.lineWidth = s * 0.02;
+			g.beginPath();
+			g.ellipse(s * 0.02, 0, s * 0.17, R, 0, -Math.PI / 2, Math.PI / 2);
 			g.stroke();
 			g.restore();
 		}
@@ -520,8 +600,8 @@ function paintWalls(g: Ctx, f: Frame, map: YardMap): void {
 	const solid = tinted(mc, P.concrete.b);
 	// the corridor darkens toward the walls (ambient occlusion), then the drop shadow
 	g.save();
-	g.shadowColor = 'rgba(70,46,20,0.35)';
-	g.shadowBlur = s * 0.5;
+	g.shadowColor = 'rgba(12,10,8,0.45)';
+	g.shadowBlur = s * 0.45;
 	g.drawImage(solid, 0, 0);
 	g.restore();
 	g.save();
@@ -724,7 +804,6 @@ export function bakeYard(map: YardMap, f: Frame, seed = 1): HTMLCanvasElement {
 	paintGround(g, f, map, rnd);
 	paintCorridors(g, f, map, rnd);
 	paintLair(g, f, map);
-	paintPipes(g, f, map);
 	paintWalls(g, f, map);
 	paintBoom(g, f, map);
 	return cv;
@@ -766,7 +845,7 @@ function paintCrate(g: Ctx, x: number, y: number, s: number, variant: number, se
 	const h = s * 0.9;
 	const x0 = x - w / 2;
 	const y0 = y - h / 2;
-	const rot = (k() - 0.5) * 0.06;
+	const rot = 0;
 	g.save();
 	g.translate(x, y);
 	g.rotate(rot);
@@ -993,7 +1072,7 @@ function plankGrain(g: Ctx, x: number, y: number, w: number, h: number, vertical
 
 // ---------------------------------------------------------------- the food
 
-/** A hex nut, the yard's dot: bright steel, a dark eye, lit from the upper left. */
+/** A hex nut, the yard's dot: bright brass, a dark eye, lit from the upper left. */
 export function drawBolt(g: Ctx, x: number, y: number, s: number, turn = 0): void {
 	const D = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
 	const a = Math.round((((turn % 1) + 1) % 1) * 6);
@@ -1017,16 +1096,16 @@ export function drawBolt(g: Ctx, x: number, y: number, s: number, turn = 0): voi
 		hex(r * 0.35, r * 0.5, r * 1.05);
 		cg.fill();
 		const gr = cg.createLinearGradient(cx - r, cx - r, cx + r, cx + r);
-		gr.addColorStop(0, '#ffffff');
-		gr.addColorStop(0.5, '#d9e0e4');
-		gr.addColorStop(1, '#8e989e');
+		gr.addColorStop(0, '#fff6cc');
+		gr.addColorStop(0.45, '#f2c24e');
+		gr.addColorStop(1, '#a3711c');
 		cg.fillStyle = gr;
 		hex(0, 0, r);
 		cg.fill();
-		cg.strokeStyle = 'rgba(60,66,72,0.75)';
+		cg.strokeStyle = 'rgba(80,52,10,0.8)';
 		cg.lineWidth = Math.max(0.6, s * 0.014);
 		cg.stroke();
-		cg.fillStyle = '#4d5458';
+		cg.fillStyle = '#6e4c14';
 		cg.beginPath();
 		cg.arc(cx, cx, r * 0.42, 0, Math.PI * 2);
 		cg.fill();
@@ -1035,7 +1114,7 @@ export function drawBolt(g: Ctx, x: number, y: number, s: number, turn = 0): voi
 		cg.arc(cx + r * 0.1, cx + r * 0.1, r * 0.42, 0.1, Math.PI / 2 + 0.6);
 		cg.lineTo(cx, cx);
 		cg.fill();
-		cg.fillStyle = '#2f3437';
+		cg.fillStyle = '#2a1d08';
 		cg.beginPath();
 		cg.arc(cx - r * 0.05, cx - r * 0.05, r * 0.3, 0, Math.PI * 2);
 		cg.fill();
@@ -1195,44 +1274,7 @@ function spark(g: Ctx, x: number, y: number, s: number, t: number, power: number
 
 // ---------------------------------------------------------------- the blast
 
-/** How far the blast runs each way, in tiles from the bomb's tile, and whether a wall stopped it. */
-export interface Arm {
-	readonly dx: number;
-	readonly dy: number;
-	readonly len: number;
-	readonly wall: boolean;
-	/** The crate it breaks at its end, if any. */
-	readonly crate: boolean;
-}
-
-export function blastArms(map: YardMap, c: number, r: number, range: number, crates: ReadonlySet<string>): Arm[] {
-	const arms: Arm[] = [];
-	for (const [dx, dy] of [
-		[1, 0],
-		[-1, 0],
-		[0, 1],
-		[0, -1]
-	]) {
-		let len = 0;
-		let wall = false;
-		let crate = false;
-		for (let i = 1; i <= range; i += 1) {
-			const tc = c + dx * i;
-			const tr = r + dy * i;
-			if (!map.open(tc, tr) || map.lair(tc, tr)) {
-				wall = true;
-				break;
-			}
-			len = i;
-			if (crates.has(`${tc},${tr}`)) {
-				crate = true;
-				break;
-			}
-		}
-		arms.push({ dx, dy, len, wall, crate });
-	}
-	return arms;
-}
+export type Arm = YardArm;
 
 /** The blast's life, s. */
 export const BLAST_TIME = 0.95;
@@ -1552,6 +1594,76 @@ export function drawDebris(g: Ctx, x: number, y: number, s: number, fromX: numbe
 		g.arc(x, y, R, 0, Math.PI * 2);
 		g.fill();
 	}
+}
+
+// ---------------------------------------------------------------- the pickups
+
+/**
+ * A pickup a crate held: a safety-yellow token with a black icon (a bomb: one more at a time; a
+ * flame: a tile more of fire), bobbing a little, a slow glint running over it.
+ */
+export function drawPickup(g: Ctx, x: number, y: number, s: number, kind: YardPickup, t: number): void {
+	const bob = Math.sin(t * 3.2) * s * 0.04;
+	const r = s * 0.3;
+	g.fillStyle = 'rgba(16,12,8,0.45)';
+	g.beginPath();
+	g.ellipse(x + s * 0.07, y + s * 0.1, r * 0.95, r * 0.85, 0, 0, Math.PI * 2);
+	g.fill();
+	const cy = y + bob - s * 0.03;
+	const gr = g.createLinearGradient(x - r, cy - r, x + r, cy + r);
+	gr.addColorStop(0, '#ffe27a');
+	gr.addColorStop(0.5, P.paint);
+	gr.addColorStop(1, '#c78a00');
+	g.fillStyle = gr;
+	g.beginPath();
+	g.roundRect(x - r, cy - r, r * 2, r * 2, r * 0.35);
+	g.fill();
+	g.strokeStyle = P.ink;
+	g.lineWidth = s * 0.04;
+	g.stroke();
+	g.fillStyle = P.ink;
+	if (kind === 'bomb') {
+		g.beginPath();
+		g.arc(x - r * 0.08, cy + r * 0.1, r * 0.42, 0, Math.PI * 2);
+		g.fill();
+		g.strokeStyle = P.ink;
+		g.lineWidth = s * 0.035;
+		g.beginPath();
+		g.moveTo(x + r * 0.18, cy - r * 0.22);
+		g.quadraticCurveTo(x + r * 0.4, cy - r * 0.6, x + r * 0.55, cy - r * 0.45);
+		g.stroke();
+		g.fillStyle = '#fff6d0';
+		g.beginPath();
+		g.arc(x - r * 0.24, cy - r * 0.05, r * 0.1, 0, Math.PI * 2);
+		g.fill();
+	} else {
+		g.beginPath();
+		g.moveTo(x, cy - r * 0.62);
+		g.bezierCurveTo(x + r * 0.15, cy - r * 0.25, x + r * 0.55, cy - r * 0.1, x + r * 0.45, cy + r * 0.3);
+		g.bezierCurveTo(x + r * 0.38, cy + r * 0.62, x - r * 0.38, cy + r * 0.62, x - r * 0.45, cy + r * 0.3);
+		g.bezierCurveTo(x - r * 0.52, cy, x - r * 0.25, cy - r * 0.05, x - r * 0.18, cy - r * 0.3);
+		g.bezierCurveTo(x - r * 0.08, cy - r * 0.1, x - r * 0.02, cy - r * 0.35, x, cy - r * 0.62);
+		g.fill();
+		g.fillStyle = P.paint;
+		g.beginPath();
+		g.ellipse(x, cy + r * 0.28, r * 0.17, r * 0.24, 0, 0, Math.PI * 2);
+		g.fill();
+	}
+	// a glint sweeping across
+	const ph = (t * 0.6) % 1;
+	g.save();
+	g.beginPath();
+	g.roundRect(x - r, cy - r, r * 2, r * 2, r * 0.35);
+	g.clip();
+	g.fillStyle = 'rgba(255,255,255,0.45)';
+	g.beginPath();
+	const gx = x - r * 2 + ph * r * 5;
+	g.moveTo(gx, cy - r);
+	g.lineTo(gx + r * 0.35, cy - r);
+	g.lineTo(gx - r * 0.35, cy + r);
+	g.lineTo(gx - r * 0.7, cy + r);
+	g.fill();
+	g.restore();
 }
 
 // ---------------------------------------------------------------- the night

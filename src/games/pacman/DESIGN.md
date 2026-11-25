@@ -552,12 +552,19 @@ the hell is combat, so the others must not be. The order proposed (`ROADMAP.md`,
     +1, kick) or nothing.
   - The end: the last dot lights the yard's big fuse, a short run to the exit (the lair's door).
   - Open: a boss bomber who lays bombs of his own (combat again?) or none, as proposed.
-  - The look: a toy construction yard, top-down, daylight; sand and concrete, safety orange
-    and yellow, blue tarps (clear of the hell's reds); walls concrete blocks and steel beams;
-    crates wood with stencils; a round black bomb with a burning fuse; the blast a fire cross
-    with dust, planks flying, scorch marks staying on the floor; bolts for dots; ghosts in hard
-    hats with their own looks; the lair a site cabin; the teleport a drain pipe. Night: work
-    floodlights.
+  - The look (master assets approved 2026-11-25, `prototypes/pacman/yard`): a toy construction
+    yard, top-down, the light from the upper left; sand around the maze, dark asphalt corridors
+    (contrast: pale walls, wood and brass must stand off the floor); walls are concrete barriers
+    with a pale ridge, a worn yellow curb line and hazard stripes on blunt ends; crates are wood,
+    square to the grid; brass hex nuts for dots; a round black bomb with a rope fuse; the blast a
+    billowing fire cross that flattens on walls, tosses a crate's planks and leaves soot; the
+    lair a hatched concrete pad behind a striped boom; the tunnel a corrugated drain pipe lying
+    in its own tile (the actors crawl in under it). Night: moonlit blue, floodlight pools, the
+    fire its own light. To come: ghosts in hard hats, the site cabin, the surround.
+  - The playable prototype (2026-11-25): the rules above with 1 bomb, 2 tiles of fire, a 2.2 s
+    fuse, 0.5 s of deadly fire, crates on ~26% of the corridor tiles with a 30% pickup chance
+    (`logic/yard/YardRules`, `YARD_TUNE`); the eyes pass crates and bombs; the hero walks off
+    his own bomb but not back on.
 - **Sharkboy and Lavagirl**: a tide of water and lava floods the tiles in waves, sharks patrol the
   water. Terrain, a playful tone, clear of the hell's reds.
 

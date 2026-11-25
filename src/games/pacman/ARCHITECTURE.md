@@ -27,6 +27,8 @@ logic/
              boss a boss level gets from BOSS_ROTATION, the finished ones (now the hell; the
              station is shelved, dev panel only), seeded per run, no repeat),
              LevelProgress, ScoreModel
+  yard/      YardRules (the demolition yard, a prototype world: crates, bombs, blasts, chains,
+             pickups; pure and tile based, played by prototypes/pacman/yard)
   maze/      GridModel, GridService, SpawnLocator, LairExit
   actors/    Player*, Ghost*, ghostTargets (scatter, chase, flight), ghostRoutes (routes by
              path length: shortestRoute, planFeeding), arcadeTargets (the arcade ghosts' characters)
