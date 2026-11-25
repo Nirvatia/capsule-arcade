@@ -248,6 +248,19 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 
 	const WALK_BFS = computeWalkBfs();
 	const WALL_BFS = computeWallBfs();
+	/** How far a tile lies from the lair for the infection (the floor's or the wall's way), tiles. */
+	const infectionDistance = (x: number, y: number) =>
+		Math.min(WALK_BFS[y]?.[x] ?? Infinity, WALL_BFS[y]?.[x] ?? Infinity);
+	/** The game's infection, 0..1 (-1: the mock-up's phases rule the light). */
+	let infection = -1;
+	const setInfection = (k: number) => {
+		infection = k;
+	};
+	const lerp3 = (a: readonly number[], b: readonly number[], k: number) =>
+		`rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(', ')})`;
+	/** Each lamp's failing point on the infection (0 and 3 hang on, weak, to the end). */
+	const lampFails = (i: number) =>
+		0.3 + 0.62 * ((((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1);
 
 	// Restrained natural infestation reach per phase ("без фанатизма")
 	// Outer perimeter corridors (row 2, row 24, col 2, col 22) remain clean & readable even in Phase 3
@@ -3246,11 +3259,11 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 			const pulse = 0.5 + 0.5 * Math.sin(time * 2.1 + i * 1.4);
 
 			g.save();
-			// Warm localized amber aura
+			// A cold localized plasma aura (the game: the owner's pick, cold blue-white, 2026-11-25)
 			const aura = g.createRadialGradient(cx, cy, 3, cx, cy, R * 2.15);
-			aura.addColorStop(0, `rgba(255, 224, 134, ${0.34 + 0.14 * pulse})`);
-			aura.addColorStop(0.55, `rgba(235, 163, 52, ${0.14 + 0.08 * pulse})`);
-			aura.addColorStop(1, 'rgba(200, 118, 22, 0)');
+			aura.addColorStop(0, `rgba(214, 240, 255, ${0.34 + 0.14 * pulse})`);
+			aura.addColorStop(0.55, `rgba(122, 190, 255, ${0.14 + 0.08 * pulse})`);
+			aura.addColorStop(1, 'rgba(60, 120, 220, 0)');
 			g.fillStyle = aura;
 			g.beginPath();
 			g.arc(cx, cy, R * 2.15, 0, TAU);
@@ -3300,13 +3313,13 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 			g.arc(cx, cy, R * 0.72, 0, TAU);
 			g.fill();
 
-			// ONE SINGLE LARGE, CRYSTAL-CLEAR LUMINOUS WARM AMBER-GOLD GLASS CORE
+			// one large crystal-clear glass core of cold blue-white plasma
 			const coreR = R * 0.61;
 			const core = g.createRadialGradient(cx - 1.2, cy - 1.3, 0.4, cx, cy, coreR);
 			core.addColorStop(0, '#ffffff');
-			core.addColorStop(0.32, '#ffe89c');
-			core.addColorStop(0.72, '#eba334');
-			core.addColorStop(1, '#9a4e0c');
+			core.addColorStop(0.32, '#e6f6ff');
+			core.addColorStop(0.72, '#7cc8ff');
+			core.addColorStop(1, '#2a5fb8');
 			g.fillStyle = core;
 			g.globalAlpha = 0.88 + 0.12 * pulse;
 			g.beginPath();
@@ -3316,14 +3329,15 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 			// Subtle slow-rotating segmented containment reticle/filament inside glass core
 			g.save();
 			g.translate(cx, cy);
-			g.rotate(time * 0.55 + i * 0.8);
-			g.globalAlpha = 0.42;
-			g.strokeStyle = '#5c2e08';
-			g.lineWidth = 0.9;
+			// the slow ring: bright arcs turning round the plasma
+			g.rotate(time * 0.35 + i * 0.8);
+			g.globalAlpha = 0.85;
+			g.strokeStyle = 'rgba(200, 238, 255, 0.95)';
+			g.lineWidth = 1.1;
 			for (let s = 0; s < 3; s++) {
 				const a0 = (s / 3) * TAU;
 				g.beginPath();
-				g.arc(0, 0, coreR * 0.64, a0, a0 + 0.85);
+				g.arc(0, 0, coreR * 1.12, a0, a0 + 1.4);
 				g.stroke();
 			}
 			g.restore();
@@ -3519,7 +3533,16 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 		lg.setTransform(1, 0, 0, 1, 0, 0);
 		lg.globalCompositeOperation = 'source-over';
 
-		if (mode === 'alert') {
+		if (infection >= 0) {
+			// the game: the light sinks with the infection
+			const k = infection;
+			lg.fillStyle =
+				mode === 'alert'
+					? lerp3([68, 62, 64], [56, 50, 52], k)
+					: k < 0.5
+						? lerp3([124, 134, 132], [104, 113, 111], k * 2)
+						: lerp3([104, 113, 111], [74, 80, 80], k * 2 - 1);
+		} else if (mode === 'alert') {
 			lg.fillStyle = phase === 3 ? 'rgb(56, 50, 52)' : 'rgb(68, 62, 64)';
 		} else {
 			lg.fillStyle =
@@ -3533,7 +3556,19 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 		for (let i = 0; i < CORRIDOR_LAMPS.length; i++) {
 			const l = CORRIDOR_LAMPS[i];
 			let power = 0;
-			if (phase === 1) {
+			if (infection >= 0) {
+				// the game: each lamp falters (slowly, unevenly) and goes out at its own point
+				const fail = lampFails(i);
+				const base = (mode === 'alert' ? 0.32 : 0.68) - 0.06 * infection;
+				const uneven = 0.28 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.15 + l.ph));
+				if (infection < fail - 0.14) power = base;
+				else if (infection < fail)
+					power = base * (uneven + (1 - uneven) * ((fail - infection) / 0.14));
+				else if (i === 0 || i === 3)
+					power =
+						(mode === 'alert' ? 0.18 : 0.38) *
+						(0.35 + 0.45 * (0.5 + 0.5 * Math.sin(time * 0.9 + l.ph)));
+			} else if (phase === 1) {
 				power = mode === 'alert' ? 0.32 : 0.68;
 			} else if (phase === 2) {
 				const base = mode === 'alert' ? 0.25 : 0.62;
@@ -3612,7 +3647,7 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 					toX(tcx(x)),
 					toY(tcy(y)),
 					R(TILE * 4.4),
-					'248, 178, 68',
+					'150, 205, 255',
 					(phase === 3 ? 0.96 : 0.86) * fl
 				);
 			}
@@ -3640,11 +3675,21 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 
 		// 6. Central sunken lair pit glow
 		const lairP = 0.82 + 0.18 * Math.sin(time * 1.4);
-		const lairA = phase === 1 ? 0.38 : phase === 2 ? 0.54 : 0.7;
+		const lairA =
+			infection >= 0 ? 0.38 + 0.32 * infection : phase === 1 ? 0.38 : phase === 2 ? 0.54 : 0.7;
 		radialLight(lg, toX(tx(12.5)), toY(ty(13.5)), R(TILE * 4.8), '186, 176, 86', lairA * lairP);
 
 		// 7. Slow sweeping/pulsing Red Emergency Beacons (< 2 Hz)
-		const redPower = mode === 'alert' ? 1.05 : phase === 1 ? 0.14 : phase === 2 ? 0.38 : 0.86;
+		const redPower =
+			mode === 'alert'
+				? 1.05
+				: infection >= 0
+					? 0.14 + 0.72 * Math.pow(infection, 1.3)
+					: phase === 1
+						? 0.14
+						: phase === 2
+							? 0.38
+							: 0.86;
 
 		for (const b of RED_BEACONS) {
 			const bx = toX(b.x);
@@ -3652,7 +3697,7 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 			const pulse = 0.42 + 0.58 * (0.5 + 0.5 * Math.sin(time * b.speed * 1.35 + b.ph));
 			radialLight(lg, bx, by, R(155), '224, 52, 42', 0.52 * redPower * pulse);
 
-			if (b.sweep && (mode === 'alert' || phase >= 2)) {
+			if (b.sweep && (mode === 'alert' || (infection >= 0 ? infection >= 0.35 : phase >= 2))) {
 				const ang = time * b.speed * 1.15 + b.ph;
 				const swR = R(mode === 'alert' || phase === 3 ? 210 : 155);
 				for (const dir of [0, Math.PI]) {
@@ -3747,6 +3792,8 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 		drawAtmosphereFX,
 		renderLightmap,
 		radialLight,
-		setExtraLights
+		setExtraLights,
+		setInfection,
+		infectionDistance
 	};
 }

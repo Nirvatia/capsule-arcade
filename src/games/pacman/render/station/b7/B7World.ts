@@ -1,7 +1,8 @@
 // The station B-7 on screen (the owner's mock-up, `b7Scene`), composed for the game's frame
 // budget: the hull and the baked architecture are one screen-sized layer, redrawn only on a
 // resize; the infestation of the phase is a second one, redrawn only when the phase changes; the
-// live props draw over them in stage space; the light map is a small canvas of sprite lights
+// live props draw over them in stage space; the infection (0..1) reveals the infestation from
+// the lair out and sinks the light; the light map is a small canvas of sprite lights
 // (no gradient per frame), its bloom a downscale (no canvas filter, which Safari lacks); the
 // grain and the bloom are High only, the food's emissive lift Medium and up.
 import type { GridMatrix } from '../../../config/gridConfig';
@@ -16,6 +17,14 @@ export type B7Light = 'quarantine' | 'alert';
 
 /** The light map's resolution against the screen (the mock-up's). */
 const LIGHT_SCALE = 0.32;
+/** The infestation's farthest reach from the lair (the mock-up's phase 3), tiles; redrawn per step. */
+const HIVE_REACH = 11.6;
+const REACH_STEP = 0.25;
+
+/** The mock-up's phase for the props that still go by it (the tanks, the screens, the steam). */
+export function phaseOf(infection: number): B7Phase {
+	return infection < 0.34 ? 1 : infection < 0.72 ? 2 : 3;
+}
 
 function canvas(w: number, h: number): HTMLCanvasElement {
 	const c = document.createElement('canvas');
@@ -31,7 +40,8 @@ function ctx2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
 export class B7World {
 	readonly scene: ReturnType<typeof createB7Scene>;
 	private readonly base: HTMLCanvasElement;
-	private readonly hive = new Map<B7Phase, HTMLCanvasElement>();
+	/** The infestation at its fullest, revealed from the lair out as the infection grows. */
+	private readonly hive: HTMLCanvasElement;
 	private readonly grain: HTMLCanvasElement;
 	private quality: RenderQuality = 'high';
 	private vw = 0;
@@ -42,7 +52,7 @@ export class B7World {
 	private offX = 0;
 	private offY = 0;
 	private staticView: HTMLCanvasElement | null = null;
-	private hiveView: { phase: B7Phase; canvas: HTMLCanvasElement } | null = null;
+	private hiveView: { step: number; canvas: HTMLCanvasElement } | null = null;
 	private lightMap: HTMLCanvasElement | null = null;
 	private bloom: HTMLCanvasElement | null = null;
 
@@ -50,8 +60,8 @@ export class B7World {
 		this.scene = createB7Scene(grid);
 		this.base = this.scene.bakeBaseScene();
 		this.grain = this.scene.buildGrainTile();
-		// the infestation of every phase, baked with the level (no hitch when the phase turns)
-		for (const p of [1, 2, 3] as const) this.hive.set(p, this.scene.bakeRestrainedHivePhase(p));
+		// the infestation at its fullest, baked once with the level
+		this.hive = this.scene.bakeRestrainedHivePhase(3);
 	}
 
 	setQuality(quality: RenderQuality): void {
@@ -115,10 +125,12 @@ export class B7World {
 		ctx: CanvasRenderingContext2D,
 		time: number,
 		dt: number,
-		phase: B7Phase,
+		infection: number,
 		showProps: boolean
 	): void {
 		const s = this.scene;
+		const phase = phaseOf(infection);
+		s.setInfection(infection);
 		if (!this.staticView) {
 			this.staticView = this.screenLayer((g) => {
 				const minX = -this.offX / this.scale - 4;
@@ -133,11 +145,11 @@ export class B7World {
 				g.drawImage(this.base, 0, 0, s.STAGE_W, s.STAGE_H);
 			});
 		}
-		if (!this.hiveView || this.hiveView.phase !== phase) {
-			const hive = this.hive.get(phase) as HTMLCanvasElement;
+		const step = Math.round((infection * HIVE_REACH) / REACH_STEP);
+		if (!this.hiveView || this.hiveView.step !== step) {
 			this.hiveView = {
-				phase,
-				canvas: this.screenLayer((g) => g.drawImage(hive, 0, 0, s.STAGE_W, s.STAGE_H))
+				step,
+				canvas: this.screenLayer((g) => this.paintHive(g, step * REACH_STEP))
 			};
 		}
 		ctx.drawImage(this.staticView, 0, 0, this.vw, this.vh);
@@ -158,11 +170,36 @@ export class B7World {
 		ctx.restore();
 	}
 
+	/**
+	 * The infestation as far as `reach` tiles from the lair (the floor's and the walls' ways): the
+	 * full layer cut by a mask of the tiles, soft at its edge (a tile-sized canvas stretched).
+	 */
+	private paintHive(g: CanvasRenderingContext2D, reach: number): void {
+		const s = this.scene;
+		g.drawImage(this.hive, 0, 0, s.STAGE_W, s.STAGE_H);
+		const mask = canvas(s.COLS, s.ROWS);
+		const mg = ctx2d(mask);
+		const img = mg.createImageData(s.COLS, s.ROWS);
+		for (let y = 0; y < s.ROWS; y += 1) {
+			for (let x = 0; x < s.COLS; x += 1) {
+				const d = s.infectionDistance(x, y);
+				const a = Math.max(0, Math.min(1, (reach - d) / 1.2 + 0.5));
+				img.data[(y * s.COLS + x) * 4 + 3] = Math.round(a * 255);
+			}
+		}
+		mg.putImageData(img, 0, 0);
+		g.save();
+		g.globalCompositeOperation = 'destination-in';
+		g.imageSmoothingEnabled = true;
+		g.drawImage(mask, s.MAZE_X, s.MAZE_Y, s.COLS * s.TILE, s.ROWS * s.TILE);
+		g.restore();
+	}
+
 	/** Step 12: the light map multiplied over the world, the food's lift, the bloom. */
 	drawLight(
 		ctx: CanvasRenderingContext2D,
 		time: number,
-		phase: B7Phase,
+		infection: number,
 		mode: B7Light,
 		showProps: boolean,
 		/** What lies with the food and must be lifted like it (the lurkers), in stage space. */
@@ -172,6 +209,8 @@ export class B7World {
 		const bloom = this.bloom;
 		if (!lightMap || !bloom) return;
 		const s = this.scene;
+		const phase = phaseOf(infection);
+		s.setInfection(infection);
 		const ls = lightMap.width / Math.max(1, this.vw);
 		s.renderLightmap(
 			ctx2d(lightMap),

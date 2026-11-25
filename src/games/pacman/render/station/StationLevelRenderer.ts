@@ -8,7 +8,7 @@ import type { GridLayout } from '../maze/GridView';
 import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../RenderFrame';
 import type { SharedLayers } from '../SharedLayers';
 import { B7World } from './b7/B7World';
-import type { B7Light, B7Phase } from './b7/B7World';
+import type { B7Light } from './b7/B7World';
 import { drawAlbino } from './albino';
 import { CreatureMotion } from './creatureMotion';
 import type { AlbinoState } from './albino';
@@ -69,7 +69,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		const scene = world.scene;
 		const clear = state === 'level-clear';
 		const escaping = run?.escape.state === 'running';
-		const phase: B7Phase = escaping ? 3 : (run?.escape.charge ?? 0) >= 0.5 ? 2 : 1;
+		const infection = clear ? 1 : (run?.infection ?? 0);
 		const light: B7Light = escaping ? 'alert' : 'quarantine';
 		scene.setPresent((x, y) => !progress.isCollected(x, y));
 		const player = level.player;
@@ -108,7 +108,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 				: lureLights
 		);
 
-		world.drawScene(ctx, time, dt, phase, true);
+		world.drawScene(ctx, time, dt, infection, true);
 		// the lurkers lie with the food, under the same light
 		const disguises = (c: CanvasRenderingContext2D) => {
 			if (run && !clear) this.drawDisguises(c, run, hero, time, frame.season.grid);
@@ -116,7 +116,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		world.enter(ctx);
 		disguises(ctx);
 		ctx.restore();
-		world.drawLight(ctx, time, phase, light, true, disguises);
+		world.drawLight(ctx, time, infection, light, true, disguises);
 
 		if (run && !clear) this.drawPlays(ctx, run, layout, time, escaping);
 		const ghosts: readonly GhostModel[] = clear || !run ? [] : (level.ghosts?.list ?? []);
@@ -164,8 +164,8 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		const time = performance.now() / 1000;
 		world.scene.setPresent(() => true);
 		world.scene.setExtraLights([]);
-		world.drawScene(frame.ctx, time, frame.dt, 1, true);
-		world.drawLight(frame.ctx, time, 1, 'quarantine', true);
+		world.drawScene(frame.ctx, time, frame.dt, 0, true);
+		world.drawLight(frame.ctx, time, 0, 'quarantine', true);
 		world.drawGrain(frame.ctx, time);
 		return world.layout;
 	}
