@@ -103,6 +103,15 @@ last (see Later).
          **Escape v3** (same day, awaits his play): a free way, the squad in a rage, 1-4 more
          breaking out (`logic/station/EscapeRush`), his breakthrough lane (Space, two per
          escape), a pulse that reaches 3 tiles only (`DESIGN.md` §7a).
+         The owner played v3 (2026-11-25): it works; the tactics stay as they are, with two
+         problems to solve next: (1) **the fence's beams cross walls**: the idea is liked, but
+         the hero must be held by the maze itself (e.g. fencers sealing the corridors that
+         join two parts of the maze: a cut on the maze's graph of corridors, each seal a short
+         barrier from wall to wall); (2) **the lurker can hardly be told from food**: the
+         out-of-step breathing is not enough; it needs more cues that can be learned (it sits
+         only on eaten tiles already). The owner has a mock-up of the level and is making one
+         of the mimics with Gemini (one HTML file of Canvas2D code: the creature's states and
+         effects per tactic); both come to the next chat to be reproduced in code.
       3. **The creatures' look**: tile-sized, no legs, four tempers; a prototype (the void
          jellyfish of the `creatures` page is a starting point), the owner picks.
       4. A fourth tactic if the three need company (the tripwire or the shadow).
