@@ -17,6 +17,7 @@ import { GhostService } from '../../../src/games/pacman/logic/actors/GhostServic
 import type { PlayerDirection } from '../../../src/games/pacman/logic/actors/PlayerModel';
 import { SQUAD_TUNE, StationSquad } from '../../../src/games/pacman/logic/station/StationSquad';
 import { StationEscape } from '../../../src/games/pacman/logic/station/StationEscape';
+import { EscapeRush } from '../../../src/games/pacman/logic/station/EscapeRush';
 import { StationWorld } from '../../../src/games/pacman/render/station/StationWorld';
 import { HeroView } from '../../../src/games/pacman/render/actors/HeroView';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
@@ -34,6 +35,8 @@ import {
 	drawEmitter,
 	drawPhantom,
 	drawShaft,
+	drawLane,
+	drawRunner,
 	drawDoor,
 	drawHatch,
 	drawRoute
@@ -54,9 +57,21 @@ const TUNE = {
 	death: 1.4,
 	contact: 0.6,
 	/** The pulse: how long it stuns the squad. */
-	stun: 2,
+	stun: 1.2,
+	/** How far the pulse reaches, tiles. */
+	pulseReach: 3,
 	/** The escape: the hero's head start, s; a restart's stun on the squad, s. */
 	headStart: 1.5,
+	/** The breakthrough's stun on those it throws off, s. */
+	laneStun: 1.5,
+	/** Where the breakout comes from: above the containment's door, the vents' mouths. */
+	doors: [
+		{ x: 12, y: 10 },
+		{ x: 6, y: 2 },
+		{ x: 18, y: 2 },
+		{ x: 6, y: 24 },
+		{ x: 18, y: 24 }
+	],
 	restartStun: 3,
 	/** The lair's exit delays against the season levels'. */
 	exitScale: 0.35,
@@ -72,7 +87,11 @@ class SquadGrid extends GridService {
 		return super.isPlayerWalkable(x, y) && !this.escape?.blocks(x, y) && !this.squad?.blocks(x, y);
 	}
 	isGhostWalkable(x: number, y: number, allowLair: boolean): boolean {
-		return super.isGhostWalkable(x, y, allowLair) && !this.escape?.blocks(x, y);
+		return (
+			super.isGhostWalkable(x, y, allowLair) &&
+			!this.escape?.blocks(x, y) &&
+			(allowLair || !this.escape?.laneBlocks(x, y))
+		);
 	}
 	private isHatch(x: number, y: number): boolean {
 		return this.escape?.state === 'running' && x === TUNE.hatch.x && y === TUNE.hatch.y;
@@ -93,6 +112,7 @@ interface Run {
 	ghosts: GhostService;
 	squad: StationSquad;
 	escape: StationEscape;
+	rush: EscapeRush;
 	total: number;
 	hits: number;
 	dying: number;
@@ -129,7 +149,13 @@ function newRun(): Run {
 		},
 		seed
 	);
-	const escape = new StationEscape({ walkable: (x, y) => GridService.prototype.isPlayerWalkable.call(g, x, y) }, TUNE.console, TUNE.hatch);
+	const escape = new StationEscape(
+		{ walkable: (x, y) => GridService.prototype.isPlayerWalkable.call(g, x, y) },
+		TUNE.console,
+		TUNE.hatch,
+		false
+	);
+	const rush = new EscapeRush({ walkable: (x, y) => GridService.prototype.isGhostWalkable.call(g, x, y, false) });
 	g.escape = escape;
 	g.squad = squad;
 	ghosts.setSquadGuide(squad);
@@ -151,7 +177,7 @@ function newRun(): Run {
 		}
 		for (const [x, y] of tiles.slice(0, want)) progress.collectAt(x, y);
 	}
-	return { grid: g, progress, score, player, ghosts, squad, escape, total, hits: TUNE.hits, dying: -1, power: 0, chain: 0, grab: 0, pulse: -1, end: null, popups: [], time: 0 };
+	return { grid: g, progress, score, player, ghosts, squad, escape, rush, total, hits: TUNE.hits, dying: -1, power: 0, chain: 0, grab: 0, pulse: -1, end: null, popups: [], time: 0 };
 }
 
 const heroView = new HeroView(q.has('ms') ? new MsPacmanHero() : new PacmanHero(), chargePainter);
@@ -185,6 +211,59 @@ function seal(r: Run, hold: number): void {
 	for (const g of r.ghosts.list) {
 		if (g.state === 'active' || g.state === 'frightened') r.ghosts.freeze(g.kind, hold);
 	}
+}
+
+/** The alarm's chase: the squad enraged, and 1-4 more breaking out of the door and the vents. */
+function startChase(r: Run): void {
+	r.squad.chase(r.ghosts, null, () => r.escape.route, { lane: (x, y) => r.escape.laneBlocks(x, y) });
+	r.rush.start(1 + Math.floor(Math.random() * 4), TUNE.doors);
+}
+
+/** The breakthrough: the way to the hatch lit; whoever stands on it is thrown off and stunned. */
+function breakthrough(r: Run): void {
+	const hero = under(r.player.position);
+	if (!r.escape.useLane(hero)) return;
+	const lane = (x: number, y: number) => r.escape.laneBlocks(x, y);
+	for (const g of r.ghosts.list) {
+		if (g.state !== 'active' || !lane(g.tile.x, g.tile.y)) continue;
+		for (const [dx, dy] of [
+			[1, 0],
+			[-1, 0],
+			[0, 1],
+			[0, -1]
+		]) {
+			const x = g.tile.x + dx;
+			const y = g.tile.y + dy;
+			if (GridService.prototype.isGhostWalkable.call(r.grid, x, y, false) && !lane(x, y)) {
+				g.teleportTo({ x, y });
+				break;
+			}
+		}
+		r.ghosts.freeze(g.kind, TUNE.laneStun);
+	}
+	r.rush.knockOff(lane, TUNE.laneStun);
+	popup(r, hero.x + 0.5, hero.y - 0.4, 'BREAKTHROUGH');
+}
+
+/** A touch in the escape: the first sets off the pulse, the second starts it over. */
+function touched(r: Run, p: { x: number; y: number }): void {
+	if (r.escape.touch() === 'pulse') {
+		// the pulse throws off only those close round him; the rest come on
+		r.pulse = 0;
+		const near = (x: number, y: number) => Math.hypot(x - p.x, y - p.y) < TUNE.pulseReach;
+		for (const g of r.ghosts.list) if (near(g.position.x, g.position.y)) r.ghosts.freeze(g.kind, TUNE.stun);
+		for (const rn of r.rush.runners) {
+			const rp = r.rush.position(rn);
+			if (near(rp.x, rp.y)) rn.stun = TUNE.stun;
+		}
+		popup(r, p.x, p.y - 0.5, 'PULSE');
+		return;
+	}
+	r.player.placeAt(TUNE.console);
+	startChase(r);
+	seal(r, TUNE.restartStun);
+	for (const rn of r.rush.runners) rn.stun = TUNE.restartStun;
+	popup(r, TUNE.console.x + 0.5, TUNE.console.y - 0.4, 'AGAIN');
 }
 
 function step(r: Run, dt: number): void {
@@ -234,11 +313,7 @@ function step(r: Run, dt: number): void {
 	const ev = r.escape.update(dt, hero);
 	if (ev.armed) popup(r, TUNE.console.x + 0.5, TUNE.console.y - 0.4, 'TO THE CONSOLE');
 	if (ev.started) {
-		r.squad.chase(
-			r.ghosts,
-			(x, y) => r.escape.onRoute(x, y),
-			() => r.escape.route
-		);
+		startChase(r);
 		seal(r, TUNE.headStart);
 		popup(r, hero.x + 0.5, hero.y - 0.4, 'RUN');
 	}
@@ -247,6 +322,9 @@ function step(r: Run, dt: number): void {
 		return;
 	}
 	const sev = r.squad.update(dt, r.ghosts, hero, r.player.facing);
+	if (r.escape.state === 'running') {
+		r.rush.update(dt, hero, r.escape.route, r.ghosts.baseSpeed * SQUAD_TUNE.rage, (x, y) => r.escape.laneBlocks(x, y));
+	}
 	if (sev.grab > 0) {
 		r.grab = sev.grab;
 		r.player.setMovementLocked(true);
@@ -254,6 +332,15 @@ function step(r: Run, dt: number): void {
 	}
 	// touches
 	const p = r.player.position;
+	if (r.escape.state === 'running') {
+		for (const rn of r.rush.runners) {
+			if (rn.stun > 0) continue;
+			const rp = r.rush.position(rn);
+			if (Math.hypot(rp.x - p.x, rp.y - p.y) >= TUNE.contact) continue;
+			touched(r, p);
+			return;
+		}
+	}
 	for (const ghost of r.ghosts.list) {
 		if (r.squad.hidden(ghost.kind)) continue;
 		const gp = ghost.position;
@@ -270,21 +357,7 @@ function step(r: Run, dt: number): void {
 		// stunned by the pulse or held by the alarm: it does not bite
 		if (r.ghosts.frozenFor(ghost.kind) > 0) continue;
 		if (r.escape.state === 'running') {
-			if (r.escape.touch() === 'pulse') {
-				// the pulse: the squad thrown off, stunned
-				r.pulse = 0;
-				for (const g of r.ghosts.list) r.ghosts.freeze(g.kind, TUNE.stun);
-				popup(r, p.x, p.y - 0.5, 'PULSE');
-			} else {
-				r.player.placeAt(TUNE.console);
-				r.squad.chase(
-			r.ghosts,
-			(x, y) => r.escape.onRoute(x, y),
-			() => r.escape.route
-		);
-				seal(r, TUNE.restartStun);
-				popup(r, TUNE.console.x + 0.5, TUNE.console.y - 0.4, 'AGAIN');
-			}
+			touched(r, p);
 			break;
 		}
 		r.dying = 0;
@@ -316,6 +389,7 @@ function draw(r: Run, t: number): void {
 		const [x, y] = at(d.x + 0.5, d.y + 0.5);
 		drawDoor(ctx, d, x, y, S, horizontalCorridor ? 'v' : 'h');
 	}
+	if (r.escape.lane) drawLane(ctx, r.escape.lane.route.map((tt) => ({ x: at(tt.x + 0.5, 0)[0], y: at(0, tt.y + 0.5)[1] })), S, t, r.escape.lane.left);
 	// the interception: the junction ahead blinks red while one is coming for it
 	const ic = r.squad.intercept;
 	if (escaping && ic) {
@@ -376,6 +450,10 @@ function draw(r: Run, t: number): void {
 		}
 		const fade = m ? Math.min(1, m.time / SQUAD_TUNE.fade) : 0;
 		drawCreature(ctx, g, x, y, S, t, { fade, tell: sq.phase === 'tell', harmless: sq.harmless(g.kind) && !m, powerLeft: r.power });
+	}
+	for (const rn of r.rush.runners) {
+		const rp = r.rush.position(rn);
+		drawRunner(ctx, ...at(rp.x, rp.y), S, t, rn.stun > 0, rn.id);
 	}
 	if (DEBUG) debugView(r, at, S);
 	heroView.draw(ctx, r.player, L, t, { look: 'normal', charge: 0, dying: r.dying >= 0 });
@@ -480,7 +558,8 @@ function hud(r: Run, vw: number, vh: number): void {
 	const play = sq.chasing ? 'THE CHASE' : sq.phase === 'tell' ? `${(sq.next ?? '').toUpperCase()} …` : sq.phase === 'on' ? (sq.tactic ?? '').toUpperCase() : 'calm';
 	ctx.fillText(`SQUAD ${play}`, x, 92);
 	ctx.fillText(`SCORE ${r.score.score}`, x, 114);
-	if (r.escape.state === 'running') ctx.fillText(`PULSE ${r.escape.pulse ? 'ready' : 'spent'}`, x, 136);
+	if (r.escape.state === 'running')
+		ctx.fillText(`PULSE ${r.escape.pulse ? 'ok' : '-'}  BREAK ${r.escape.charges} [Space]`, x, 136);
 	else if (r.escape.state === 'armed') ctx.fillText('→ the console', x, 136);
 	ctx.fillStyle = 'rgba(216,244,238,0.6)';
 	ctx.font = '12px "Courier New", monospace';
@@ -516,6 +595,9 @@ window.addEventListener('keydown', (e) => {
 	if (dir) {
 		e.preventDefault();
 		if (!held.includes(dir)) held.push(dir);
+	} else if (e.code === 'Space' || e.code === 'KeyE') {
+		e.preventDefault();
+		if (!e.repeat) breakthrough(run);
 	} else if (e.code === 'KeyR') {
 		run = newRun();
 		held.length = 0;
@@ -534,6 +616,7 @@ window.addEventListener('blur', () => (held.length = 0));
 		held.length = 0;
 		if (d) held.push(d);
 	},
+	breakthrough: () => breakthrough(run),
 	advance: (seconds: number) => {
 		for (let s = 0; s < seconds; s += 1 / 60) step(run, 1 / 60);
 	}

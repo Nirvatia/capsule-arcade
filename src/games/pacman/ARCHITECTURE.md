@@ -38,7 +38,8 @@ logic/
   station/   the station's rules: StationSquad (the squad's brain: it reads the hero's way,
              gives roles, runs the fence (a search for two lines over the maze graph), the
              ambush and the vent, the phantom, the escape's chase and interceptions; it steers
-             the hunting ghosts through GhostService.setSquadGuide), StationEscape (the hatch's charge, the console, the
+             the hunting ghosts through GhostService.setSquadGuide), EscapeRush (the escape's breakout: 1-4 more running at the hero
+             and at his way, kept off his breakthrough lane), StationEscape (the hatch's charge, the console, the
              route laid anew off it, the doors, the pulse, the restart); the older StationService
              (the ghost version: HP and the rewind, the beam, flares, cocoons, phases, the super
              flare) and stationBeam, to be replaced; SwarmField and HoundPack (dropped

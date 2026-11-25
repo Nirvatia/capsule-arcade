@@ -333,22 +333,23 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   the eaten corridors into the place to watch.
 - **Caught** before the escape: the station's three hits (its own, not the run's lives); the
   third ends the level without the reward (the hell's rule), the run goes on.
-- **The escape**, a scene: the charge is full, the alarm turns the station red, the console
-  lights. The hero runs to it; then a **lit route** runs from it to the hatch (laid out per maze
-  by hand, strip lights on the floor), bulkhead doors along it begin to close as he nears (at
-  full speed he beats each one), and the squad comes after him as one train. Made easy on
-  purpose, so a long level is never lost at its very end:
-  - a wrong turn: the route rebuilds from where he is (the lights run anew);
-  - the first touch is forgiven: the hero's one-shot **pulse** goes off by itself, throws the
-    squad back and shoos any mimic off the route;
-  - a second touch: the escape starts over from the console, the squad reset, no hit lost.
-    He goes out through the hatch: the level's end and its reward. The train only ever comes from
-    behind (it may not step on his way ahead), at near his speed (0.95); now and then one leaves
-    it and dashes (1.25) down a side corridor to a junction ahead on his route: the junction
-    blinks red 1.5 s first, so a quick or watchful runner is past it or turns off. The alarm
-    holds the squad a moment (a 1.5 s head start); a restart stuns it (3 s); stunned or held
-    creatures do not bite. In the prototype the console is at the bottom of the maze (12,24) and
-    the hatch is the top-left vent (6,1): a run of about five seconds through four doors.
+- **The escape**, a scene (v3, 2026-11-25: the owner found v1 and v2 too easy): the charge is
+  full, the alarm turns the station red, the console lights. The hero runs to it; then the way
+  is **free** (no doors, no set route: strip lights only show the shortest way to the hatch,
+  laid anew from wherever he is). The squad goes into a **rage** (a little faster than he is;
+  half at him, half at his way six steps on; from anywhere, not only behind), and **1-4 more
+  break out** of the containment's door and the vents (one every 0.6 s), enraged the same way.
+  His answer is the **breakthrough** (Space, two per escape): for 2.5 s his way to the hatch
+  lights as a lane of white light; whoever stands on it is thrown to the side and stunned
+  (1.5 s), none may step on it while it is lit. Kept simple:
+  - the first touch is forgiven: his pulse goes off, throws off those within 3 tiles (stunned
+    1.2 s), the rest come on;
+  - a second touch: the escape starts over from the console (the breakthroughs back), the
+    squad held 3 s; no hit lost, the level is never lost in the escape.
+    He goes out through the hatch: the level's end and its reward. Measured with two bots: one
+    that runs the lights blind loses half its escapes to restarts; one that breaks through when
+    something is near (two per escape) gets out every time. The console is at the bottom of the
+    maze (12,24), the hatch is the top-left vent (6,1): about five seconds of running.
 - **Light** (no endless dark): the station runs on its working and emergency lights, the walls,
   the floor, the food and the creatures always read; mood comes from light that changes (a
   flicker as a play's tell, a lamp dying in one corridor, the alarm's red in the escape), fog and

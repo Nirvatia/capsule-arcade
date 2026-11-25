@@ -237,6 +237,38 @@ describe('the vent', () => {
 	});
 });
 
+describe('the roles', () => {
+	it('one that has reached its post hunts on and does not rock back to it', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 2);
+		s.ghosts.setSquadGuide(squad);
+		const inky = s.ghosts.list.find((g) => g.kind === 'INKY')!;
+		for (const g of s.ghosts.list) if (g !== inky) s.ghosts.freeze(g.kind, 1e6);
+		const post = { x: 6, y: 10 };
+		inky.teleportTo(post);
+		inky.setState('active');
+		// a cutter at its post, the hero far down the left side
+		squad.phase = 'on';
+		squad.tactic = 'ambush';
+		squad.left = 99;
+		squad.roles.set('INKY', 'cutter');
+		squad.targets.set('INKY', post);
+		const hero = { x: 1, y: 24 };
+		let back = 0;
+		let away = false;
+		for (let t = 0; t < 4; t += 1 / 60) {
+			squad.update(1 / 60, s.ghosts, hero, null);
+			s.ghosts.update(1 / 60);
+			const d = Math.abs(inky.tile.x - post.x) + Math.abs(inky.tile.y - post.y);
+			if (d >= 2) away = true;
+			if (away && d === 0) back += 1;
+		}
+		expect(away).toBe(true);
+		expect(back).toBe(0);
+	});
+});
+
 describe('a power cell', () => {
 	it('breaks the tactic: the beams go dark, the hidden come out', () => {
 		const s = station();

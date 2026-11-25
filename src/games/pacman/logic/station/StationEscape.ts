@@ -15,7 +15,10 @@ export const ESCAPE_TUNE = {
 	/** From this much closed a door stops him. */
 	blocks: 0.6,
 	/** Route steps between doors (and before the first). */
-	spacing: 6
+	spacing: 6,
+	/** The breakthrough: how many per escape, how long its lane stays lit. */
+	charges: 2,
+	lane: 2.5
 } as const;
 
 export type EscapeState = 'charging' | 'armed' | 'running' | 'out';
@@ -52,12 +55,34 @@ export class StationEscape {
 	/** The one-shot pulse is still his. */
 	pulse = true;
 	restarts = 0;
+	/** The breakthrough's lit lane to the hatch (none may step on it), and the charges left. */
+	lane: { tiles: Set<string>; route: GhostTile[]; left: number } | null = null;
+	charges: number = ESCAPE_TUNE.charges;
 
 	constructor(
 		private readonly world: EscapeWorld,
 		readonly console: GhostTile,
-		readonly hatch: GhostTile
+		readonly hatch: GhostTile,
+		/** Bulkhead doors along the route (off: the way is free). */
+		private readonly withDoors = true
 	) {}
+
+	/** The breakthrough: the way from him to the hatch lights as a lane for a moment. */
+	useLane(hero: GhostTile): boolean {
+		if (this.state !== 'running' || this.charges <= 0) return false;
+		const keep = this.route;
+		if (!this.layRoute(hero)) return false;
+		const route = this.route;
+		this.route = keep.length ? keep : route;
+		this.charges -= 1;
+		this.lane = { tiles: new Set(route.map((t) => key(t.x, t.y))), route, left: ESCAPE_TUNE.lane };
+		return true;
+	}
+
+	/** The lane is lit on the tile: no creature steps there. */
+	laneBlocks(x: number, y: number): boolean {
+		return this.lane !== null && this.lane.tiles.has(key(x, y));
+	}
 
 	/** Eaten of all the food. */
 	setFood(eaten: number, total: number): void {
@@ -83,6 +108,10 @@ export class StationEscape {
 			this.start();
 			ev.started = true;
 			return ev;
+		}
+		if (this.lane) {
+			this.lane.left -= dt;
+			if (this.lane.left <= 0) this.lane = null;
 		}
 		if (this.state !== 'running') return ev;
 		if (hero.x === this.hatch.x && hero.y === this.hatch.y) {
@@ -145,9 +174,15 @@ export class StationEscape {
 	private start(): void {
 		this.state = 'running';
 		this.pulse = true;
+		this.charges = ESCAPE_TUNE.charges;
+		this.lane = null;
 		this.layRoute(this.console);
 		this.doors = [];
-		for (let i = ESCAPE_TUNE.spacing; i < this.route.length - 2; i += ESCAPE_TUNE.spacing) {
+		for (
+			let i = ESCAPE_TUNE.spacing;
+			this.withDoors && i < this.route.length - 2;
+			i += ESCAPE_TUNE.spacing
+		) {
 			const t = this.route[i];
 			this.doors.push({ x: t.x, y: t.y, closed: 0, passed: false });
 		}

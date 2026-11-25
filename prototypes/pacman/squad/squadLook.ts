@@ -374,3 +374,52 @@ export function drawPhantom(g: Ctx, x: number, y: number, S: number, t: number):
 	g.arc(x, y, S * (0.42 + 0.05 * Math.sin(t * 7)), 0, TAU);
 	g.stroke();
 }
+
+/** The breakthrough's lane: the way to the hatch as a corridor of white light, fading at its end. */
+export function drawLane(g: Ctx, pts: ReadonlyArray<{ x: number; y: number }>, S: number, t: number, left: number): void {
+	if (pts.length < 2) return;
+	const a = Math.min(1, left / 0.5);
+	g.save();
+	g.globalCompositeOperation = 'lighter';
+	g.lineCap = 'round';
+	g.lineJoin = 'round';
+	for (const [w, al] of [
+		[0.95, 0.12],
+		[0.6, 0.22],
+		[0.22, 0.75]
+	]) {
+		g.strokeStyle = `rgba(190,255,245,${al * a * (0.9 + 0.1 * Math.sin(t * 20))})`;
+		g.lineWidth = S * w;
+		g.beginPath();
+		pts.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
+		g.stroke();
+	}
+	g.restore();
+}
+
+const RUNNER = ['#b07cff', '#ff7aa8', '#7ad7ff', '#ffd27a'];
+
+/** One of the breakout (placeholder): a smaller disc with a hot rim, its eyes red with rage. */
+export function drawRunner(g: Ctx, x: number, y: number, S: number, t: number, stunned: boolean, id: number): void {
+	const r = S * 0.36;
+	g.save();
+	g.globalAlpha = stunned ? 0.5 + 0.3 * Math.sin(t * 12) : 1;
+	g.fillStyle = 'rgba(0,0,0,0.35)';
+	g.beginPath();
+	g.ellipse(x + S * 0.05, y + S * 0.08, r, r * 0.9, 0, 0, TAU);
+	g.fill();
+	g.fillStyle = RUNNER[id % RUNNER.length];
+	g.beginPath();
+	g.arc(x, y, r, 0, TAU);
+	g.fill();
+	g.strokeStyle = `rgba(255,80,60,${0.6 + 0.4 * Math.sin(t * 9 + id)})`;
+	g.lineWidth = S * 0.06;
+	g.stroke();
+	for (const side of [-1, 1]) {
+		g.fillStyle = stunned ? '#ffffff' : '#ff3b2e';
+		g.beginPath();
+		g.ellipse(x + side * r * 0.36, y - r * 0.15, r * 0.2, r * 0.14, side * 0.4, 0, TAU);
+		g.fill();
+	}
+	g.restore();
+}

@@ -47,6 +47,9 @@ export const SQUAD_TUNE = {
 	lurk: 8,
 	/** The escape's train: its leader's speed against the hero's (the cars keep up). */
 	chaseLead: 0.95,
+	/** The escape in a rage: all hunt at this speed, half at him, half at his way ahead. */
+	rage: 1.08,
+	rageCut: 6,
 	/** The escape's interception: the warning on the junction ahead, s; between two, s; how far ahead, steps. */
 	warn: 1.5,
 	interceptFirst: 1.2,
@@ -143,6 +146,8 @@ export class StationSquad implements SquadGuide {
 	intercept: { kind: GhostKind; x: number; y: number; warn: number; age: number } | null = null;
 	private interceptIn: number = SQUAD_TUNE.interceptEvery;
 	private route: (() => readonly GhostTile[]) | null = null;
+	/** The escape in a rage (no 'from behind', no interceptions): the lit lane they may not step on. */
+	rage: { lane: (x: number, y: number) => boolean } | null = null;
 	leader: GhostKind | null = null;
 	readonly trail: GhostTile[] = [];
 	private last: SquadTactic | null = null;
@@ -150,6 +155,8 @@ export class StationSquad implements SquadGuide {
 	private graph: { adj: Int32Array[]; seen: Uint32Array; stamp: number; stack: Int32Array } | null =
 		null;
 	private readonly harmlessFor = new Map<GhostKind, number>();
+	/** Reached its post: it hunts on from there and is not sent back (else it rocks at the post). */
+	private readonly reached = new Set<GhostKind>();
 	private ghosts: readonly GhostModel[] = [];
 	private hero: GhostTile = { x: 0, y: 0 };
 	private heroFacing: GhostDirection | null = null;
@@ -172,6 +179,7 @@ export class StationSquad implements SquadGuide {
 		this.end(ghosts, 0);
 		this.chasing = false;
 		this.ahead = null;
+		this.rage = null;
 	}
 
 	/**
@@ -181,11 +189,13 @@ export class StationSquad implements SquadGuide {
 	chase(
 		ghosts: SquadGhosts,
 		ahead: ((x: number, y: number) => boolean) | null = null,
-		route: (() => readonly GhostTile[]) | null = null
+		route: (() => readonly GhostTile[]) | null = null,
+		rage: { lane: (x: number, y: number) => boolean } | null = null
 	): void {
 		this.end(ghosts, 0);
 		this.ahead = ahead;
 		this.route = route;
+		this.rage = rage;
 		this.intercept = null;
 		this.interceptIn = SQUAD_TUNE.interceptFirst;
 		this.chasing = true;
@@ -233,7 +243,7 @@ export class StationSquad implements SquadGuide {
 		this.foreseen = this.foresee();
 		if (this.chasing) {
 			this.followLeader();
-			this.updateIntercept(dt);
+			if (!this.rage) this.updateIntercept(dt);
 			return events;
 		}
 		this.updateHidden(dt, ghosts, events);
@@ -279,7 +289,12 @@ export class StationSquad implements SquadGuide {
 			case 'fencer':
 				if (target && (target.x !== ghost.tile.x || target.y !== ghost.tile.y))
 					return this.stepTo(ghost, target);
-				return role === 'fencer' ? null : this.stepTo(ghost, this.hero);
+				if (role === 'fencer') return null;
+				if (target) {
+					this.targets.delete(ghost.kind);
+					this.reached.add(ghost.kind);
+				}
+				return this.stepTo(ghost, this.hero);
 			default:
 				return null;
 		}
@@ -287,6 +302,7 @@ export class StationSquad implements SquadGuide {
 
 	speedFactor(ghost: GhostModel): number {
 		if (this.chasing) {
+			if (this.rage) return SQUAD_TUNE.rage;
 			if (this.intercept?.kind === ghost.kind) return SQUAD_TUNE.dash;
 			return ghost.kind === this.leader ? SQUAD_TUNE.chaseLead : SQUAD_TUNE.chaseLead * 1.08;
 		}
@@ -374,6 +390,7 @@ export class StationSquad implements SquadGuide {
 	private plan(tactic: SquadTactic, ghosts: SquadGhosts): void {
 		this.roles.clear();
 		this.targets.clear();
+		this.reached.clear();
 		const pool = this.hunters();
 		const byDist = pool
 			.map((g) => ({ g, d: this.distance(g.tile, this.hero) }))
@@ -463,6 +480,7 @@ export class StationSquad implements SquadGuide {
 		this.beams = [];
 		this.roles.clear();
 		this.targets.clear();
+		this.reached.clear();
 		this.openWay = null;
 		if (this.tactic) this.last = this.tactic;
 		this.tactic = null;
@@ -644,7 +662,7 @@ export class StationSquad implements SquadGuide {
 		this.openWay = open;
 		const shut = exits.filter((e) => e !== open);
 		const herders = [...this.roles]
-			.filter(([, r]) => r === 'hunter' || r === 'cutter')
+			.filter(([kind, r]) => (r === 'hunter' || r === 'cutter') && !this.reached.has(kind))
 			.map(([kind]) => kind);
 		const free = new Set(shut.map((_, i) => i));
 		for (const kind of herders) {
@@ -884,6 +902,17 @@ export class StationSquad implements SquadGuide {
 	}
 
 	private chaseStep(ghost: GhostModel): GhostDirection | null {
+		if (this.rage) {
+			// in a rage: the even ones at him, the odd ones at his way ahead
+			const order = this.hunters().sort((a, b) => a.kind.localeCompare(b.kind));
+			const i = order.indexOf(ghost);
+			const way = this.route?.() ?? [];
+			const goal =
+				i % 2 === 1 && way.length > 1
+					? way[Math.min(way.length - 1, SQUAD_TUNE.rageCut)]
+					: this.hero;
+			return this.stepTo(ghost, goal);
+		}
 		const ic = this.intercept;
 		if (ic && ic.kind === ghost.kind) {
 			if (ghost.tile.x !== ic.x || ghost.tile.y !== ic.y) return this.stepTo(ghost, ic);
@@ -905,6 +934,12 @@ export class StationSquad implements SquadGuide {
 
 	/** The world the squad plans in: in the chase, his way ahead is closed to it. */
 	private ways(): RouteWorld {
+		const lane = this.chasing ? this.rage?.lane : null;
+		if (lane)
+			return {
+				walkable: (x, y) => this.world.walkable(x, y) && !lane(x, y),
+				teleport: (x, y) => this.world.teleport(x, y)
+			};
 		const ahead = this.chasing ? this.ahead : null;
 		if (!ahead) return this.world;
 		return {

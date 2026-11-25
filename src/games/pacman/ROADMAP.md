@@ -98,6 +98,11 @@ last (see Later).
          blind runner loses the pulse in most escapes, never the escape. After the owner's
          play: tune, then delete the hounds and the swarm (pages, `HoundPack`, `SwarmField`,
          `stationHound`, `stationSwarm`). The tripwire and the shadow are in reserve.
+         The owner played v2 (2026-11-25): much better; two creatures stuck rocking at their
+         posts (fixed: one that reaches its post hunts on, tested), the escape still easy.
+         **Escape v3** (same day, awaits his play): a free way, the squad in a rage, 1-4 more
+         breaking out (`logic/station/EscapeRush`), his breakthrough lane (Space, two per
+         escape), a pulse that reaches 3 tiles only (`DESIGN.md` §7a).
       3. **The creatures' look**: tile-sized, no legs, four tempers; a prototype (the void
          jellyfish of the `creatures` page is a starting point), the owner picks.
       4. A fourth tactic if the three need company (the tripwire or the shadow).
