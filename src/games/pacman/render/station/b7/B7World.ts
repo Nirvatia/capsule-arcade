@@ -56,12 +56,16 @@ export class B7World {
 	private lightMap: HTMLCanvasElement | null = null;
 	private bloom: HTMLCanvasElement | null = null;
 
-	constructor(grid: GridMatrix) {
+	/** `bakeHive`: another infestation at its fullest, in stage space (the mock-up's by default). */
+	constructor(
+		grid: GridMatrix,
+		bakeHive?: (scene: ReturnType<typeof createB7Scene>) => HTMLCanvasElement
+	) {
 		this.scene = createB7Scene(grid);
 		this.base = this.scene.bakeBaseScene();
 		this.grain = this.scene.buildGrainTile();
 		// the infestation at its fullest, baked once with the level
-		this.hive = this.scene.bakeRestrainedHivePhase(3);
+		this.hive = bakeHive ? bakeHive(this.scene) : this.scene.bakeRestrainedHivePhase(3);
 	}
 
 	setQuality(quality: RenderQuality): void {

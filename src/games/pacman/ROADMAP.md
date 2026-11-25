@@ -134,6 +134,20 @@ last (see Later).
          hounds and the swarm.
       3. **The creatures' look**: done in the game as the glass albino (above); tuning after
          the owner's play.
+         The owner's first play (2026-11-25), done the same day: the albinos glide
+         (`render/station/creatureMotion`, the mock-up's shake slowed); a touch costs one of three
+         HP, in the escape too (no restart; safe 1.5 s; the screen's edges pulse red); the escape's
+         lure on the fire key (two per escape: far from him, off his way; the enraged run to it
+         round him); no route lights; the phantom is the glass body almost clear; the infection
+         is one value from the hatch's charge and slowly the time, revealing the infestation from
+         the lair out and sinking the light (lamps fail one by one, the beacons rise); the power
+         cells are cold blue-white plasma; synthesised music (calm, a dread layer by the
+         infection, the escape) and effects (`audio/StationSynth`, OST.md). **Awaiting the
+         owner** (`prototypes/pacman/station-b7`): the infestation B, the infection in the
+         bulkheads (`veins.ts`: veins under the wall plates, sick amber wall edges, spores on a few
+         crests, the floor clean but a thin stain), to replace the mock-up's once approved
+         (`B7World`'s `bakeHive`); the station's HUD (`hudLook.ts`: HP cells that crack, the
+         hatch's charge, the infection, the alarm and the lures), into the game's HUD after.
       4. A fourth tactic if the three need company (the tripwire or the shadow).
       5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
