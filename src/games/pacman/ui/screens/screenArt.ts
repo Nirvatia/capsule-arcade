@@ -90,6 +90,7 @@ export function knobFaceArt(t: SeasonTheme): string {
 
 /** A banner stretched between two posts (the READY screen): the posts, the cloth, its shadow. */
 export function bannerSpanArt(t: SeasonTheme, x: number, y: number, w: number, h: number): string {
+	if (t.key === 'station') return plateSpanArt(t, x, y, w, h);
 	let s = '';
 	for (const px of [x - 4, x + w + 4]) {
 		s += `<rect x="${px - 8}" y="${y - 24}" width="16" height="${h + 124}" rx="5" fill="${t.post}" stroke="${t.ink}" stroke-width="3.4"/><rect x="${px - 4.5}" y="${y - 22}" width="4.5" height="${h + 120}" fill="#fff" opacity=".22"/>`;
@@ -101,6 +102,20 @@ export function bannerSpanArt(t: SeasonTheme, x: number, y: number, w: number, h
 	s += `<path d="${d}" fill="${t.cloth}" stroke="${t.ink}" stroke-width="4" stroke-linejoin="round"/>`;
 	s += `<path d="M${x - 4} ${y} Q${x + w / 2} ${y + sag} ${x + w + 4} ${y} L${x + w + 4} ${y + h * 0.3} Q${x + w / 2} ${y + h * 0.3 + sag} ${x - 4} ${y + h * 0.3}Z" fill="#fff" opacity=".22"/>`;
 	s += `<path d="M${x - 4} ${y + h * 0.78} Q${x + w / 2} ${y + h * 0.78 + sag} ${x + w + 4} ${y + h * 0.78} L${x + w + 4} ${y + h} Q${x + w / 2} ${y + h + sag} ${x - 4} ${y + h}Z" fill="${t.clothShade}" opacity=".8"/>`;
+	return s;
+}
+
+/** The station's READY: a riveted steel plate with hazard bands along its edges, no posts. */
+function plateSpanArt(t: SeasonTheme, x: number, y: number, w: number, h: number): string {
+	let s = `<rect x="${x + 6}" y="${y + 8}" width="${w}" height="${h}" rx="5" fill="#000" opacity=".3"/>`;
+	s += boardArt(t, 'scr-ready-plate', x, y, w, h, { seed: 7, posts: false, r: 5, j: 0 });
+	const id = 'scr-ready-hazard';
+	s += `<clipPath id="${id}"><rect x="${x + 4}" y="${y + 4}" width="${w - 8}" height="8"/><rect x="${x + 4}" y="${y + h - 12}" width="${w - 8}" height="8"/></clipPath>`;
+	s += `<g clip-path="url(#${id})"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#16140c"/>`;
+	for (let i = -h; i < w + h; i += 16) {
+		s += `<path d="M${x + i} ${y + h} l8 0 l${h} ${-h} l-8 0z" fill="#d6a834" opacity=".85"/>`;
+	}
+	s += '</g>';
 	return s;
 }
 

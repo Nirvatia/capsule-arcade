@@ -148,10 +148,12 @@ last (see Later).
          stain; to be refined later); the station has its own HUD (`StationHud`: the game's boards
          in riveted steel, square and still, smaller; `StationBar` above the maze: the hatch's
          charge and the infection, the alarm in the escape; the HP as hearts, the one just lost
-         flashing; the lure's dial in the escape); the in-canvas readout is gone. **Awaiting the
-         owner**: the power cell's warm colour (the cold one did not fit): gold, ember or rose
-         (`prototypes/pacman/station-b7?cell=`); `B7World`'s scene takes it through
-         `setCellPalette`.
+         flashing; the lure's dial in the escape); the in-canvas readout is gone. The power cell is the hot coral
+         (the owner's pick). The third look (same day): no teleport into hiding: the lurker walks
+         to its tile and folds there, the venter walks into the nearest vent and comes out of the
+         one by his way (`StationSquad.going`; tested); a disguised lurker glides its creep; the
+         screens (READY, pause, the menu's plates) are the station's steel, square and still (a
+         riveted plate with hazard bands for READY).
       4. A fourth tactic if the three need company (the tripwire or the shadow).
       5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors

@@ -221,6 +221,7 @@
 {/snippet}
 
 <div
+	class:still={snap.world === 'station'}
 	class="screens"
 	style:--label={theme.label}
 	style:--ink-line={theme.ink}
@@ -621,6 +622,11 @@
 		font-weight: 600;
 		fill: #f3f0e0;
 		opacity: 0.92;
+	}
+	/* the station's screens are still: steel does not sway */
+	.still .sway,
+	.still :global(.bob) {
+		animation: none;
 	}
 	.sway {
 		transform-box: fill-box;

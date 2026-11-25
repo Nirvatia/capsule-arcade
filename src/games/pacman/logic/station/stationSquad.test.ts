@@ -192,7 +192,19 @@ describe('the ambush', () => {
 		(squad as unknown as { pick: () => string }).pick = () => 'ambush';
 		squad.left = 0;
 		squad.update(0.01, s.ghosts, hero, 'LEFT');
-		run(s, squad, hero, SQUAD_TUNE.tell + SQUAD_TUNE.fade + 0.1);
+		// no teleport: it is not hidden yet, it walks to its tile
+		expect(squad.hiddenList).toHaveLength(0);
+		const w = squad.going.find((g) => g.as !== 'vent')!;
+		expect(w).toBeDefined();
+		const walker = s.ghosts.list.find((g) => g.kind === w.kind)!;
+		const far = Math.abs(walker.tile.x - w.to.x) + Math.abs(walker.tile.y - w.to.y);
+		let hidAt: { x: number; y: number } | null = null;
+		run(s, squad, hero, SQUAD_TUNE.walk + SQUAD_TUNE.fade + 0.5, () => {
+			if (!hidAt && squad.hidden(w.kind)) hidAt = { ...walker.tile };
+		});
+		// it went into hiding on its tile, after the walk
+		expect(far).toBeGreaterThan(0);
+		expect(hidAt).toEqual({ x: w.to.x, y: w.to.y });
 		const h = squad.hiddenList.find((hh) => hh.as !== 'vent');
 		expect(h).toBeDefined();
 		expect(h!.state).toBe('hidden');
@@ -227,12 +239,12 @@ describe('the first lurkers teach', () => {
 			(squad as unknown as { pick: () => string }).pick = () => 'ambush';
 			squad.left = 0;
 			squad.update(0.01, s.ghosts, hero, 'LEFT');
-			const h = squad.hiddenList.find((hh) => hh.as !== 'vent');
+			const h = squad.going.find((hh) => hh.as !== 'vent');
 			expect(h).toBeDefined();
 			if (i === 0) {
 				expect(h!.fade).toBe(SQUAD_TUNE.lessonFade);
 				// at least `lessonSettle` steps along his way
-				expect(Math.abs(h!.x - hero.x) + Math.abs(h!.y - hero.y)).toBeGreaterThanOrEqual(
+				expect(Math.abs(h!.spot.x - hero.x) + Math.abs(h!.spot.y - hero.y)).toBeGreaterThanOrEqual(
 					SQUAD_TUNE.lessonSettle
 				);
 			} else {
@@ -258,7 +270,19 @@ describe('the vent', () => {
 		(squad as unknown as { pick: () => string }).pick = () => 'vent';
 		squad.left = 0;
 		squad.update(0.01, s.ghosts, hero, 'RIGHT');
-		run(s, squad, hero, SQUAD_TUNE.tell + SQUAD_TUNE.fade + 0.1);
+		// no teleport: the venter walks to the nearest vent's mouth first
+		expect(squad.hiddenList).toHaveLength(0);
+		const w = squad.going.find((gg) => gg.as === 'vent')!;
+		expect(w).toBeDefined();
+		const walker = s.ghosts.list.find((gg) => gg.kind === w.kind)!;
+		let wentInAt: { x: number; y: number } | null = null;
+		const until = SQUAD_TUNE.walk + SQUAD_TUNE.fade + 0.2;
+		for (let t = 0; t < until && squad.hidden(w.kind)?.state !== 'hidden'; t += 1 / 60) {
+			squad.update(1 / 60, s.ghosts, hero, null);
+			s.ghosts.update(1 / 60);
+			if (!wentInAt && squad.hidden(w.kind)) wentInAt = { ...walker.tile };
+		}
+		expect(wentInAt).toEqual({ x: w.to.x, y: w.to.y });
 		const h = squad.hiddenList.find((hh) => hh.as === 'vent');
 		expect(h).toBeDefined();
 		expect(s.world.vent(h!.x, h!.y)).toBe(true);

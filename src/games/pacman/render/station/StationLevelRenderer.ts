@@ -47,6 +47,9 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 	private quality: RenderQuality = 'high';
 	/** How each creature is drawn moving (the squad by kind, the rush by id). */
 	private readonly motions = new Map<string, CreatureMotion>();
+	/** Where each lurker's disguise is drawn (it glides a creep), and the frame's step, s. */
+	private readonly lying = new Map<GhostKind, { x: number; y: number }>();
+	private lastDt = 1 / 60;
 
 	constructor(shared: SharedLayers) {
 		this.shared = shared;
@@ -60,6 +63,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 
 	render(frame: RenderFrame): GridLayout {
 		const { ctx, state, level, progress, time, dt } = frame;
+		this.lastDt = dt;
 		const world = this.worldFor(frame.season.grid);
 		world.resize(frame.width, frame.height, frame.pixelRatio);
 		const layout = world.layout;
@@ -202,6 +206,13 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		const wall = (x: number, y: number) => grid[y]?.[x] === 'WL';
 		for (const h of run.squad.hiddenList) {
 			if (h.as === 'vent' || h.state !== 'hidden') continue;
+			// a creep along the eaten corridor: it glides there, it does not jump
+			const prev = this.lying.get(h.kind);
+			const at = prev && Math.hypot(prev.x - h.x, prev.y - h.y) <= 1.5 ? prev : { x: h.x, y: h.y };
+			const step = Math.min(1, this.lastDt * 2.2);
+			at.x += (h.x - at.x) * step;
+			at.y += (h.y - at.y) * step;
+			this.lying.set(h.kind, at);
 			const tell = mimicTell(
 				h.x,
 				h.y,
@@ -213,8 +224,8 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 			);
 			const jx = tell.tremble ? Math.sin(time * 31) * tell.tremble : 0;
 			const jy = tell.tremble ? Math.cos(time * 27) * tell.tremble : 0;
-			const x = scene.MAZE_X + (h.x + 0.5 + tell.dx + jx) * T;
-			const y = scene.MAZE_Y + (h.y + 0.5 + tell.dy + jy) * T;
+			const x = scene.MAZE_X + (at.x + 0.5 + tell.dx + jx) * T;
+			const y = scene.MAZE_Y + (at.y + 0.5 + tell.dy + jy) * T;
 			// a soft shadow, larger than the spore's own crisp one
 			c.save();
 			c.fillStyle = `rgba(0,0,0,${0.55 * tell.shadow})`;
@@ -350,7 +361,19 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 			c.restore();
 		};
 		if (hidden) {
-			if (hidden.as === 'vent') return;
+			if (hidden.as === 'vent') {
+				// it goes into the vent's grille: it shrinks and fades where it stands
+				if (hidden.state === 'fading') {
+					const k = Math.min(1, hidden.time / hidden.fade);
+					ctx.save();
+					ctx.globalAlpha = 1 - k;
+					ctx.translate(sx(p.x), sy(p.y));
+					ctx.scale(1 - 0.5 * k, 1 - 0.5 * k);
+					drawAlbino(ctx, 0, 0, S, g.kind, 'hunt', time, { angle, bodyTime });
+					ctx.restore();
+				}
+				return;
+			}
 			if (hidden.state === 'fading') {
 				// the fold into a spore (the mock-up's mimicry), slow on the run's first lurker
 				const k = Math.min(1, hidden.time / hidden.fade);

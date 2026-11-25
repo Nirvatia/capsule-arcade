@@ -3246,13 +3246,14 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 		readonly ring: string;
 		readonly light: string;
 	}
+	// the game's: the hot coral (the owner's pick, 2026-11-25), apart from the amber spores
 	let cell: CellPalette = {
-		aura: '214, 240, 255',
-		halo: '122, 190, 255',
-		rim: '60, 120, 220',
-		core: ['#e6f6ff', '#7cc8ff', '#2a5fb8'],
-		ring: 'rgba(200, 238, 255, 0.95)',
-		light: '150, 205, 255'
+		aura: '255, 200, 170',
+		halo: '255, 110, 70',
+		rim: '200, 50, 30',
+		core: ['#ffe1cf', '#ff7a4a', '#b22a14'],
+		ring: 'rgba(255, 214, 190, 0.95)',
+		light: '255, 130, 90'
 	};
 	const setCellPalette = (p: CellPalette) => {
 		cell = p;
@@ -3280,7 +3281,7 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 			const pulse = 0.5 + 0.5 * Math.sin(time * 2.1 + i * 1.4);
 
 			g.save();
-			// A cold localized plasma aura (the game: the owner's pick, cold blue-white, 2026-11-25)
+			// the plasma's localized aura
 			const aura = g.createRadialGradient(cx, cy, 3, cx, cy, R * 2.15);
 			aura.addColorStop(0, `rgba(${cell.aura}, ${0.34 + 0.14 * pulse})`);
 			aura.addColorStop(0.55, `rgba(${cell.halo}, ${0.14 + 0.08 * pulse})`);
@@ -3334,7 +3335,7 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 			g.arc(cx, cy, R * 0.72, 0, TAU);
 			g.fill();
 
-			// one large crystal-clear glass core of cold blue-white plasma
+			// one large crystal-clear glass core of plasma
 			const coreR = R * 0.61;
 			const core = g.createRadialGradient(cx - 1.2, cy - 1.3, 0.4, cx, cy, coreR);
 			core.addColorStop(0, '#ffffff');

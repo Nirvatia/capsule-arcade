@@ -103,6 +103,19 @@ export interface Hidden {
 	creepIn: number;
 }
 
+/** A creature walking to where it will hide. */
+export interface Going {
+	readonly kind: GhostKind;
+	/** The tile it walks to (the lurker's tile, a vent's mouth). */
+	readonly to: GhostTile;
+	/** Where it then lies hidden (the same tile, or the vent it comes out of). */
+	readonly spot: GhostTile;
+	readonly as: 'food' | 'cell' | 'vent';
+	readonly fade: number;
+	readonly lesson: number;
+	time: number;
+}
+
 /** A beam of the fence: a whole row (`axis` 'row', at `at` = y) or column. */
 export interface Beam {
 	readonly axis: 'row' | 'col';
@@ -146,6 +159,11 @@ export class StationSquad implements SquadGuide {
 	/** Where each driving role is heading (the debug view shows them; the ambush's open way too). */
 	readonly targets = new Map<GhostKind, GhostTile>();
 	readonly hiddenList: Hidden[] = [];
+	/**
+	 * On their way into hiding (the owner: no teleport): the lurker walks to its tile, the venter
+	 * to the nearest vent's mouth; there they fold out of sight (`hiddenList`).
+	 */
+	readonly going: Going[] = [];
 	beams: Beam[] = [];
 	/** The way the hero is read to take, from his tile on. */
 	foreseen: GhostTile[] = [];
@@ -262,6 +280,7 @@ export class StationSquad implements SquadGuide {
 			if (!this.rage) this.updateIntercept(dt);
 			return events;
 		}
+		this.updateGoing(dt, ghosts);
 		this.updateHidden(dt, ghosts, events);
 		this.updateBeams(dt, ghosts);
 		this.left -= dt;
@@ -276,7 +295,7 @@ export class StationSquad implements SquadGuide {
 			this.next = next;
 			this.phase = 'tell';
 			this.left = SQUAD_TUNE.tell;
-			this.plan(next, ghosts);
+			this.plan(next);
 			// nothing to play it with after all: back to the calm
 			if (this.roles.size === 0) this.end(ghosts, 0);
 		} else if (this.phase === 'tell') {
@@ -300,6 +319,12 @@ export class StationSquad implements SquadGuide {
 		switch (role) {
 			case 'hunter':
 				return this.stepTo(ghost, this.hero);
+			case 'lurker':
+			case 'venter': {
+				// on its way to hide
+				const w = this.going.find((g) => g.kind === ghost.kind);
+				return w ? this.stepTo(ghost, w.to) : this.stepTo(ghost, this.hero);
+			}
 			case 'cutter':
 			case 'phantom':
 			case 'fencer':
@@ -324,6 +349,8 @@ export class StationSquad implements SquadGuide {
 		}
 		// the fencers hurry to their lines
 		if (this.role(ghost.kind) === 'fencer' && this.phase !== 'calm') return 1.15;
+		// so do those going into hiding
+		if (this.going.some((g) => g.kind === ghost.kind)) return 1.15;
 		return 1;
 	}
 
@@ -403,7 +430,7 @@ export class StationSquad implements SquadGuide {
 	}
 
 	/** The roles and the targets of the tactic told now. */
-	private plan(tactic: SquadTactic, ghosts: SquadGhosts): void {
+	private plan(tactic: SquadTactic): void {
 		this.roles.clear();
 		this.targets.clear();
 		this.reached.clear();
@@ -448,45 +475,42 @@ export class StationSquad implements SquadGuide {
 		} else if (tactic === 'ambush') {
 			const spot = this.ambushSpot();
 			if (!spot) return;
-			// the farthest goes into hiding; the rest herd
-			const lurker = byDist[byDist.length - 1].g;
+			// the one nearest the tile (not the hunter at him) walks there to hide; the rest herd
+			const lurker = this.nearestTo(byDist, spot);
 			this.roles.set(lurker.kind, 'lurker');
-			ghosts.freeze(lurker.kind, 1e6);
-			this.hiddenList.push({
+			this.targets.set(lurker.kind, spot);
+			this.going.push({
 				kind: lurker.kind,
-				x: spot.x,
-				y: spot.y,
+				to: spot,
+				spot,
 				as: this.world.cell(spot.x, spot.y) ? 'cell' : 'food',
-				state: 'fading',
-				time: 0,
 				fade: this.ambushes === 0 ? SQUAD_TUNE.lessonFade : SQUAD_TUNE.fade,
 				lesson: Math.max(0, 1 - this.ambushes / SQUAD_TUNE.lessons),
-				creepIn: SQUAD_TUNE.creep
+				time: 0
 			});
 			this.ambushes += 1;
 			byDist
-				.slice(0, -1)
+				.filter((e) => e.g !== lurker)
 				.forEach((e, i) => this.roles.set(e.g.kind, i === 0 ? 'hunter' : 'cutter'));
 			this.herd();
 		} else {
 			const spot = this.ventSpot();
 			if (!spot) return;
-			const venter = byDist[byDist.length - 1].g;
+			// the one nearest a vent walks into it; it comes out of the one by his way
+			const { g: venter, mouth } = this.nearestVent(byDist);
 			this.roles.set(venter.kind, 'venter');
-			ghosts.freeze(venter.kind, 1e6);
-			this.hiddenList.push({
+			this.targets.set(venter.kind, mouth);
+			this.going.push({
 				kind: venter.kind,
-				x: spot.x,
-				y: spot.y,
+				to: mouth,
+				spot,
 				as: 'vent',
-				state: 'fading',
-				time: 0,
 				fade: SQUAD_TUNE.fade,
 				lesson: 0,
-				creepIn: 0
+				time: 0
 			});
 			byDist
-				.slice(0, -1)
+				.filter((e) => e.g !== venter)
 				.forEach((e, i) => this.roles.set(e.g.kind, i === 0 ? 'hunter' : 'cutter'));
 			// the cutter takes the junction past the vent, so the way leads him by it
 			const cut = this.foreseen[Math.min(this.foreseen.length - 1, 10)];
@@ -494,8 +518,77 @@ export class StationSquad implements SquadGuide {
 		}
 	}
 
+	/** Of those not at him (the nearest is the hunter), the one nearest `spot`. */
+	private nearestTo(byDist: Array<{ g: GhostModel; d: number }>, spot: GhostTile): GhostModel {
+		const pool = byDist.length > 1 ? byDist.slice(1) : byDist;
+		let best = pool[0].g;
+		let bd = Infinity;
+		for (const { g } of pool) {
+			const d = Math.abs(g.tile.x - spot.x) + Math.abs(g.tile.y - spot.y);
+			if (d < bd) {
+				bd = d;
+				best = g;
+			}
+		}
+		return best;
+	}
+
+	/** Of those not at him, the one nearest a vent's mouth, and that mouth. */
+	private nearestVent(byDist: Array<{ g: GhostModel; d: number }>): {
+		g: GhostModel;
+		mouth: GhostTile;
+	} {
+		const pool = byDist.length > 1 ? byDist.slice(1) : byDist;
+		let best = { g: pool[0].g, mouth: pool[0].g.tile as GhostTile, d: Infinity };
+		for (let y = 0; y < this.world.height; y += 1) {
+			for (let x = 0; x < this.world.width; x += 1) {
+				if (!this.world.vent(x, y)) continue;
+				const m = this.mouth({ x, y });
+				for (const { g } of pool) {
+					const d = Math.abs(g.tile.x - m.x) + Math.abs(g.tile.y - m.y);
+					if (d < best.d) best = { g, mouth: m, d };
+				}
+			}
+		}
+		return { g: best.g, mouth: best.mouth };
+	}
+
+	/** Those walking to hide: there, they fold out of sight; too long on the way, they hunt on. */
+	private updateGoing(dt: number, ghosts: SquadGhosts): void {
+		for (const w of [...this.going]) {
+			w.time += dt;
+			const ghost = this.ghosts.find((g) => g.kind === w.kind);
+			const drop = () => this.going.splice(this.going.indexOf(w), 1);
+			if (!ghost || ghost.state !== 'active') {
+				drop();
+				continue;
+			}
+			if (ghost.tile.x === w.to.x && ghost.tile.y === w.to.y) {
+				drop();
+				this.targets.delete(w.kind);
+				ghosts.freeze(w.kind, 1e6);
+				this.hiddenList.push({
+					kind: w.kind,
+					x: w.spot.x,
+					y: w.spot.y,
+					as: w.as,
+					state: 'fading',
+					time: 0,
+					fade: w.fade,
+					lesson: w.lesson,
+					creepIn: SQUAD_TUNE.creep
+				});
+			} else if (w.time > SQUAD_TUNE.walk) {
+				drop();
+				this.targets.delete(w.kind);
+				this.roles.set(w.kind, 'hunter');
+			}
+		}
+	}
+
 	/** The tactic ends: beams dark, the hidden out, roles off, calm. */
 	private end(ghosts: SquadGhosts, harmless: number): void {
+		this.going.length = 0;
 		for (const h of [...this.hiddenList]) this.reveal(h, ghosts, harmless);
 		for (const b of this.beams) ghosts.freeze(b.kind, 1e-6);
 		this.beams = [];
@@ -668,7 +761,8 @@ export class StationSquad implements SquadGuide {
 
 	/** The herders shut every way out of where he is but the one to the lurker. */
 	private herd(): void {
-		const lurk = this.hiddenList.find((h) => h.as !== 'vent');
+		const lurk =
+			this.hiddenList.find((h) => h.as !== 'vent') ?? this.going.find((g) => g.as !== 'vent')?.spot;
 		if (!lurk) return;
 		const exits = this.exits(this.hero);
 		if (exits.length === 0) return;

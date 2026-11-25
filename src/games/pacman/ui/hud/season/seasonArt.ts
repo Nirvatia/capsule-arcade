@@ -137,7 +137,17 @@ export function boardArt(
 ): string {
 	const seed = o.seed ?? 3;
 	const drop = o.drop ?? 40;
-	const d = rr(x, y, w, h, o.r ?? 14, o.j ?? 5, seed);
+	// the station's plates are cut straight: square corners, no wobble
+	const station = t.key === 'station';
+	const d = rr(
+		x,
+		y,
+		w,
+		h,
+		station ? Math.min(o.r ?? 14, 6) : (o.r ?? 14),
+		station ? 0 : (o.j ?? 5),
+		seed
+	);
 	const cid = `shud-${t.key}-${name}`;
 	let s = '';
 	if (o.posts !== false) {
