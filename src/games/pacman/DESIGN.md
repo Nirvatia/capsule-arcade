@@ -55,7 +55,7 @@ size of one tile.
 
 - A new game starts on level 1 with 3 lives and runs until the lives are gone.
 - Level `n` is a season: 1 summer, 2 autumn, 3 winter, 4 spring, then again
-  (`logic/level/SeasonCatalog.ts`). Every 5th level is a boss level, for both heroes: the hell or the station (§7a), picked at random per run and never the same boss twice in a row (`logic/level/BossCatalog.ts`). Boss levels do not count in the season cycle: season levels run 1–4, 6–9, 11–14, … The four season mazes `grid_01`–`grid_04` come one per season level: the first cycle in order, every later cycle in a random order (never the same maze twice in a row), so each run of four plays all four. The hell and the secret level keep the old maze for now.
+  (`logic/level/SeasonCatalog.ts`). Every 5th level is a boss level, for both heroes: the boss is picked at random per run from the finished bosses and never the same twice in a row while there are two (`logic/level/BossCatalog.ts`, `BOSS_ROTATION`). Now that is the hell alone: the station (§7a) is shelved, unfinished, and comes only from the dev panel. Boss levels do not count in the season cycle: season levels run 1–4, 6–9, 11–14, … The four season mazes `grid_01`–`grid_04` come one per season level: the first cycle in order, every later cycle in a random order (never the same maze twice in a row), so each run of four plays all four. The hell and the secret level keep the old maze for now.
 - Level 7 hides the way into the secret level (§8, the arcade); after it the run continues
   on the level after the one it was entered from.
 - Score and lives carry over between levels. Extra life at 10 000 points, then every
@@ -290,8 +290,8 @@ on rails broke the horror, the darkness hid the walls, the background and the en
 stealth does not fit a hero who never stops. Numbers are starting points, in
 `config/stationConfig.ts`.
 
-- **Place in the run**: a boss level. `BossCatalog` picks the boss of every 5th level (the hell
-  or the station), the same for both heroes.
+- **Place in the run**: shelved (2026-11-25, unfinished): out of `BOSS_ROTATION`, only the dev
+  panel's Station brings it. Back in the rotation when it is done.
 - **Heroes**: both get a look of their own for the station (prototyped first, the owner
   approves). Controls and the hero's speed are unchanged. The station's kit only: no energizer
   scare, no overdrive or hypnosis, no season abilities, no fruit, no Easter egg.
@@ -536,10 +536,30 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 Each new boss level is still Pac-Man in a maze, but with its own boss, mechanic and way to play;
 the hell is combat, so the others must not be. The order proposed (`ROADMAP.md`, part II, step 3):
 
-- **The station** (§7a): in the game; a swarm, a torch fed by the dots, four beacons, an escape.
+- **The station** (§7a): shelved, unfinished (dev panel only).
+- **A Bomberman style world, "the demolition yard"** (the next one; a proposal of 2026-11-25,
+  awaits the owner's approval, nothing settled):
+  - The idea: Pac-Man cannot fight, he lays bombs. Crates block many corridors; dots and
+    pickups lie behind them. The four ghosts hunt as usual; no energizers: the only defence is a
+    bomb left behind him. A bomb is a trap (the blast) and a barricade (no ghost walks through
+    it).
+  - Bombs: 1 at a time (up to 3 with pickups), laid on his tile with the ability button; a 2 s
+    fuse, a cross blast 2 tiles along the corridors (+1 per flame pickup), stopped by walls, the
+    first crate on a line breaks; a blast sets off a bomb it reaches (chains); his own blast
+    costs him a life. A ghost caught → eyes, 200..1600 within one blast or chain.
+  - Crates: the first is cramped and safe-ish, every crate blown opens the maze for the ghosts
+    too, so the level gets harder as it is cleared. A crate holds dots, a pickup (bomb +1, flame
+    +1, kick) or nothing.
+  - The end: the last dot lights the yard's big fuse, a short run to the exit (the lair's door).
+  - Open: a boss bomber who lays bombs of his own (combat again?) or none, as proposed.
+  - The look: a toy construction yard, top-down, daylight; sand and concrete, safety orange
+    and yellow, blue tarps (clear of the hell's reds); walls concrete blocks and steel beams;
+    crates wood with stencils; a round black bomb with a burning fuse; the blast a fire cross
+    with dust, planks flying, scorch marks staying on the floor; bolts for dots; ghosts in hard
+    hats with their own looks; the lair a site cabin; the teleport a drain pipe. Night: work
+    floodlights.
 - **Sharkboy and Lavagirl**: a tide of water and lava floods the tiles in waves, sharks patrol the
   water. Terrain, a playful tone, clear of the hell's reds.
-- **A Bomberman style world**: blasts along the maze's lines. To be thought through.
 
 Zombies were rejected (a horde with weapons is the hell again). Each world gets a one-page design
 the owner approves before code.

@@ -5,6 +5,12 @@ export type BossId = 'hell' | 'station';
 
 export const BOSSES: readonly BossId[] = ['hell', 'station'];
 
+/**
+ * The bosses a run draws from: the finished ones. The station is shelved (unfinished, 2026-11-25):
+ * only the dev panel brings it.
+ */
+export const BOSS_ROTATION: readonly BossId[] = ['hell'];
+
 /** Every HELL_LEVEL_INTERVAL-th level is a boss level, for both heroes. */
 export function isBossLevel(level: number): boolean {
 	return Number.isFinite(level) && level >= 1 && Math.floor(level) % HELL_LEVEL_INTERVAL === 0;
@@ -20,13 +26,14 @@ function pick(seed: number, index: number): number {
 
 /**
  * The boss of `level` in a run seeded `seed`, or null for a level that is not a boss level.
- * The pick is random per run but fixed by the seed, and never the same boss twice in a row.
- * `forced` (the dev panel) wins.
+ * The pick from `rotation` is random per run but fixed by the seed, and never the same boss twice
+ * in a row while there are two to choose from. `forced` (the dev panel) wins.
  */
 export function bossForLevel(
 	level: number,
 	seed: number,
-	forced: BossId | null = null
+	forced: BossId | null = null,
+	rotation: readonly BossId[] = BOSS_ROTATION
 ): BossId | null {
 	if (!isBossLevel(level)) {
 		return null;
@@ -37,8 +44,9 @@ export function bossForLevel(
 	const count = Math.floor(level) / HELL_LEVEL_INTERVAL;
 	let previous: BossId | null = null;
 	for (let k = 1; k <= count; k += 1) {
-		const pool = BOSSES.filter((boss) => boss !== previous);
-		previous = pool[Math.floor(pick(seed, k) * pool.length)] ?? pool[0];
+		const others = rotation.filter((boss) => boss !== previous);
+		const pool = others.length > 0 ? others : rotation;
+		previous = pool[Math.floor(pick(seed, k) * pool.length)] ?? pool[0] ?? null;
 	}
 	return previous;
 }

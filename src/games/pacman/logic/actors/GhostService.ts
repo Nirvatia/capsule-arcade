@@ -488,7 +488,8 @@ export class GhostService {
 				ghost.reset(spawn, 1);
 				return true;
 			}
-			return false;
+			// the way home may lie through a tunnel (`homeDirection` plans with them): take it, or
+			// the eyes rock at its mouth for good
 		}
 		if (ghost.state === 'hypnotized') {
 			const tile = ghost.tile;

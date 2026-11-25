@@ -156,8 +156,9 @@ export class MsPacmanHero extends Hero {
 	protected afterUpdate(dt: number): void {
 		this.windK += ((this.moving ? 1 : 0) - this.windK) * Math.min(1, dt * 5);
 		const emit = this.moving ? 1 : 0;
-		this.dust.push(this.x, this.y, this.time, emit);
-		this.ion.push(this.x, this.y, this.time, emit);
+		// a teleport's jump is no tail (the same reach as the sun's wind)
+		this.dust.push(this.x, this.y, this.time, emit, this.r * 3);
+		this.ion.push(this.x, this.y, this.time, emit, this.r * 3);
 		this.bow.step(0.07 * Math.sin(this.time * 2.1), dt, 90, 7);
 		this.squint = Math.max(0, this.squint - dt / 0.35);
 		if (this.blink >= 0) {

@@ -281,7 +281,13 @@ export class CombatService {
 		}
 
 		if (this.rulesProfile === 'ms-pacman') {
+			const overdrive = this.hypnosis.overdriveActive;
 			this.hypnosis.update(dt, this.ghosts);
+			if (overdrive && !this.hypnosis.overdriveActive) {
+				// her overdrive's end is the power's end for the music too
+				this.events.emit('audio:cue', { cue: 'power-end' });
+				debugLog(this.events, 'state', 'power ends');
+			}
 		} else if (this.powerTimerValue > 0) {
 			this.powerTimerValue = Math.max(0, this.powerTimerValue - dt);
 
@@ -594,6 +600,9 @@ export class CombatService {
 			return;
 		}
 
+		if (this.hypnosis.overdriveActive) {
+			this.events.emit('audio:cue', { cue: 'power-end' });
+		}
 		this.hypnosis.reset();
 		this.ghosts.setMsOverdrive(false);
 	}

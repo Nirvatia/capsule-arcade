@@ -66,14 +66,15 @@ last (see Later).
    `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks, no height or
    extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
    heartbeat (~2.5 s); the teleport is the iron gateway; night stays `cord`.
-2. **A random boss on every 5th level, for both heroes**: in (`logic/level/BossCatalog`, the
-   hell and the station). Left: difficulty scaled by level number, not world, once the station
-   has its rules.
+2. **A random boss on every 5th level, for both heroes**: in (`logic/level/BossCatalog`). It
+   draws from `BOSS_ROTATION`, the finished bosses: the hell alone since the station was shelved
+   (2026-11-25). Left: difficulty scaled by level number, not world, once a second boss is in.
 3. **Each new boss world** (design first, one page the owner approves; mechanics on placeholder
    art, then art in code). Still Pac-Man in a maze, a different boss/mechanic/way to play, never
    a reskin of the hell. Like the hell: `*Bake` + `*World` + a level renderer with `preview()`, a
    death `style` and a season-turn style; every element but the heroes has art of its own.
-   1. **The station** (the current focus; `DESIGN.md` §7a). It
+   1. **The station** (shelved 2026-11-25, unfinished: out of the rotation, the dev panel's
+      Station still brings it; `DESIGN.md` §7a; the steps below wait). It
       replaced TRON (dropped with its `grid_tron`). Steps, one per chat:
       The look is approved (2026-11-22): **style B** of the `station` prototype, the
       quarantine lab (scorched bulkheads with claw gouges and blood, deck plates with drag
@@ -117,8 +118,12 @@ last (see Later).
          the light map, the swarm's bugs are cached sprites, not a new full-screen layer.
    2. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe
       islands change. Playful; palette clear of the hell's reds.
-   3. **A Bomberman world**: bombs and blasts along the maze's lines, soft/hard walls. Think
-      through with the owner.
+   3. **A Bomberman world, "the demolition yard"** (the next focus). The idea and the look are
+      proposed (`DESIGN.md` §13, 2026-11-25) and await the owner's answer: the open question is a
+      boss bomber or none. Then, one step per chat: the design page settled in `DESIGN.md`
+      (§7b); bombs, blasts and crates as game code on placeholder art (`logic/yard/`, tested),
+      routed by `BOSS_ROTATION`; a look prototype of a few master assets (the floor, a wall, a
+      crate, a bomb, the blast); the art in code.
    - Zombies rejected (a horde with weapons is the hell again). TRON dropped for the station. More
      old-arcade candidates (Dig Dug, Space Invaders, Frogger) can be offered before step 3.
 

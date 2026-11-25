@@ -21,20 +21,44 @@ export interface WakeSpec {
 }
 
 export class Wake {
-	private hist: Sample[] = [];
+	/** Where she has been, cut at every jump (a teleport): each piece is a tail of its own. */
+	private pieces: Sample[][] = [[]];
 
-	push(x: number, y: number, t: number, emit: number): void {
-		this.hist.push({ x, y, t, emit });
+	/**
+	 * A sample. A step longer than `gap` px is a jump: the tail does not bridge it but starts
+	 * anew, and the piece left at the tunnel's mouth fades there by itself.
+	 */
+	push(x: number, y: number, t: number, emit: number, gap = Infinity): void {
+		let piece = this.pieces[this.pieces.length - 1];
+		const last = piece[piece.length - 1];
+		if (last && Math.hypot(x - last.x, y - last.y) > gap) {
+			piece = [];
+			this.pieces.push(piece);
+		}
+		piece.push({ x, y, t, emit });
 		const old = t - 2;
-		while (this.hist.length && this.hist[0].t < old) this.hist.shift();
+		for (const each of this.pieces) {
+			while (each.length && each[0].t < old) each.shift();
+		}
+		this.pieces = this.pieces.filter((each) => each.length > 0 || each === piece);
 	}
 
 	clear(): void {
-		this.hist = [];
+		this.pieces = [[]];
 	}
 
-	points(now: number, spec: WakeSpec): RibbonPoint[] {
-		const r = ribbon(this.hist, now, {
+	/** The ribbon of every piece that still shows. */
+	points(now: number, spec: WakeSpec): RibbonPoint[][] {
+		const out: RibbonPoint[][] = [];
+		for (const piece of this.pieces) {
+			const pts = this.piecePoints(piece, now, spec);
+			if (pts.length > 0) out.push(pts);
+		}
+		return out;
+	}
+
+	private piecePoints(hist: Sample[], now: number, spec: WakeSpec): RibbonPoint[] {
+		const r = ribbon(hist, now, {
 			life: spec.life,
 			width: spec.width,
 			capHead: spec.capHead,
@@ -52,9 +76,13 @@ export class Wake {
 		});
 	}
 
-	draw(ctx: CanvasRenderingContext2D, now: number, spec: WakeSpec): RibbonPoint[] {
-		const pts = this.points(now, spec);
-		if (pts.length < 2) return pts;
+	draw(ctx: CanvasRenderingContext2D, now: number, spec: WakeSpec): void {
+		for (const pts of this.points(now, spec)) {
+			if (pts.length >= 2) this.drawPiece(ctx, pts, spec);
+		}
+	}
+
+	private drawPiece(ctx: CanvasRenderingContext2D, pts: RibbonPoint[], spec: WakeSpec): void {
 		ctx.save();
 		if (spec.add !== false) ctx.globalCompositeOperation = 'lighter';
 		const step = 3;
@@ -81,6 +109,5 @@ export class Wake {
 			ctx.fill();
 		}
 		ctx.restore();
-		return pts;
 	}
 }

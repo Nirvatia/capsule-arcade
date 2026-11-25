@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SEASON_MAZES } from '../../config/mazes';
 import { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
 import { buildLevelSession } from '../level/LevelSession';
@@ -58,5 +59,47 @@ describe('eaten ghosts (eyes)', () => {
 			}
 		}
 		expect(late).toEqual([]);
+	});
+
+	it('cross a tunnel on the way home instead of rocking at its mouth', () => {
+		const stuck: string[] = [];
+		SEASON_MAZES.forEach((matrix, index) => {
+			const session = buildLevelSession({
+				events: new EventBus<PacmanEventMap>(),
+				level: 1,
+				profile: 'pacman',
+				season: { ...seasonForLevel(1), grid: matrix },
+				hell: false,
+				secret: false,
+				godMode: false
+			});
+			const { grid, ghosts } = session;
+			for (const ghost of ghosts.list) {
+				for (let y = 0; y < grid.height; y++) {
+					for (let x = 0; x < grid.width; x++) {
+						if (!grid.isTeleport(x, y)) continue;
+						for (const [facing, dx, dy] of [
+							['LEFT', 1, 0],
+							['RIGHT', -1, 0],
+							['UP', 0, 1],
+							['DOWN', 0, -1]
+						] as const) {
+							// eaten a step before the tunnel, heading into it
+							if (!grid.isGhostWalkable(x + dx, y + dy, true)) continue;
+							ghost.reset({ x: x + dx, y: y + dy }, 0);
+							ghost.setState('eyes');
+							ghost.beginMove(facing, { x, y });
+							ghost.addProgress(0.5);
+							for (let frame = 0; frame < 4000 && ghost.state === 'eyes'; frame++) {
+								ghosts.update(1 / 120);
+							}
+							if (ghost.state !== 'lair')
+								stuck.push(`grid_0${index + 1} ${ghost.kind} ${x},${y} ${facing}`);
+						}
+					}
+				}
+			}
+		});
+		expect(stuck).toEqual([]);
 	});
 });

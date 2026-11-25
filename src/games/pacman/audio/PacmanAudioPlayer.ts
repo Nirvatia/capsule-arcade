@@ -165,6 +165,9 @@ export class PacmanAudioPlayer {
 			this.stopBackground();
 			this.stop('start.wav');
 			this.state = next;
+			if (next !== 'playing' && next !== 'paused') {
+				this.powerActive = false;
+			}
 			if (next === 'ready') {
 				this.arcadePower = false;
 				this.synth.play('start');
@@ -176,8 +179,12 @@ export class PacmanAudioPlayer {
 		if (next !== 'ready') {
 			this.stop('start.wav');
 		}
-		if (next === 'menu' || next === 'game-over') {
+		if (next !== 'playing' && next !== 'paused') {
+			// the power never outlives its life or level: a power-end lost on the way (a level
+			// left in the power) must not leave the fright looping for good
 			this.powerActive = false;
+		}
+		if (next === 'menu' || next === 'game-over') {
 			this.stopMusic();
 		}
 		this.state = next;
