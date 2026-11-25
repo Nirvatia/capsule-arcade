@@ -283,3 +283,94 @@ export function drawDoor(g: Ctx, d: Door, x: number, y: number, S: number, acros
 		leaf(x - th / 2, y + S / 2 - half, th, half);
 	}
 }
+
+/**
+ * A fence beam across the station: told as a faint dashed line, charging as a thickening dashed
+ * line, lit as a bright laser with a glow. Drawn over the walls on purpose: it reads at once.
+ */
+export function drawBeam(g: Ctx, x0: number, y0: number, x1: number, y1: number, S: number, t: number, charge: number, lit: boolean): void {
+	g.save();
+	g.lineCap = 'round';
+	if (!lit) {
+		const a = 0.18 + 0.5 * charge + 0.15 * Math.sin(t * 9) * charge;
+		g.strokeStyle = `rgba(255,90,200,${a})`;
+		g.lineWidth = S * (0.05 + 0.12 * charge);
+		g.setLineDash([S * 0.3, S * 0.25]);
+		g.lineDashOffset = -t * S * 2;
+		g.beginPath();
+		g.moveTo(x0, y0);
+		g.lineTo(x1, y1);
+		g.stroke();
+		g.restore();
+		return;
+	}
+	g.globalCompositeOperation = 'lighter';
+	for (const [w, a] of [
+		[0.7, 0.12],
+		[0.35, 0.3],
+		[0.12, 0.95]
+	]) {
+		g.strokeStyle = `rgba(255,${120 + (w < 0.2 ? 120 : 0)},230,${a * (0.9 + 0.1 * Math.sin(t * 23))})`;
+		g.lineWidth = S * w;
+		g.beginPath();
+		g.moveTo(x0, y0);
+		g.lineTo(x1, y1);
+		g.stroke();
+	}
+	g.restore();
+}
+
+/** An emitter: the fencer holding its beam, a ring charging round it. */
+export function drawEmitter(g: Ctx, x: number, y: number, S: number, charge: number): void {
+	g.save();
+	g.strokeStyle = 'rgba(255,120,220,0.9)';
+	g.lineWidth = S * 0.08;
+	g.beginPath();
+	g.arc(x, y, S * 0.56, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, charge));
+	g.stroke();
+	g.restore();
+}
+
+/** One waiting in a vent shaft: two eyes in the dark of the grille, a glow that swells when it is about to come out. */
+export function drawShaft(g: Ctx, x: number, y: number, S: number, t: number, glow: number, color: string): void {
+	g.save();
+	g.globalCompositeOperation = 'lighter';
+	const R = S * (1 + 1.3 * glow);
+	const gr = g.createRadialGradient(x, y, 0, x, y, R);
+	gr.addColorStop(0, hexA(color, 0.4 + 0.5 * glow));
+	gr.addColorStop(1, hexA(color, 0));
+	g.fillStyle = gr;
+	g.fillRect(x - R, y - R, R * 2, R * 2);
+	g.restore();
+	const blink = Math.sin(t * 0.9) > 0.97 ? 0.2 : 1;
+	for (const side of [-1, 1]) {
+		g.fillStyle = hexA('#fff6c0', (0.55 + 0.45 * glow) * blink);
+		g.beginPath();
+		g.ellipse(x + side * S * 0.16, y, S * (0.09 + 0.04 * glow), S * 0.07 * blink + S * 0.015, 0, 0, TAU);
+		g.fill();
+	}
+}
+
+function hexA(hex: string, a: number): string {
+	const n = parseInt(hex.slice(1), 16);
+	return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+/**
+ * The phantom is not drawn: the station shows where it is. The light round it gutters (a dim
+ * that flickers, never a flash) and the air shivers in a faint ring.
+ */
+export function drawPhantom(g: Ctx, x: number, y: number, S: number, t: number): void {
+	const f = 0.5 + 0.5 * Math.sin(t * 17) * Math.sin(t * 5.3);
+	const R = S * 2.6;
+	const gr = g.createRadialGradient(x, y, 0, x, y, R);
+	gr.addColorStop(0, `rgba(2,4,8,${0.32 + 0.22 * f})`);
+	gr.addColorStop(1, 'rgba(2,4,8,0)');
+	g.fillStyle = gr;
+	g.fillRect(x - R, y - R, R * 2, R * 2);
+	g.strokeStyle = `rgba(200,230,255,${0.06 + 0.06 * f})`;
+	g.lineWidth = S * 0.05;
+	g.beginPath();
+	g.arc(x, y, S * (0.42 + 0.05 * Math.sin(t * 7)), 0, TAU);
+	g.stroke();
+}

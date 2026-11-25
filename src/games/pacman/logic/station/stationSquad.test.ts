@@ -26,7 +26,12 @@ function station() {
 		walkable: (x, y) => grid.isGhostWalkable(x, y, false),
 		teleport: (x, y) => grid.teleportDestination(x, y),
 		eaten: (x, y) => eaten.has(`${x},${y}`),
-		cell: (x, y) => grid.tileAt(x, y) === 'EU'
+		food: (x, y) =>
+			(grid.tileAt(x, y) === 'DT' || grid.tileAt(x, y) === 'EU') && !eaten.has(`${x},${y}`),
+		cell: (x, y) => grid.tileAt(x, y) === 'EU',
+		vent: (x, y) => ['0B', '0C'].includes(grid.tileAt(x, y)),
+		width: grid.width,
+		height: grid.height
 	};
 	return { grid, player, ghosts, world, eaten };
 }
@@ -63,121 +68,188 @@ describe('the squad guide', () => {
 	});
 });
 
-describe('the director', () => {
-	it('runs calm, tell, play, calm; only the train before a quarter of the charge', () => {
-		const s = station();
-		const squad = new StationSquad(s.world, 3);
-		const seen: string[] = [];
-		for (let t = 0; t < 60; t += 1 / 30) {
-			squad.update(1 / 30, s.ghosts, s.player.tile, 0);
-			const now = `${squad.phase}:${squad.phase === 'tell' ? squad.next : squad.play}`;
-			if (seen[seen.length - 1] !== now) seen.push(now);
-		}
-		expect(seen.slice(0, 4)).toEqual(['calm:calm', 'tell:train', 'on:train', 'calm:calm']);
-		expect(seen.every((p) => !p.includes('pincer') && !p.includes('mimic'))).toBe(true);
-	});
+/** Steps the squad and the ghosts together, the hero standing on `hero`. */
+function run(
+	s: ReturnType<typeof station>,
+	squad: StationSquad,
+	hero: GhostTile,
+	seconds: number,
+	each?: () => void
+): number {
+	let grab = 0;
+	for (let t = 0; t < seconds; t += 1 / 60) {
+		grab = Math.max(grab, squad.update(1 / 60, s.ghosts, hero, null).grab);
+		s.ghosts.update(1 / 60);
+		each?.();
+	}
+	return grab;
+}
 
-	it('opens the pincer and the mimics as the hatch charges', () => {
+/** Forces the next tactic and runs through its tell. */
+function force(
+	s: ReturnType<typeof station>,
+	squad: StationSquad,
+	hero: GhostTile,
+	tactic: 'fence' | 'ambush' | 'vent'
+): void {
+	(squad as unknown as { pick: () => string }).pick = () => tactic;
+	squad.left = 0;
+	run(s, squad, hero, SQUAD_TUNE.tell + 0.05);
+}
+
+describe('the hero, read', () => {
+	it('goes on along a corridor and turns toward the nearest food he has not eaten', () => {
 		const s = station();
-		const squad = new StationSquad(s.world, 5);
-		const plays = new Set<string>();
-		for (let t = 0; t < 400; t += 1 / 30) {
-			squad.update(1 / 30, s.ghosts, s.player.tile, 1);
-			if (squad.phase === 'on') plays.add(squad.play);
-			if (squad.play === 'mimic') squad.reset(s.ghosts);
-		}
-		expect([...plays].sort()).toEqual(['mimic', 'pincer', 'train']);
+		const squad = new StationSquad(s.world, 1);
+		// the bottom row from the left: he has eaten it up to x 8, heading right
+		for (let x = 1; x <= 8; x += 1) s.eaten.add(`${x},24`);
+		squad.update(0.01, s.ghosts, { x: 4, y: 24 }, 'RIGHT');
+		const xs = squad.foreseen.slice(0, 4).map((t) => `${t.x},${t.y}`);
+		// on to the junction (not back), then up the column: the nearest food he has not eaten
+		expect(xs).toEqual(['4,24', '5,24', '6,24', '6,23']);
 	});
 });
 
-describe('the plays', () => {
-	it('the train: the cars line up behind the leader', () => {
+describe('the director', () => {
+	it('runs calm, tell, a tactic, calm, and does not play the same tactic twice running', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 3);
+		s.ghosts.setSquadGuide(squad);
+		for (let x = 1; x < 24; x += 1) s.eaten.add(`${x},24`);
+		const seen: string[] = [];
+		run(s, squad, { x: 12, y: 24 }, 90, () => {
+			const now = `${squad.phase}:${squad.phase === 'tell' ? squad.next : (squad.tactic ?? '')}`;
+			if (seen[seen.length - 1] !== now) seen.push(now);
+		});
+		expect(seen[0]).toBe('calm:');
+		expect(seen[1]).toMatch(/^tell:/);
+		const ons = seen.filter((p) => p.startsWith('on:'));
+		expect(ons.length).toBeGreaterThan(2);
+		for (let i = 1; i < ons.length; i += 1) expect(ons[i]).not.toBe(ons[i - 1]);
+	});
+});
+
+describe('the fence', () => {
+	it('finds two lines that hold him in 60-75% of the station, each line needed', () => {
+		const s = station();
+		const squad = new StationSquad(s.world, 1);
+		squad.update(0.01, s.ghosts, { x: 12, y: 24 }, null);
+		const plan = squad.fencePlan();
+		expect(plan).not.toBeNull();
+		expect(plan).toHaveLength(2);
+	});
+
+	it('the fencers walk to the lines, charge, and the lit beams hold him', () => {
 		const s = station();
 		release(s);
 		const squad = new StationSquad(s.world, 1);
 		s.ghosts.setSquadGuide(squad);
-		squad.play = 'train';
-		squad.phase = 'on';
-		squad.left = 99;
-		const hero = { x: 1, y: 24 };
-		for (let t = 0; t < 10; t += 1 / 60) {
-			squad.update(1 / 60, s.ghosts, hero, 0);
-			s.ghosts.update(1 / 60);
+		const hero = { x: 12, y: 24 };
+		force(s, squad, hero, 'fence');
+		expect(squad.tactic).toBe('fence');
+		expect(squad.beams).toHaveLength(2);
+		const roles = [...squad.roles.values()].sort();
+		expect(roles).toContain('fencer');
+		run(s, squad, hero, SQUAD_TUNE.walk);
+		expect(squad.beams.every((b) => b.lit)).toBe(true);
+		// what he reaches with the beams lit
+		const seen = new Set<string>(['12,24']);
+		const stack = [hero];
+		while (stack.length) {
+			const t = stack.pop()!;
+			for (const [dx, dy] of [
+				[1, 0],
+				[-1, 0],
+				[0, 1],
+				[0, -1]
+			]) {
+				const x = t.x + dx;
+				const y = t.y + dy;
+				if (!s.world.walkable(x, y) || squad.blocks(x, y) || seen.has(`${x},${y}`)) continue;
+				seen.add(`${x},${y}`);
+				const far = s.world.teleport(x, y);
+				stack.push(far && !squad.blocks(far.x, far.y) ? far : { x, y });
+				if (far) seen.add(`${far.x},${far.y}`);
+			}
 		}
-		const lead = s.ghosts.list.find((g) => g.kind === squad.leader)!;
-		// every car stands on the leader's trail
-		const trail = new Set(squad.trail.map((t) => `${t.x},${t.y}`));
-		const cars = s.ghosts.list.filter((g) => g !== lead && g.state === 'active');
-		expect(cars.length).toBeGreaterThan(0);
-		const onTrail = cars.filter((g) => trail.has(`${g.tile.x},${g.tile.y}`));
-		expect(onTrail.length).toBe(cars.length);
+		let all = 0;
+		for (let y = 0; y < s.grid.height; y += 1)
+			for (let x = 0; x < s.grid.width; x += 1) if (s.world.walkable(x, y)) all += 1;
+		expect(seen.size / all).toBeLessThanOrEqual(SQUAD_TUNE.fenceShare[1] + 0.02);
 	});
+});
 
-	it('the pincer: finds the junctions round him and sends one hunter to each', () => {
+describe('the ambush', () => {
+	it('hides one as food on an eaten tile along his way and leaves him only the way to it', () => {
 		const s = station();
-		const squad = new StationSquad(s.world, 1);
-		// (12,20) is the hero's start: a wall above; left and right, each a step away, a junction
-		const exits = squad
-			.exits({ x: 12, y: 20 })
-			.map((t) => `${t.x},${t.y}`)
-			.sort();
-		expect(exits).toEqual(['11,20', '13,20']);
 		release(s);
+		const squad = new StationSquad(s.world, 2);
 		s.ghosts.setSquadGuide(squad);
-		squad.phase = 'calm';
+		// he ate the bottom row left of the console and the food lies on up the left side
+		for (let x = 1; x <= 12; x += 1) s.eaten.add(`${x},24`);
+		const hero = { x: 12, y: 24 };
+		(squad as unknown as { pick: () => string }).pick = () => 'ambush';
 		squad.left = 0;
-		// force the pincer next
-		(squad as unknown as { pickNext: () => string }).pickNext = () => 'pincer';
-		squad.update(0.01, s.ghosts, { x: 12, y: 20 }, 1);
-		expect(squad.phase).toBe('tell');
-		const claims = squad.claims;
-		expect(claims.length).toBe(s.ghosts.list.filter((g) => g.state === 'active').length);
-		// one drives him, the others hold distinct ways out
-		const spots = claims.slice(1).map((c) => `${c.x},${c.y}`);
-		expect(new Set(spots).size).toBe(spots.length);
-	});
-
-	it('the mimics: hide on eaten tiles only, bite and hold him, harmless for a moment', () => {
-		const s = station();
-		release(s);
-		const squad = new StationSquad(s.world, 2);
-		const hero: GhostTile = { x: 12, y: 20 };
-		// he has eaten the bottom row
-		for (let x = 1; x < 24; x += 1) s.eaten.add(`${x},24`);
-		(squad as unknown as { pickNext: () => string }).pickNext = () => 'mimic';
-		squad.left = 0;
-		squad.update(0.01, s.ghosts, hero, 1);
-		squad.update(SQUAD_TUNE.tell + 0.01, s.ghosts, hero, 1);
-		expect(squad.play).toBe('mimic');
-		squad.update(SQUAD_TUNE.fade + 0.01, s.ghosts, hero, 1);
-		expect(squad.mimics.length).toBeGreaterThan(0);
-		for (const m of squad.mimics) {
-			expect(m.state).toBe('hidden');
-			expect(s.eaten.has(`${m.x},${m.y}`)).toBe(true);
-			const g = s.ghosts.list.find((gg) => gg.kind === m.kind)!;
-			expect([g.tile.x, g.tile.y]).toEqual([m.x, m.y]);
+		squad.update(0.01, s.ghosts, hero, 'LEFT');
+		run(s, squad, hero, SQUAD_TUNE.tell + SQUAD_TUNE.fade + 0.1);
+		const h = squad.hiddenList.find((hh) => hh.as !== 'vent');
+		expect(h).toBeDefined();
+		expect(h!.state).toBe('hidden');
+		expect(s.eaten.has(`${h!.x},${h!.y}`)).toBe(true);
+		// the herders head for the other ways out, not the open one
+		const open = squad.openWay!;
+		expect(open).not.toBeNull();
+		for (const [kind, t] of squad.targets) {
+			if (squad.role(kind) === 'cutter') expect(`${t.x},${t.y}`).not.toBe(`${open.x},${open.y}`);
 		}
-		const m = squad.mimics[0];
-		const ev = squad.update(0.01, s.ghosts, { x: m.x, y: m.y }, 1);
-		expect(ev.grab).toBe(SQUAD_TUNE.grab);
-		expect(squad.hidden(m.kind)).toBeUndefined();
-		expect(squad.harmless(m.kind)).toBe(true);
-		squad.update(SQUAD_TUNE.harmless + 0.1, s.ghosts, hero, 1);
-		expect(squad.harmless(m.kind)).toBe(false);
+		// he steps on it: it holds him, harmless for a moment
+		const grab = run(s, squad, { x: h!.x, y: h!.y }, 0.05);
+		expect(grab).toBe(SQUAD_TUNE.grab);
+		expect(squad.hidden(h!.kind)).toBeUndefined();
+		expect(squad.harmless(h!.kind)).toBe(true);
 	});
+});
 
-	it('a power cell breaks the play and shows every mimic', () => {
+describe('the vent', () => {
+	it('waits in a shaft on his way, its eyes glow as he nears, then it comes out', () => {
 		const s = station();
 		release(s);
 		const squad = new StationSquad(s.world, 2);
-		for (let x = 1; x < 24; x += 1) s.eaten.add(`${x},24`);
-		(squad as unknown as { pickNext: () => string }).pickNext = () => 'mimic';
+		s.ghosts.setSquadGuide(squad);
+		// he runs the top row to the right, toward the vent mouth at (6,2)
+		const hero = { x: 1, y: 2 };
+		(squad as unknown as { pick: () => string }).pick = () => 'vent';
 		squad.left = 0;
-		squad.update(0.01, s.ghosts, { x: 12, y: 20 }, 1);
-		squad.update(SQUAD_TUNE.tell + SQUAD_TUNE.fade + 0.1, s.ghosts, { x: 12, y: 20 }, 1);
-		expect(squad.mimics.length).toBeGreaterThan(0);
+		squad.update(0.01, s.ghosts, hero, 'RIGHT');
+		run(s, squad, hero, SQUAD_TUNE.tell + SQUAD_TUNE.fade + 0.1);
+		const h = squad.hiddenList.find((hh) => hh.as === 'vent');
+		expect(h).toBeDefined();
+		expect(s.world.vent(h!.x, h!.y)).toBe(true);
+		expect(h!.state).toBe('hidden');
+		// he comes near its mouth
+		run(s, squad, { x: h!.x - 1 > 0 ? h!.x - 1 : h!.x + 1, y: h!.y === 1 ? 2 : h!.y - 1 }, 0.05);
+		expect(h!.state).toBe('glow');
+		run(s, squad, hero, SQUAD_TUNE.glow + 0.05);
+		expect(squad.hidden(h!.kind)).toBeUndefined();
+		const g = s.ghosts.list.find((gg) => gg.kind === h!.kind)!;
+		expect(Math.abs(g.tile.x - h!.x) + Math.abs(g.tile.y - h!.y)).toBeLessThanOrEqual(2);
+	});
+});
+
+describe('a power cell', () => {
+	it('breaks the tactic: the beams go dark, the hidden come out', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 2);
+		s.ghosts.setSquadGuide(squad);
+		for (let x = 1; x <= 12; x += 1) s.eaten.add(`${x},24`);
+		squad.update(0.01, s.ghosts, { x: 12, y: 24 }, 'LEFT');
+		force(s, squad, { x: 12, y: 24 }, 'ambush');
+		expect(squad.hiddenList.length).toBeGreaterThan(0);
 		squad.onPower(s.ghosts);
-		expect(squad.mimics).toHaveLength(0);
+		expect(squad.hiddenList).toHaveLength(0);
+		expect(squad.beams).toHaveLength(0);
 		expect(squad.phase).toBe('calm');
 	});
 });
@@ -266,7 +338,7 @@ describe('the escape', () => {
 		const stepped: string[] = [];
 		let caught = false;
 		for (let t = 0; t < 8 && !caught; t += 1 / 60) {
-			squad.update(1 / 60, s.ghosts, hero, 1);
+			squad.update(1 / 60, s.ghosts, hero, null);
 			s.ghosts.update(1 / 60);
 			const l = leader();
 			if (!l) continue;
@@ -278,5 +350,37 @@ describe('the escape', () => {
 		expect(caught).toBe(true);
 		expect(squad.leader).not.toBeNull();
 		expect(stepped).toEqual([]);
+	});
+
+	it('the interception: one dashes to a junction ahead on his route, told by it first', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 4);
+		s.ghosts.setSquadGuide(squad);
+		// his route: the bottom row to the right; (6,24) a junction five steps on
+		const route = Array.from({ length: 23 }, (_, i) => ({ x: 1 + i, y: 24 }));
+		const hero = route[0];
+		for (const g of s.ghosts.list)
+			if (g.kind !== 'INKY' && g.kind !== 'BLINKY') s.ghosts.freeze(g.kind, 1e6);
+		const inky = s.ghosts.list.find((g) => g.kind === 'INKY')!;
+		inky.teleportTo({ x: 6, y: 21 });
+		inky.setState('active');
+		const blinky = s.ghosts.list.find((g) => g.kind === 'BLINKY')!;
+		blinky.teleportTo({ x: 1, y: 18 });
+		blinky.setState('active');
+		squad.chase(
+			s.ghosts,
+			(x, y) => route.some((t) => t.x === x && t.y === y),
+			() => route
+		);
+		let seen: { x: number; y: number } | null = null;
+		for (let t = 0; t < 3 && !seen; t += 1 / 60) {
+			squad.update(1 / 60, s.ghosts, hero, 'RIGHT');
+			if (squad.intercept) seen = { x: squad.intercept.x, y: squad.intercept.y };
+		}
+		expect(squad.leader).toBe('BLINKY');
+		expect(seen).toEqual({ x: 6, y: 24 });
+		expect(squad.intercept?.kind).toBe('INKY');
+		expect(squad.intercept?.warn).toBeGreaterThan(0);
 	});
 });

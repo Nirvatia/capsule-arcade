@@ -35,9 +35,10 @@ logic/
              (Ms. Pac-Man overdrive and hypnosis: feeder / hunter, guides the ghost), LairCodeService
   bonuses/   fruit, Easter egg, AbilityService (the season levels' abilities: the token, the
              slot, the F key, the mask, the shock; it owns the EchoCloneService riot), boss reward
-  station/   the station's rules: StationSquad (the squad's director and plays: the train, the
-             pincer, the mimics, the chase from behind; it steers the hunting ghosts through
-             GhostService.setSquadGuide), StationEscape (the hatch's charge, the console, the
+  station/   the station's rules: StationSquad (the squad's brain: it reads the hero's way,
+             gives roles, runs the fence (a search for two lines over the maze graph), the
+             ambush and the vent, the phantom, the escape's chase and interceptions; it steers
+             the hunting ghosts through GhostService.setSquadGuide), StationEscape (the hatch's charge, the console, the
              route laid anew off it, the doors, the pulse, the restart); the older StationService
              (the ghost version: HP and the rewind, the beam, flares, cocoons, phases, the super
              flare) and stationBeam, to be replaced; SwarmField and HoundPack (dropped

@@ -85,20 +85,22 @@ last (see Later).
       power cells, the food charging the hatch, and **an escape** as a scene along a lit route,
       made easy. Steps, one per chat:
       1. **The design page**: approved (2026-11-25).
-      2. **The squad to play**: built (2026-11-25), awaits the owner's play:
-         `prototypes/pacman/squad` (the approved art lit, placeholder discs with eyes, energy
-         capsules for food). Game code, tested: `logic/station/StationSquad` (the director; the
-         train with its leader's trail, the pincer that shares the hero's ways out, the mimics on
-         eaten tiles with the grab; the chase from behind in the escape) through
-         `GhostService.setSquadGuide`, and `logic/station/StationEscape` (the charge at 75% of
-         the food, the console, the route laid anew off it, doors closing ahead and shutting
-         behind, the pulse, the restart). Tuned on scripts only (a blind bot runs the escape
-         clean once the chase comes from behind). After the owner's play: tune, then delete the
-         hounds and the swarm (pages, `HoundPack`, `SwarmField`, `stationHound`,
-         `stationSwarm`).
+      2. **The squad to play**: v1 built and played (2026-11-25): the owner found the timer's
+         set pieces dull (the train most of the time), the escape too easy, the one-tile pillars
+         in the maze bad, the threads unclear. **v2** (same day, awaits his play):
+         `grid_station` without one-tile pillars; `logic/station/StationSquad` rewritten (reads
+         the hero's way, roles, three tactics picked by the situation: the fence, the ambush,
+         the vent; the phantom), the escape's chase at 0.95 with dashes to junctions ahead
+         under a red warning; `prototypes/pacman/squad` draws them (beams, the shaft's eyes, the
+         phantom as guttering light) and `?debug` shows what the squad thinks. Measured with a
+         player bot (avoids the squad within 2 tiles, eats the nearest food): all three
+         tactics come each game, something happens every 4-6 s, a step costs under 11 ms; a
+         blind runner loses the pulse in most escapes, never the escape. After the owner's
+         play: tune, then delete the hounds and the swarm (pages, `HoundPack`, `SwarmField`,
+         `stationHound`, `stationSwarm`). The tripwire and the shadow are in reserve.
       3. **The creatures' look**: tile-sized, no legs, four tempers; a prototype (the void
          jellyfish of the `creatures` page is a starting point), the owner picks.
-      4. **The threads**, once the first plays feel right.
+      4. A fourth tactic if the three need company (the tripwire or the shadow).
       5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance

@@ -29,7 +29,11 @@ import {
 	drawCell,
 	drawClaim,
 	drawConsole,
+	drawBeam,
 	drawCreature,
+	drawEmitter,
+	drawPhantom,
+	drawShaft,
 	drawDoor,
 	drawHatch,
 	drawRoute
@@ -39,6 +43,7 @@ const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const q = new URLSearchParams(location.search);
 const D = Math.min(window.devicePixelRatio || 1, 2);
+const DEBUG = q.has('debug');
 const grid = GRID_STATION;
 const H = grid.length;
 const W = grid[0].length;
@@ -62,8 +67,9 @@ const TUNE = {
 /** The game's grid with the escape's doors in the way, and the hatch no vent once it is open. */
 class SquadGrid extends GridService {
 	escape: StationEscape | null = null;
+	squad: StationSquad | null = null;
 	isPlayerWalkable(x: number, y: number): boolean {
-		return super.isPlayerWalkable(x, y) && !this.escape?.blocks(x, y);
+		return super.isPlayerWalkable(x, y) && !this.escape?.blocks(x, y) && !this.squad?.blocks(x, y);
 	}
 	isGhostWalkable(x: number, y: number, allowLair: boolean): boolean {
 		return super.isGhostWalkable(x, y, allowLair) && !this.escape?.blocks(x, y);
@@ -115,12 +121,17 @@ function newRun(): Run {
 			walkable: (x, y) => g.isGhostWalkable(x, y, false),
 			teleport: (x, y) => g.teleportDestination(x, y),
 			eaten: (x, y) => isFood(x, y) && progress.isCollected(x, y),
-			cell: (x, y) => grid[y]?.[x] === 'EU'
+			food: (x, y) => isFood(x, y) && !progress.isCollected(x, y),
+			cell: (x, y) => grid[y]?.[x] === 'EU',
+			vent: (x, y) => grid[y]?.[x] === '0A' || grid[y]?.[x] === '0B' || grid[y]?.[x] === '0C',
+			width: W,
+			height: H
 		},
 		seed
 	);
 	const escape = new StationEscape({ walkable: (x, y) => GridService.prototype.isPlayerWalkable.call(g, x, y) }, TUNE.console, TUNE.hatch);
 	g.escape = escape;
+	g.squad = squad;
 	ghosts.setSquadGuide(squad);
 	// the squad is out of its containment quickly: it plays as four
 	ghosts.setTuning(ghosts.waves.scatter, ghosts.waves.chase, TUNE.exitScale);
@@ -167,13 +178,12 @@ function respawn(r: Run): void {
 }
 
 /**
- * The alarm seals the containment (who is still in stays in) and holds the rest for a moment:
- * the hero's head start.
+ * The alarm: the squad holds a moment (the hero's head start); those in the containment come
+ * out on their own time and join the chase.
  */
 function seal(r: Run, hold: number): void {
 	for (const g of r.ghosts.list) {
-		const inside = g.state === 'lair' || g.state === 'exiting' || g.state === 'eyes';
-		r.ghosts.freeze(g.kind, inside ? 1e6 : hold);
+		if (g.state === 'active' || g.state === 'frightened') r.ghosts.freeze(g.kind, hold);
 	}
 }
 
@@ -224,7 +234,11 @@ function step(r: Run, dt: number): void {
 	const ev = r.escape.update(dt, hero);
 	if (ev.armed) popup(r, TUNE.console.x + 0.5, TUNE.console.y - 0.4, 'TO THE CONSOLE');
 	if (ev.started) {
-		r.squad.chase(r.ghosts, (x, y) => r.escape.onRoute(x, y));
+		r.squad.chase(
+			r.ghosts,
+			(x, y) => r.escape.onRoute(x, y),
+			() => r.escape.route
+		);
 		seal(r, TUNE.headStart);
 		popup(r, hero.x + 0.5, hero.y - 0.4, 'RUN');
 	}
@@ -232,7 +246,7 @@ function step(r: Run, dt: number): void {
 		r.end = 'out';
 		return;
 	}
-	const sev = r.squad.update(dt, r.ghosts, hero, r.escape.charge);
+	const sev = r.squad.update(dt, r.ghosts, hero, r.player.facing);
 	if (sev.grab > 0) {
 		r.grab = sev.grab;
 		r.player.setMovementLocked(true);
@@ -263,7 +277,11 @@ function step(r: Run, dt: number): void {
 				popup(r, p.x, p.y - 0.5, 'PULSE');
 			} else {
 				r.player.placeAt(TUNE.console);
-				r.squad.chase(r.ghosts, (x, y) => r.escape.onRoute(x, y));
+				r.squad.chase(
+			r.ghosts,
+			(x, y) => r.escape.onRoute(x, y),
+			() => r.escape.route
+		);
 				seal(r, TUNE.restartStun);
 				popup(r, TUNE.console.x + 0.5, TUNE.console.y - 0.4, 'AGAIN');
 			}
@@ -298,19 +316,31 @@ function draw(r: Run, t: number): void {
 		const [x, y] = at(d.x + 0.5, d.y + 0.5);
 		drawDoor(ctx, d, x, y, S, horizontalCorridor ? 'v' : 'h');
 	}
+	// the interception: the junction ahead blinks red while one is coming for it
+	const ic = r.squad.intercept;
+	if (escaping && ic) {
+		const [ix, iy] = at(ic.x + 0.5, ic.y + 0.5);
+		const on = ic.warn > 0 ? Math.sin(t * Math.PI * 5) > 0 : true;
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		ctx.fillStyle = `rgba(255,50,40,${on ? 0.55 : 0.15})`;
+		ctx.fillRect(ix - S / 2, iy - S / 2, S, S);
+		ctx.restore();
+	}
 	const cs = r.escape.state === 'armed' ? 'armed' : escaping ? 'running' : 'off';
 	drawConsole(ctx, ...at(TUNE.console.x + 0.5, TUNE.console.y + 0.5), S, t, cs);
 	drawHatch(ctx, ...at(TUNE.hatch.x + 0.5, TUNE.hatch.y + 0.5), S, t, escaping ? 1 : r.escape.state === 'armed' ? 0.4 : 0);
-	// the food, and the mimics among it, out of step
-	const mimicAt = new Map(r.squad.mimics.filter((m) => m.state === 'hidden').map((m) => [`${m.x},${m.y}`, m]));
+	// the food, and the lurkers among it, out of step
+	const sq = r.squad;
+	const lurkAt = new Map(sq.hiddenList.filter((h) => h.as !== 'vent' && h.state === 'hidden').map((h) => [`${h.x},${h.y}`, h]));
 	const b = breath(t);
 	for (let y = 0; y < H; y += 1) {
 		for (let x = 0; x < W; x += 1) {
 			const tk = grid[y][x];
-			const m = mimicAt.get(`${x},${y}`);
+			const m = lurkAt.get(`${x},${y}`);
 			const [cx, cy] = at(x + 0.5, y + 0.5);
 			if (m) {
-				if (m.cell) drawCell(ctx, cx, cy, S, breath(t, 0.5));
+				if (m.as === 'cell') drawCell(ctx, cx, cy, S, breath(t, 0.5));
 				else drawCapsule(ctx, cx, cy, S, breath(t, 0.5), D);
 				continue;
 			}
@@ -319,46 +349,35 @@ function draw(r: Run, t: number): void {
 			else if (tk === 'EU') drawCell(ctx, cx, cy, S, b);
 		}
 	}
-	// the pincer's tell: who takes which way out
-	const sq = r.squad;
-	const pincer = (sq.phase === 'tell' && sq.next === 'pincer') || (sq.phase === 'on' && sq.play === 'pincer');
-	if (pincer) {
-		for (const c of sq.claims) {
-			const g = r.ghosts.list.find((gg) => gg.kind === c.kind);
-			if (!g || g.state !== 'active') continue;
-			const [x0, y0] = at(g.position.x, g.position.y);
-			const [x1, y1] = at(c.x + 0.5, c.y + 0.5);
-			drawClaim(ctx, x0, y0, x1, y1, S, KIND_COLOR[c.kind], sq.phase === 'tell' ? 0.95 : 0.35);
+	// one waiting in a vent shaft: its eyes, its glow
+	for (const h of sq.hiddenList) {
+		if (h.as !== 'vent' || h.state === 'fading') continue;
+		const glow = h.state === 'glow' ? Math.min(1, h.time / SQUAD_TUNE.glow) : 0.15 + 0.1 * Math.sin(t * 2);
+		drawShaft(ctx, ...at(h.x + 0.5, h.y + 0.5), S, t, glow, KIND_COLOR[h.kind]);
+	}
+	// the fence: told, charging, lit
+	const fenceTold = sq.phase === 'tell' && sq.next === 'fence';
+	if (fenceTold || sq.tactic === 'fence') {
+		for (const beam of sq.beams) {
+			const [x0, y0] = beam.axis === 'row' ? at(0.5, beam.at + 0.5) : at(beam.at + 0.5, 0.5);
+			const [x1, y1] = beam.axis === 'row' ? at(W - 0.5, beam.at + 0.5) : at(beam.at + 0.5, H - 0.5);
+			drawBeam(ctx, x0, y0, x1, y1, S, t, beam.charge, beam.lit);
+			if (beam.charge > 0 && !beam.lit) drawEmitter(ctx, ...at(beam.x + 0.5, beam.y + 0.5), S, beam.charge);
 		}
 	}
-	// the train's coupling
-	if (sq.play === 'train' && sq.phase === 'on') {
-		const cars = r.ghosts.list.filter((g) => g.state === 'active' && !sq.hidden(g.kind));
-		ctx.save();
-		ctx.strokeStyle = 'rgba(255,226,122,0.45)';
-		ctx.lineWidth = S * 0.08;
-		ctx.lineCap = 'round';
-		const lead = cars.find((g) => g.kind === sq.leader);
-		for (const g of cars) {
-			if (!lead || g === lead) continue;
-			const [x0, y0] = at(g.position.x, g.position.y);
-			const [x1, y1] = at(lead.position.x, lead.position.y);
-			if (Math.hypot(x1 - x0, y1 - y0) > S * 7) continue;
-			ctx.beginPath();
-			ctx.moveTo(x0, y0);
-			ctx.lineTo(x1, y1);
-			ctx.stroke();
-		}
-		ctx.restore();
-	}
-	// the creatures
+	// the creatures; the phantom shows only as the light guttering round it
 	for (const g of r.ghosts.list) {
 		const m = sq.hidden(g.kind);
-		if (m && m.state === 'hidden') continue;
-		const fade = m ? Math.min(1, m.time / SQUAD_TUNE.fade) : 0;
+		if (m && m.state !== 'fading') continue;
 		const [x, y] = at(g.position.x, g.position.y);
+		if (sq.role(g.kind) === 'phantom' && g.state === 'active') {
+			drawPhantom(ctx, x, y, S, t);
+			continue;
+		}
+		const fade = m ? Math.min(1, m.time / SQUAD_TUNE.fade) : 0;
 		drawCreature(ctx, g, x, y, S, t, { fade, tell: sq.phase === 'tell', harmless: sq.harmless(g.kind) && !m, powerLeft: r.power });
 	}
+	if (DEBUG) debugView(r, at, S);
 	heroView.draw(ctx, r.player, L, t, { look: 'normal', charge: 0, dying: r.dying >= 0 });
 	// the pulse ring
 	if (r.pulse >= 0 && r.pulse < 0.7) {
@@ -398,6 +417,49 @@ function draw(r: Run, t: number): void {
 	hud(r, vw, vh);
 }
 
+/** ?debug: what the squad thinks: his foreseen way, each one's role and target, the open way. */
+function debugView(r: Run, at: (x: number, y: number) => [number, number], S: number): void {
+	const sq = r.squad;
+	ctx.save();
+	ctx.fillStyle = 'rgba(255,255,120,0.8)';
+	sq.foreseen.forEach((p, i) => {
+		const [x, y] = at(p.x + 0.5, p.y + 0.5);
+		ctx.globalAlpha = 1 - i / (sq.foreseen.length + 2);
+		ctx.beginPath();
+		ctx.arc(x, y, S * 0.12, 0, Math.PI * 2);
+		ctx.fill();
+	});
+	ctx.globalAlpha = 1;
+	for (const g of r.ghosts.list) {
+		const role = sq.role(g.kind);
+		const [x, y] = at(g.position.x, g.position.y);
+		const tg = sq.targets.get(g.kind);
+		if (tg) drawClaim(ctx, x, y, ...at(tg.x + 0.5, tg.y + 0.5), S, KIND_COLOR[g.kind], 0.7);
+		ctx.font = `700 ${Math.round(S * 0.42)}px "Courier New", monospace`;
+		ctx.textAlign = 'center';
+		ctx.fillStyle = '#ffffff';
+		ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+		ctx.lineWidth = 3;
+		ctx.strokeText(role, x, y - S * 0.6);
+		ctx.fillText(role, x, y - S * 0.6);
+	}
+	for (const h of sq.hiddenList) {
+		const [x, y] = at(h.x + 0.5, h.y + 0.5);
+		ctx.strokeStyle = KIND_COLOR[h.kind];
+		ctx.lineWidth = 2;
+		ctx.strokeRect(x - S * 0.45, y - S * 0.45, S * 0.9, S * 0.9);
+	}
+	if (sq.openWay) {
+		const [x, y] = at(sq.openWay.x + 0.5, sq.openWay.y + 0.5);
+		ctx.strokeStyle = '#7dffb0';
+		ctx.lineWidth = 3;
+		ctx.beginPath();
+		ctx.arc(x, y, S * 0.5, 0, Math.PI * 2);
+		ctx.stroke();
+	}
+	ctx.restore();
+}
+
 function hud(r: Run, vw: number, vh: number): void {
 	const x = 18;
 	ctx.textAlign = 'left';
@@ -415,14 +477,14 @@ function hud(r: Run, vw: number, vh: number): void {
 	ctx.fillStyle = '#d8f4ee';
 	ctx.fillText(`HITS  ${'■ '.repeat(Math.max(0, r.hits))}${'□ '.repeat(Math.max(0, TUNE.hits - r.hits))}`, x, 70);
 	const sq = r.squad;
-	const play = sq.chasing ? 'THE CHASE' : sq.phase === 'tell' ? `${sq.next.toUpperCase()} …` : sq.phase === 'on' ? sq.play.toUpperCase() : 'calm';
+	const play = sq.chasing ? 'THE CHASE' : sq.phase === 'tell' ? `${(sq.next ?? '').toUpperCase()} …` : sq.phase === 'on' ? (sq.tactic ?? '').toUpperCase() : 'calm';
 	ctx.fillText(`SQUAD ${play}`, x, 92);
 	ctx.fillText(`SCORE ${r.score.score}`, x, 114);
 	if (r.escape.state === 'running') ctx.fillText(`PULSE ${r.escape.pulse ? 'ready' : 'spent'}`, x, 136);
 	else if (r.escape.state === 'armed') ctx.fillText('→ the console', x, 136);
 	ctx.fillStyle = 'rgba(216,244,238,0.6)';
 	ctx.font = '12px "Courier New", monospace';
-	ctx.fillText('arrows/WASD · R restart · ?charge=0.9 starts near the escape', 14, vh - 14);
+	ctx.fillText('arrows/WASD · R restart · ?charge=0.9 near the escape · ?debug what the squad thinks', 14, vh - 14);
 	if (r.end) {
 		ctx.fillStyle = 'rgba(0,0,0,0.65)';
 		ctx.fillRect(0, vh / 2 - 50, vw, 100);

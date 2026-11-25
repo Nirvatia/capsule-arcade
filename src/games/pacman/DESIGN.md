@@ -300,32 +300,34 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   unchanged. The station's kit only: no season abilities, no overdrive or hypnosis, no fruit, no
   Easter egg.
 - **The squad**: four creatures of one tile, no legs (bodies like the seasons' ghosts, their own
-  look: a prototype, the owner picks), each with a colour and a temper like Pac-Man's four. A
-  **director** gives them plays in turn, with a calm beat between (they hunt as the classic four:
-  scatter and chase), and adds plays as the hatch charges:
-  1. **The train** (from the start): they gather and link up behind a leader that follows the
-     hero's trail; the others step exactly where it stepped. A moving wall that sweeps corridors.
-     Tell: they draw together, the lights flicker. Answer: cut across ahead of it; a power cell
-     breaks it.
-  2. **The pincer** (from a quarter charged): the train breaks and each takes a role: one hunts
-     the hero head on, one waits at the junction he will come out of, one shuts the nearest way
-     out, one comes round through a tunnel. They work out the junctions he can reach and share
-     them out. Tell: a short line from each one's eyes to the junction it takes. Answer: see the
-     ring before it closes and slip out, or a tunnel, or a power cell.
-  3. **The mimics** (from half charged): two or three vanish and come back as food. A mimic
-     always sits on a tile the hero has **already eaten clean** (the tell for an attentive
-     player: "there was nothing here"), and breathes out of step with the real food. Biting one
-     does not kill: it holds the hero for a second while the rest close in. One mimic may be a
-     power cell: the level's best trap. Answer: memory, and a real power cell, which shows every
-     mimic up and sends them running.
-  4. **The threads** (later, after the first three play well): one stops at a junction and spins
-     a thread along the corridors toward the hero. A thread does not kill: it sticks (slows him)
-     and tells the squad where he is. Answer: the spinner stands still and is weak, a touch from
-     the side or behind stuns it home; a power cell sets the thread alight and the fire runs back
-     along it to the spinner like a fuse.
+  look: a prototype, the owner picks), each with a colour. Its brain (v2, 2026-11-25, after the
+  owner played v1: a timer running set pieces made the train the whole show) **reads the hero**
+  (his way: on along a corridor, at a junction toward the nearest food he has not eaten, never
+  back without a reason; 14 steps ahead), gives each creature a **role** (hunter, cutter,
+  fencer, phantom, lurker, venter) and runs **one of three tactics**, picked by what the
+  situation offers (none twice running), with a calm beat of 3-5 s between (the classic scatter
+  and chase) and a tell of 1.3 s before each (the lights dim and flicker, the eyes turn gold):
+  1. **The fence** (the owner's idea): two fencers walk to two lines across the station (a row or
+     a column each) and light beams along them; the hero is held in 60-75% of the station (the
+     pair is found by a search over the maze graph, tunnels and vents counted, each line needed);
+     one hunts him there; the fourth is a **phantom**: unseen, shown only by the light guttering
+     round it. Tell: the lines shown faint, then dashed and thickening while the fencers charge
+     (1.5 s): he may slip across before they light. A beam stops him, not the squad; it holds
+     about 9 s. The fencers holding it do not bite.
+  2. **The ambush**: one fades out and lies as food on a tile he has already eaten, along his
+     way (the tell for an attentive player: "there was nothing here"; it breathes out of step);
+     the others shut every way out of where he is but the one that leads to it. Stepping on it
+     holds him 0.8 s while the rest close in. It creeps a tile along the eaten corridors now
+     and then, but only while he does not look its way.
+  3. **The vent** (the owner's idea): one hides in a shaft near his way (a vent in the outer wall
+     or a side tunnel): its eyes and a glow show in the grille all along; as he passes (3
+     steps) the glow swells for 1.2 s and it comes out; the others drive him that way.
+     The tripwire (one strings a thread across a corridor on his way; touching it calls the squad)
+     and the shadow (one follows at a fixed distance and strikes when he stops or turns back) are
+     in reserve.
 - **The power cells**: four, in the corners (where the energizers are): about 6 s the squad is
-  frightened and can be eaten (eyes home, 200-1600), whatever play is on: the train breaks, the
-  pincer scatters, the mimics show and flee.
+  frightened and can be eaten (eyes home, 200-1600), whatever tactic is on: the beams go dark,
+  the hidden come out and flee.
 - **The food** charges the hatch: the HUD shows the charge; at about 75% of the food the
   escape is ready (the rest is score). The classic eating route stays the core; the mimics turn
   the eaten corridors into the place to watch.
@@ -341,11 +343,12 @@ Numbers are starting points, later in `config/stationConfig.ts`.
     squad back and shoos any mimic off the route;
   - a second touch: the escape starts over from the console, the squad reset, no hit lost.
     He goes out through the hatch: the level's end and its reward. The train only ever comes from
-    behind (it may not step on his way ahead, so nothing meets him head on along the route), the
-    containment seals at the alarm (who is still in stays in), he gets a head start (1.5 s), and
-    a restart stuns the squad (3 s) instead of sending it home. In the prototype the console is
-    at the bottom of the maze (12,24) and the hatch is the top-left vent (6,1): a run of about
-    four seconds through four doors.
+    behind (it may not step on his way ahead), at near his speed (0.95); now and then one leaves
+    it and dashes (1.25) down a side corridor to a junction ahead on his route: the junction
+    blinks red 1.5 s first, so a quick or watchful runner is past it or turns off. The alarm
+    holds the squad a moment (a 1.5 s head start); a restart stuns it (3 s); stunned or held
+    creatures do not bite. In the prototype the console is at the bottom of the maze (12,24) and
+    the hatch is the top-left vent (6,1): a run of about five seconds through four doors.
 - **Light** (no endless dark): the station runs on its working and emergency lights, the walls,
   the floor, the food and the creatures always read; mood comes from light that changes (a
   flicker as a play's tell, a lamp dying in one corridor, the alarm's red in the escape), fog and
@@ -361,7 +364,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   tile.
 - **Sound**: the station's hum, a sting for each tell, the train's rhythm, the alarm in the
   escape. Samples the owner brings or synthesised: open.
-- **Maze**: `grid_station`: long corridors with blind corners, the side tunnels, vent pairs in
+- **Maze**: `grid_station` (no one-tile pillars since 2026-11-25): long corridors with blind
+  corners, the side tunnels, vent pairs in
   dead-end pockets of the outer wall; plus the console's tile and the escape route, set by hand.
 
 ## 8. The arcade (secret level)
