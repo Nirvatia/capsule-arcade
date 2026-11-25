@@ -13,7 +13,7 @@ import {
 } from '../meadow/meadowSprites';
 import { bauble, winterPellet } from '../meadow/seasonFood';
 import { paintWalls } from '../meadow/meadowBakeWalls';
-import { freshSnow, icicles, snowBank, winterFloor } from './winterDress';
+import { WINTER_TONE, freshSnow, icicles, snowBank, winterFloor } from './winterDress';
 import { ICE_PALETTE } from '../../transitions/decay/LevelDecay';
 
 const fog = lazy(() =>
@@ -100,7 +100,7 @@ export const winterTheme: MeadowTheme = {
 			// winter walls: the shared stone in cold tones under a snow blanket (the scene's wall
 			// dress); the bank at their feet goes under the stones, the icicles over them
 			paint: (f) => {
-				paintWalls(f, { foot: snowBank });
+				paintWalls(f, { foot: snowBank, ao: WINTER_TONE.ao });
 				icicles(f);
 			}
 		},

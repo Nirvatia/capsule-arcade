@@ -4,7 +4,7 @@
 import { autumnRoof, leafPile } from '../meadow/seasonDetails';
 import { hollowStump } from '../meadow/burrows';
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
-import { autumnFloor, halloweenScene } from './autumnScene';
+import { AUTUMN_TONE, autumnFloor, halloweenScene } from './autumnScene';
 import { autumnWet, leafLitter } from './autumnDress';
 import { paintWalls } from '../meadow/meadowBakeWalls';
 import {
@@ -102,7 +102,7 @@ export const autumnTheme: MeadowTheme = {
 		// warmer and lighter than the mock-up's rust-brown stones (owner's review)
 		// wet leaf litter at the walls' feet, under the stones (`autumnDress`)
 		wall: {
-			paint: (f) => paintWalls(f, { foot: leafLitter }),
+			paint: (f) => paintWalls(f, { foot: leafLitter, ao: AUTUMN_TONE.ao }),
 			base: '#7c3614',
 			moss: ['#c0502e', '#82301a'],
 			top: ['#dc9c4e', '#e2a456', '#d49447'],

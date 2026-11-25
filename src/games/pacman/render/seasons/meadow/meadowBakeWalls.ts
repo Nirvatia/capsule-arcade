@@ -13,6 +13,8 @@ export interface WallPaintOpts {
 	readonly snow?: WallSnow;
 	/** The soft drop shadow under the blocks as [blur, dx, dy] in world units. */
 	readonly shadow?: readonly [number, number, number];
+	/** How dark the contact shadow at the walls' feet is, 0..1 (the season's floor tone). */
+	readonly ao?: number;
 	/** Painted after the floor under the rounded corners and before the stones (a snow bank at the walls' feet). */
 	readonly foot?: (f: MeadowFrame) => void;
 }
@@ -21,6 +23,7 @@ export interface WallPaintOpts {
 export function paintWalls(f: MeadowFrame, opts: WallPaintOpts = {}): void {
 	const snow = opts.snow ?? 'drifts';
 	const [shBlur, shDx, shDy] = opts.shadow ?? [7, 2, 3];
+	const ao = opts.ao ?? 0;
 	const { S, P, RS, R, C, isW, b, vis, lin, blob, rp } = f;
 	const WL: Array<[number, number]> = [];
 	for (let r = 0; r < R; r++) {
@@ -72,22 +75,58 @@ export function paintWalls(f: MeadowFrame, opts: WallPaintOpts = {}): void {
 		}
 	}
 	opts.foot?.(f);
+	// the shadow is cast by the walls' whole silhouette in one fill: block by block the shadows
+	// overlapped into dark patches at the joints and kept square corners under rounded ones
+	// one path of every block's rounded rectangle (the shape `wsh` gives them), filled as one
+	b.beginPath();
+	for (const [r, c] of WL) {
+		const oL = !isW(r, c - 1);
+		const oU = !isW(r - 1, c);
+		const oR = !isW(r, c + 1);
+		const oD = !isW(r + 1, c);
+		const L = oL ? 0 : -0.4;
+		const U = oU ? 0 : -0.4;
+		const Rr = oR ? 0 : -0.4;
+		const Dd = oD ? 0 : -0.4;
+		const x = c * T + L;
+		const y = r * T + U;
+		const w2 = T - L - Rr;
+		const h2 = T - U - Dd;
+		const tl = oU && oL ? 8 : 0;
+		const tr = oU && oR ? 8 : 0;
+		const br = oD && oR ? 8 : 0;
+		const bl = oD && oL ? 8 : 0;
+		b.moveTo(x + tl, y);
+		b.lineTo(x + w2 - tr, y);
+		b.arcTo(x + w2, y, x + w2, y + tr, tr);
+		b.lineTo(x + w2, y + h2 - br);
+		b.arcTo(x + w2, y + h2, x + w2 - br, y + h2, br);
+		b.lineTo(x + bl, y + h2);
+		b.arcTo(x, y + h2, x, y + h2 - bl, bl);
+		b.lineTo(x, y + tl);
+		b.arcTo(x, y, x + tl, y, tl);
+		b.closePath();
+	}
+	b.fillStyle = W.base;
+	// the soft shadow, thrown down and right
 	b.save();
 	b.shadowColor = W.shadow;
 	b.shadowBlur = shBlur * RS;
 	b.shadowOffsetX = shDx * RS;
 	b.shadowOffsetY = shDy * RS;
-	b.fillStyle = W.base;
-	for (const [r, c] of WL) {
-		wsh(r, c, 0, -0.4, 8, false);
-		b.fill();
-	}
+	b.fill();
 	b.restore();
-	b.fillStyle = W.base;
-	for (const [r, c] of WL) {
-		wsh(r, c, 0, -0.4, 8, false);
+	// the contact shadow: dark at the foot, deeper on the lee side, round the corners with them
+	if (ao > 0) {
+		b.save();
+		b.shadowColor = `rgba(0,0,0,${ao})`;
+		b.shadowBlur = 5 * RS;
+		b.shadowOffsetX = 1.5 * RS;
+		b.shadowOffsetY = 2 * RS;
 		b.fill();
+		b.restore();
 	}
+	b.fill();
 	for (const [r, c] of WL) {
 		const k = tileRandom(r, c);
 		const v = k();

@@ -253,7 +253,7 @@ export interface FloorTone {
 	readonly base: string;
 	/** Two grain colours (light, dark), laid at a low alpha. */
 	readonly grain: readonly [string, string];
-	/** How dark the contact shadow at the walls' feet is, 0..1. */
+	/** How dark the contact shadow at the walls' feet is, 0..1 (pass it to `paintWalls`). */
 	readonly ao: number;
 }
 
@@ -280,25 +280,8 @@ export function sceneFloor(
 			b.fill();
 		}
 		b.globalAlpha = 1;
-		const strip = (
-			x0: number,
-			y0: number,
-			x1: number,
-			y1: number,
-			rw: number,
-			rh: number,
-			depth: number
-		) => {
-			const g = b.createLinearGradient(x0, y0, x1, y1);
-			g.addColorStop(0, `rgba(0,0,0,${tone.ao * depth})`);
-			g.addColorStop(1, 'rgba(0,0,0,0)');
-			b.fillStyle = g;
-			b.fillRect(x0 < x1 || y0 < y1 ? x0 : x1, x0 < x1 || y0 < y1 ? y0 : y1, rw, rh);
-		};
-		if (isW(r, c - 1)) strip(x, y, x + 9, y, 9, T, 1);
-		if (isW(r - 1, c)) strip(x, y, x, y + 9, T, 9, 1);
-		if (isW(r, c + 1)) strip(x + T, y, x + T - 4, y, 4, T, 0.5);
-		if (isW(r + 1, c)) strip(x, y + T, x, y + T - 4, T, 4, 0.5);
+		// the contact shadow at the walls' feet is cast by the walls' silhouette (`paintWalls`'s
+		// `ao`): strips per cell stopped square at the cells' edges and missed the rounded corners
 		if (!feet) {
 			extra?.(f, cell);
 			return;

@@ -5,7 +5,7 @@
 import { summerRoof, dryGrass } from '../meadow/seasonDetails';
 import { sandWhirl } from '../meadow/burrows';
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
-import { summerFloor, fairScene } from './summerScene';
+import { SUMMER_TONE, summerFloor, fairScene } from './summerScene';
 import {
 	glowTexture,
 	lazy,
@@ -136,6 +136,7 @@ export const summerTheme: MeadowTheme = {
 		wall: {
 			paint: (f) =>
 				paintWalls(f, {
+					ao: SUMMER_TONE.ao,
 					foot: (g) =>
 						greenFoot(g, 'rgba(50,40,20,.4)', ['#2c7032', '#3d8a3a', '#5a4a2a', '#1f5a26'], 67)
 				}),

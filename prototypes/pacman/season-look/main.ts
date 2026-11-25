@@ -8,11 +8,11 @@ import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meado
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const q = new URLSearchParams(location.search);
-const D = 1;
+const D = Math.min(window.devicePixelRatio || 1, 3);
 const vw = window.innerWidth;
 const vh = window.innerHeight;
-view.width = vw;
-view.height = vh;
+view.width = Math.round(vw * D);
+view.height = Math.round(vh * D);
 const world = new MeadowWorld(GRID_01, meadowThemeFor(q.get('season') ?? 'spring') as MeadowTheme);
 world.resize(vw, vh, D);
 world.setMood(q.has('storm') ? 1 : 0, q.has('night') ? 1 : 0);

@@ -36,7 +36,7 @@ import { mossAndLeaves } from './autumnDress';
 import { WORLD_TILE } from '../../common/worldDecor';
 
 const T = WORLD_TILE;
-const AUTUMN_TONE: FloorTone = { base: '#403c3a', grain: ['#6a625c', '#25211f'], ao: 0.42 };
+export const AUTUMN_TONE: FloorTone = { base: '#403c3a', grain: ['#6a625c', '#25211f'], ao: 0.42 };
 
 /** The corridor: the one tone; the wet floor holds a faint warm band of the wall above. */
 export const autumnFloor = sceneFloor(AUTUMN_TONE, null, (f, cell) => {

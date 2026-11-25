@@ -11,7 +11,7 @@ import { TAU, addBulbs, addMark, sceneFloor, spot } from '../meadow/seasonScene'
 import { WORLD_TILE } from '../../common/worldDecor';
 
 const T = WORLD_TILE;
-const SUMMER_TONE: FloorTone = { base: '#a68b58', grain: ['#cdb27a', '#7a6238'], ao: 0.3 };
+export const SUMMER_TONE: FloorTone = { base: '#a68b58', grain: ['#cdb27a', '#7a6238'], ao: 0.3 };
 
 /** The corridor: one opaque tone, a contact shadow, grass at the walls' feet. */
 export const summerFloor = sceneFloor(SUMMER_TONE, null);

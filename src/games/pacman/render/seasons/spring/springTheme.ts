@@ -3,7 +3,7 @@
 import { springRoof, cloverPatch } from '../meadow/seasonDetails';
 import { stoneWell } from '../meadow/burrows';
 import type { MeadowTheme, WeatherParticle } from '../meadow/MeadowTheme';
-import { springFloor, hanamiScene } from './springScene';
+import { SPRING_TONE, springFloor, hanamiScene } from './springScene';
 import {
 	glowTexture,
 	lazy,
@@ -104,6 +104,7 @@ export const springTheme: MeadowTheme = {
 		wall: {
 			paint: (f) =>
 				paintWalls(f, {
+					ao: SPRING_TONE.ao,
 					foot: (g) =>
 						greenFoot(g, 'rgba(46,84,30,.45)', ['#5f9a3a', '#7fb84a', '#4d8230', '#8cc456'], 61)
 				}),

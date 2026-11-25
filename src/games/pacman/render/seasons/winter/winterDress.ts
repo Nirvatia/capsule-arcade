@@ -6,6 +6,7 @@
 import type { MeadowFrame } from '../meadow/MeadowBake';
 import type { MeadowPathCell } from '../meadow/MeadowTheme';
 import { TAU, hash, nearCorner, rng, sceneFloor, wallClip } from '../meadow/seasonScene';
+import type { FloorTone } from '../meadow/seasonScene';
 import { WORLD_TILE } from '../../common/worldDecor';
 
 const T = WORLD_TILE;
@@ -17,8 +18,10 @@ const SNOW_SHADE = 'rgba(112,138,180,';
 const BANK = '#b4c0d0';
 
 /** The corridor: trodden snow, one dark blue-grey, a barely visible grain. */
+export const WINTER_TONE: FloorTone = { base: '#465166', grain: ['#6b7890', '#323a4a'], ao: 0.36 };
+
 export const winterFloor: (f: MeadowFrame, cell: MeadowPathCell) => void = sceneFloor(
-	{ base: '#465166', grain: ['#6b7890', '#323a4a'], ao: 0.36 },
+	WINTER_TONE,
 	null
 );
 
