@@ -84,15 +84,18 @@ last (see Later).
       (the train, the pincer, the mimics, later the threads), each with a tell and an answer,
       power cells, the food charging the hatch, and **an escape** as a scene along a lit route,
       made easy. Steps, one per chat:
-      1. **The design page**: written (`DESIGN.md` §7a, draft of 2026-11-25), awaits the owner's
-         approval.
-      2. **The squad to play**: a prototype on the lit station (its art baked as the `mimics`
-         page does) with placeholder bodies (discs with eyes): the director and the plays train,
-         pincer, mimics; the power cells; the charge; the escape (the console, the route, the
-         doors, the rebuild, the pulse). The squad is game code from the start: a guide over
-         `GhostService` (as the hypnosis steers ghosts), `logic/station/`, tested. When it
-         replaces them, delete the hounds and the swarm (pages, `HoundPack`, `SwarmField`,
-         `stationHound`, `stationSwarm`).
+      1. **The design page**: approved (2026-11-25).
+      2. **The squad to play**: built (2026-11-25), awaits the owner's play:
+         `prototypes/pacman/squad` (the approved art lit, placeholder discs with eyes, energy
+         capsules for food). Game code, tested: `logic/station/StationSquad` (the director; the
+         train with its leader's trail, the pincer that shares the hero's ways out, the mimics on
+         eaten tiles with the grab; the chase from behind in the escape) through
+         `GhostService.setSquadGuide`, and `logic/station/StationEscape` (the charge at 75% of
+         the food, the console, the route laid anew off it, doors closing ahead and shutting
+         behind, the pulse, the restart). Tuned on scripts only (a blind bot runs the escape
+         clean once the chase comes from behind). After the owner's play: tune, then delete the
+         hounds and the swarm (pages, `HoundPack`, `SwarmField`, `stationHound`,
+         `stationSwarm`).
       3. **The creatures' look**: tile-sized, no legs, four tempers; a prototype (the void
          jellyfish of the `creatures` page is a starting point), the owner picks.
       4. **The threads**, once the first plays feel right.

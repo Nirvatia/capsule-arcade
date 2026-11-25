@@ -45,12 +45,24 @@ export interface HypnosisGuide {
 	speedFactor(ghost: GhostModel): number;
 }
 
+/**
+ * Steers the hunting ghosts from outside (the station's squad: a train, a pincer). Consulted for
+ * `active` ghosts only, at every tile; null keeps the classic rule.
+ */
+export interface SquadGuide {
+	/** The hunting ghost's next step (it may turn back); null: scatter / chase as ever. */
+	direction(ghost: GhostModel): GhostDirection | null;
+	/** Its speed against its classic one. */
+	speedFactor(ghost: GhostModel): number;
+}
+
 export class GhostService {
 	private readonly grid: GridService;
 	private readonly player: PlayerService;
 	private readonly progress: LevelProgress;
 	private readonly ghosts: GhostModel[];
 	private hypnosisGuide: HypnosisGuide | null = null;
+	private squadGuide: SquadGuide | null = null;
 	private readonly exitTargetValue: GhostTile;
 	private mode: GhostMode = 'scatter';
 	private modeTimer = SCATTER_TIME;
@@ -377,6 +389,10 @@ export class GhostService {
 	}
 
 	/** The hypnosis service guides the hypnotised ghost and tells frightened ones what to flee. */
+	setSquadGuide(guide: SquadGuide | null): void {
+		this.squadGuide = guide;
+	}
+
 	setHypnosisGuide(guide: HypnosisGuide | null): void {
 		this.hypnosisGuide = guide;
 	}
@@ -478,7 +494,8 @@ export class GhostService {
 		if (ghost.state === 'frightened') {
 			return ghost.speed * this.fleeFactor;
 		}
-		return ghost.speed * this.speedModifierValue * (this.kindSpeed.get(ghost.kind) ?? 1);
+		const squad = ghost.state === 'active' ? (this.squadGuide?.speedFactor(ghost) ?? 1) : 1;
+		return ghost.speed * this.speedModifierValue * (this.kindSpeed.get(ghost.kind) ?? 1) * squad;
 	}
 
 	private handleArrival(ghost: GhostModel): boolean {
@@ -544,6 +561,13 @@ export class GhostService {
 			const home = this.homeDirection(ghost);
 			if (home && candidates.includes(home)) {
 				return home;
+			}
+		}
+		if (ghost.state === 'active' && this.squadGuide) {
+			const steered = this.squadGuide.direction(ghost);
+			if (steered && candidates.includes(steered)) {
+				ghost.setForceReverse(false);
+				return steered;
 			}
 		}
 		if (ghost.forceReverse && opposite && candidates.includes(opposite)) {

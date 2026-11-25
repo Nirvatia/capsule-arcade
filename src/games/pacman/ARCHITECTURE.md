@@ -35,11 +35,13 @@ logic/
              (Ms. Pac-Man overdrive and hypnosis: feeder / hunter, guides the ghost), LairCodeService
   bonuses/   fruit, Easter egg, AbilityService (the season levels' abilities: the token, the
              slot, the F key, the mask, the shock; it owns the EchoCloneService riot), boss reward
-  station/   the station's rules: SwarmField (the swarm as a density over the corridors),
-             HoundPack (the hounds: a pack that hunts tile by tile and moves like animals),
-             StationService (HP and the rewind, the beam's and the flares'
-             scare, the paces, the metamorphosis and the cocoons, the phases, the super flare),
-             stationBeam (the flashlight cone and the super flare's corridor as the rules see them)
+  station/   the station's rules: StationSquad (the squad's director and plays: the train, the
+             pincer, the mimics, the chase from behind; it steers the hunting ghosts through
+             GhostService.setSquadGuide), StationEscape (the hatch's charge, the console, the
+             route laid anew off it, the doors, the pulse, the restart); the older StationService
+             (the ghost version: HP and the rewind, the beam, flares, cocoons, phases, the super
+             flare) and stationBeam, to be replaced; SwarmField and HoundPack (dropped
+             candidates, deleted once the squad is in)
   doom/      the hell: DoomBossService (the boss's state machine), DoomArena (hazards,
              seals, void, pull, corruption, echo, shake), DoomMinionSwarm, DoomAttackPlanner
              (which attack, fair or not), DoomTargeting (tile picks), weapons, pickups

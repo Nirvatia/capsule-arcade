@@ -280,7 +280,7 @@ pads, and no ghosts but their lord.
 
 ## 7a. The station (boss level)
 
-**Draft of 2026-11-25, awaits the owner's approval.** The second boss world: an abandoned
+**Approved by the owner on 2026-11-25.** The second boss world: an abandoned
 research station, lit, and the thing that got out of its quarantine lab is a **squad**: four
 creatures that hunt together and change how they hunt. Working name "the station" (code id
 `station`); the owner names it and the squad. The horror is **surprise**, not darkness: the
@@ -340,7 +340,12 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   - the first touch is forgiven: the hero's one-shot **pulse** goes off by itself, throws the
     squad back and shoos any mimic off the route;
   - a second touch: the escape starts over from the console, the squad reset, no hit lost.
-    He goes out through the hatch: the level's end and its reward.
+    He goes out through the hatch: the level's end and its reward. The train only ever comes from
+    behind (it may not step on his way ahead, so nothing meets him head on along the route), the
+    containment seals at the alarm (who is still in stays in), he gets a head start (1.5 s), and
+    a restart stuns the squad (3 s) instead of sending it home. In the prototype the console is
+    at the bottom of the maze (12,24) and the hatch is the top-left vent (6,1): a run of about
+    four seconds through four doors.
 - **Light** (no endless dark): the station runs on its working and emergency lights, the walls,
   the floor, the food and the creatures always read; mood comes from light that changes (a
   flicker as a play's tell, a lamp dying in one corridor, the alarm's red in the escape), fog and
@@ -350,8 +355,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
 - **Art**: the approved style B (2026-11-22), lit: the quarantine lab (scorched bulkheads with
   claw gouges and soot, heavy deck plates with drag trails, the specimen tanks, the hull breach,
   the dead crew, the window in the deck onto the storm below), a cold grade, light grain. The
-  lair is the burst containment the squad comes out of. The food (power capsules or the spores)
-  and its mimic, the power cell, the console, the route's strip lights, the doors and the hatch:
+  lair is the burst containment the squad comes out of. The food: plain energy capsules (the owner: the spores' shape is too
+  busy), and its mimic, the power cell, the console, the route's strip lights, the doors and the hatch:
   art of their own. The hell's look rules hold: walls as blocks, no height, all reads at one
   tile.
 - **Sound**: the station's hum, a sting for each tell, the train's rhythm, the alarm in the
