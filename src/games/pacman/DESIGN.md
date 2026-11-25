@@ -280,68 +280,84 @@ pads, and no ghosts but their lord.
 
 ## 7a. The station (boss level)
 
-The second boss world, a horror level: an abandoned research station in the dark, overrun by a
-swarm from a living nest. Working name "the station" (code id `station`); the owner names it.
-The mood is industrial sci-fi horror with the swarm of the underground in mind: a narrow corridor,
-the rustle, a wave, and fire the only way out; nothing is borrowed from the films and games of
-that genre. The hell is a fight with a boss; the station has no boss: it is an escape at full
-speed (the owner's call). Rewritten after the owner played two versions: the four ghosts moving
-on rails broke the horror, the darkness hid the walls, the background and the enemies, and
-stealth does not fit a hero who never stops. Numbers are starting points, in
-`config/stationConfig.ts`.
+**Draft of 2026-11-25, awaits the owner's approval.** The second boss world: an abandoned
+research station, lit, and the thing that got out of its quarantine lab is a **squad**: four
+creatures that hunt together and change how they hunt. Working name "the station" (code id
+`station`); the owner names it and the squad. The horror is **surprise**, not darkness: the
+player sees everything and cannot be sure what the squad does next. The goal is an **escape**:
+power the hatch, then run a lit route out, played as a scene. Third design: the ghost version
+(ghosts on rails broke the horror, the darkness hid everything), then the swarm, then the hounds
+(they played, but the hounds looked wrong and the endless dark hid the walls and the enemies).
+Numbers are starting points, later in `config/stationConfig.ts`.
 
-- **Place in the run**: shelved (2026-11-25, unfinished): out of `BOSS_ROTATION`, only the dev
-  panel's Station brings it. Back in the rotation when it is done.
-- **Heroes**: both get a look of their own for the station (prototyped first, the owner
-  approves). Controls and the hero's speed are unchanged. The station's kit only: no energizer
-  scare, no overdrive or hypnosis, no season abilities, no fruit, no Easter egg.
-- **The swarm** replaces the ghosts: thousands of insects that pour out of the nest (the lair)
-  and the vents and flow through the corridors like a liquid, fill dead ends, round corners and
-  draw back from light in a wave. It is a density over the corridors drawn as living bugs; it
-  flows toward the hero, a surge of it is faster than he is, so the only escape is toward light,
-  not just away. The bugs are bright (wet chitin, a sick glow), so the worst thing on screen is
-  the easiest to see, and a corridor full of them reads as a corridor.
-- **The torch**: the hero carries fire, a circle of light round him (about 2.5 tiles) that the
-  swarm parts round as he runs. It burns down; every dot eaten feeds it, so the classic route
-  of eating becomes survival: stop, or run into corridors already eaten, and the light dies. The
-  swarm pressing round the fire shrinks its circle. `F` / `Shift` drops it: it keeps burning
-  where it lies (an island of light that holds a corridor), and the hero runs dark until he
-  takes it back or reaches a beacon.
-- **Health**: a bar. Inside the swarm out of the light it drains fast (about a second in a thick
-  one); at none the hero is caught: the run goes on to the next level without losing a life and
-  without the reward (the hell's rule). The rewind of the previous design goes: the swarm wears
-  the hero down, it does not strike.
-- **The four beacons** in the corners, where the energizers would be, are the level's stages in
-  place of phases. Lit by the hero (he runs into one), a beacon burns for good, pushes the swarm
-  out of its quarter of the station and fills the torch. Each changes the map: the lit part
-  grows, the swarm gathers in the dark that is left, angrier and thicker, and new vents open.
-  After the fourth the nest breaks out through its door, a wave fills the station and an escape
-  hatch opens far from the hero: the level ends in a run to it. The dots are fuel and score; the
-  level is not won by eating them all.
-- **Vents**: the side tunnels as on the season mazes; the other vent pairs sit in dead-end pockets
-  of the outer wall (entered only on purpose), their grilles glow so they read from afar. The
-  swarm comes out of them; a vent rattles and glows before it does.
-- **Readable in the dark**: walls and floor differ without the light: the floor keeps a faint
-  light of its own (emergency marking, a wet sheen), the walls a lighter top and their safety
-  edge. The surround keeps its own light (rooms where the power still works, the storm in the
-  window), so the station round the maze is seen; the vignette stays light.
-- **Safe for the eyes**: nothing flashes faster than three times a second, no full-screen flash;
-  lamps fade down and up slowly, the storm's lightning swells.
-- **The HUD**: the station's own, in its horror style, on the boss HUD's skeleton (the health
-  bar, the torch's fuel, the beacons lit).
-- **Art** (all in code; the owner's pick: style B of the `station` prototype): a quarantine lab
-  that something got out of. Massive scorched bulkheads with claw gouges, blood and soot, a
-  continuous edge round every block; heavy deck plates with blood dragged toward the nest; round
-  the maze specimen tanks (one burst), a hull breach the nest pours out of, the dead crew, a
-  window in the deck onto the storm of the planet below. The nest's resin grows over the station
-  beacon by beacon; its door is a real blast door the swarm breaks at the end. No toy outlines:
-  the food is the nest's spores, the swarm bright, wet insects. A cold, sick grade, scanlines,
-  grain. The hell's look rules hold: walls as blocks, no height; everything reads at one tile.
-- **Sound** carries half the level: the swarm's rustle swelling with its density near the hero,
-  the fire's crackle, the vent rattle, the hero's heartbeat when the light is low. Samples the
-  owner brings or synthesised: open.
-- **Maze**: its own `grid_station`: long corridors with blind corners, the side tunnels and vent
-  pairs in dead-end pockets, the lair as the nest.
+- **The rule of surprise**: every play of the squad has a **tell** (1-1.5 s before it: the
+  station's lights flicker, a sound, the creatures' eyes turn one colour) and an **answer** the
+  player can find. A surprise without a tell is unfair; with one it reads "they are lining up:
+  the train is coming".
+- **Place in the run**: shelved until done (out of `BOSS_ROTATION`, the dev panel's Station
+  brings it).
+- **Heroes**: both, each with a station look of their own (prototyped first). Controls and speed
+  unchanged. The station's kit only: no season abilities, no overdrive or hypnosis, no fruit, no
+  Easter egg.
+- **The squad**: four creatures of one tile, no legs (bodies like the seasons' ghosts, their own
+  look: a prototype, the owner picks), each with a colour and a temper like Pac-Man's four. A
+  **director** gives them plays in turn, with a calm beat between (they hunt as the classic four:
+  scatter and chase), and adds plays as the hatch charges:
+  1. **The train** (from the start): they gather and link up behind a leader that follows the
+     hero's trail; the others step exactly where it stepped. A moving wall that sweeps corridors.
+     Tell: they draw together, the lights flicker. Answer: cut across ahead of it; a power cell
+     breaks it.
+  2. **The pincer** (from a quarter charged): the train breaks and each takes a role: one hunts
+     the hero head on, one waits at the junction he will come out of, one shuts the nearest way
+     out, one comes round through a tunnel. They work out the junctions he can reach and share
+     them out. Tell: a short line from each one's eyes to the junction it takes. Answer: see the
+     ring before it closes and slip out, or a tunnel, or a power cell.
+  3. **The mimics** (from half charged): two or three vanish and come back as food. A mimic
+     always sits on a tile the hero has **already eaten clean** (the tell for an attentive
+     player: "there was nothing here"), and breathes out of step with the real food. Biting one
+     does not kill: it holds the hero for a second while the rest close in. One mimic may be a
+     power cell: the level's best trap. Answer: memory, and a real power cell, which shows every
+     mimic up and sends them running.
+  4. **The threads** (later, after the first three play well): one stops at a junction and spins
+     a thread along the corridors toward the hero. A thread does not kill: it sticks (slows him)
+     and tells the squad where he is. Answer: the spinner stands still and is weak, a touch from
+     the side or behind stuns it home; a power cell sets the thread alight and the fire runs back
+     along it to the spinner like a fuse.
+- **The power cells**: four, in the corners (where the energizers are): about 6 s the squad is
+  frightened and can be eaten (eyes home, 200-1600), whatever play is on: the train breaks, the
+  pincer scatters, the mimics show and flee.
+- **The food** charges the hatch: the HUD shows the charge; at about 75% of the food the
+  escape is ready (the rest is score). The classic eating route stays the core; the mimics turn
+  the eaten corridors into the place to watch.
+- **Caught** before the escape: the station's three hits (its own, not the run's lives); the
+  third ends the level without the reward (the hell's rule), the run goes on.
+- **The escape**, a scene: the charge is full, the alarm turns the station red, the console
+  lights. The hero runs to it; then a **lit route** runs from it to the hatch (laid out per maze
+  by hand, strip lights on the floor), bulkhead doors along it begin to close as he nears (at
+  full speed he beats each one), and the squad comes after him as one train. Made easy on
+  purpose, so a long level is never lost at its very end:
+  - a wrong turn: the route rebuilds from where he is (the lights run anew);
+  - the first touch is forgiven: the hero's one-shot **pulse** goes off by itself, throws the
+    squad back and shoos any mimic off the route;
+  - a second touch: the escape starts over from the console, the squad reset, no hit lost.
+    He goes out through the hatch: the level's end and its reward.
+- **Light** (no endless dark): the station runs on its working and emergency lights, the walls,
+  the floor, the food and the creatures always read; mood comes from light that changes (a
+  flicker as a play's tell, a lamp dying in one corridor, the alarm's red in the escape), fog and
+  sound. Nothing flashes faster than three times a second, no full-screen flash.
+- **The HUD**: the station's own on the boss HUD's skeleton: the hatch charge, the three hits,
+  the pulse in the escape.
+- **Art**: the approved style B (2026-11-22), lit: the quarantine lab (scorched bulkheads with
+  claw gouges and soot, heavy deck plates with drag trails, the specimen tanks, the hull breach,
+  the dead crew, the window in the deck onto the storm below), a cold grade, light grain. The
+  lair is the burst containment the squad comes out of. The food (power capsules or the spores)
+  and its mimic, the power cell, the console, the route's strip lights, the doors and the hatch:
+  art of their own. The hell's look rules hold: walls as blocks, no height, all reads at one
+  tile.
+- **Sound**: the station's hum, a sting for each tell, the train's rhythm, the alarm in the
+  escape. Samples the owner brings or synthesised: open.
+- **Maze**: `grid_station`: long corridors with blind corners, the side tunnels, vent pairs in
+  dead-end pockets of the outer wall; plus the console's tile and the escape route, set by hand.
 
 ## 8. The arcade (secret level)
 
@@ -536,35 +552,14 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 Each new boss level is still Pac-Man in a maze, but with its own boss, mechanic and way to play;
 the hell is combat, so the others must not be. The order proposed (`ROADMAP.md`, part II, step 3):
 
-- **The station** (§7a): shelved, unfinished (dev panel only).
-- **A Bomberman style world, "the demolition yard"** (the next one; a proposal of 2026-11-25,
-  awaits the owner's approval, nothing settled):
-  - The idea: Pac-Man cannot fight, he lays bombs. Crates block many corridors; dots and
-    pickups lie behind them. The four ghosts hunt as usual; no energizers: the only defence is a
-    bomb left behind him. A bomb is a trap (the blast) and a barricade (no ghost walks through
-    it).
-  - Bombs: 1 at a time (up to 3 with pickups), laid on his tile with the ability button; a 2 s
-    fuse, a cross blast 2 tiles along the corridors (+1 per flame pickup), stopped by walls, the
-    first crate on a line breaks; a blast sets off a bomb it reaches (chains); his own blast
-    costs him a life. A ghost caught → eyes, 200..1600 within one blast or chain.
-  - Crates: the first is cramped and safe-ish, every crate blown opens the maze for the ghosts
-    too, so the level gets harder as it is cleared. A crate holds dots, a pickup (bomb +1, flame
-    +1, kick) or nothing.
-  - The end: the last dot lights the yard's big fuse, a short run to the exit (the lair's door).
-  - Open: a boss bomber who lays bombs of his own (combat again?) or none, as proposed.
-  - The look (master assets approved 2026-11-25, `prototypes/pacman/yard`): a toy construction
-    yard, top-down, the light from the upper left; sand around the maze, dark asphalt corridors
-    (contrast: pale walls, wood and brass must stand off the floor); walls are concrete barriers
-    with a pale ridge, a worn yellow curb line and hazard stripes on blunt ends; crates are wood,
-    square to the grid; brass hex nuts for dots; a round black bomb with a rope fuse; the blast a
-    billowing fire cross that flattens on walls, tosses a crate's planks and leaves soot; the
-    lair a hatched concrete pad behind a striped boom; the tunnel a corrugated drain pipe lying
-    in its own tile (the actors crawl in under it). Night: moonlit blue, floodlight pools, the
-    fire its own light. To come: ghosts in hard hats, the site cabin, the surround.
-  - The playable prototype (2026-11-25): the rules above with 1 bomb, 2 tiles of fire, a 2.2 s
-    fuse, 0.5 s of deadly fire, crates on ~26% of the corridor tiles with a 30% pickup chance
-    (`logic/yard/YardRules`, `YARD_TUNE`); the eyes pass crates and bombs; the hero walks off
-    his own bomb but not back on.
+- **The station** (§7a): redesigned round a squad and an escape (2026-11-25), the focus.
+- **A Bomberman world, "the demolition yard"**: tried and dropped (2026-11-25). Played, it became
+  "lay a bomb, step back, wait" in a maze crammed with crates: waiting breaks Pac-Man's constant
+  motion, and bombs without the wait are just a weapon, which is the hell's. Its approved look
+  (sand, asphalt corridors, concrete barriers, crates, brass nuts, the bomb, the blast) and its
+  rules can be taken back from commit `e65ce2a` (`prototypes/pacman/yard`, `logic/yard`), e.g.
+  for a quarry in the spirit of Dig Dug (the hero digs his way, the ghosts walk his tunnels,
+  boulders fall on them).
 - **Sharkboy and Lavagirl**: a tide of water and lava floods the tiles in waves, sharks patrol the
   water. Terrain, a playful tone, clear of the hell's reds.
 

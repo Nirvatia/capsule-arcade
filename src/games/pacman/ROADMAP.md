@@ -73,64 +73,39 @@ last (see Later).
    art, then art in code). Still Pac-Man in a maze, a different boss/mechanic/way to play, never
    a reskin of the hell. Like the hell: `*Bake` + `*World` + a level renderer with `preview()`, a
    death `style` and a season-turn style; every element but the heroes has art of its own.
-   1. **The station** (shelved 2026-11-25, unfinished: out of the rotation, the dev panel's
-      Station still brings it; `DESIGN.md` §7a; the steps below wait). It
-      replaced TRON (dropped with its `grid_tron`). Steps, one per chat:
-      The look is approved (2026-11-22): **style B** of the `station` prototype, the
-      quarantine lab (scorched bulkheads with claw gouges and blood, deck plates with drag
-      trails, specimen tanks, the hull breach, the dead crew, the floor viewport onto the storm,
-      spores for food, wraiths for ghosts, the husk with a face for the cocoon, a cold grade,
-      scanlines, grain). Style A is dropped. No new mock-up: the rest is tuned in the game.
-      In the game (2026-11-22): `BossCatalog` picks the hell or the station per boss level
-      (seeded, no repeat; the dev panel's Hell / Station / Boss: auto force it);
-      `render/station/` draws the station (style B). The level still plays by the season
-      rules with unkillable wraiths.
-      The owner played the ghost version twice and redesigned the level (2026-11-22,
-      `DESIGN.md` §7a): **a swarm** instead of the ghosts, a **torch** fed by the dots instead
-      of the flashlight, **four beacons** that change the map instead of phases, no boss, an
-      escape at the end. What is in the game from the ghost version (`StationService`: HP and
-      the rewind, the beam, flares, cocoons, the super flare) is replaced step by step; the
-      fixes stay (no season kit, one wall contour, nothing flashing, vents in pockets).
-      1. **The swarm prototype**: built (`prototypes/pacman/swarm`), awaits the owner's play.
-         The swarm is game code from the start: `logic/station/SwarmField` (a density over the
-         corridors that pours from the nest and the vents, spreads, flows toward the hero, never
-         enters light and is pushed out of it; tested) and `render/station/stationSwarm` (the
-         bugs as cached sprites streaming along the flow, the swarm's glow as one scaled density
-         map). The torch, its fuel, the health, the beacons and the escape are in the page for
-         the feel, with every number in its `TUNE`.
-         The owner played it: the bugs glitched (they were re-placed from the density every
-         frame instead of living on), and a fluid swarm risks a fuzzy, unreadable threat. His
-         pick: a **mini-swarm of hounds** instead, prototyped in `prototypes/pacman/hounds`
-         (built, awaits his play): `logic/station/HoundPack` (6-10 bright seekers that choose
-         their way tile by tile but move like animals: creep with pauses, sniff at junctions,
-         hold a breath and dash down a straight corridor, tire, round the corners, spread to cut
-         the ways, shy back from fire at once; a bite costs health; tested) and
-         `render/station/stationHound` (an arrowhead lit from inside, a burning eye at the tip,
-         legs and tail catching its fire; `HoundMotion` eases the path into curves). The torch,
-         the beacons and the escape stay. Which one the level keeps is the owner's call.
-      2. The swarm rules in the game in place of the ghosts and `StationService`'s ghost parts;
-         walls and floor readable in the dark; the surround's own light; the nest's door.
-      3. The station's horror HUD (health, fuel, beacons).
-      4. Both heroes' station look: a prototype first, the owner approves.
-      5. The caught transition and the world turn; the hatch's own art.
-      6. Sound (sources open: the owner's samples or synthesised).
-         Cost: light, the swarm and sound carry the play here; the dark and the torch go through
-         the light map, the swarm's bugs are cached sprites, not a new full-screen layer.
+   1. **The station** (the focus again since 2026-11-25; `DESIGN.md` §7a). Out of the rotation
+      until done (the dev panel's Station brings it). The look is approved (2026-11-22): style B
+      of the `station` prototype, now lit. History: the ghost version (in the game:
+      `StationService` with HP, the rewind, the beam, flares, cocoons; `render/station/`), then
+      the swarm (`prototypes/pacman/swarm`, `logic/station/SwarmField`, `stationSwarm`: the bugs
+      glitched, a fluid threat read fuzzy), then the hounds (`prototypes/pacman/hounds`,
+      `logic/station/HoundPack`, `stationHound`: they played, but the owner disliked the hounds'
+      look and the endless dark). The redesign of 2026-11-25: **a squad** of four with plays
+      (the train, the pincer, the mimics, later the threads), each with a tell and an answer,
+      power cells, the food charging the hatch, and **an escape** as a scene along a lit route,
+      made easy. Steps, one per chat:
+      1. **The design page**: written (`DESIGN.md` §7a, draft of 2026-11-25), awaits the owner's
+         approval.
+      2. **The squad to play**: a prototype on the lit station (its art baked as the `mimics`
+         page does) with placeholder bodies (discs with eyes): the director and the plays train,
+         pincer, mimics; the power cells; the charge; the escape (the console, the route, the
+         doors, the rebuild, the pulse). The squad is game code from the start: a guide over
+         `GhostService` (as the hypnosis steers ghosts), `logic/station/`, tested. When it
+         replaces them, delete the hounds and the swarm (pages, `HoundPack`, `SwarmField`,
+         `stationHound`, `stationSwarm`).
+      3. **The creatures' look**: tile-sized, no legs, four tempers; a prototype (the void
+         jellyfish of the `creatures` page is a starting point), the owner picks.
+      4. **The threads**, once the first plays feel right.
+      5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
+         the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
+         and the route's art; the caught transition and the world turn; sound; a performance
+         check of the lit station.
    2. **Sharkboy and Lavagirl, a tide**: water/lava flood tiles in waves, sharks patrol, safe
       islands change. Playful; palette clear of the hell's reds.
-   3. **A Bomberman world, "the demolition yard"** (the next focus). The idea and the look are
-      proposed (`DESIGN.md` §13, 2026-11-25) and await the owner's answer: the open question is a
-      boss bomber or none. The master assets are approved (2026-11-25; the owner's fixes: dark
-      asphalt corridors and brass nuts for contrast, crates square to the grid, the pipe in the
-      tunnel's own tile) and the minimal playable prototype is built (`prototypes/pacman/yard`:
-      the game's hero and ghosts, `logic/yard/YardRules` tested; win = every nut, so every crate
-      over one goes). Awaits the owner's play. Not in it yet: the big fuse and the run to the
-      exit, the yard's ghosts (hard hats), the surround (cabin, masts, machines), sound, touch. Then, one step per chat: the design page settled in `DESIGN.md`
-      (§7b); bombs, blasts and crates as game code on placeholder art (`logic/yard/`, tested),
-      routed by `BOSS_ROTATION`; a look prototype of a few master assets (the floor, a wall, a
-      crate, a bomb, the blast); the art in code.
-   - Zombies rejected (a horde with weapons is the hell again). TRON dropped for the station. More
-     old-arcade candidates (Dig Dug, Space Invaders, Frogger) can be offered before step 3.
+   3. **A Bomberman world**: tried and dropped (2026-11-25, `DESIGN.md` §13): waiting on a fuse
+      breaks Pac-Man's motion. Recoverable from commit `e65ce2a`.
+   - Zombies rejected (a horde with weapons is the hell again). TRON dropped for the station.
+     Bomberman dropped. Candidates: a Dig Dug-like quarry (the yard's art reused), the tide.
 
 ## Part III. The interface
 
