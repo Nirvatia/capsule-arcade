@@ -221,7 +221,7 @@ export class CinnabarHero extends VesselHero {
 			ctx.restore();
 		}
 	}
-	/** A smooth cinnabar curl on the nape (at most 1.30R = 0.384 tile). */
+	/** A smooth cinnabar curl on the nape (at most 1.30R = 0.429 tile). */
 	private drawNape(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		const phaseOn = p > 0.2;
 		const wave =

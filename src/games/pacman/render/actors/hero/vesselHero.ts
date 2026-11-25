@@ -32,9 +32,10 @@ export interface WedgeEye {
 	readonly isMs: boolean;
 }
 export const CJ_TAU = Math.PI * 2;
-export const CJ_BODY_RATIO = 0.295; // the body is 0.295 tile: vessel, contour and effects stay inside one tile
-export const CJ_MAX_FX_R = 1.44; // 0.425 tile (0.467 with the bite pulse of x1.1, under 0.5)
-export const CJ_AURA_MAX = 1.5; // 0.443 tile: the aura fades out inside the tile
+// the body is 0.33 tile, as the heroes before (the mock-up had 0.295; the owner, 2026-11-25)
+export const CJ_BODY_RATIO = 0.33;
+export const CJ_MAX_FX_R = 1.44; // 0.475 tile, about the old corona's reach (1.45 radii)
+export const CJ_AURA_MAX = 1.5; // 0.495 tile: the aura fades out inside the tile
 /**
  * The stream's ribbons fill six points per stretch (the default three): half the fills and
  * gradients, no visible change (measured: no pixel off by more than 13/255).

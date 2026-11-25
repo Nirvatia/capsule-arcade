@@ -460,7 +460,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - Organic and alive, not metal: soft bodies, breathing; the heroes stay round (their size
   pulses on a spring, they are never stretched into an ellipse).
 - Effects stay inside the tile (no coronas spilling onto walls).
-- The heroes are glass vessels (the owner's mock-up `Heroes.html`, carried over as drawn on 2026-11-25), 0.295 of a tile: body, contour and every effect stay inside the tile.
+- The heroes are glass vessels (the owner's mock-up `Heroes.html`, carried over as drawn on 2026-11-25), 0.33 of a tile (the mock-up's 0.295 grown back to the old size, the owner): body, contour and effects reach 0.48 of a tile, like the old corona (a bite's 0.26 s pulse touches the tile's edge).
 - Pac-Man, the crimson cinnabar vessel: a glossy crimson glass ball 85% full, an air bubble rolling along the top of the glass and the liquid sloshing on a bite and a turn, gold grains drifting inside, a curved window highlight, a glowing gold wedge eye that blinks, a see-through mouth (no cavity drawn), a cinnabar curl on the nape. The power (the rage) turns the contour inside out: the dark ink becomes a glowing gold rim, the body goes obsidian-ruby. The ball in a tunnel: a gold double spiral on crimson.
 - How both heroes move (the owner's brief: a circle seen from above that feels like it moves
   through the maze; the silhouette stays simple, the motion comes from acting and from the world

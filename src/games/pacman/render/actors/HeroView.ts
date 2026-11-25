@@ -13,7 +13,7 @@ import { NO_FEEL } from './hero/Hero';
 import type { HeroSeason } from './hero/heroSeasons';
 import { CJ_BODY_RATIO } from './hero/vesselHero';
 
-/** The hero's radius in tiles: the vessels' body, everything they draw stays inside one tile. */
+/** The hero's radius in tiles: the vessels' body. */
 const RADIUS = CJ_BODY_RATIO;
 
 function facingAngle(facing: string | null, fallback: number): number {

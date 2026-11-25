@@ -242,7 +242,7 @@ export class JadeHero extends VesselHero {
 			ctx.restore();
 		}
 	}
-	/** A light curl of jade wind on the nape (at most 1.30R = 0.384 tile). */
+	/** A light curl of jade wind on the nape (at most 1.30R = 0.429 tile). */
 	private drawNape(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		const phaseOn = p > 0.2;
 		const wv = Math.sin(this.time * 6.8) * R * 0.06;
@@ -414,7 +414,7 @@ export class JadeHero extends VesselHero {
 	 * - a crisp waist (5:1 to the wings' span) and two short swallow tails with V cuts;
 	 * - a contact shadow on the jade and a full crisp outline round each wing;
 	 * - a compact gold knot instead of a big bead: the wings stay open;
-	 * - at most 1.42R = 0.418 tile (0.460 with the bite pulse of x1.1: inside the tile).
+	 * - at most 1.42R = 0.469 tile (0.515 for the 0.26 s of a bite's x1.1 pulse).
 	 */
 	private drawBow(ctx: CanvasRenderingContext2D, R: number, p: number): void {
 		const phaseOn = p > 0.2;
