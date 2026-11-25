@@ -121,6 +121,7 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		// the station's own kit only: no fruit, no abilities, no egg; its rules take the touches
 		fruit.setEnabled(false);
 		stationRun = new StationRun(grid, ghosts, player, progress, score, season.grid);
+		stationRun.sound = (sound) => events.emit('audio:station', { sound });
 		combat.setStationHit(null);
 	}
 	const mods = seasonModifiers(season.name);

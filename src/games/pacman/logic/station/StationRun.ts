@@ -18,6 +18,7 @@ import type { GridMatrix } from '../../config/gridConfig';
 import { SQUAD_TUNE, StationSquad } from './StationSquad';
 import { StationEscape } from './StationEscape';
 import { EscapeRush } from './EscapeRush';
+import type { StationSound } from '../../audio/StationSynth';
 
 export const RUN_TUNE = {
 	hp: 3,
@@ -115,6 +116,10 @@ export class StationRun {
 	lure: { x: number; y: number; left: number } | null = null;
 	lures: number = RUN_TUNE.lures;
 	end: 'out' | 'taken' | null = null;
+	/** Where its sounds go (the level wires the audio's bus). */
+	sound: (s: StationSound) => void = () => undefined;
+	private lastPhase = 'calm';
+	private folding = new Set<string>();
 	popups: StationPopup[] = [];
 	time = 0;
 	private total = 0;
@@ -206,6 +211,7 @@ export class StationRun {
 			this.ghosts.setPowerActive(true);
 			this.power = RUN_TUNE.power;
 			this.chain = 0;
+			this.sound('power');
 		}
 		if (this.power > 0) {
 			this.power -= dt;
@@ -225,14 +231,19 @@ export class StationRun {
 		);
 		if (this.escape.state === 'running') this.infection = Math.min(1, this.infection + dt / 6);
 		const ev = this.escape.update(dt, hero);
-		if (ev.armed) this.popup(RUN_TUNE.console.x + 0.5, RUN_TUNE.console.y - 0.4, 'TO THE CONSOLE');
+		if (ev.armed) {
+			this.popup(RUN_TUNE.console.x + 0.5, RUN_TUNE.console.y - 0.4, 'TO THE CONSOLE');
+			this.sound('armed');
+		}
 		if (ev.started) {
 			this.startChase();
 			this.seal(RUN_TUNE.headStart);
 			this.popup(hero.x + 0.5, hero.y - 0.4, 'RUN');
+			this.sound('alarm');
 		}
 		if (ev.out) {
 			this.end = 'out';
+			this.sound('out');
 			return;
 		}
 		if (this.lure) {
@@ -241,6 +252,7 @@ export class StationRun {
 		}
 		this.squad.lure = this.lure ? { x: this.lure.x, y: this.lure.y } : null;
 		const sev = this.squad.update(dt, this.ghosts, hero, this.player.facing);
+		this.playSounds();
 		if (this.escape.state === 'running') {
 			const lure = this.lure;
 			this.rush.update(
@@ -255,8 +267,24 @@ export class StationRun {
 			this.grab = sev.grab;
 			this.player.setMovementLocked(true);
 			this.popup(hero.x + 0.5, hero.y - 0.4, 'GRABBED');
+			this.sound('grab');
 		}
 		this.touches();
+	}
+
+	/** The plays' stings: a tell as it starts, a lurker as it begins to fold. */
+	private playSounds(): void {
+		const sq = this.squad;
+		if (sq.phase === 'tell' && this.lastPhase !== 'tell' && sq.next) this.sound(`tell-${sq.next}`);
+		this.lastPhase = sq.phase;
+		const now = new Set<string>();
+		for (const h of sq.hiddenList) {
+			if (h.as === 'vent' || h.state !== 'fading') continue;
+			const key = `${h.kind}`;
+			now.add(key);
+			if (!this.folding.has(key)) this.sound('fold');
+		}
+		this.folding = now;
 	}
 
 	/** Where the enraged may not step: the lit lane, and while the lure glows, his way and round him. */
@@ -315,6 +343,7 @@ export class StationRun {
 		this.hurt = 0;
 		this.pulse = 0;
 		this.popup(p.x, p.y - 0.5, '-1');
+		this.sound('hit');
 		const hero = under(p);
 		for (const g of this.ghosts.list) {
 			const near = Math.hypot(g.position.x - p.x, g.position.y - p.y) < RUN_TUNE.pulseReach;
@@ -372,6 +401,7 @@ export class StationRun {
 		this.lures -= 1;
 		this.lure = { x: spot.x, y: spot.y, left: RUN_TUNE.lureTime };
 		this.popup(spot.x + 0.5, spot.y - 0.4, 'LURE');
+		this.sound('lure');
 		return true;
 	}
 

@@ -26,7 +26,7 @@ out.ogg`); about 0.8 MB a minute. Peak at −1 dBFS, loudness around −16 LUFS 
 | World                             | Status                                            | Mood                                                       |
 | --------------------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
 | Hell (boss)                       | placeholder in the game (`hell.ogg`, synthesised) | a slow, heavy heartbeat; dread, not noise                  |
-| Station (boss)                    | wanted                                            | quarantine-lab horror: cold, sparse, a pulse that quickens |
+| Station (boss)                    | placeholder in the game (`station-*.ogg`)         | quarantine-lab horror: cold, sparse, a pulse that quickens |
 | Spring / summer / autumn / winter | optional (the siren is the classic)               | light, bouncy, the season's colour                         |
 | Menu                              | optional                                          | the arcade's warmth, short and catchy                      |
 
@@ -80,6 +80,16 @@ The quarantine lab in the storm: dark corridors, a torch fed by the dots, a houn
 > Low machinery hum, a soft ticking pulse like a reactor, metallic resonances, a distant
 > two-note alarm motif a minor second apart, far thunder. Cold, sparse, tense, lots of space;
 > no melody hooks, no drums kit, no vocals. Seamless loop, no intro or outro, 90 seconds.
+
+**The placeholders** (2026-11-25), synthesised offline by
+`node prototypes/pacman/music/station.mjs calm|dread|escape out.wav`, then
+`ffmpeg … -q:a 4 static/assets/pacman/music/station-<kind>.ogg`: `station-calm.ogg` (48 s: the
+mains hum, the ventilation's air, a low E-minor pad, sparse metallic pings), `station-dread.ogg`
+(48 s, a layer over the calm, its volume the infection: an irregular heartbeat, a minor-second
+cluster, scrapes, creaks) and `station-escape.ogg` (32 s at 140 bpm: a two-tone siren, a driving
+bass, a kick and hats). The station's effects are synthesised live (`audio/StationSynth`): the
+tells' stings (the fence's rising hum, the ambush's wet clicks, the vent's hiss), the lurker's
+fold and grab, a hit, the power cell, the hatch charged, the alarm, the lure's ping, the way out.
 
 ### Seasons (optional)
 

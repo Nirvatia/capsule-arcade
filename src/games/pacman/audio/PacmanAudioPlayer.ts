@@ -1,12 +1,18 @@
 import type { EventBus } from '../engine/EventBus';
 import type { PacmanAudioCue, PacmanEventMap, PacmanStateName } from '../core/Events';
 import { ArcadeSynth } from './ArcadeSynth';
+import { StationSynth } from './StationSynth';
 import { muted, volume } from './audioSettings';
 
 /** Is the arcade (secret level) running, and how far its dots are eaten (0..1). */
 export type ArcadeProbe = () => { readonly active: boolean; readonly urgency: number };
 /** The world being played ('hell', 'station', a season's name…), or null before a level. */
 export type WorldProbe = () => string | null;
+/** The station level's state for its music: the infection (0..1) brings up the dread layer. */
+export type StationProbe = () => { readonly infection: number } | null;
+
+/** The station's dread layer, over its music, as loud as the infection is far (OST.md). */
+const STATION_DREAD = { file: '/assets/pacman/music/station-dread.ogg', volume: 0.55 } as const;
 
 /**
  * A world's own music, looped under the play in place of the siren (OST.md): paused, not lost,
@@ -15,7 +21,9 @@ export type WorldProbe = () => string | null;
 export const WORLD_MUSIC: Readonly<
 	Record<string, { readonly file: string; readonly volume: number }>
 > = {
-	hell: { file: '/assets/pacman/music/hell.ogg', volume: 0.5 }
+	hell: { file: '/assets/pacman/music/hell.ogg', volume: 0.5 },
+	station: { file: '/assets/pacman/music/station-calm.ogg', volume: 0.45 },
+	'station-escape': { file: '/assets/pacman/music/station-escape.ogg', volume: 0.5 }
 };
 
 const AUDIO_BASE = '/assets/pacman/sfx/';
@@ -71,6 +79,12 @@ export class PacmanAudioPlayer {
 	private readonly levels = new Map<HTMLAudioElement, number>();
 	/** The arcade has its own chiptune sound; the sample sounds stay out of it. */
 	private readonly synth = new ArcadeSynth();
+	/** The station's own effects. */
+	private readonly stationSynth = new StationSynth();
+	private readonly station: StationProbe;
+	private readonly unsubscribeStation: () => void;
+	/** The station's dread layer while it plays. */
+	private dread: HTMLAudioElement | null = null;
 	private unlocked = false;
 	/** Samples the unlock started and has not stopped yet; the game playing one takes it over. */
 	private readonly unlocking = new Set<HTMLAudioElement>();
@@ -84,7 +98,8 @@ export class PacmanAudioPlayer {
 	constructor(
 		events: EventBus<PacmanEventMap>,
 		arcade: ArcadeProbe = () => ({ active: false, urgency: 0 }),
-		world: WorldProbe = () => null
+		world: WorldProbe = () => null,
+		station: StationProbe = () => null
 	) {
 		if (!events) {
 			console.error('PacmanAudioPlayer.constructor', 'missing event bus');
@@ -93,12 +108,20 @@ export class PacmanAudioPlayer {
 		this.events = events;
 		this.arcade = arcade;
 		this.world = world;
+		this.station = station;
 		this.available = typeof window !== 'undefined' && typeof Audio !== 'undefined';
 		this.unsubscribeState = events.on('ui:stateChanged', (payload) => {
 			this.handleState(payload.state);
 		});
 		this.unsubscribeCue = events.on('audio:cue', (payload) => {
 			this.handleCue(payload.cue);
+			if (payload.cue === 'dot') this.syncDread();
+		});
+		this.unsubscribeStation = events.on('audio:station', (payload) => {
+			this.stationSynth.play(payload.sound);
+			// the alarm turns the music to the escape's
+			if (payload.sound === 'alarm' || payload.sound === 'out') this.updateBackground();
+			else this.syncDread();
 		});
 		this.preload();
 		this.unsubscribeMuted = muted.subscribe((value) => {
@@ -114,7 +137,10 @@ export class PacmanAudioPlayer {
 		this.unsubscribeVolume();
 		this.unsubscribeState();
 		this.unsubscribeCue();
+		this.unsubscribeStation();
 		this.stopBackground();
+		this.dread?.pause();
+		this.stationSynth.destroy();
 		this.stopMusic();
 		this.synth.destroy();
 		for (const audio of this.sounds.values()) {
@@ -127,6 +153,7 @@ export class PacmanAudioPlayer {
 	private applyMuted(value: boolean): void {
 		this.muted = value;
 		this.synth.setMuted(value);
+		this.stationSynth.setMuted(value);
 		for (const audio of this.sounds.values()) {
 			audio.muted = value;
 		}
@@ -136,6 +163,7 @@ export class PacmanAudioPlayer {
 	private applyVolume(value: number): void {
 		this.master = value;
 		this.synth.setVolume(value);
+		this.stationSynth.setVolume(value);
 		for (const [audio, level] of this.levels) {
 			audio.volume = this.scaled(level);
 		}
@@ -347,6 +375,7 @@ export class PacmanAudioPlayer {
 	}
 
 	private updateBackground(): void {
+		this.syncDread();
 		const track = WORLD_MUSIC[this.world() ?? ''] ?? null;
 		if (this.state !== 'playing') {
 			this.stopBackground();
@@ -365,6 +394,31 @@ export class PacmanAudioPlayer {
 		}
 		this.stopMusic();
 		this.startLoop('siren0.wav', 0.25);
+	}
+
+	/** The station's dread layer: on under its calm music, as loud as the infection is far. */
+	private syncDread(): void {
+		const probe = this.station();
+		const on =
+			probe !== null &&
+			this.state === 'playing' &&
+			!this.powerActive &&
+			this.world() === 'station' &&
+			this.available;
+		if (!on) {
+			this.dread?.pause();
+			return;
+		}
+		const audio = this.sound(STATION_DREAD.file);
+		if (!audio) return;
+		if (this.dread !== audio) {
+			audio.currentTime = 0;
+			this.dread = audio;
+		}
+		this.claim(audio);
+		audio.loop = true;
+		this.setLevel(audio, STATION_DREAD.volume * Math.pow(probe.infection, 1.2));
+		if (audio.paused) void audio.play().catch(() => undefined);
 	}
 
 	/** The world's track from where it was paused (from the start for another track). */
@@ -439,6 +493,7 @@ export class PacmanAudioPlayer {
 		}
 		this.unlocked = true;
 		this.synth.unlock();
+		this.stationSynth.unlock();
 		for (const name of UNLOCK_SOUNDS) {
 			const audio = this.sound(name);
 			if (!audio || !audio.paused) {

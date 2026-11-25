@@ -1,4 +1,5 @@
 import type { GhostKind } from '../logic/actors/GhostModel';
+import type { StationSound } from '../audio/StationSynth';
 
 export type PacmanStateName =
 	'menu' | 'ready' | 'playing' | 'paused' | 'death' | 'level-clear' | 'world-shift' | 'game-over';
@@ -110,6 +111,8 @@ export type PacmanEventMap = {
 	'ui:stateChanged': PacmanStateChangedPayload;
 	'ui:hudChanged': PacmanHudPayload;
 	'audio:cue': PacmanAudioCuePayload;
+	/** The station's own sounds (its plays, the lurker, a hit, the escape). */
+	'audio:station': { readonly sound: StationSound };
 	'debug:log': PacmanDebugLogPayload;
 	'fx:event': PacmanFx;
 };

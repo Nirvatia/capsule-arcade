@@ -51,10 +51,13 @@ export class GameMain implements GameModule {
 				level.hellMode
 					? 'hell'
 					: level.stationMode
-						? 'station'
+						? level.stationRun?.escape.state === 'running'
+							? 'station-escape'
+							: 'station'
 						: level.secretMode
 							? 'secret'
-							: (level.season?.name ?? null)
+							: (level.season?.name ?? null),
+			() => (level.stationRun ? { infection: level.stationRun.infection } : null)
 		);
 		const director = new Director(events, level);
 		const render = new RenderPipeline(container, director, level, events);
