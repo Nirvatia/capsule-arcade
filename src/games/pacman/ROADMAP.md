@@ -46,8 +46,11 @@ last (see Later).
    beside Clyde at game scale.
 2. **The heroes: the rage bite and a cornering bot.** Left: the ghost's crunch and the chain
    200-1600 rising with the rage; a balance bot that presses turns early so its numbers show the
-   cornering. Kept: no tongue; the heroes' looks are the owner's picks of `hero-art` (2026-11-23): Pac-Man the
-   sun with the pinwheel corona, Ms. Pac-Man the white comet with the ice bow (`DESIGN.md` §12).
+   cornering. Kept: no tongue; the heroes' looks are the owner's mock-up `Heroes.html` (in the game
+   2026-11-25, carried over as drawn; `DESIGN.md` §12): Pac-Man the cinnabar vessel, Ms. Pac-Man
+   the jade vessel. Left: the owner plays them; then delete the sun and the comet (`PacmanHero`,
+   `MsPacmanHero` and their tests; `drawIceBow` moves to the mask) unless the icons want them. The
+   menu/HUD icons stay as they are (the owner, 2026-11-25).
 3. **Mobile: on a real phone.** Swipes/pad/dial/tap/audio-unlock are in and checked in Chromium
    iPhone emulation. Left on real hardware: iOS Safari audio unlock and pinch, swipe threshold
    and pad size under a thumb, notched safe areas, the Auto graphics tier there.

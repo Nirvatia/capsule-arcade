@@ -88,7 +88,7 @@ render/
   transitions/decay/       the death black hole: field (Dijkstra), timeline (pure clock), WebGL2 pass
   transitions/seasonTurn/  level clear: corridor lights + tile cards to the next world
   transitions/arcadeShift/ the way into the arcade (mosaic, CRT on) and out of it (CRT off, a dot unfolds the world)
-  actors/ (hero/: the shared Hero, PacmanHero (the sun), MsPacmanHero (the white comet, `drawIceBow` shared with the mask's ghost form; her two tails are heroWake ribbons), heroSeasons (the season's colours), heroFx (fire drops, outline-free embers, the highlight star); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
+  actors/ (hero/: the shared Hero; the vessels in the game: vesselHero (their base: the wedge eye, the drop and star shapes, the stream's flicks, the contour turned inside out in the power through Hero's `drawSilhouetteOutline` hook; `CJ_BODY_RATIO` is HeroView's radius), CinnabarHero (Pac-Man), JadeHero (Ms. Pac-Man); their streams are heroWake ribbons at `VESSEL_STREAM_STEP`; the previous looks PacmanHero (the sun) and MsPacmanHero (the white comet, `drawIceBow` still drawn by the mask's ghost form) are kept for the icons and the prototypes; heroSeasons (the season's colours), heroFx (fire drops, outline-free embers, the highlight star); heroCharge (the hell's BFG charge light, painted over the body), playerDrawOptions; HeroView drives them, in every world, with the game's feel `GAME_FEEL`: the gaze, the smear, the bump, the shadow, the kick-up, the sphere, and the food's pull through `SharedLayers.attract`) items/ (fruit: one file each; bonus life, exit, egg) maze/ debug/
   common/          textures, trailRibbon (pure trails: a ribbon from an actor's recent positions whose width and alpha go to 0 at both ends and with age; the dash's lava track, the comet's tails), GlPass (every WebGL2 pass), moodBuffer (a world's atmosphere and
                    night in two small maps, a shade and a light, drawn over the screen, over a
                    part of it or into a baked background), renderQuality (the quality tiers' DPR
@@ -305,6 +305,8 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   last 0.25 s (whatever its length), smoothly, and back into the body over 0.28 s after the stop.
 - `render/actors/hero/heroWake.test.ts` — the comet's tails: both ends 0 through a turn and
   after the stop, gone a life later.
+- `render/actors/hero/vesselHero.test.ts` — the vessels' stream is not drawn across a tunnel
+  jump (the mock-up's did).
 - `logic/actors/playerControl.test.ts` — reversal, late turns, held keys.
 - `logic/actors/playerCorner.test.ts` — cornering on the diagonal, the rage's dash and the energizer's hit-stop.
 - `logic/doom/doomMechanics.test.ts` — pickups, BFG, minions, attack sets per phase,

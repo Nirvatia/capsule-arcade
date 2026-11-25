@@ -11,9 +11,10 @@ import type { PlayerDrawOptions } from './playerDrawOptions';
 import type { Hero, HeroFeel, OverPainter } from './hero/Hero';
 import { NO_FEEL } from './hero/Hero';
 import type { HeroSeason } from './hero/heroSeasons';
+import { CJ_BODY_RATIO } from './hero/vesselHero';
 
-/** The hero's radius in tiles (the nimble heroes: the sun and the pearl star). */
-const RADIUS = 0.33;
+/** The hero's radius in tiles: the vessels' body, everything they draw stays inside one tile. */
+const RADIUS = CJ_BODY_RATIO;
 
 function facingAngle(facing: string | null, fallback: number): number {
 	if (facing === 'UP') return -Math.PI / 2;

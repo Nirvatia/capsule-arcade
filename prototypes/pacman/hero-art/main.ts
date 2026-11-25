@@ -15,6 +15,9 @@ import type { MeadowTheme } from '../../../src/games/pacman/render/seasons/meado
 import { meadowThemeFor } from '../../../src/games/pacman/render/seasons/meadow/meadowThemes';
 import { Bar } from '../common/ui';
 import { EmberAshHero, FrostMistHero, HF_BODY_RATIO } from './geminiHeatFrost';
+import { CinnabarHero } from '../../../src/games/pacman/render/actors/hero/CinnabarHero';
+import { JadeHero } from '../../../src/games/pacman/render/actors/hero/JadeHero';
+import { CJ_BODY_RATIO } from '../../../src/games/pacman/render/actors/hero/vesselHero';
 
 type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 interface Cand {
@@ -32,6 +35,8 @@ const mk = (h: Hero): Hero => {
 const CANDS: readonly Cand[] = [
 	{ id: 'pac', name: 'Pac-Man: солнце', ms: false, make: () => mk(new PacmanHero()) },
 	{ id: 'ms', name: 'Ms. Pac-Man: комета', ms: true, make: () => mk(new MsPacmanHero()) },
+	{ id: 'cin', name: 'Pac-Man: киноварь (макет)', ms: false, r: CJ_BODY_RATIO, make: () => mk(new CinnabarHero()) },
+	{ id: 'jade', name: 'Ms. Pac-Man: нефрит (макет)', ms: true, r: CJ_BODY_RATIO, make: () => mk(new JadeHero()) },
 	{ id: 'g-heat', name: 'Gemini: Пламя', ms: false, r: HF_BODY_RATIO, make: () => mk(new EmberAshHero() as Hero) },
 	{ id: 'g-frost', name: 'Gemini: Пар', ms: true, r: HF_BODY_RATIO, make: () => mk(new FrostMistHero() as Hero) }
 ];

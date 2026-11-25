@@ -18,6 +18,8 @@ export interface WakeSpec {
 	/** Sideways shift (px, along the left normal) at a point: a curved tail. */
 	readonly shift?: (u: number, p: RibbonPoint) => number;
 	readonly add?: boolean;
+	/** Points per filled stretch (each a fill with its own gradient): more is cheaper, coarser. */
+	readonly step?: number;
 }
 
 export class Wake {
@@ -85,7 +87,7 @@ export class Wake {
 	private drawPiece(ctx: CanvasRenderingContext2D, pts: RibbonPoint[], spec: WakeSpec): void {
 		ctx.save();
 		if (spec.add !== false) ctx.globalCompositeOperation = 'lighter';
-		const step = 3;
+		const step = spec.step ?? 3;
 		for (let i0 = 0; i0 < pts.length - 1; i0 += step) {
 			const i1 = Math.min(pts.length - 1, i0 + step);
 			const a = pts[i0];

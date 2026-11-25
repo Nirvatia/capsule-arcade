@@ -114,7 +114,7 @@ export const easeOut = (t: number): number => 1 - Math.pow(1 - clamp01(t), 3);
 export const easeIn = (t: number): number => Math.pow(clamp01(t), 3);
 
 /** The key light, fixed in the world: from the upper left. */
-const LIGHT = (() => {
+export const LIGHT = (() => {
 	const n = Math.hypot(-0.55, -0.83);
 	return { x: -0.55 / n, y: -0.83 / n };
 })();
@@ -298,7 +298,18 @@ export interface HeroDesign {
 }
 
 export type ParticleKind =
-	'ember' | 'star' | 'heart' | 'dust' | 'petal' | 'spark' | 'leaf' | 'flake' | 'flame' | 'none';
+	| 'ember'
+	| 'star'
+	| 'heart'
+	| 'dust'
+	| 'petal'
+	| 'spark'
+	| 'leaf'
+	| 'flake'
+	| 'flame'
+	| 'cinnabarDrop'
+	| 'jadeMote'
+	| 'none';
 
 export interface Particle {
 	kind: ParticleKind;
@@ -317,7 +328,7 @@ export interface Particle {
 	lane?: number;
 }
 
-interface Burst {
+export interface Burst {
 	t: number;
 	x: number;
 	y: number;
@@ -383,7 +394,7 @@ export abstract class Hero {
 	/** The BFG charge, 0..1: the body swells and the mouth gapes. */
 	private charge = 0;
 	private embers: Particle[] = [];
-	private bursts: Burst[] = [];
+	protected bursts: Burst[] = [];
 	private seed = 11;
 
 	setFeel(feel: HeroFeel): void {
@@ -724,7 +735,7 @@ export abstract class Hero {
 		});
 	}
 
-	private spawn(
+	protected spawn(
 		kind: ParticleKind,
 		hot: boolean,
 		angle: number,
@@ -876,7 +887,9 @@ export abstract class Hero {
 			c.quadraticCurveTo((U.x + A.x) / 2, (U.y + A.y) / 2 + bend, U.x, U.y);
 			c.closePath();
 		};
-		{
+		if (this.drawSilhouetteOutline) {
+			this.drawSilhouetteOutline(ctx, outline, R, p, lx, ly, pal);
+		} else {
 			ctx.save();
 			// a thin ink line, heavier on the shadow side
 			ctx.translate(-lx * R * 0.026, -ly * R * 0.026);
@@ -961,6 +974,16 @@ export abstract class Hero {
 	protected swirlFor?(kind: ParticleKind): number;
 	/** Frame space, behind the body, always (the hero's own aura); `p` is the powered look, 0..1. */
 	protected drawAura?(ctx: CanvasRenderingContext2D, R: number, p: number): void;
+	/** The body's contour in place of the ink line (`outline` traces the silhouette, mouth cut). */
+	protected drawSilhouetteOutline?(
+		ctx: CanvasRenderingContext2D,
+		outline: (c: CanvasRenderingContext2D) => void,
+		R: number,
+		p: number,
+		lx: number,
+		ly: number,
+		pal: Palette
+	): void;
 	/** Frame space, behind the body, while powered (k = look × the end-of-power pulse). */
 	protected drawBehind?(ctx: CanvasRenderingContext2D, R: number, k: number): void;
 	/** Inside the body (the scratch canvas, source-atop): veins, blush, marks. */
@@ -1067,7 +1090,7 @@ export abstract class Hero {
 	 * The mouth's cavity (frame space, under the body): the wedge between the lips, a dark
 	 * red that deepens towards the hinge.
 	 */
-	private drawInside(
+	protected drawInside(
 		ctx: CanvasRenderingContext2D,
 		R: number,
 		look: MouthInside,
@@ -1181,7 +1204,7 @@ export abstract class Hero {
 	}
 
 	/** The burst of the awakening: a painted ring and impact rays. */
-	private drawBursts(ctx: CanvasRenderingContext2D): void {
+	protected drawBursts(ctx: CanvasRenderingContext2D): void {
 		const R = this.r;
 		for (const b of this.bursts) {
 			const k = b.t / 0.5;

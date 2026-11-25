@@ -1,8 +1,8 @@
 import { padSink } from './actors/padSink';
 import type { GridLayout } from './maze/GridView';
 import { HeroView } from './actors/HeroView';
-import { PacmanHero } from './actors/hero/PacmanHero';
-import { MsPacmanHero } from './actors/hero/MsPacmanHero';
+import { CinnabarHero } from './actors/hero/CinnabarHero';
+import { JadeHero } from './actors/hero/JadeHero';
 import type { PacmanAudioCue } from '../core/Events';
 import type { PlayerDrawOptions } from './actors/playerDrawOptions';
 import { chargePainter } from './actors/hero/heroCharge';
@@ -21,8 +21,8 @@ import type { RenderFrame } from './RenderFrame';
  * season turn. The HUD and the screens are Svelte (`ui/PacmanUi`), not canvas.
  */
 export class SharedLayers {
-	private readonly heroView = new HeroView(new PacmanHero(), chargePainter);
-	private readonly msHeroView = new HeroView(new MsPacmanHero(), chargePainter);
+	private readonly heroView = new HeroView(new CinnabarHero(), chargePainter);
+	private readonly msHeroView = new HeroView(new JadeHero(), chargePainter);
 	private readonly fruitView = new FruitView();
 	private readonly easterEggView = new EasterEggView();
 	private readonly abilityView = new AbilityView();
