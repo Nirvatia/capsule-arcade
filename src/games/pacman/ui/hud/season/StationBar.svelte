@@ -1,25 +1,25 @@
 <!-- The station's strip above the maze (the boss bar's place): a slim riveted steel plate with two
 	gauges side by side, the hatch's charge (cool green) and the infection (amber to red), each with
-	its name and number; in the escape the hatch's line turns to the alarm, pulsing slowly. Strict and small:
+	its name and number; once charged the hatch's line turns to the goal (→ CONSOLE, then → HATCH),
+	pulsing slowly until it is reached. Strict and small:
 	it must read at a glance and hide little of the station. -->
 <script lang="ts">
 	let {
 		w = 600,
 		charge,
 		infection,
-		escape,
+		goalLabel,
 		hatchLabel,
 		infectionLabel,
-		alarmLabel,
 		uid = 'sb'
 	}: {
 		w?: number;
 		charge: number;
 		infection: number;
-		escape: boolean;
+		/** Where he has to go now (→ CONSOLE, → HATCH), pulsing in the hatch's line; null: none. */
+		goalLabel: string | null;
 		hatchLabel: string;
 		infectionLabel: string;
-		alarmLabel: string;
 		uid?: string;
 	} = $props();
 
@@ -69,9 +69,9 @@
 		<circle cx={rx} cy={y0 + bh / 2} r="2.4" fill="#3a4643" stroke="#0b1110" stroke-width="1" />
 	{/each}
 	{#each gauges as g, i (i)}
-		{#if escape && i === 0}
-			<!-- the hatch is charged: its gauge's line turns to the alarm -->
-			<text class="alarm" x={g.x} y={y0 - (compact ? 4 : 6)} font-size={fs}>{alarmLabel}</text>
+		{#if goalLabel && i === 0}
+			<!-- the hatch is charged: its gauge's line turns to the goal, pulsing until it is reached -->
+			<text class="goal" x={g.x} y={y0 - (compact ? 4 : 6)} font-size={fs}>{goalLabel}</text>
 		{:else}
 			<text class="name" x={g.x} y={y0 - (compact ? 4 : 6)} font-size={fs}>{g.label}</text>
 			<text class="val" x={g.x + gw} y={y0 - (compact ? 4 : 6)} font-size={fs} text-anchor="end"
@@ -118,20 +118,20 @@
 		fill: #d6e6df;
 		letter-spacing: 0.06em;
 	}
-	.alarm {
+	.goal {
 		font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace;
 		font-weight: 800;
-		fill: #ff5a46;
+		fill: #9dffd6;
 		letter-spacing: 0.12em;
-		animation: alarm 1.25s ease-in-out infinite;
+		animation: goal 1.25s ease-in-out infinite;
 	}
-	@keyframes alarm {
+	@keyframes goal {
 		50% {
 			opacity: 0.35;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.alarm {
+		.goal {
 			animation: none;
 		}
 	}

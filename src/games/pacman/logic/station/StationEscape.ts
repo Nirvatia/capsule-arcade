@@ -23,6 +23,12 @@ export const ESCAPE_TUNE = {
 
 export type EscapeState = 'charging' | 'armed' | 'running' | 'out';
 
+/** Where he has to go now (the HUD's goal line, the beacon): the console once the hatch is
+ *  charged, then the hatch; none while charging or once out. */
+export function escapeGoal(state: EscapeState): 'console' | 'hatch' | null {
+	return state === 'armed' ? 'console' : state === 'running' ? 'hatch' : null;
+}
+
 export interface EscapeWorld {
 	/** Where the hero may walk (no lair, no walls). The route never jumps a tunnel. */
 	walkable(x: number, y: number): boolean;

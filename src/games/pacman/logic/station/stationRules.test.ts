@@ -3,6 +3,7 @@ import { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
 import { STATION } from '../../config/stationConfig';
 import { buildLevelSession } from '../level/LevelSession';
+import { escapeGoal } from './StationEscape';
 import type { LevelSession } from '../level/LevelSession';
 import { stationSeason } from '../level/SeasonCatalog';
 import type { GhostKind } from '../actors/GhostModel';
@@ -216,5 +217,14 @@ describe('the station', () => {
 		heroAt(session, 3, 24, 'LEFT');
 		rules.update(1 / 60, false);
 		expect(inLine.state).toBe('frightened');
+	});
+});
+
+describe('the escape goal', () => {
+	it('points at the console once charged, then at the hatch, and at nothing else', () => {
+		expect(escapeGoal('charging')).toBeNull();
+		expect(escapeGoal('armed')).toBe('console');
+		expect(escapeGoal('running')).toBe('hatch');
+		expect(escapeGoal('out')).toBeNull();
 	});
 });

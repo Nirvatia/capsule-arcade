@@ -3,6 +3,7 @@ import type { GhostDirection, GhostKind, GhostModel } from '../../logic/actors/G
 import type { StationRun } from '../../logic/station/StationRun';
 import { RUN_TUNE } from '../../logic/station/StationRun';
 import { mimicTell } from '../../logic/station/MimicTells';
+import { escapeGoal } from '../../logic/station/StationEscape';
 import type { RenderQuality } from '../common/renderQuality';
 import type { GridLayout } from '../maze/GridView';
 import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../RenderFrame';
@@ -126,6 +127,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		world.drawLight(ctx, time, infection, light, true, disguises);
 
 		if (run && !clear) this.drawPlays(ctx, run, layout, time, escaping);
+		if (run && !clear) this.drawGoal(ctx, run, sx, sy, S, time);
 		const ghosts: readonly GhostModel[] = clear || !run ? [] : (level.ghosts?.list ?? []);
 		for (const g of ghosts)
 			this.drawCreature(ctx, run as StationRun, g, sx, sy, S, time, dt, escaping);
@@ -444,6 +446,60 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 			ctx.fillStyle = `rgba(255,236,190,${a})`;
 			ctx.fillText(p.text, sx(p.x), sy(p.y) - p.age * S * 0.6);
 		}
+		ctx.restore();
+	}
+
+	/** The goal's beacon, held until it is reached (the words fade, it does not): the console once
+	 *  the hatch is charged, then the hatch. Rings running out over the floor, a column of light
+	 *  and a chevron bobbing over it, in the hatch gauge's green (nothing faster than 1 Hz). */
+	private drawGoal(
+		ctx: CanvasRenderingContext2D,
+		run: StationRun,
+		sx: (x: number) => number,
+		sy: (y: number) => number,
+		S: number,
+		time: number
+	): void {
+		const goal = escapeGoal(run.escape.state);
+		if (!goal) return;
+		const at = RUN_TUNE[goal];
+		const x = sx(at.x + 0.5);
+		const y = sy(at.y + 0.5);
+		const TAU = Math.PI * 2;
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		// the column of light standing on the tile
+		const col = ctx.createLinearGradient(x, y - S * 2.2, x, y + S * 0.3);
+		col.addColorStop(0, 'rgba(120, 255, 200, 0)');
+		col.addColorStop(0.7, 'rgba(120, 255, 200, 0.28)');
+		col.addColorStop(1, 'rgba(200, 255, 232, 0.5)');
+		ctx.fillStyle = col;
+		ctx.fillRect(x - S * 0.32, y - S * 2.2, S * 0.64, S * 2.5);
+		// rings running out over the floor
+		for (let i = 0; i < 2; i++) {
+			const u = (time / 1.4 + i / 2) % 1;
+			ctx.beginPath();
+			ctx.ellipse(x, y, S * (0.4 + u * 1.1), S * (0.4 + u * 1.1) * 0.8, 0, 0, TAU);
+			ctx.strokeStyle = `rgba(140, 255, 210, ${0.75 * (1 - u)})`;
+			ctx.lineWidth = Math.max(1.5, S * 0.09);
+			ctx.stroke();
+		}
+		ctx.restore();
+		// the chevron, bobbing over it, with a dark rim so it reads on the alarm's red
+		const by = y - S * (1.45 + 0.18 * Math.sin(time * 4));
+		ctx.save();
+		ctx.beginPath();
+		ctx.moveTo(x - S * 0.34, by - S * 0.22);
+		ctx.lineTo(x, by + S * 0.18);
+		ctx.lineTo(x + S * 0.34, by - S * 0.22);
+		ctx.lineJoin = 'round';
+		ctx.lineCap = 'round';
+		ctx.strokeStyle = 'rgba(6, 18, 14, 0.85)';
+		ctx.lineWidth = S * 0.24;
+		ctx.stroke();
+		ctx.strokeStyle = '#b8ffe0';
+		ctx.lineWidth = S * 0.12;
+		ctx.stroke();
 		ctx.restore();
 	}
 

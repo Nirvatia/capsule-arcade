@@ -1,7 +1,7 @@
 <!-- The station's HUD (the owner: the game's own HUD, stricter, neater and smaller): the boss HUD's
 	skeleton in brushed steel plates with rivets, square, still (no swaying, no stakes or ropes).
 	Above the maze, in the boss bar's place, the station's strip: the hatch's charge and the
-	infection (`StationBar`), the alarm in the escape. Beside the maze: the score and record, the
+	infection (`StationBar`), the goal line (to the console, then to the hatch). Beside the maze: the score and record, the
 	level, the lives, the hero's three HP as hearts on a steel shelf (the one just lost flashes
 	red), and a dial with the lure in the escape (its ring: the lures left; the fire key throws it). -->
 <script lang="ts">
@@ -102,10 +102,9 @@
 			{w}
 			charge={station.charge}
 			infection={station.infection}
-			escape={station.escape}
 			hatchLabel={$t('hatch')}
 			infectionLabel={$t('infection')}
-			alarmLabel={`■ ${$t('hatch')}`}
+			goalLabel={station.goal ? `→ ${$t(station.goal)}` : null}
 			uid="station-bar-{mode}"
 		/>
 	{/if}

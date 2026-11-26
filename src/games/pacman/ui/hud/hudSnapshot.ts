@@ -7,6 +7,7 @@ import { BOSS_HP, PHASE_THRESHOLDS, PLAYER_MAX_HP } from '../../logic/doom/DoomB
 import { arcadeRound } from '../../config/arcadeConfig';
 import type { AbilityKind } from '../../config/abilityConfig';
 import { RUN_TUNE } from '../../logic/station/StationRun';
+import { escapeGoal } from '../../logic/station/StationEscape';
 
 /** How long a lost heart flashes, s. */
 const HURT_FLASH = 0.9;
@@ -49,6 +50,8 @@ export interface HudStation {
 	readonly infection: number;
 	/** The escape is on: the alarm, the lures. */
 	readonly escape: boolean;
+	/** Where he has to go now: the console once charged, then the hatch (the HUD's goal line). */
+	readonly goal: 'console' | 'hatch' | null;
 	readonly lures: number;
 	readonly luresMax: number;
 }
@@ -151,6 +154,7 @@ export function buildHudSnapshot(
 				charge: run.escape.charge,
 				infection: run.infection,
 				escape: run.escape.state === 'running',
+				goal: escapeGoal(run.escape.state),
 				lures: run.lures,
 				luresMax: RUN_TUNE.lures
 			}
