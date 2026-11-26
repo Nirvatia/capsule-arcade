@@ -200,15 +200,17 @@ last (see Later).
          its squad (a specimen in a drop, a ghost, a film) never looked right. Rejected for the
          squad too: a cartoon face (a meme), toy colours (Among Us), a single eye (a cyclops), a
          black silhouette (cyberpunk), a jar (unreadable), feet (they rock).
-         Now **the ferrofluid** (the owner's pick of coral, crystal and ferrofluid; `ferro.ts` on
-         the `station-b7` page, awaiting his look): a living black metal with an oily sheen takes
-         the walls from the lair out, covers their tops (pebbled with small cones), bulges over
-         their edges and stands in rows of spikes along them; the spikes rise in a wave toward the
-         hero as he passes and sink slowly behind (the game's Cinnabar vessel walks on the page);
-         the corridors stay clean. The squad is the same fluid sculpting a fake face of itself
-         (unequal dimples for eyes with a light deep in them, a too-wide carved grin), a crown of
-         spikes per kind, the sheen in its kind's colour. The scene's `setFilm('none')` keeps the
-         lamps clean, `B7World.showHive(false)` hides the hive.
+         The coral, the crystal and the ferrofluid were a wrong turn too (the owner, 2026-11-26:
+         we left alien organics for liquid metals and corals). His point: the red veins do their
+         job, the maze becomes a place to flee; only the red flesh is the hell's language, alien
+         organics are black and parasitic. So **the hive stays as it is in form** (veins, nodes,
+         flesh over the plates by phase, cysts, lips, the heartbeat, the lamps under the film, the
+         torn lair doors) and changes its material: `B7Hive`'s palette `parasite` (black glossy
+         organics, cold wet glints, a lime life in the nodes, the cysts and the pulse; the rage's
+         acid lime reads as its blood) with the scene's `setFilm('parasite')` (the lamps dim and
+         cold under it, the veins' shadows black); on the `station-b7` page beside the red one,
+         awaiting his look. Next if he takes it: the parasites themselves (larvae crawling the
+         veins now and then, the cysts as clutches with something moving), then the squad.
       7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance

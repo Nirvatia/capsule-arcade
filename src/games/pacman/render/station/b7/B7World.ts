@@ -12,7 +12,7 @@ import { boardPlacement } from '../../common/boardScale';
 import type { RenderQuality } from '../../common/renderQuality';
 import type { GridLayout } from '../../maze/GridView';
 import { createB7Scene } from './b7Scene';
-import { B7Hive } from './b7Hive';
+import { B7Hive, type HivePalette } from './b7Hive';
 
 export type B7Phase = 1 | 2 | 3;
 export type B7Light = 'quarantine' | 'alert';
@@ -54,13 +54,13 @@ export class B7World {
 	private lightMap: HTMLCanvasElement | null = null;
 	private bloom: HTMLCanvasElement | null = null;
 
-	constructor(grid: GridMatrix) {
+	constructor(grid: GridMatrix, hivePalette: HivePalette = 'flesh') {
 		// the lair's doors are the hive's (torn apart), not the scene's
 		this.scene = createB7Scene(grid, { lairDoors: false });
 		this.base = this.scene.bakeBaseScene();
 		this.grain = this.scene.buildGrainTile();
 		// the infestation at its fullest, baked once with the level
-		this.hive = new B7Hive(this.scene, grid);
+		this.hive = new B7Hive(this.scene, grid, hivePalette);
 	}
 
 	/** Whether the hive's infestation shows (the `station-b7` page tries another one without it). */

@@ -1,9 +1,9 @@
 // Prototype: the station B-7 as the game draws it (`render/station/b7`: the scene, the hive's
 // takeover, the lamps under its film, the heartbeat) with the game's quarantine ring, its lure
-// (the cyan flare) and its Pretenders (the rage, the acid overheat) on the real maze, beside the
-// candidate of `ferro.ts`: the station taken by a living black metal, its spikes rising for the
-// hero (the game's Cinnabar vessel walks a corridor), and the squad of the same fluid. Everything
-// is switched by the buttons on top; a panel shows the squad large.
+// (the cyan flare) and its Pretenders (the rage, the acid overheat) on the real maze, the hive in
+// two materials: the game's red flesh and the candidate black parasite with a lime life in it
+// (`B7Hive`'s palette); the game's Cinnabar vessel walks a corridor. Everything is switched by the
+// buttons on top; a panel shows the squad large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
@@ -15,17 +15,22 @@ import { CJ_BODY_RATIO } from '../../../src/games/pacman/render/actors/hero/vess
 import { CinnabarHero } from '../../../src/games/pacman/render/actors/hero/CinnabarHero';
 import { GAME_FEEL } from '../../../src/games/pacman/render/actors/HeroView';
 import { drawHeroGlow } from '../../../src/games/pacman/render/station/pretender';
-import { createFerro, drawFerroMimic, type CandState } from './ferro';
+import type { PretenderState } from '../../../src/games/pacman/render/station/pretender';
+type CandState = Exclude<PretenderState, 'rage'>;
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const bar = document.getElementById('bar') as HTMLDivElement;
 const D = Math.min(window.devicePixelRatio || 1, 2);
-const world = new B7World(GRID_STATION);
-const ferro = createFerro(world.scene, GRID_STATION);
+const worlds = {
+	parasite: new B7World(GRID_STATION, 'parasite'),
+	hive: new B7World(GRID_STATION, 'flesh')
+};
+let world = worlds.parasite;
 const heroView = new CinnabarHero();
 heroView.setFeel(GAME_FEEL);
-world.setQuality('medium');
+worlds.parasite.setQuality('medium');
+worlds.hive.setQuality('medium');
 const grid = GRID_STATION;
 const H = grid.length;
 const W = grid[0].length;
@@ -36,14 +41,14 @@ const open = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && OPE
 
 type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'off';
 type Pick = 'now' | 'off';
-type Mim = 'ferro' | 'now' | 'off';
+type Mim = 'now' | 'off';
 type Lure = 'on' | 'off';
 const st = {
 	inf: 0.65,
-	style: 'ferro' as 'hive' | 'ferro',
+	style: 'parasite' as 'hive' | 'parasite',
 	alarm: false,
 	ring: 'off' as RingMode,
-	mimic: 'ferro' as Mim,
+	mimic: 'now' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
 	big: true
@@ -52,10 +57,9 @@ const st = {
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: кислотный перегрев',
 	'mimic-now': 'Мимики как в игре: Pretender в маске',
-	'mimic-ferro': 'Мимики из феррожидкости: лепят из себя фальшивое лицо, корона шипов у каждого своя, отлив его цвета',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
-	'style-ferro': 'Заражение «Феррожидкость»: чёрный живой металл забирает стены от логова, ряды шипов по краям поднимаются за героем; коридоры чистые',
-	'style-hive': 'Заражение как в игре: улей',
+	'style-parasite': 'Заражение «Паразит»: тот же улей (вены, узлы, плоть по пластинам, кладки, сердцебиение), но чёрный, а жизнь в нём лаймовая',
+	'style-hive': 'Заражение как в игре: красный улей',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'
 };
 
@@ -85,7 +89,6 @@ const GROUPS: Group[] = [
 		key: 'mimic',
 		items: [
 			['Как в игре', 'now'],
-			['Феррожидкость', 'ferro'],
 			['Выкл', 'off']
 		],
 		after: (v) => {
@@ -136,7 +139,7 @@ const GROUPS: Group[] = [
 		label: 'Стиль',
 		key: 'style',
 		items: [
-			['Феррожидкость', 'ferro'],
+			['Паразит', 'parasite'],
 			['Как в игре', 'hive']
 		]
 	},
@@ -372,8 +375,7 @@ function drawMimic(
 	o: PretenderOpts
 ): void {
 	if (st.mimic === 'off') return;
-	if (st.mimic === 'now') drawPretender(c, x, y, S, kind, cs, o);
-	else drawFerroMimic(c, x, y, S, kind, cs, o);
+	drawPretender(c, x, y, S, kind, cs, o);
 }
 
 /** The sheet: the four kinds, the headings and the tell, the fright, the eyes and the mimicry. */
@@ -495,6 +497,7 @@ function frame(now: number): void {
 		view.height = Math.round(vh * D);
 	}
 	ctx.setTransform(D, 0, 0, D, 0, 0);
+	world = worlds[st.style];
 	world.resize(vw, vh, D);
 	const sc = world.scene;
 	const lights = [];
@@ -512,21 +515,10 @@ function frame(now: number): void {
 		lights.push({ x: sc.MAZE_X + (lx - 2.5) * 34, y: sc.MAZE_Y + (ly + 0.5) * 34, r: 34 * 3.8, rgb: '236, 242, 230', alpha: 0.95 });
 	}
 	sc.setExtraLights(lights);
-	world.showHive(st.style === 'hive');
-	sc.setFilm(st.style === 'hive' ? 'flesh' : 'none');
+	sc.setFilm(st.style === 'hive' ? 'flesh' : 'parasite');
 	world.drawScene(ctx, t, dt, st.inf, true);
 	const hero = heroAt(t);
-	if (st.style === 'ferro') {
-		world.enter(ctx);
-		ferro.draw(ctx, st.inf, t);
-		ctx.restore();
-	}
 	world.drawLight(ctx, t, st.inf, st.alarm ? 'alert' : 'quarantine', true);
-	if (st.style === 'ferro') {
-		world.enter(ctx);
-		ferro.drawGlow(ctx, st.inf, t, dt, hero);
-		ctx.restore();
-	}
 	const L = world.layout;
 	const S = L.tileSize;
 	const ph = ringPhase(t);

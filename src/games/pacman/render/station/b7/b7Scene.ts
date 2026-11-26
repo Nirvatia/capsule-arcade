@@ -292,8 +292,8 @@ export function createB7Scene(
 	};
 	/** What grows over the lamps: the hive's flesh (warm, its veins' shadows, beating), a film of
 	 *  murk (green, still) or nothing (the `station-b7` page's candidates). */
-	let film: 'flesh' | 'murk' | 'none' = 'flesh';
-	const setFilm = (kind: 'flesh' | 'murk' | 'none') => {
+	let film: 'flesh' | 'murk' | 'none' | 'parasite' = 'flesh';
+	const setFilm = (kind: 'flesh' | 'murk' | 'none' | 'parasite') => {
 		film = kind;
 	};
 	const lerp3 = (a: readonly number[], b: readonly number[], k: number) =>
@@ -3665,20 +3665,28 @@ export function createB7Scene(
 				const growing =
 					filmK > 0 && filmK < 1 ? uneven + (1 - uneven) * Math.abs(filmK - 0.5) * 2 : 1;
 				const beat =
-					film === 'flesh'
+					film === 'flesh' || film === 'parasite'
 						? heartbeat(time, infectionDistance(Math.floor(l.x), Math.floor(l.y)))
 						: 0;
 				const power2 = base * (1 - 0.35 * filmK) * growing * (1 + 0.4 * filmK * beat);
 				if (power2 > 0.01) {
-					const tint = film === 'flesh' ? [255, 132, 92] : [140, 226, 160];
+					const tint =
+						film === 'flesh'
+							? [255, 132, 92]
+							: film === 'parasite'
+								? [150, 176, 150]
+								: [140, 226, 160];
 					const rgb = [196, 222, 216].map((c, k) => Math.round(c + (tint[k] - c) * filmK));
 					radialLight(lg, toX(tx(l.x)), toY(ty(l.y)), R(TILE * 4.5), rgb.join(', '), 0.56 * power2);
 				}
-				if (film === 'flesh' && filmK > 0.3) {
+				if ((film === 'flesh' || film === 'parasite') && filmK > 0.3) {
 					// the veins of the film, their shadows thrown on the floor
 					lg.save();
 					lg.globalCompositeOperation = 'source-over';
-					lg.strokeStyle = `rgba(52, 16, 22, ${0.32 * filmK})`;
+					lg.strokeStyle =
+						film === 'parasite'
+							? `rgba(4, 6, 6, ${0.42 * filmK})`
+							: `rgba(52, 16, 22, ${0.32 * filmK})`;
 					lg.lineWidth = Math.max(1, R(3.2));
 					lg.lineCap = 'round';
 					const lx = toX(tx(l.x));
