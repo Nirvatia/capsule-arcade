@@ -10,7 +10,13 @@ import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../
 import type { SharedLayers } from '../SharedLayers';
 import { B7World } from './b7/B7World';
 import type { B7Light } from './b7/B7World';
-import { RailGait, drawLurkerEye, drawPretender, pretenderStateFor } from './pretender';
+import {
+	RailGait,
+	drawHeroGlow,
+	drawLurkerEye,
+	drawPretender,
+	pretenderStateFor
+} from './pretender';
 import type { PretenderOpts, PretenderState } from './pretender';
 import { KIND_COLOR, drawBeam, drawDoor, drawEmitter, drawLane, drawShaft } from './squadMarks';
 
@@ -148,7 +154,10 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		if (state !== 'death' && !clear) {
 			// after a hit he blinks while he is safe
 			const blinkOut = run && run.safe > 0 && Math.floor(run.safe * 8) % 2 === 1;
-			if (!blinkOut) this.shared.drawPlayer(frame, layout);
+			if (!blinkOut) {
+				if (hero) drawHeroGlow(ctx, sx(hero.x), sy(hero.y), S);
+				this.shared.drawPlayer(frame, layout);
+			}
 		}
 		if (run && !clear) {
 			if (lure) this.drawLure(ctx, sx(lure.x + 0.5), sy(lure.y + 0.5), S, time, lure.left);

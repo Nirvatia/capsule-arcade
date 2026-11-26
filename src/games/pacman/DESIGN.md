@@ -383,7 +383,9 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   from the heading, so a gold slit eye peeks on the heading's side; the tell slips it further
   (the eye pulses, the smile widens); the rage pushes it up onto the head in a moment and shows
   the true face (gold slit eyes, a chomping mouth of bone teeth, a coral throat; it throbs and
-  shakes, no ring); the fright is the classic blue with a sweat drop and the blink at the end;
+  shakes, no ring); the fright is the classic blue with a sweat drop and the blink at the end; a little larger than
+  the season ghosts, a soft glow in its state's colour round it so it reads in the dark maze (the
+  hero has a warm one on the station too);
   eaten, its gold eyes run home; it folds into the level's spore for the disguise (the mask
   home, the feet tucked, then the spore). A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
   its gold slit eye opening for a moment every few seconds, turned toward him, a tremble when he comes within 3 tiles, the

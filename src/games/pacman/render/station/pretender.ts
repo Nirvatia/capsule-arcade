@@ -50,7 +50,8 @@ const WHITE: Pal = { b: '#f4f7ff', s: '#c3cfea' };
 const RAGE: Pal = { b: '#ff4a4a', s: '#a81622' };
 const PHASE: Readonly<Record<GhostKind, number>> = { BLINKY: 0, PINKY: 0.8, INKY: 1.6, CLYDE: 2.4 };
 const IVORY = '#f1e7cf';
-const SCALE = 0.96;
+/** The body's size in the cute ghosts' frame: a little larger than theirs (the owner). */
+const SCALE = 1.08;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -523,6 +524,58 @@ function paintWalker(
 	paintBody(c, pal, st, white, { ...o, fold: k });
 }
 
+/** A soft glow round a Pretender in its state's colour, so it reads in the dark maze. */
+function halo(
+	c: Ctx,
+	x: number,
+	y: number,
+	tile: number,
+	kind: GhostKind,
+	st: PretenderState,
+	k: number
+): void {
+	const rgb =
+		st === 'rage'
+			? '255, 74, 74'
+			: st === 'fright'
+				? '96, 120, 255'
+				: st === 'eyes'
+					? '255, 214, 140'
+					: (BODY[kind].b.match(/[0-9a-f]{2}/gi) ?? ['ff', 'ff', 'ff'])
+							.map((h) => parseInt(h, 16))
+							.join(', ');
+	const a = (st === 'eyes' ? 0.18 : 0.34) * (1 - k);
+	if (a <= 0.01) return;
+	const r = tile * 0.78;
+	const g = c.createRadialGradient(x, y, 0, x, y, r);
+	g.addColorStop(0, `rgba(${rgb}, ${a})`);
+	g.addColorStop(0.55, `rgba(${rgb}, ${a * 0.4})`);
+	g.addColorStop(1, `rgba(${rgb}, 0)`);
+	c.save();
+	c.globalCompositeOperation = 'lighter';
+	c.fillStyle = g;
+	c.beginPath();
+	c.arc(x, y, r, 0, TAU);
+	c.fill();
+	c.restore();
+}
+
+/** A soft warm glow under the hero on the station, so he reads in the dark maze too. */
+export function drawHeroGlow(c: Ctx, x: number, y: number, tile: number): void {
+	const r = tile * 0.9;
+	const g = c.createRadialGradient(x, y, 0, x, y, r);
+	g.addColorStop(0, 'rgba(255, 236, 200, 0.3)');
+	g.addColorStop(0.5, 'rgba(255, 220, 170, 0.12)');
+	g.addColorStop(1, 'rgba(255, 220, 170, 0)');
+	c.save();
+	c.globalCompositeOperation = 'lighter';
+	c.fillStyle = g;
+	c.beginPath();
+	c.arc(x, y, r, 0, TAU);
+	c.fill();
+	c.restore();
+}
+
 /** One Pretender centred at (x, y), `tile` the tile's size in px. */
 export function drawPretender(
 	c: Ctx,
@@ -537,6 +590,7 @@ export function drawPretender(
 	if (st === 'mimic') {
 		// the mask slips home, the feet tuck in, it sinks to the spore's size, then the spore
 		const k = clamp(o.fold ?? 0, 0, 1);
+		halo(c, x, y, tile, kind, 'hunt', k);
 		if (k > 0.55 && o.spore) {
 			c.save();
 			c.translate(x, y);
@@ -552,6 +606,7 @@ export function drawPretender(
 		c.restore();
 		return;
 	}
+	halo(c, x, y, tile, kind, st, 0);
 	c.save();
 	c.translate(x, y);
 	paintWalker(c, kind, st, o, unit, 0);
