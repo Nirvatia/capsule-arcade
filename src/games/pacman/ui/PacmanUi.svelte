@@ -27,7 +27,7 @@
 <svelte:head>
 	<link
 		rel="stylesheet"
-		href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@500;600&family=Caveat:wght@600&display=swap"
+		href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@500;600&family=Caveat:wght@600&family=Press+Start+2P&display=swap"
 	/>
 </svelte:head>
 
