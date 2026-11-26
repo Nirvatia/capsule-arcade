@@ -77,7 +77,7 @@ last (see Later).
    death `style` and a season-turn style; every element but the heroes has art of its own.
    1. **The station** (the focus again since 2026-11-25; `DESIGN.md` §7a). Out of the rotation
       until done (the dev panel's Station brings it). The look is approved (2026-11-22): style B
-      of the `station` prototype, now lit. History: the ghost version (in the game:
+      of the `station` prototype (deleted), now lit. History: the ghost version (in the game:
       `StationService` with HP, the rewind, the beam, flares, cocoons; `render/station/`), then
       the swarm (`prototypes/pacman/swarm`, `logic/station/SwarmField`, `stationSwarm`: the bugs
       glitched, a fluid threat read fuzzy), then the hounds (`prototypes/pacman/hounds`,
@@ -128,8 +128,8 @@ last (see Later).
          the maze graph needs sectors: `grid_station` has no 60-75% split with 2-3 seals, the
          best takes 6-7; waits on his answer); the station's HUD (a text readout stands in); the
          level's first frame blocks ~0.8 s in the bake (the base and three infestation layers).
-         The old `StationService` (and its tests), `render/station`'s style-B files and the
-         squad prototype stay until the owner has played this; then delete them.
+         The old `StationService` (and its tests) stays until the owner has played this; then
+         delete it (the style-B painters and the squad prototype are gone, 2026-11-26).
       3. **The creatures' look**: the Pretender since 2026-11-26 (below); the glass albino
          before it, deleted.
          The owner's first play (2026-11-25), done the same day: the albinos glided
@@ -228,10 +228,6 @@ last (see Later).
   input-to-render latency.
 - Headless Chromium without a GPU runs the hell night ~20 FPS; the flesh hell's first frame
   blocks ~1 s in `bakeFlesh`. Untimed on real hardware; if the bake shows, spread it over frames.
-- The `hud` prototype does not build (imports a removed `GameHud.svelte`); fix or delete when
-  next needed.
-- The `collectibles` prototype throws "undefined is not iterable" in the item row; find it when
-  next touched.
 - `Hero.ts` is still large; cut what no longer serves.
 - Not checked in play: the hero's death over the black hole, the hell's and Ms. Pac-Man's deaths,
   a low-end GPU, a season tunnel, the hell's night and ash storm over the cord maze.

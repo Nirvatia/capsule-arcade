@@ -80,16 +80,7 @@ render/
                    infestation one per phase change, the live props in stage space, the light
                    map of sprite lights with the flashlight, bloom by downscale, grain on High),
                    b7Hive (the infestation, the total takeover: veins, flesh over the plates, the torn lair doors, the heartbeat; revealed from the lair by the infection), pretender (the squad's creature, the owner's STATION_MIMIC: the painter and its RailGait), drawLurkerEye (the lurker's gold eye tell), quarantineRing (the fence's ring and seals), squadMarks (the plays'
-                   and the escape's marks). The older style B, kept for the prototypes until
-                   the owner has played B-7:
-                   StationBake (the scene baked once at a scale fitted
-                   to the screen, in layers: base, the surround's glow, the walls' safety edge
-                   and light strip, the resin per phase; painted by stationPaint / stationMarks /
-                   stationProps / stationSurround / stationMaze / stationWalls), StationWorld
-                   (camera, the layers scaled to the screen once, the dark: stationLight's small
-                   light map with the vignette and grade folded in, the glow, grain on High),
-                   StationLevelRenderer (+ preview), actors: stationFood (spores, flares),
-                   stationWraith, stationHunter (hunter, cocoon), stationTracker
+                   and the escape's marks).
   arcade/          the secret level: pixel sprites, maze bake, view, CRT pass, intermission,
                    ArcadeLevelRenderer
   fx/              LevelFx (gameplay effects on the season levels: it plays and ages the
@@ -362,16 +353,7 @@ New art and effects start as a page built from the game's own sources:
 `node prototypes/pacman/build.mjs <name>` into `prototypes/pacman/<name>.html`. The built
 pages are not stored in git (`.gitignore`); the owner looks at prototypes in the chat, as
 screenshots or an artifact Claude builds from the page, never by opening the files. The
-approved prototype already is the game code. `prototypes/pacman/art/hell-flesh-scene.html` is
-not a built prototype but the source of the accepted hell scene (a standalone page, open it as a
-file), the reference for the hell's art pass; `hell-flesh-heroes.html` is the same scene with
-the heroes' mock-up on it (the armor the owner dropped). Existing: `hell`, `arcade`,
-`hud`, `death` (the death black hole: the real `LevelDecay` on the real worlds, a slider over the 4 s),
-`collectibles` (with each item's reach from its tile centre and a tile grid),
-`mazes` (every season maze in every season, with marks for tunnels, spawn, fruit and lair),
-`mood` (the hell's night and ash storm styles side by side on the real `grid_doom`, the hero walking a corridor so the light can be judged in motion),
-`level-clear`, `fx` (every gameplay effect on the real season worlds, click to fire),
-`easter-egg` (the lair code's reward played by the real
-services), `hero` (the hero stage: Pac-Man or Ms. Pac-Man large on a dark panel and on strips of the real season worlds, magnified and 1:1, with season buttons and the hell's BFG charge; `render/actors/hero`: the shared `Hero`, `PacmanHero`,
-`MsPacmanHero`, `heroCharge`), `feel` (how the hero feels in motion: the real player logic on a season level, driven by the arrows, every `HeroFeel` / `PlayerFeel` idea on a switch (all on in the game), a x2 magnifier), `hell-exit` (the hell's lair gate opened only by who goes through it, the calmer heartbeat against the old curve, and the exit, on the real `grid_doom`), `echo` (the echo bonus's wisps played by the real services on a season world at game scale), `station` (the station's actors drawn by the game's own `render/station/` painters, large and at game scale: wraiths with both glitch looks, hunters, cocoon, spores, flares); `winter-decay.html` is an older standalone page.
+approved prototype already is the game code; a page whose subject left the game (a rejected
+candidate, an old look) is deleted (the owner, 2026-11-26), the list of pages is
+`prototypes/pacman/README.md`.
 ```

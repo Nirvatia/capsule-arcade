@@ -26,28 +26,20 @@ vite.config.ts.timestamp-*
 
 # Pac-Man prototype pages are built on demand (node prototypes/pacman/build.mjs <name>), not stored
 prototypes/pacman/arcade.html
-prototypes/pacman/collectibles.html
 prototypes/pacman/death.html
 prototypes/pacman/easter-egg.html
 prototypes/pacman/fx.html
 prototypes/pacman/hell.html
 prototypes/pacman/hero.html
 prototypes/pacman/mood.html
-prototypes/pacman/hud.html
-prototypes/pacman/squad.html
 prototypes/pacman/level-clear.html
 prototypes/pacman/mazes.html
 prototypes/pacman/echo.html
 prototypes/pacman/hell-exit.html
 prototypes/pacman/feel.html
-prototypes/pacman/season-winter.html
-prototypes/pacman/station.html
-prototypes/pacman/mimics.html
 prototypes/pacman/hell-dash.html
 prototypes/pacman/season-look.html
-prototypes/pacman/hero-art.html
 prototypes/pacman/season-dress.html
 prototypes/pacman/power-icons.html
 prototypes/pacman/station-b7.html
 prototypes/pacman/pretender.html
-prototypes/pacman/ring.html
