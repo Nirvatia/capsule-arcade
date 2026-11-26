@@ -3,11 +3,11 @@
 // 2.5D bulkhead walls merged into engineering modules, the sunken lair pit, the infestation per
 // phase, the live props (fans, turbines, tanks, the storm planet, the console screens), the food
 // (bio-spores, power cells) and the light map. Stage space: 1920x1080, a tile is 34 px.
-/** `lairDoors`: false leaves out the lair's bent blast doors and the hazard band before them;
- *  `lairCocoons`: false leaves out its cocoons (the infestation C draws its own). */
+/** `lairDoors`: false leaves out the lair's bent blast doors and the hazard band before them
+ *  (the infestation C draws its own torn doors). */
 export function createB7Scene(
 	rows: readonly (readonly string[])[],
-	opts: { readonly lairDoors?: boolean; readonly lairCocoons?: boolean } = {}
+	opts: { readonly lairDoors?: boolean } = {}
 ) {
 	// =========================================================================
 	// 1. EXACT 25x27 GRID_STATION LAYOUT (PURE VISUALS — ZERO GAMEPLAY LOGIC)
@@ -2997,7 +2997,6 @@ export function createB7Scene(
 	];
 
 	function drawLairCocoons(g: CanvasRenderingContext2D, time: number, phase: number) {
-		if (opts.lairCocoons === false) return;
 		const boost = phase === 1 ? 0.84 : phase === 2 ? 1.0 : 1.15;
 		for (const pod of LAIR_COCOONS) {
 			const cx = tx(pod.x);
