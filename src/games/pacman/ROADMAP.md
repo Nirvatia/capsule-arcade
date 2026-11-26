@@ -6,8 +6,7 @@ is not logged here; only the open stages and the rules that constrain them.
 
 ## Working agreement
 
-One step per chat. A new chat starts with "read `src/games/pacman/ROADMAP.md`, step N". The
-assistant reads the parts of `DESIGN.md` and `ARCHITECTURE.md` the step needs, analyses the code,
+The owner decides when a new chat starts; do not suggest one. For a step, the assistant reads the parts of `DESIGN.md` and `ARCHITECTURE.md` the step needs, analyses the code,
 proposes a plan, waits for approval, works, updates the three documents (this plan: delete what
 is done and add what came up; the design and the architecture where they changed) and pushes to
 `feat/pacman`. New art and new effects start as a prototype the owner approves first, in the
@@ -86,7 +85,7 @@ last (see Later).
       look and the endless dark). The redesign of 2026-11-25: **a squad** of four with plays
       (the train, the pincer, the mimics, later the threads), each with a tell and an answer,
       power cells, the food charging the hatch, and **an escape** as a scene along a lit route,
-      made easy. Steps, one per chat:
+      made easy. Steps:
       1. **The design page**: approved (2026-11-25).
       2. **The squad to play**: v1 built and played (2026-11-25): the owner found the timer's
          set pieces dull (the train most of the time), the escape too easy, the one-tile pillars
@@ -114,7 +113,7 @@ last (see Later).
          out-of-step breathing is not enough; it needs more cues that can be learned (it sits
          only on eaten tiles already). The owner has a mock-up of the level and is making one
          of the mimics with Gemini (one HTML file of Canvas2D code: the creature's states and
-         effects per tactic); both come to the next chat to be reproduced in code.
+         effects per tactic); both came to be reproduced in code.
          **In the game (2026-11-25, the dev panel's Station)**, the owner's call to try it so
          and tune after: the level's look is his mock-up `Station_Level_v2.html` carried over as
          drawn on `grid_station` (`render/station/b7`); the squad were the glass albinos of his
