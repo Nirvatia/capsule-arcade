@@ -1,6 +1,6 @@
-// The marks of the squad's plays (DESIGN.md §7a), from the squad prototype: the fence's beams
-// and emitters, the vent's eyes in the shaft, the phantom's guttering light, the herders' claims,
-// and the escape's route lights, doors and breakthrough lane.
+// The marks of the squad's plays (DESIGN.md §7a), from the squad prototype: the vent's eyes in
+// the shaft, the phantom's guttering light, the herders' claims, and the escape's route lights,
+// doors and breakthrough lane (the fence's ring: `quarantineRing`).
 import type { GhostKind } from '../../logic/actors/GhostModel';
 import type { Door } from '../../logic/station/StationEscape';
 
@@ -119,63 +119,6 @@ export function drawDoor(
 		leaf(x - th / 2, y - S / 2, th, half);
 		leaf(x - th / 2, y + S / 2 - half, th, half);
 	}
-}
-
-/**
- * A fence beam across the station: told as a faint dashed line, charging as a thickening dashed
- * line, lit as a bright laser with a glow. Drawn over the walls on purpose: it reads at once.
- */
-export function drawBeam(
-	g: Ctx,
-	x0: number,
-	y0: number,
-	x1: number,
-	y1: number,
-	S: number,
-	t: number,
-	charge: number,
-	lit: boolean
-): void {
-	g.save();
-	g.lineCap = 'round';
-	if (!lit) {
-		const a = 0.18 + 0.5 * charge + 0.15 * Math.sin(t * 9) * charge;
-		g.strokeStyle = `rgba(255,90,200,${a})`;
-		g.lineWidth = S * (0.05 + 0.12 * charge);
-		g.setLineDash([S * 0.3, S * 0.25]);
-		g.lineDashOffset = -t * S * 2;
-		g.beginPath();
-		g.moveTo(x0, y0);
-		g.lineTo(x1, y1);
-		g.stroke();
-		g.restore();
-		return;
-	}
-	g.globalCompositeOperation = 'lighter';
-	for (const [w, a] of [
-		[0.7, 0.12],
-		[0.35, 0.3],
-		[0.12, 0.95]
-	]) {
-		g.strokeStyle = `rgba(255,${120 + (w < 0.2 ? 120 : 0)},230,${a * (0.9 + 0.1 * Math.sin(t * 23))})`;
-		g.lineWidth = S * w;
-		g.beginPath();
-		g.moveTo(x0, y0);
-		g.lineTo(x1, y1);
-		g.stroke();
-	}
-	g.restore();
-}
-
-/** An emitter: the fencer holding its beam, a ring charging round it. */
-export function drawEmitter(g: Ctx, x: number, y: number, S: number, charge: number): void {
-	g.save();
-	g.strokeStyle = 'rgba(255,120,220,0.9)';
-	g.lineWidth = S * 0.08;
-	g.beginPath();
-	g.arc(x, y, S * 0.56, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, charge));
-	g.stroke();
-	g.restore();
 }
 
 /** One waiting in a vent shaft: two eyes in the dark of the grille, a glow that swells when it is about to come out. */

@@ -307,13 +307,17 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   fencer, phantom, lurker, venter) and runs **one of three tactics**, picked by what the
   situation offers (none twice running), with a calm beat of 3-5 s between (the classic scatter
   and chase) and a tell of 1.3 s before each (the lights dim and flicker, the eyes turn gold):
-  1. **The fence** (the owner's idea): two fencers walk to two lines across the station (a row or
-     a column each) and light beams along them; the hero is held in 60-75% of the station (the
-     pair is found by a search over the maze graph, tunnels and vents counted, each line needed);
-     one hunts him there; the fourth is a **phantom**: unseen, shown only by the light guttering
-     round it. Tell: the lines shown faint, then dashed and thickening while the fencers charge
-     (1.5 s): he may slip across before they light. A beam stops him, not the squad; it holds
-     about 9 s. The fencers holding it do not bite.
+  1. **The fence**, a **quarantine ring** (the owner's idea; since 2026-11-26 a ring, not beams
+     through walls bound to the maze's cuts): a circle of 7.5 tiles round a point two steps
+     ahead of him; two fencers walk to its rim to his sides and project it; where it crosses a
+     corridor a **seal** grows in the corridor's throat (between two walls) and he cannot pass
+     (the squad can); one hunts him inside; the fourth is a **phantom**. Seen as the hive's: a
+     ring of mycelium (a haze of spores, a filament over the walls) and seals of flesh with a
+     bright core (`quarantineRing`). Tell: faint, then the filament creeps out of the projectors
+     and the seals grow while they charge (1.5 s): he may slip out. It holds about 9 s; the
+     fencers holding it do not bite. **It can be survived** (the owner): one ring in two has a
+     thin seal (torn in the middle, flickering) that tears if he pushes into it for 0.6 s; the
+     side tunnels lead out too.
   2. **The ambush**: one fades out and lies as food on a tile he has already eaten, along his
      way (the tell for an attentive player: "there was nothing here"; it breathes out of step);
      the others shut every way out of where he is but the one that leads to it. Stepping on it

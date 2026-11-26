@@ -11,7 +11,7 @@ import { GridModel } from '../maze/GridModel';
 import { GridService } from '../maze/GridService';
 import { ESCAPE_TUNE, StationEscape } from './StationEscape';
 import { SQUAD_TUNE, StationSquad } from './StationSquad';
-import type { SquadWorld } from './StationSquad';
+import type { RingSeal, SquadWorld } from './StationSquad';
 
 function station() {
 	const grid = new GridService(new GridModel(GRID_STATION));
@@ -130,31 +130,23 @@ describe('the director', () => {
 	});
 });
 
-describe('the fence', () => {
-	it('finds two lines that hold him in 60-75% of the station, each line needed', () => {
+describe('the fence: the quarantine ring', () => {
+	it('plans a ring round a point ahead of him: seals on every crossing, two posts on the rim', () => {
 		const s = station();
 		const squad = new StationSquad(s.world, 1);
-		squad.update(0.01, s.ghosts, { x: 12, y: 24 }, null);
-		const plan = squad.fencePlan();
+		squad.update(0.01, s.ghosts, { x: 12, y: 24 }, 'LEFT');
+		const plan = squad.ringPlan();
 		expect(plan).not.toBeNull();
-		expect(plan).toHaveLength(2);
+		expect(plan!.spots).toHaveLength(2);
+		expect(plan!.ring.seals.length).toBeGreaterThanOrEqual(2);
+		const { cx, cy, r } = plan!.ring;
+		for (const p of plan!.spots)
+			expect(Math.abs(Math.hypot(p.x + 0.5 - cx, p.y + 0.5 - cy) - r)).toBeLessThan(2);
 	});
 
-	it('the fencers walk to the lines, charge, and the lit beams hold him', () => {
-		const s = station();
-		release(s);
-		const squad = new StationSquad(s.world, 1);
-		s.ghosts.setSquadGuide(squad);
-		const hero = { x: 12, y: 24 };
-		force(s, squad, hero, 'fence');
-		expect(squad.tactic).toBe('fence');
-		expect(squad.beams).toHaveLength(2);
-		const roles = [...squad.roles.values()].sort();
-		expect(roles).toContain('fencer');
-		run(s, squad, hero, SQUAD_TUNE.walk);
-		expect(squad.beams.every((b) => b.lit)).toBe(true);
-		// what he reaches with the beams lit
-		const seen = new Set<string>(['12,24']);
+	/** What he reaches from `hero` with the ring lit, the tunnels left out. */
+	const reach = (s: ReturnType<typeof station>, squad: StationSquad, hero: GhostTile) => {
+		const seen = new Set<string>([`${hero.x},${hero.y}`]);
 		const stack = [hero];
 		while (stack.length) {
 			const t = stack.pop()!;
@@ -166,17 +158,61 @@ describe('the fence', () => {
 			]) {
 				const x = t.x + dx;
 				const y = t.y + dy;
-				if (!s.world.walkable(x, y) || squad.blocks(x, y) || seen.has(`${x},${y}`)) continue;
+				if (!s.world.walkable(x, y) || s.world.teleport(x, y) || squad.blocks(x, y)) continue;
+				if (seen.has(`${x},${y}`)) continue;
 				seen.add(`${x},${y}`);
-				const far = s.world.teleport(x, y);
-				stack.push(far && !squad.blocks(far.x, far.y) ? far : { x, y });
-				if (far) seen.add(`${far.x},${far.y}`);
+				stack.push({ x, y });
 			}
 		}
-		let all = 0;
-		for (let y = 0; y < s.grid.height; y += 1)
-			for (let x = 0; x < s.grid.width; x += 1) if (s.world.walkable(x, y)) all += 1;
-		expect(seen.size / all).toBeLessThanOrEqual(SQUAD_TUNE.fenceShare[1] + 0.02);
+		return seen;
+	};
+
+	it('the fencers walk to the rim, charge, and the lit ring holds him inside it', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 1);
+		s.ghosts.setSquadGuide(squad);
+		const hero = { x: 12, y: 24 };
+		force(s, squad, hero, 'fence');
+		expect(squad.tactic).toBe('fence');
+		expect(squad.ring?.posts).toHaveLength(2);
+		expect([...squad.roles.values()]).toContain('fencer');
+		run(s, squad, hero, SQUAD_TUNE.walk);
+		const ring = squad.ring!;
+		expect(ring.lit).toBe(true);
+		// a whole ring, no thin seal: he stays inside (a seal's throat may lie a step outside)
+		(ring as unknown as { seals: RingSeal[] }).seals = ring.seals.map((x) => ({
+			...x,
+			weak: false
+		}));
+		for (const k of reach(s, squad, hero)) {
+			const [x, y] = k.split(',').map(Number);
+			expect(Math.hypot(x + 0.5 - ring.cx, y + 0.5 - ring.cy)).toBeLessThan(ring.r + 2.6);
+		}
+	});
+
+	it('tears the thin seal when he pushes into it, and lets him through', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 1);
+		s.ghosts.setSquadGuide(squad);
+		const hero = { x: 12, y: 24 };
+		force(s, squad, hero, 'fence');
+		run(s, squad, hero, SQUAD_TUNE.walk);
+		const ring = squad.ring!;
+		const [first] = ring.seals;
+		(ring as unknown as { seals: RingSeal[] }).seals = ring.seals.map((x) => ({
+			...x,
+			weak: x === first
+		}));
+		expect(squad.blocks(first.x, first.y)).toBe(true);
+		// he stands before it, facing into it
+		const at = { x: first.x - first.dx, y: first.y - first.dy };
+		const facing = first.dx > 0 ? 'RIGHT' : first.dx < 0 ? 'LEFT' : first.dy > 0 ? 'DOWN' : 'UP';
+		for (let t = 0; t < SQUAD_TUNE.breach + 0.1; t += 1 / 60)
+			squad.update(1 / 60, s.ghosts, at, facing);
+		expect(ring.broken).toBe(true);
+		expect(squad.blocks(first.x, first.y)).toBe(false);
 	});
 });
 
@@ -330,7 +366,7 @@ describe('the roles', () => {
 });
 
 describe('a power cell', () => {
-	it('breaks the tactic: the beams go dark, the hidden come out', () => {
+	it('breaks the tactic: the ring goes dark, the hidden come out', () => {
 		const s = station();
 		release(s);
 		const squad = new StationSquad(s.world, 2);
@@ -341,7 +377,7 @@ describe('a power cell', () => {
 		expect(squad.hiddenList.length).toBeGreaterThan(0);
 		squad.onPower(s.ghosts);
 		expect(squad.hiddenList).toHaveLength(0);
-		expect(squad.beams).toHaveLength(0);
+		expect(squad.ring).toBeNull();
 		expect(squad.phase).toBe('calm');
 	});
 });

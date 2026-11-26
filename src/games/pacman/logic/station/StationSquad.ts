@@ -2,8 +2,10 @@
 // hero (the way he will take: toward the nearest food he has not eaten), gives each creature a
 // role, and runs one of three tactics at a time, picked by what the situation offers, with a
 // calm beat between (the classic scatter / chase) and a tell before each:
-// - the fence: two fencers stand on two lines across the station and light beams along them, so
-//   the hero is held in 60-75% of it; a hunter drives him; the fourth is a phantom nobody sees;
+// - the fence, a quarantine ring (the owner, 2026-11-26: no beams through walls, nothing bound to
+//   the maze's cuts): two fencers stand on a circle round a point ahead of him as its projectors;
+//   where it crosses a corridor a seal grows in the corridor's throat and he cannot pass; one ring
+//   in two has a thin seal he can push through; a hunter drives him; the fourth is a phantom;
 // - the ambush: one hides as food on a tile he has already eaten, on his way; the others shut
 //   every way out but the one that leads to it;
 // - the vent: one hides in a vent shaft on his way (its eyes glow in the shaft) and comes out
@@ -29,10 +31,13 @@ export const SQUAD_TUNE = {
 	length: { fence: 12, ambush: 13, vent: 12 },
 	/** How far ahead the hero's way is read, steps. */
 	foresee: 14,
-	/** The fence: the share of the station he is held in; the beams' charge; the fencers' walk. */
-	fenceShare: [0.6, 0.75],
+	/** The fence: the ring's radius, tiles; the chance of a thin seal and the push that tears it,
+	 *  s; the projectors' charge, s; how long a lit ring holds, s; the fencers' walk, s. */
+	ring: 7.5,
+	weak: 0.5,
+	breach: 0.6,
 	charge: 1.5,
-	beam: 9,
+	hold: 9,
 	walk: 7,
 	/** The ambush: how far along his way the lurker settles; its hold on him; harmless after. */
 	settle: [3, 11],
@@ -116,17 +121,37 @@ export interface Going {
 	time: number;
 }
 
-/** A beam of the fence: a whole row (`axis` 'row', at `at` = y) or column. */
-export interface Beam {
-	readonly axis: 'row' | 'col';
-	readonly at: number;
-	/** Where its fencer stands. */
+/** A seal of the quarantine ring: the throat tile it grows in and the way out across it. */
+export interface RingSeal {
 	readonly x: number;
 	readonly y: number;
+	readonly dx: number;
+	readonly dy: number;
+	/** The thin one: he can push through it. */
+	readonly weak: boolean;
+}
+
+/** A projector of the ring: a fencer at its post on the rim (its angle from the centre). */
+export interface RingPost {
 	readonly kind: GhostKind;
-	/** 0 walking there, then charging to 1 (the tell), then lit. */
+	readonly x: number;
+	readonly y: number;
+	readonly a: number;
+	/** 0 walking there, then charging to 1 (the tell). */
 	charge: number;
+}
+
+/** The fence: a quarantine ring round a point (tiles, cell centres at x + 0.5). */
+export interface QuarantineRing {
+	readonly cx: number;
+	readonly cy: number;
+	readonly r: number;
+	readonly posts: RingPost[];
+	readonly seals: readonly RingSeal[];
 	lit: boolean;
+	/** How long he has pushed into the thin seal, s; torn once it reaches `SQUAD_TUNE.breach`. */
+	push: number;
+	broken: boolean;
 }
 
 export interface SquadEvents {
@@ -164,7 +189,7 @@ export class StationSquad implements SquadGuide {
 	 * to the nearest vent's mouth; there they fold out of sight (`hiddenList`).
 	 */
 	readonly going: Going[] = [];
-	beams: Beam[] = [];
+	ring: QuarantineRing | null = null;
 	/** The way the hero is read to take, from his tile on. */
 	foreseen: GhostTile[] = [];
 	/** The ambush: the way out left open. */
@@ -184,9 +209,6 @@ export class StationSquad implements SquadGuide {
 	private last: SquadTactic | null = null;
 	/** Lurkers laid so far this level (the first ones teach). */
 	private ambushes = 0;
-	private fenceCache: Array<{ axis: 'row' | 'col'; at: number }> | null = null;
-	private graph: { adj: Int32Array[]; seen: Uint32Array; stamp: number; stack: Int32Array } | null =
-		null;
 	private readonly harmlessFor = new Map<GhostKind, number>();
 	/** Reached its post: it hunts on from there and is not sent back (else it rocks at the post). */
 	private readonly reached = new Set<GhostKind>();
@@ -207,7 +229,7 @@ export class StationSquad implements SquadGuide {
 
 	// ------------------------------------------------------------- the game's calls
 
-	/** Back to the calm (a new life): the hidden are let out, the beams go dark. */
+	/** Back to the calm (a new life): the hidden are let out, the ring goes dark. */
 	reset(ghosts: SquadGhosts): void {
 		this.end(ghosts, 0);
 		this.chasing = false;
@@ -237,14 +259,16 @@ export class StationSquad implements SquadGuide {
 		this.trail.length = 0;
 	}
 
-	/** A power cell: the tactic breaks, the beams go dark, the hidden show (frighten them after). */
+	/** A power cell: the tactic breaks, the ring goes dark, the hidden show (frighten them after). */
 	onPower(ghosts: SquadGhosts): void {
 		if (!this.chasing) this.end(ghosts, 0);
 	}
 
-	/** A beam lights the tile: the hero cannot pass (the squad can). */
+	/** A lit seal stands there: the hero cannot pass (the squad can); a torn one lets him. */
 	blocks(x: number, y: number): boolean {
-		return this.beams.some((b) => b.lit && (b.axis === 'row' ? b.at === y : b.at === x));
+		const r = this.ring;
+		if (!r || !r.lit) return false;
+		return r.seals.some((s) => s.x === x && s.y === y && !(s.weak && r.broken));
 	}
 
 	/** A revealed lurker or venter cannot hurt yet; the hidden do not touch at all. */
@@ -282,7 +306,7 @@ export class StationSquad implements SquadGuide {
 		}
 		this.updateGoing(dt, ghosts);
 		this.updateHidden(dt, ghosts, events);
-		this.updateBeams(dt, ghosts);
+		this.updateRing(dt, ghosts);
 		this.left -= dt;
 		if (this.phase === 'on' && this.tactic === 'ambush') this.herd();
 		if (this.left > 0) return events;
@@ -414,8 +438,7 @@ export class StationSquad implements SquadGuide {
 	private pick(): SquadTactic | null {
 		const n = this.hunters().length;
 		const scores: Array<[SquadTactic, number]> = [];
-		this.fenceCache = n >= 3 ? this.fencePlan() : null;
-		if (this.fenceCache) scores.push(['fence', 1]);
+		if (n >= 3) scores.push(['fence', 1]);
 		if (n >= 2 && this.ambushSpot()) scores.push(['ambush', 1.2]);
 		if (n >= 2 && this.ventSpot()) scores.push(['vent', 1.4]);
 		const fresh = scores.filter(([t]) => t !== this.last);
@@ -439,33 +462,25 @@ export class StationSquad implements SquadGuide {
 			.map((g) => ({ g, d: this.distance(g.tile, this.hero) }))
 			.sort((a, b) => a.d - b.d);
 		if (tactic === 'fence') {
-			const plan = this.fenceCache ?? this.fencePlan();
+			const plan = this.ringPlan();
 			if (!plan) return;
-			// the two nearest to the lines fence, the nearest of the rest hunts, the last fades out
+			// the nearest to each post projects from it, the nearest of the rest hunts, the last fades
 			const taken = new Set<GhostKind>();
-			for (const line of plan) {
-				let best: { g: GhostModel; t: GhostTile; d: number } | null = null;
+			const posts: RingPost[] = [];
+			for (const spot of plan.spots) {
+				let best: { g: GhostModel; d: number } | null = null;
 				for (const g of pool) {
 					if (taken.has(g.kind)) continue;
-					for (const t of this.lineTiles(line.axis, line.at)) {
-						const d = Math.abs(g.tile.x - t.x) + Math.abs(g.tile.y - t.y);
-						if (!best || d < best.d) best = { g, t, d };
-					}
+					const d = Math.abs(g.tile.x - spot.x) + Math.abs(g.tile.y - spot.y);
+					if (!best || d < best.d) best = { g, d };
 				}
 				if (!best) continue;
 				taken.add(best.g.kind);
 				this.roles.set(best.g.kind, 'fencer');
-				this.targets.set(best.g.kind, best.t);
-				this.beams.push({
-					axis: line.axis,
-					at: line.at,
-					x: best.t.x,
-					y: best.t.y,
-					kind: best.g.kind,
-					charge: 0,
-					lit: false
-				});
+				this.targets.set(best.g.kind, { x: spot.x, y: spot.y });
+				posts.push({ kind: best.g.kind, x: spot.x, y: spot.y, a: spot.a, charge: 0 });
 			}
+			this.ring = { ...plan.ring, posts, lit: false, push: 0, broken: false };
 			const rest = byDist.filter((e) => !taken.has(e.g.kind));
 			if (rest[0]) this.roles.set(rest[0].g.kind, 'hunter');
 			if (rest[1]) {
@@ -586,12 +601,12 @@ export class StationSquad implements SquadGuide {
 		}
 	}
 
-	/** The tactic ends: beams dark, the hidden out, roles off, calm. */
+	/** The tactic ends: the ring dark, the hidden out, roles off, calm. */
 	private end(ghosts: SquadGhosts, harmless: number): void {
 		this.going.length = 0;
 		for (const h of [...this.hiddenList]) this.reveal(h, ghosts, harmless);
-		for (const b of this.beams) ghosts.freeze(b.kind, 1e-6);
-		this.beams = [];
+		for (const p of this.ring?.posts ?? []) ghosts.freeze(p.kind, 1e-6);
+		this.ring = null;
 		this.roles.clear();
 		this.targets.clear();
 		this.reached.clear();
@@ -603,143 +618,114 @@ export class StationSquad implements SquadGuide {
 		this.left = this.calmTime();
 	}
 
-	// ------------------------------------------------------------- the fence
+	// ------------------------------------------------------------- the fence: the ring
 
-	private lineTiles(axis: 'row' | 'col', at: number): GhostTile[] {
-		const out: GhostTile[] = [];
-		const n = axis === 'row' ? this.world.width : this.world.height;
-		for (let i = 0; i < n; i += 1) {
-			const x = axis === 'row' ? i : at;
-			const y = axis === 'row' ? at : i;
-			if (this.world.walkable(x, y) && !this.world.teleport(x, y)) out.push({ x, y });
-		}
-		return out;
+	private open(x: number, y: number): boolean {
+		return this.world.walkable(x, y) && !this.world.teleport(x, y);
 	}
 
-	/** Two lines that hold him in 60-75% of the station (BFS with the lines shut), or null. */
-	fencePlan(): Array<{ axis: 'row' | 'col'; at: number }> | null {
+	/**
+	 * The ring round a point two steps ahead of him: its seals (every step across the rim between
+	 * two open tiles, moved into the nearest throat: a tile with walls on both sides across the
+	 * way), one of them thin in one ring of two, and the two projectors' posts (the open tiles
+	 * nearest the rim to his sides). Null when the maze gives it no seal or no post.
+	 */
+	ringPlan(): {
+		ring: Pick<QuarantineRing, 'cx' | 'cy' | 'r' | 'seals'>;
+		spots: Array<{ x: number; y: number; a: number }>;
+	} | null {
+		const at = this.foreseen[Math.min(2, this.foreseen.length - 1)] ?? this.hero;
+		const cx = at.x + 0.5;
+		const cy = at.y + 0.5;
+		const r = SQUAD_TUNE.ring;
 		const W = this.world.width;
 		const H = this.world.height;
-		const lines: Array<{ axis: 'row' | 'col'; at: number }> = [];
-		for (let y = 3; y < H - 3; y += 1)
-			if (Math.abs(y - this.hero.y) >= 2) lines.push({ axis: 'row', at: y });
-		for (let x = 3; x < W - 3; x += 1)
-			if (Math.abs(x - this.hero.x) >= 2) lines.push({ axis: 'col', at: x });
-		const shutRow = new Int8Array(H);
-		const shutCol = new Int8Array(W);
-		const reach = () => this.reachable((x, y) => shutRow[y] === 1 || shutCol[x] === 1);
-		const total = reach();
-		const [lo, hi] = SQUAD_TUNE.fenceShare;
-		const set = (l: { axis: 'row' | 'col'; at: number }, v: 0 | 1) => {
-			if (l.axis === 'row') shutRow[l.at] = v;
-			else shutCol[l.at] = v;
-		};
-		const alone = lines.map((l) => {
-			set(l, 1);
-			const share = reach() / total;
-			set(l, 0);
-			return share;
-		});
-		let best: { pair: Array<{ axis: 'row' | 'col'; at: number }>; score: number } | null = null;
-		for (let i = 0; i < lines.length; i += 1) {
-			// both lines must matter: each alone lets him round the other
-			if (alone[i] < lo + 0.05) continue;
-			for (let j = i + 1; j < lines.length; j += 1) {
-				const a = lines[i];
-				const b = lines[j];
-				if (alone[j] < lo + 0.05) continue;
-				if (a.axis === b.axis && Math.abs(a.at - b.at) < 4) continue;
-				set(a, 1);
-				set(b, 1);
-				const share = reach() / total;
-				set(a, 0);
-				set(b, 0);
-				if (share < lo || share > hi) continue;
-				if (alone[i] < share + 0.05 || alone[j] < share + 0.05) continue;
-				// near the middle of the band, a little randomness so it is not the same fence
-				const score = -Math.abs(share - (lo + hi) / 2) + this.random() * 0.05;
-				if (!best || score > best.score) best = { pair: [a, b], score };
-			}
-		}
-		return best?.pair ?? null;
-	}
-
-	/** The walkable tiles and their ways (tunnels and vents are a way to their far end), once. */
-	private graphOf(): NonNullable<StationSquad['graph']> {
-		if (this.graph) return this.graph;
-		const W = this.world.width;
-		const H = this.world.height;
-		const adj: Int32Array[] = [];
+		const inside = (x: number, y: number) => Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= r;
+		const throat = (x: number, y: number, dx: number, dy: number) =>
+			this.open(x, y) &&
+			!this.world.walkable(x + dy, y + dx) &&
+			!this.world.walkable(x - dy, y - dx);
+		const found: Array<{ x: number; y: number; dx: number; dy: number }> = [];
+		const taken = new Set<number>();
 		for (let y = 0; y < H; y += 1) {
 			for (let x = 0; x < W; x += 1) {
-				const out: number[] = [];
-				if (this.world.walkable(x, y)) {
-					for (const [dx, dy] of Object.values(DIRS)) {
-						const nx = x + dx;
-						const ny = y + dy;
-						if (!this.world.walkable(nx, ny)) continue;
-						out.push(ny * W + nx);
-						const far = this.world.teleport(nx, ny);
-						if (far) out.push(far.y * W + far.x);
-					}
-				}
-				adj.push(Int32Array.from(out));
-			}
-		}
-		this.graph = { adj, seen: new Uint32Array(W * H), stamp: 0, stack: new Int32Array(W * H * 2) };
-		return this.graph;
-	}
-
-	/** How many tiles he reaches from where he is with `shut` closed (tunnels and vents count). */
-	private reachable(shut: (x: number, y: number) => boolean): number {
-		const g = this.graphOf();
-		const W = this.world.width;
-		g.stamp += 1;
-		const start = this.hero.y * W + this.hero.x;
-		g.seen[start] = g.stamp;
-		let top = 0;
-		g.stack[top++] = start;
-		let count = 1;
-		while (top > 0) {
-			const i = g.stack[--top];
-			const ways = g.adj[i];
-			for (let j = 0; j < ways.length; j += 1) {
-				const n = ways[j];
-				if (g.seen[n] === g.stamp) continue;
-				const x = n % W;
-				const y = (n - x) / W;
-				if (shut(x, y)) continue;
-				g.seen[n] = g.stamp;
-				g.stack[top++] = n;
-				count += 1;
-			}
-		}
-		return count;
-	}
-
-	private updateBeams(dt: number, ghosts: SquadGhosts): void {
-		if (this.phase !== 'on' || this.tactic !== 'fence') return;
-		for (const b of this.beams) {
-			const g = this.ghosts.find((gg) => gg.kind === b.kind);
-			if (!g || g.state !== 'active') continue;
-			if (b.lit) continue;
-			if (g.tile.x === b.x && g.tile.y === b.y) {
-				if (b.charge === 0) ghosts.freeze(b.kind, 1e6);
-				b.charge = Math.min(1, b.charge + dt / SQUAD_TUNE.charge);
-				if (b.charge >= 1) {
-					b.lit = true;
-					// a lit fence holds for its own time from here
-					this.left = Math.min(this.left, SQUAD_TUNE.beam) + 0;
+				if (!this.open(x, y) || !inside(x, y)) continue;
+				for (const [dx, dy] of Object.values(DIRS)) {
+					const bx = x + dx;
+					const by = y + dy;
+					if (!this.open(bx, by) || inside(bx, by)) continue;
+					const line: Array<[number, number]> = [
+						[bx, by],
+						[x, y],
+						[bx + dx, by + dy],
+						[x - dx, y - dy],
+						[bx + 2 * dx, by + 2 * dy],
+						[x - 2 * dx, y - 2 * dy]
+					];
+					const [tx, ty] = line.find(([tx2, ty2]) => throat(tx2, ty2, dx, dy)) ?? [bx, by];
+					if (taken.has(ty * W + tx)) continue;
+					taken.add(ty * W + tx);
+					found.push({ x: tx, y: ty, dx, dy });
 				}
 			}
 		}
-		// the fencers did not get there in time: the fence is off
-		if (
-			SQUAD_TUNE.length.fence - this.left > SQUAD_TUNE.walk &&
-			this.beams.some((b) => b.charge === 0)
-		) {
-			this.end(ghosts, 0);
+		if (found.length < 2) return null;
+		const thin = this.random() < SQUAD_TUNE.weak ? Math.floor(this.random() * found.length) : -1;
+		const seals: RingSeal[] = found.map((f, i) => ({ ...f, weak: i === thin }));
+		// the posts: to his sides of the line from the centre to him
+		const toHim = Math.atan2(this.hero.y + 0.5 - cy, this.hero.x + 0.5 - cx);
+		const base =
+			Number.isFinite(toHim) && (this.hero.x !== at.x || this.hero.y !== at.y) ? toHim : 0;
+		const spots: Array<{ x: number; y: number; a: number }> = [];
+		for (const want of [base + Math.PI / 2, base - Math.PI / 2]) {
+			let best: { x: number; y: number; a: number; score: number } | null = null;
+			for (let y = 0; y < H; y += 1) {
+				for (let x = 0; x < W; x += 1) {
+					if (!this.open(x, y) || spots.some((p) => p.x === x && p.y === y)) continue;
+					const a = Math.atan2(y + 0.5 - cy, x + 0.5 - cx);
+					const da = Math.abs(Math.atan2(Math.sin(a - want), Math.cos(a - want)));
+					const score = Math.abs(Math.hypot(x + 0.5 - cx, y + 0.5 - cy) - r) * 2 + da * 3;
+					if (!best || score < best.score) best = { x, y, a, score };
+				}
+			}
+			if (best) spots.push({ x: best.x, y: best.y, a: best.a });
 		}
+		if (spots.length < 2) return null;
+		return { ring: { cx, cy, r, seals }, spots };
+	}
+
+	private updateRing(dt: number, ghosts: SquadGhosts): void {
+		const r = this.ring;
+		if (this.phase !== 'on' || this.tactic !== 'fence' || !r) return;
+		if (!r.lit) {
+			for (const p of r.posts) {
+				const g = this.ghosts.find((gg) => gg.kind === p.kind);
+				if (!g || g.state !== 'active') continue;
+				if (g.tile.x === p.x && g.tile.y === p.y) {
+					if (p.charge === 0) ghosts.freeze(p.kind, 1e6);
+					p.charge = Math.min(1, p.charge + dt / SQUAD_TUNE.charge);
+				}
+			}
+			if (r.posts.length && r.posts.every((p) => p.charge >= 1)) {
+				r.lit = true;
+				// a lit ring holds for its own time from here
+				this.left = Math.min(this.left, SQUAD_TUNE.hold);
+			} else if (
+				// the fencers did not get there in time: the fence is off
+				SQUAD_TUNE.length.fence - this.left > SQUAD_TUNE.walk &&
+				r.posts.some((p) => p.charge === 0)
+			) {
+				this.end(ghosts, 0);
+			}
+			return;
+		}
+		// the thin seal: he tears it by pushing into it
+		const thin = r.seals.find((s) => s.weak);
+		if (!thin || r.broken) return;
+		const way = this.heroFacing ? DIRS[this.heroFacing] : null;
+		const pushing = !!way && this.hero.x + way[0] === thin.x && this.hero.y + way[1] === thin.y;
+		r.push = pushing ? r.push + dt : Math.max(0, r.push - dt * 2);
+		if (r.push >= SQUAD_TUNE.breach) r.broken = true;
 	}
 
 	// ------------------------------------------------------------- the ambush

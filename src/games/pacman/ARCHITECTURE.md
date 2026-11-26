@@ -37,9 +37,9 @@ logic/
              slot, the F key, the mask, the shock; it owns the EchoCloneService riot), boss reward
   station/   the station's rules: StationRun (the level in the game: the squad, the hatch's charge,
              the power cells, the lurker's hold, the three hits, the escape with the rush, the
-             pulse, the breakthrough; StationGrid puts the doors and beams in the way),
+             pulse, the breakthrough; StationGrid puts the doors and the ring's seals in the way),
              MimicTells (a lurker's tells, pure), StationSquad (the squad's brain: it reads the hero's way,
-             gives roles, runs the fence (a search for two lines over the maze graph), the
+             gives roles, runs the fence (a quarantine ring round a point ahead of him: seals in the corridors' throats where it crosses them, a thin one he can tear), the
              ambush and the vent, the phantom, the escape's chase and interceptions; it steers
              the hunting ghosts through GhostService.setSquadGuide), EscapeRush (the escape's breakout: 1-4 more running at the hero
              and at his way, kept off his breakthrough lane), StationEscape (the hatch's charge, the console, the
@@ -79,7 +79,7 @@ render/
                    the hull and baked architecture as one screen layer per resize, the phase's
                    infestation one per phase change, the live props in stage space, the light
                    map of sprite lights with the flashlight, bloom by downscale, grain on High),
-                   b7Hive (the infestation, the total takeover: veins, flesh over the plates, the torn lair doors, the heartbeat; revealed from the lair by the infection), pretender (the squad's creature, the owner's STATION_MIMIC: the painter and its RailGait), drawLurkerEye (the lurker's gold eye tell), squadMarks (the plays'
+                   b7Hive (the infestation, the total takeover: veins, flesh over the plates, the torn lair doors, the heartbeat; revealed from the lair by the infection), pretender (the squad's creature, the owner's STATION_MIMIC: the painter and its RailGait), drawLurkerEye (the lurker's gold eye tell), quarantineRing (the fence's ring and seals), squadMarks (the plays'
                    and the escape's marks). The older style B, kept for the prototypes until
                    the owner has played B-7:
                    StationBake (the scene baked once at a scale fitted

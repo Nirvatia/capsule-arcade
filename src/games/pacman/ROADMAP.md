@@ -161,13 +161,11 @@ last (see Later).
          swarm and the `creatures` page are deleted (2026-11-26). Left, from his play: its
          readability at game scale; the phantom as the Pretender almost clear; then delete the
          spore hermit and the station-b7 page's candidate keys.
-      4. **The fence without the maze's matrix** (the owner, 2026-11-26: the beams through walls
-         and the cut on the maze graph go; the goal hints are done: a beacon held on the console,
-         then the hatch, and the HUD's goal line). Candidates: the quarantine ring (a circle of
-         field round a point ahead of him, two fencers its projectors; a prototype first) and
-         the spore cloud (an amber cloud out of a vent cutting a part of the station, slowing him
-         inside; the owner likes it). Then a fourth tactic if the three need company (the
-         tripwire or the shadow).
+      4. **The fence is the quarantine ring** in the game (2026-11-26, `DESIGN.md` §7a; the goal
+         hints done too: a beacon held on the console, then the hatch, and the HUD's goal line).
+         Left, from the owner's play: the ring's radius and hold, how often the thin seal comes;
+         the spore cloud stays in reserve (the owner likes it). Then a fourth tactic if the three
+         need company (the tripwire or the shadow).
       5. **The total takeover** (the owner, 2026-11-26: the veins lack the feeling of alien
          organics seizing the station; agreed: flesh over the plates by phase, volumetric veins
          with nodes, a heartbeat out of the lair, cysts on crests, lamps under film). Candidate C
@@ -177,8 +175,10 @@ last (see Later).
          massive blast doors torn apart from inside (a breach a tile wide, the ends bent outward,
          petals of steel, flesh oozing through), no hazard lintel; lips over the pit's rim, cords
          to the cocoons; the grate and the old cocoons kept (the owner; `createB7Scene`'s
-         `lairDoors: false`). Next: the lamps under film, then into the game in place of `b7Veins`
-         (and a frame-time check of the heartbeat's layer).
+         `lairDoors: false`). In the game since (`b7Hive`), with the lamps under the film (they shine
+         on warm, beating with the hive) and the Pretenders larger with a soft glow (the hero's
+         too). The world with the hive bakes in ~0.7 s in headless Chromium; left: the
+         heartbeat's cost on a weak GPU.
       6. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance

@@ -18,6 +18,7 @@ import type { PlayerDirection } from '../../../src/games/pacman/logic/actors/Pla
 import { SQUAD_TUNE, StationSquad } from '../../../src/games/pacman/logic/station/StationSquad';
 import { StationEscape } from '../../../src/games/pacman/logic/station/StationEscape';
 import { EscapeRush } from '../../../src/games/pacman/logic/station/EscapeRush';
+import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
 import { StationWorld } from '../../../src/games/pacman/render/station/StationWorld';
 import { HeroView } from '../../../src/games/pacman/render/actors/HeroView';
 import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
@@ -30,9 +31,7 @@ import {
 	drawCell,
 	drawClaim,
 	drawConsole,
-	drawBeam,
 	drawCreature,
-	drawEmitter,
 	drawPhantom,
 	drawShaft,
 	drawLane,
@@ -429,15 +428,11 @@ function draw(r: Run, t: number): void {
 		const glow = h.state === 'glow' ? Math.min(1, h.time / SQUAD_TUNE.glow) : 0.15 + 0.1 * Math.sin(t * 2);
 		drawShaft(ctx, ...at(h.x + 0.5, h.y + 0.5), S, t, glow, KIND_COLOR[h.kind]);
 	}
-	// the fence: told, charging, lit
-	const fenceTold = sq.phase === 'tell' && sq.next === 'fence';
-	if (fenceTold || sq.tactic === 'fence') {
-		for (const beam of sq.beams) {
-			const [x0, y0] = beam.axis === 'row' ? at(0.5, beam.at + 0.5) : at(beam.at + 0.5, 0.5);
-			const [x1, y1] = beam.axis === 'row' ? at(W - 0.5, beam.at + 0.5) : at(beam.at + 0.5, H - 0.5);
-			drawBeam(ctx, x0, y0, x1, y1, S, t, beam.charge, beam.lit);
-			if (beam.charge > 0 && !beam.lit) drawEmitter(ctx, ...at(beam.x + 0.5, beam.y + 0.5), S, beam.charge);
-		}
+	// the fence: the quarantine ring as the game draws it
+	if (sq.ring) {
+		const ring = sq.ring;
+		const charge = ring.posts.reduce((sum, p) => sum + p.charge, 0) / Math.max(1, ring.posts.length);
+		drawRing(ctx, L, ring, { charge: 0.08 + 0.92 * charge, lit: ring.lit ? 1 : 0, pressed: null, press: 0 }, t);
 	}
 	// the creatures; the phantom shows only as the light guttering round it
 	for (const g of r.ghosts.list) {

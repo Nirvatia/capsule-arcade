@@ -4,6 +4,7 @@ import type { StationRun } from '../../logic/station/StationRun';
 import { RUN_TUNE } from '../../logic/station/StationRun';
 import { mimicTell } from '../../logic/station/MimicTells';
 import { escapeGoal } from '../../logic/station/StationEscape';
+import { SQUAD_TUNE } from '../../logic/station/StationSquad';
 import type { RenderQuality } from '../common/renderQuality';
 import type { GridLayout } from '../maze/GridView';
 import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../RenderFrame';
@@ -18,7 +19,8 @@ import {
 	pretenderStateFor
 } from './pretender';
 import type { PretenderOpts, PretenderState } from './pretender';
-import { KIND_COLOR, drawBeam, drawDoor, drawEmitter, drawLane, drawShaft } from './squadMarks';
+import { KIND_COLOR, drawDoor, drawLane, drawShaft } from './squadMarks';
+import { drawRing } from './quarantineRing';
 
 const KINDS: readonly GhostKind[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
 const DIR: Readonly<Record<GhostDirection, readonly [number, number]>> = {
@@ -288,24 +290,25 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 			const p = at(d.x, d.y);
 			drawDoor(ctx, d, p.x, p.y, S, 'h');
 		}
-		const W = this.world?.world.scene.COLS ?? 25;
-		const H = this.world?.world.scene.ROWS ?? 27;
-		for (const b of squad.beams) {
-			const a = b.axis === 'row' ? at(0, b.at) : at(b.at, 0);
-			const z = b.axis === 'row' ? at(W - 1, b.at) : at(b.at, H - 1);
-			drawBeam(
+		// the fence: the quarantine ring, faint while the projectors walk, growing as they charge
+		const ring = squad.ring;
+		if (ring) {
+			const charge = ring.posts.length
+				? ring.posts.reduce((sum, p) => sum + p.charge, 0) / ring.posts.length
+				: 0;
+			const thin = ring.seals.find((x) => x.weak) ?? null;
+			drawRing(
 				ctx,
-				b.axis === 'row' ? a.x - S / 2 : a.x,
-				b.axis === 'row' ? a.y : a.y - S / 2,
-				b.axis === 'row' ? z.x + S / 2 : z.x,
-				b.axis === 'row' ? z.y : z.y + S / 2,
-				S,
-				time,
-				b.charge,
-				b.lit
+				layout,
+				ring,
+				{
+					charge: 0.08 + 0.92 * charge,
+					lit: ring.lit ? 1 : 0,
+					pressed: thin && ring.push > 0 ? thin : null,
+					press: Math.min(1, ring.push / SQUAD_TUNE.breach)
+				},
+				time
 			);
-			const e = at(b.x, b.y);
-			drawEmitter(ctx, e.x, e.y, S, b.charge);
 		}
 		for (const h of squad.hiddenList) {
 			if (h.as !== 'vent') continue;
