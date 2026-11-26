@@ -40,7 +40,7 @@ describe('a Pretender on the rails', () => {
 		expect(g.faceX).toBe(-1);
 	});
 
-	it('pushes the mask up in the rage over a moment and brings it back down', () => {
+	it('bursts into the rage over a moment and calms back down', () => {
 		const g = new RailGait();
 		g.update(DT, 0, 0, 1, 0, false);
 		g.update(DT, 0, 0, 1, 0, true);

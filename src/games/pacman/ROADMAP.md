@@ -166,12 +166,10 @@ last (see Later).
          hints done too: a beacon held on the console, then the hatch, and the HUD's goal line).
          The ring's warning contour is in (2026-11-26: the whole ring shown as the fencers set out,
          the filament growing along it); the lure is a green signal flare (`lureFlare`); the
-         Pretenders 7.5% larger out of the rage. Left: **the rage's new look**: the owner picked
-         candidate C, the overheat (`station-b7` page, `looks.ts`: white-hot inside, the mask in
-         shards circling the head, hollow glowing sockets, a jagged grin across the body,
-         afterimages), but its red is lost in the fully infected maze: four colours on the page
-         (red, white-hot, acid, violet) await his pick; then it replaces the true face of the
-         rage in `pretender` and the page's candidates go.
+         Pretenders 7.5% larger out of the rage. The rage is the overheat in acid (the owner's pick of the page's
+         candidates; red was lost in the infected maze). Left: **the flare's colour**: green now
+         meets the acid rage; the `station-b7` page offers cyan, magenta and blue (blue is near the
+         fright); his pick goes into `lureFlare` and the page's `looks.ts` goes.
          Left, from the owner's play: the ring's radius and hold, how often the thin seal comes;
          the spore cloud stays in reserve (the owner likes it). Then a fourth tactic if the three
          need company (the tripwire or the shadow).

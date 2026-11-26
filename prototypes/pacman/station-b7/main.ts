@@ -1,16 +1,16 @@
 // Prototype: the station B-7 as the game draws it (`render/station/b7`: the scene, the hive's
 // takeover, the lamps under its film, the heartbeat) with the game's quarantine ring, its lure
-// (the flare) and its Pretenders on the real maze, and the candidates of `looks.ts` (the enraged
-// overheat in four colours). Everything is switched by the buttons on top; a panel shows the rage
-// and the lure large.
+// (the flare) and its Pretenders (the rage, the acid overheat) on the real maze, and the
+// candidates of `looks.ts` (the flare in other colours). Everything is switched by the buttons on
+// top; a panel shows the rage and the lure large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
 import { drawPretender, RailGait, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
 import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
-import { drawRageCandidate, type Heat } from './looks';
-import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
+import { FLARE_TINTS } from './looks';
+import { drawLureFlare, GREEN_FLARE, type FlareTint } from '../../../src/games/pacman/render/station/lureFlare';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
@@ -27,24 +27,24 @@ const open = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && OPE
 // ------------------------------------------------------------------------------ what is shown
 
 type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'off';
-type Pick = Heat | 'now' | 'calm' | 'off';
+type Pick = 'now' | 'calm' | 'off';
+type Lure = keyof typeof FLARE_TINTS | 'green' | 'off';
 const st = {
 	inf: 0.65,
 	alarm: false,
 	ring: 'cycle' as RingMode,
 	rage: 'off' as Pick,
-	lure: false,
+	lure: 'off' as Lure,
 	big: true
 };
 
 const NOTES: Record<string, string> = {
-	'rage-now': 'Ярость как в игре сейчас',
+	'rage-now': 'Ярость как в игре: кислотный перегрев',
 	'rage-calm': 'Обычные мимики, как в игре: на 7.5% крупнее',
-	'rage-red': 'Перегрев, красный (как был)',
-	'rage-white': 'Перегрев, белый накал: белое тело, оранжевый край, тёмные глазницы',
-	'rage-acid': 'Перегрев, кислотный: лаймовый',
-	'rage-violet': 'Перегрев, фиолетовый: плазма',
-	lure: 'Приманка: шашка, как в игре',
+	'lure-green': 'Шашка зелёная, как в игре сейчас',
+	'lure-cyan': 'Шашка циановая',
+	'lure-magenta': 'Шашка пурпурная',
+	'lure-blue': 'Шашка синяя (близко к испугу)',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'
 };
 
@@ -73,11 +73,7 @@ const GROUPS: Group[] = [
 		label: 'Ярость',
 		key: 'rage',
 		items: [
-			['Сейчас', 'now'],
-			['Красный', 'red'],
-			['Белый накал', 'white'],
-			['Кислотный', 'acid'],
-			['Фиолетовый', 'violet'],
+			['Как в игре', 'now'],
 			['Обычные', 'calm'],
 			['Выкл', 'off']
 		],
@@ -92,11 +88,17 @@ const GROUPS: Group[] = [
 		label: 'Приманка',
 		key: 'lure',
 		items: [
-			['Шашка', true],
-			['Выкл', false]
+			['Зелёная', 'green'],
+			['Циан', 'cyan'],
+			['Пурпурная', 'magenta'],
+			['Синяя', 'blue'],
+			['Выкл', 'off']
 		],
 		after: (v) => {
-			if (v) st.alarm = true;
+			if (v !== 'off') {
+				st.alarm = true;
+				st.inf = 1;
+			}
 		}
 	},
 	{
@@ -152,7 +154,7 @@ function render(): void {
 	const lines = [
 		st.ring === 'cycle' ? NOTES['ring-cycle'] : '',
 		st.rage !== 'off' ? NOTES[`rage-${st.rage}`] : '',
-		st.lure ? NOTES.lure : ''
+		st.lure !== 'off' ? NOTES[`lure-${st.lure}`] : ''
 	].filter(Boolean);
 	note.textContent = lines.join('\n');
 	bar.append(note);
@@ -283,12 +285,15 @@ function look(g: RailGait, dx: number, dy: number, t: number): PretenderOpts {
 function drawRage(c: CanvasRenderingContext2D, x: number, y: number, S: number, kind: GhostKind, o: PretenderOpts): void {
 	if (st.rage === 'now') drawPretender(c, x, y, S, kind, 'rage', o);
 	else if (st.rage === 'calm') drawPretender(c, x, y, S, kind, 'hunt', o);
-	else if (st.rage !== 'off') drawRageCandidate(c, x, y, S, kind, st.rage, o);
 }
+
+/** The picked flare's colours. */
+const tint = (): FlareTint =>
+	st.lure === 'off' || st.lure === 'green' ? GREEN_FLARE : FLARE_TINTS[st.lure];
 
 /** The panel: the picked rage in its four headings and the lure, large. */
 function panel(c: CanvasRenderingContext2D, vw: number, t: number): void {
-	if (!st.big || (st.rage === 'off' && !st.lure)) return;
+	if (!st.big || (st.rage === 'off' && st.lure === 'off')) return;
 	const w = 340;
 	const x0 = vw - w - 14;
 	const y0 = 150;
@@ -320,10 +325,10 @@ function panel(c: CanvasRenderingContext2D, vw: number, t: number): void {
 			drawRage(c, cx, cy, S, KINDS[i], o);
 		});
 	}
-	if (st.lure) {
+	if (st.lure !== 'off') {
 		c.fillStyle = '#cfd8d4';
 		c.fillText('приманка', x0 + 12, y0 + 318);
-		drawLureFlare(c, x0 + w / 2, y0 + 395, 90, t, 1);
+		drawLureFlare(c, x0 + w / 2, y0 + 395, 90, t, 1, tint());
 	}
 	c.restore();
 }
@@ -343,12 +348,12 @@ function frame(now: number): void {
 	world.resize(vw, vh, D);
 	const sc = world.scene;
 	const lights = [];
-	if (st.lure) {
+	if (st.lure !== 'off') {
 		lights.push({
 			x: sc.MAZE_X + (lx + 0.5) * 34,
 			y: sc.MAZE_Y + (ly + 0.5) * 34,
 			r: 34 * 3.2,
-			rgb: LURE_RGB,
+			rgb: tint().light,
 			alpha: 0.8 + 0.15 * Math.sin(t * 5)
 		});
 	}
@@ -377,7 +382,7 @@ function frame(now: number): void {
 			drawRage(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, look(w.gait, p.dx, p.dy, t));
 		}
 	}
-	if (st.lure) drawLureFlare(ctx, L.offsetX + (lx + 0.5) * S, L.offsetY + (ly + 0.5) * S, S, t, 1);
+	if (st.lure !== 'off') drawLureFlare(ctx, L.offsetX + (lx + 0.5) * S, L.offsetY + (ly + 0.5) * S, S, t, 1, tint());
 	world.drawGrain(ctx, t);
 	ctx.setTransform(D, 0, 0, D, 0, 0);
 	panel(ctx, vw, t);

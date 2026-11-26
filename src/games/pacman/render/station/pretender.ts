@@ -5,8 +5,10 @@
 // gliding body read clumsy, worst on a 180. A pale cute mask (the spore's ivory, button eyes, a
 // stitched smile) is strapped over a creature in the squad's colour; the mask hangs back and slips
 // away from the heading, so the real gold eye peeks on the heading's side; the tell slips it
-// further; the rage pushes it up onto the head and shows the true face (gold slit eyes, a mouth of
-// bone teeth); it folds into the level's spore for the disguise.
+// further; in the rage the mask bursts into shards and it overheats (the owner's pick of the
+// `station-b7` page, 2026-11-26, in acid: red was lost in the infected maze): lime-hot inside,
+// the shards circling its head, hollow glowing sockets, a jagged grin across the whole body,
+// afterimages behind it; it folds into the level's spore for the disguise.
 import type { GhostKind } from '../../logic/actors/GhostModel';
 import { footLift } from '../actors/cuteGhost';
 
@@ -47,7 +49,18 @@ const BODY: Readonly<Record<GhostKind, Pal>> = {
 };
 const SCARED: Pal = { b: '#4f68ff', s: '#3346d0' };
 const WHITE: Pal = { b: '#f4f7ff', s: '#c3cfea' };
-export const RAGE: Pal = { b: '#ff4a4a', s: '#a81622' };
+/** The overheat (the rage): lime-hot inside to a deep green rim. */
+const HEAT = {
+	core: '#fbffe0',
+	mid: '#c6ff4a',
+	rim: '#3f9a18',
+	feet: '#2e7414',
+	after: '#b8ff50',
+	halo: '190, 255, 90',
+	socket: '#fffbe8',
+	pupil: '#1f4a0a',
+	throat: '220, 255, 120'
+} as const;
 export const PHASE: Readonly<Record<GhostKind, number>> = {
 	BLINKY: 0,
 	PINKY: 0.8,
@@ -85,7 +98,7 @@ export const GAIT_TUNE = {
 	/** The stride, radians of the step's phase per tile travelled: the season ghosts' (a longer
 	 *  one read as a faster glide). */
 	stride: 5.7,
-	/** The mask's way up in the rage (and back down), seconds. */
+	/** The rage's reveal (the mask bursting, the overheat) and back, seconds. */
 	reveal: 0.22,
 	/** A step longer than this is a jump (a tunnel, back to the lair), tiles. */
 	jump: 1.5
@@ -276,85 +289,11 @@ function paintMask(c: Ctx, st: PretenderState, white: boolean, o: PretenderOpts)
 	}
 }
 
-/** Under the mask (the rage): gold slit eyes under angry lids, a mouth across the face with the
- *  mask's bone for teeth, a coral glow in the throat. */
-function paintTrueFace(c: Ctx, pal: Pal, o: PretenderOpts): void {
-	const p = 0.8 + 0.2 * Math.sin(o.time * 9);
-	c.save();
-	c.translate(o.faceX * 1.6, o.faceY * 1.3);
-	// where the mask sat, the skin is raw
-	ellipse(c, 0, 2.2, 8.0, 7.4, 'rgba(110, 8, 20, 0.32)');
-	const ey = -0.6;
-	for (const side of [-1, 1]) {
-		const ex = side * 4.1;
-		glow(c, ex, ey, 5.4, `rgba(255, 214, 110, ${0.55 * p})`, `rgba(255, 70, 40, ${0.35 * p})`);
-		ellipse(c, ex, ey, 3.0, 2.6, '#ffd04a', 1.1);
-		ellipse(c, ex + o.lookX * 0.9, ey + o.lookY * 0.8, 0.62, 2.0, INK);
-		c.fillStyle = '#ffffff';
-		c.beginPath();
-		c.arc(ex - 1.1, ey - 0.9, 0.55, 0, TAU);
-		c.fill();
-		c.beginPath();
-		c.moveTo(side * 7.6, ey - 3.0);
-		c.lineTo(side * 0.7, ey - 0.1);
-		c.lineTo(side * 0.7, ey - 4.4);
-		c.lineTo(side * 7.6, ey - 4.4);
-		c.closePath();
-		c.fillStyle = pal.b;
-		c.fill();
-		line(c, side * 7.6, ey - 3.0, side * 0.7, ey - 0.1, INK, 1.5);
-	}
-	// the mouth, chomping
-	const chomp = 0.5 + 0.5 * Math.sin(o.time * 9);
-	const top = (x: number) => 3.6 - (1 - (x / 7) ** 2) * 0.5;
-	const bottom = (x: number) => 3.6 + (1 - (x / 7) ** 2) * (2.6 + 1.0 * chomp);
-	const traceMouth = () => {
-		c.beginPath();
-		c.moveTo(-7, 3.6);
-		c.quadraticCurveTo(0, 2.6, 7, 3.6);
-		c.quadraticCurveTo(0, 8.8 + 2 * chomp, -7, 3.6);
-		c.closePath();
-	};
-	traceMouth();
-	c.fillStyle = '#12060b';
-	c.fill();
-	c.save();
-	c.clip();
-	glow(c, 0, 6.6, 5.5, 'rgba(255, 140, 80, 0.75)', 'rgba(255, 70, 50, 0.4)');
-	c.fillStyle = IVORY;
-	c.strokeStyle = INK;
-	c.lineWidth = 0.5;
-	for (let x = -5.6; x <= 5.7; x += 1.87) {
-		c.beginPath();
-		c.moveTo(x - 0.85, top(x) - 0.2);
-		c.lineTo(x, top(x) + 1.9);
-		c.lineTo(x + 0.85, top(x) - 0.2);
-		c.fill();
-		c.stroke();
-	}
-	for (let x = -4.6; x <= 4.7; x += 2.3) {
-		c.beginPath();
-		c.moveTo(x - 0.8, bottom(x) + 0.2);
-		c.lineTo(x, bottom(x) - 1.6);
-		c.lineTo(x + 0.8, bottom(x) + 0.2);
-		c.fill();
-		c.stroke();
-	}
-	c.restore();
-	traceMouth();
-	c.strokeStyle = INK;
-	c.lineWidth = 1.3;
-	c.lineJoin = 'round';
-	c.stroke();
-	c.restore();
-}
-
-/** The body, the void behind the mask with the real eye, the mask (or the true face). */
+/** The body, the void behind the mask with the real eye, the mask. */
 function paintBody(c: Ctx, pal: Pal, st: PretenderState, white: boolean, o: PretenderOpts): void {
 	const lx = o.faceX;
 	const ly = o.faceY;
 	const k = o.fold ?? 0;
-	const rage = st === 'rage';
 	const tell = st === 'tell';
 	const hunting = st === 'hunt' || tell;
 
@@ -382,23 +321,6 @@ function paintBody(c: Ctx, pal: Pal, st: PretenderState, white: boolean, o: Pret
 		c.lineWidth = 1.0;
 		c.lineCap = 'round';
 		c.stroke();
-	}
-
-	if (rage) {
-		paintTrueFace(c, pal, o);
-		// the mask goes up from the hunt's slip onto the top of its head, seen from below
-		const r = o.reveal ?? 1;
-		c.save();
-		c.translate(lerp(lx * 1.4, 0, r), lerp(ly * 1.1, 0, r));
-		c.translate(
-			lerp(-lx * 3.1, -lx * 1.6, r),
-			lerp(-ly * 2.66, -8.6 + Math.sin(o.step + 0.9) * 0.35, r)
-		);
-		c.rotate(lerp(-0.085 * (1 - Math.abs(lx)) - lx * 0.12, -0.16 - lx * 0.14, r));
-		c.scale(1, lerp(1, 0.5, r));
-		paintMask(c, st, white, o);
-		c.restore();
-		return;
 	}
 
 	// the strap that holds the mask on
@@ -477,8 +399,7 @@ function paintWalker(
 ): void {
 	const phase = PHASE[kind];
 	// a little larger out of the rage (the owner, 2026-11-26); the rage's body is large already
-	const size = st === 'rage' ? SCALE : SCALE * CALM_SCALE;
-	c.scale(unit * size, unit * size);
+	c.scale(unit * SCALE * CALM_SCALE, unit * SCALE * CALM_SCALE);
 	if (st === 'eyes') {
 		// eaten: its gold eyes run home
 		c.translate(0, Math.sin(o.time * 4 + phase) * 0.6 - 1);
@@ -499,8 +420,6 @@ function paintWalker(
 	const fright = st === 'fright';
 	const white = fright && Boolean(o.white);
 	if (fright && !o.flashing) c.translate(Math.sin(o.time * 38 + phase) * 0.45, 0);
-	// no ring in the rage: it shakes and throbs
-	if (st === 'rage') c.translate(Math.sin(o.time * 47 + phase) * 0.3, 0);
 	const step = o.step * (1 - k);
 	const lift = footLift(step);
 	c.translate(0, -Math.abs(Math.sin(step)) * 0.7 * (1 - k));
@@ -509,7 +428,6 @@ function paintWalker(
 	c.translate(0, -10);
 	let pal = BODY[kind];
 	if (fright) pal = white ? WHITE : SCARED;
-	else if (st === 'rage') pal = RAGE;
 	// two bean feet; they tuck in as it folds
 	for (const [side, up] of [
 		[-1, lift.left],
@@ -526,12 +444,173 @@ function paintWalker(
 	const squash = Math.sin(o.time * 5 + phase);
 	c.translate(0, 10);
 	c.scale(1 - 0.04 * squash, 1 + 0.05 * squash);
-	if (st === 'rage') {
-		const throb = Math.max(0, Math.sin(o.time * 9 + phase));
-		c.scale(1 + 0.035 * throb, 1 + 0.035 * throb);
-	}
 	c.translate(0, -10);
 	paintBody(c, pal, st, white, { ...o, fold: k });
+}
+
+/** Where "behind" is: against the heading. */
+function behind(o: PretenderOpts): [number, number] {
+	const d = Math.hypot(o.lookX, o.lookY);
+	return d > 0.01 ? [-o.lookX / d, -o.lookY / d] : [0, 1];
+}
+
+/** The mask's shards circling the head, behind it or before it; `burst` 0 at the face .. 1 out. */
+function paintShards(c: Ctx, o: PretenderOpts, front: boolean, burst: number): void {
+	for (let i = 0; i < 5; i++) {
+		const a = o.time * 1.6 + (i * TAU) / 5;
+		if (Math.sin(a) >= 0 !== front) continue;
+		const r = lerp(4, 12.5 + Math.sin(o.time * 3 + i) * 1.2, burst);
+		c.save();
+		c.translate(Math.cos(a) * r, lerp(2, -3, burst) + Math.sin(a) * r * 0.45);
+		c.rotate(o.time * 3 + i * 1.3);
+		const z = 1.8 + ((i * 0.37) % 1) * 1.2;
+		c.beginPath();
+		c.moveTo(-z, -z * 0.6);
+		c.lineTo(z * 0.9, -z * 0.8);
+		c.lineTo(z * 0.3, z);
+		c.closePath();
+		c.fillStyle = IVORY;
+		c.fill();
+		c.strokeStyle = INK;
+		c.lineWidth = 0.7;
+		c.stroke();
+		c.restore();
+	}
+}
+
+/** The overheated body: lime-hot inside, hollow glowing sockets, a grin across it all, embers. */
+function paintHeatBody(c: Ctx, o: PretenderOpts, throb: number): void {
+	traceBody(c);
+	c.lineJoin = 'round';
+	c.lineWidth = 3.2;
+	c.strokeStyle = INK;
+	c.stroke();
+	const g = c.createRadialGradient(0, 2.4, 0.5, 0, 1.6, 10.5);
+	g.addColorStop(0, HEAT.core);
+	g.addColorStop(0.35 + 0.1 * throb, HEAT.mid);
+	g.addColorStop(1, HEAT.rim);
+	c.fillStyle = g;
+	c.fill();
+	c.save();
+	c.translate(o.faceX * 1.4, o.faceY * 1.2);
+	for (const side of [-1, 1]) {
+		c.save();
+		c.translate(o.lookX * 0.9, o.lookY * 0.8);
+		glow(c, side * 4.2, -1.6, 5.2, 'rgba(255, 250, 220, 0.85)', 'rgba(255, 150, 60, 0.45)');
+		c.beginPath();
+		c.moveTo(side * 1.2, -1.2);
+		c.lineTo(side * 7.4, -4.6);
+		c.lineTo(side * 6.6, 0.2);
+		c.lineTo(side * 1.8, 0.6);
+		c.closePath();
+		c.fillStyle = HEAT.socket;
+		c.fill();
+		c.strokeStyle = INK;
+		c.lineWidth = 1.2;
+		c.stroke();
+		ellipse(c, side * 4.4 + o.lookX * 1.2, -1.2 + o.lookY * 0.6, 0.5, 1.4, HEAT.pupil);
+		c.restore();
+	}
+	c.restore();
+	// the grin, across the whole body
+	const chomp = 0.5 + 0.5 * Math.sin(o.time * 10);
+	c.save();
+	traceBody(c);
+	c.clip();
+	c.translate(o.faceX * 1.2, o.faceY * 1.0);
+	const trace = () => {
+		c.beginPath();
+		c.moveTo(-11, 2.6);
+		c.quadraticCurveTo(0, 4.6, 11, 2.6);
+		c.quadraticCurveTo(0, 10 + 2.2 * chomp, -11, 2.6);
+		c.closePath();
+	};
+	trace();
+	c.fillStyle = '#0d1a05';
+	c.fill();
+	c.save();
+	trace();
+	c.clip();
+	glow(c, 0, 7, 6.5, `rgba(${HEAT.throat}, 0.9)`, `rgba(${HEAT.throat}, 0.45)`);
+	c.fillStyle = IVORY;
+	c.strokeStyle = INK;
+	c.lineWidth = 0.5;
+	for (let i = 0, x = -9.5; x <= 9.6; i += 1, x += 1.9) {
+		const y = 2.6 + (1 - (x / 11) ** 2) * 1.9;
+		c.beginPath();
+		c.moveTo(x - 0.95, y - 0.4);
+		c.lineTo(x + 0.1, y + 2.1 + ((i * 0.618) % 1) * 0.8);
+		c.lineTo(x + 0.95, y - 0.4);
+		c.fill();
+		c.stroke();
+	}
+	c.restore();
+	trace();
+	c.strokeStyle = INK;
+	c.lineWidth = 1.3;
+	c.stroke();
+	c.restore();
+	// embers off the top
+	for (let i = 0; i < 3; i++) {
+		const u = (o.time * 1.3 + i / 3) % 1;
+		ellipse(
+			c,
+			(i - 1) * 4.5 + Math.sin(u * 5 + i) * 1.2,
+			-7 - u * 9,
+			0.7 * (1 - u) + 0.2,
+			0.7 * (1 - u) + 0.2,
+			`rgba(210, 255, ${120 - u * 60}, ${1 - u})`
+		);
+	}
+}
+
+/** The rage, the overheat, in `unit` space: afterimages along its way, the shards, it shakes and
+ *  throbs; `burst` 0..1 the mask's shards flying out (the reveal's second half). */
+function paintOverheat(
+	c: Ctx,
+	kind: GhostKind,
+	o: PretenderOpts,
+	unit: number,
+	burst: number
+): void {
+	const phase = PHASE[kind];
+	const throb = Math.max(0, Math.sin(o.time * 9 + phase));
+	c.scale(unit * SCALE, unit * SCALE);
+	const [bx, by] = behind(o);
+	for (let i = 3; i >= 1; i--) {
+		c.save();
+		c.translate(bx * i * 5.5, by * i * 5.5);
+		c.globalAlpha *= (0.32 - i * 0.08) * burst;
+		traceBody(c);
+		c.fillStyle = HEAT.after;
+		c.fill();
+		c.restore();
+	}
+	c.translate(Math.sin(o.time * 47 + phase) * 0.3, 0);
+	const lift = footLift(o.step);
+	c.translate(0, -Math.abs(Math.sin(o.step)) * 0.7);
+	c.translate(0, 10);
+	c.rotate(Math.sin(o.step) * 0.08 + o.lookX * 0.1);
+	c.translate(0, -10);
+	paintShards(c, o, false, burst);
+	for (const [side, up] of [
+		[-1, lift.left],
+		[1, lift.right]
+	] as const) {
+		c.beginPath();
+		c.ellipse(side * 4.2, 11 - up, 3.3, 2.5, 0, 0, TAU);
+		c.fillStyle = HEAT.feet;
+		c.fill();
+		c.strokeStyle = INK;
+		c.lineWidth = 1.5;
+		c.stroke();
+	}
+	const squash = Math.sin(o.time * 5 + phase);
+	c.translate(0, 10);
+	c.scale(1 - 0.04 * squash + 0.035 * throb, 1 + 0.05 * squash + 0.035 * throb);
+	c.translate(0, -10);
+	paintHeatBody(c, o, throb);
+	paintShards(c, o, true, burst);
 }
 
 /** A soft glow round a Pretender in its state's colour, so it reads in the dark maze. */
@@ -546,7 +625,7 @@ function halo(
 ): void {
 	const rgb =
 		st === 'rage'
-			? '255, 74, 74'
+			? HEAT.halo
 			: st === 'fright'
 				? '96, 120, 255'
 				: st === 'eyes'
@@ -554,7 +633,7 @@ function halo(
 					: (BODY[kind].b.match(/[0-9a-f]{2}/gi) ?? ['ff', 'ff', 'ff'])
 							.map((h) => parseInt(h, 16))
 							.join(', ');
-	const a = (st === 'eyes' ? 0.18 : 0.34) * (1 - k);
+	const a = (st === 'eyes' ? 0.18 : st === 'rage' ? 0.42 : 0.34) * (1 - k);
 	if (a <= 0.01) return;
 	const r = tile * 0.78;
 	const g = c.createRadialGradient(x, y, 0, x, y, r);
@@ -616,10 +695,14 @@ export function drawPretender(
 		c.restore();
 		return;
 	}
-	halo(c, x, y, tile, kind, st, 0);
+	// the rage: the mask's first half is the hunt's, then it bursts and it overheats
+	const reveal = st === 'rage' ? (o.reveal ?? 1) : 0;
+	const heat = st === 'rage' && reveal >= 0.5;
+	halo(c, x, y, tile, kind, heat ? 'rage' : st === 'rage' ? 'hunt' : st, 0);
 	c.save();
 	c.translate(x, y);
-	paintWalker(c, kind, st, o, unit, 0);
+	if (heat) paintOverheat(c, kind, o, unit, smooth(0.5, 1, reveal));
+	else paintWalker(c, kind, st === 'rage' ? 'tell' : st, o, unit, 0);
 	c.restore();
 }
 

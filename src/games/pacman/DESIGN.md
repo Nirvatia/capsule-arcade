@@ -391,9 +391,11 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   squad's colour (a little cooler, a cold rim light) wears a strapped ivory mask (the spore's
   ivory, button eyes that look nowhere, a stitched smile); the mask hangs back and slips away
   from the heading, so a gold slit eye peeks on the heading's side; the tell slips it further
-  (the eye pulses, the smile widens); the rage pushes it up onto the head in a moment and shows
-  the true face (gold slit eyes, a chomping mouth of bone teeth, a coral throat; it throbs and
-  shakes, no ring); the fright is the classic blue with a sweat drop and the blink at the end; out of the rage 7.5%
+  (the eye pulses, the smile widens); in the rage the mask bursts into shards in a moment and it
+  **overheats** (the owner's pick, 2026-11-26, in acid: its red was lost in the infected maze):
+  lime-hot inside to a deep green rim, the shards circling its head, hollow glowing sockets that
+  look the way it goes, a jagged grin across the whole body, embers, afterimages along its way; it
+  throbs and shakes (`paintOverheat`); the fright is the classic blue with a sweat drop and the blink at the end; out of the rage 7.5%
   larger still (the owner, 2026-11-26); a little larger than
   the season ghosts, a soft glow in its state's colour round it so it reads in the dark maze (the
   hero has a warm one on the station too);
