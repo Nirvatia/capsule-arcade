@@ -12,12 +12,12 @@ describe('the boss catalog', () => {
 		}
 	});
 
-	it('brings only the finished bosses: the shelved station never comes by itself', () => {
-		expect(BOSS_ROTATION).toEqual(['hell']);
+	it('brings both finished bosses, the station among them, by turns', () => {
+		expect([...BOSS_ROTATION].sort()).toEqual(['hell', 'station']);
 		for (let seed = 0; seed < 200; seed += 1) {
-			for (let level = 5; level <= 60; level += 5) {
-				expect(bossForLevel(level, seed)).toBe('hell');
-			}
+			const run = [5, 10, 15, 20].map((level) => bossForLevel(level, seed));
+			expect(run[0]).not.toBe(run[1]);
+			expect([...run].sort()).toEqual(['hell', 'hell', 'station', 'station']);
 		}
 	});
 

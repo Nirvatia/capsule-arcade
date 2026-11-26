@@ -70,14 +70,14 @@ last (see Later).
    extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
    heartbeat (~2.5 s); the teleport is the iron gateway; night stays `cord`.
 2. **A random boss on every 5th level, for both heroes**: in (`logic/level/BossCatalog`). It
-   draws from `BOSS_ROTATION`, the finished bosses: the hell alone since the station was shelved
-   (2026-11-25). Left: difficulty scaled by level number, not world, once a second boss is in.
+   draws from `BOSS_ROTATION`, the finished bosses: the hell and the station (since 2026-11-26).
+   Left: difficulty scaled by level number, not world, now that a second boss is in.
 3. **Each new boss world** (design first, one page the owner approves; mechanics on placeholder
    art, then art in code). Still Pac-Man in a maze, a different boss/mechanic/way to play, never
    a reskin of the hell. Like the hell: `*Bake` + `*World` + a level renderer with `preview()`, a
    death `style` and a season-turn style; every element but the heroes has art of its own.
-   1. **The station** (the focus again since 2026-11-25; `DESIGN.md` §7a). Out of the rotation
-      until done (the dev panel's Station brings it). The look is approved (2026-11-22): style B
+   1. **The station** (the focus again since 2026-11-25; `DESIGN.md` §7a). In the rotation since
+      2026-11-26 (the owner; the dev panel's Station still brings it at once). The look is approved (2026-11-22): style B
       of the `station` prototype (deleted), now lit. History: the ghost version (in the game:
       `StationService` with HP, the rewind, the beam, flares, cocoons; `render/station/`), then
       the swarm (`prototypes/pacman/swarm`, `logic/station/SwarmField`, `stationSwarm`: the bugs
@@ -167,9 +167,8 @@ last (see Later).
          The ring's warning contour is in (2026-11-26: the whole ring shown as the fencers set out,
          the filament growing along it); the lure is a green signal flare (`lureFlare`); the
          Pretenders 7.5% larger out of the rage. The rage is the overheat in acid (the owner's pick of the page's
-         candidates; red was lost in the infected maze). Left: **the flare's colour**: green now
-         meets the acid rage; the `station-b7` page offers cyan, magenta and blue (blue is near the
-         fright); his pick goes into `lureFlare` and the page's `looks.ts` goes.
+         candidates; red was lost in the infected maze). The flare is cyan (green met the acid
+         rage).
          Left, from the owner's play: the ring's radius and hold, how often the thin seal comes;
          the spore cloud stays in reserve (the owner likes it). Then a fourth tactic if the three
          need company (the tripwire or the shadow).

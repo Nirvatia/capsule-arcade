@@ -24,8 +24,8 @@ logic/
              round and tries, carry-over), LevelSession (all services of one level, built
              together, never partial), SeasonCatalog (season and maze of a season level, per-season
              modifiers), MazeCycle (the order the four mazes come in), BossCatalog (which
-             boss a boss level gets from BOSS_ROTATION, the finished ones (now the hell; the
-             station is shelved, dev panel only), seeded per run, no repeat),
+             boss a boss level gets from BOSS_ROTATION, the finished ones (the hell and the
+             station), seeded per run, no repeat),
              LevelProgress, ScoreModel
   maze/      GridModel, GridService, SpawnLocator, LairExit
   actors/    Player*, Ghost*, ghostTargets (scatter, chase, flight), ghostRoutes (routes by

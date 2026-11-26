@@ -1,27 +1,20 @@
-// The escape's lure (the owner's pick of the `station-b7` page's candidates, 2026-11-26): a green
-// signal flare thrown on the deck: the stick, a green fire flickering at its tip, sparks shooting
-// up and falling, smoke drifting off. Green so it reads in the alarm's red.
+// The escape's lure (the owner's pick of the `station-b7` page's candidates, 2026-11-26): a cyan
+// signal flare thrown on the deck: the stick, a cyan fire flickering at its tip, sparks shooting
+// up and falling, smoke drifting off. Cyan so it reads in the alarm's red and stays clear of the
+// acid rage, the blue fright and the amber food.
 
-/** A flare's colours (rgb triples): its light, the fire's glow from in to out, the core, the
+/** The flare's colours (rgb triples): its light, the fire's glow from in to out, the core, the
  *  sparks, the smoke. */
-export interface FlareTint {
-	readonly light: string;
-	readonly glow: readonly [string, string, string];
-	readonly core: string;
-	readonly spark: string;
-	readonly smoke: string;
-}
-
-export const GREEN_FLARE: FlareTint = {
-	light: '120, 255, 150',
-	glow: ['170, 255, 180', '80, 240, 120', '40, 200, 90'],
-	core: '240, 255, 235',
-	spark: '220, 255, 200',
-	smoke: '170, 205, 180'
-};
+const FLARE = {
+	light: '110, 235, 255',
+	glow: ['180, 250, 255', '70, 215, 255', '30, 170, 230'],
+	core: '235, 252, 255',
+	spark: '205, 245, 255',
+	smoke: '165, 195, 205'
+} as const;
 
 /** The flare's light, for the level's light map. */
-export const LURE_RGB = GREEN_FLARE.light;
+export const LURE_RGB = FLARE.light;
 
 const TAU = Math.PI * 2;
 const TILT = -0.45;
@@ -37,8 +30,7 @@ export function drawLureFlare(
 	y: number,
 	S: number,
 	t: number,
-	fade: number,
-	tint: FlareTint = GREEN_FLARE
+	fade: number
 ): void {
 	if (fade <= 0) return;
 	const flick = 0.86 + 0.08 * Math.sin(t * 17) + 0.06 * Math.sin(t * 29 + 1);
@@ -48,7 +40,7 @@ export function drawLureFlare(
 	// smoke drifting off
 	for (let i = 0; i < 5; i++) {
 		const u = (t * 0.45 + i / 5) % 1;
-		c.fillStyle = `rgba(${tint.smoke}, ${0.22 * (1 - u)})`;
+		c.fillStyle = `rgba(${FLARE.smoke}, ${0.22 * (1 - u)})`;
 		c.beginPath();
 		c.arc(
 			S * 0.14 + Math.sin(u * 3 + i) * S * 0.25 + u * S * 0.3,
@@ -75,14 +67,14 @@ export function drawLureFlare(
 	const ty = Math.sin(TILT) * S * 0.12;
 	c.globalCompositeOperation = 'lighter';
 	const g = c.createRadialGradient(tx, ty, 0, tx, ty, S * 1.1);
-	g.addColorStop(0, `rgba(${tint.glow[0]}, ${0.85 * flick})`);
-	g.addColorStop(0.3, `rgba(${tint.glow[1]}, ${0.45 * flick})`);
-	g.addColorStop(1, `rgba(${tint.glow[2]}, 0)`);
+	g.addColorStop(0, `rgba(${FLARE.glow[0]}, ${0.85 * flick})`);
+	g.addColorStop(0.3, `rgba(${FLARE.glow[1]}, ${0.45 * flick})`);
+	g.addColorStop(1, `rgba(${FLARE.glow[2]}, 0)`);
 	c.fillStyle = g;
 	c.beginPath();
 	c.arc(tx, ty, S * 1.1, 0, TAU);
 	c.fill();
-	c.fillStyle = `rgb(${tint.core})`;
+	c.fillStyle = `rgb(${FLARE.core})`;
 	c.beginPath();
 	c.ellipse(tx, ty, S * 0.13 * flick, S * 0.11 * flick, 0, 0, TAU);
 	c.fill();
@@ -91,7 +83,7 @@ export function drawLureFlare(
 		const u = (t * 1.5 + hash(i, 1)) % 1;
 		const a = -Math.PI / 2 + (hash(i, 2) - 0.5) * 2.4;
 		const sp = S * (0.8 + 0.7 * hash(i, 3));
-		c.fillStyle = `rgba(${tint.spark}, ${1 - u})`;
+		c.fillStyle = `rgba(${FLARE.spark}, ${1 - u})`;
 		c.beginPath();
 		c.arc(
 			tx + Math.cos(a) * sp * u,

@@ -1,16 +1,14 @@
 // Prototype: the station B-7 as the game draws it (`render/station/b7`: the scene, the hive's
 // takeover, the lamps under its film, the heartbeat) with the game's quarantine ring, its lure
-// (the flare) and its Pretenders (the rage, the acid overheat) on the real maze, and the
-// candidates of `looks.ts` (the flare in other colours). Everything is switched by the buttons on
-// top; a panel shows the rage and the lure large.
+// (the cyan flare) and its Pretenders (the rage, the acid overheat) on the real maze. Everything is
+// switched by the buttons on top; a panel shows the rage and the lure large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
 import { drawPretender, RailGait, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
 import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
-import { FLARE_TINTS } from './looks';
-import { drawLureFlare, GREEN_FLARE, type FlareTint } from '../../../src/games/pacman/render/station/lureFlare';
+import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
@@ -28,7 +26,7 @@ const open = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && OPE
 
 type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'off';
 type Pick = 'now' | 'calm' | 'off';
-type Lure = keyof typeof FLARE_TINTS | 'green' | 'off';
+type Lure = 'on' | 'off';
 const st = {
 	inf: 0.65,
 	alarm: false,
@@ -41,10 +39,7 @@ const st = {
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: кислотный перегрев',
 	'rage-calm': 'Обычные мимики, как в игре: на 7.5% крупнее',
-	'lure-green': 'Шашка зелёная, как в игре сейчас',
-	'lure-cyan': 'Шашка циановая',
-	'lure-magenta': 'Шашка пурпурная',
-	'lure-blue': 'Шашка синяя (близко к испугу)',
+	'lure-on': 'Приманка: циановая шашка, как в игре',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'
 };
 
@@ -88,10 +83,7 @@ const GROUPS: Group[] = [
 		label: 'Приманка',
 		key: 'lure',
 		items: [
-			['Зелёная', 'green'],
-			['Циан', 'cyan'],
-			['Пурпурная', 'magenta'],
-			['Синяя', 'blue'],
+			['Шашка', 'on'],
 			['Выкл', 'off']
 		],
 		after: (v) => {
@@ -287,10 +279,6 @@ function drawRage(c: CanvasRenderingContext2D, x: number, y: number, S: number, 
 	else if (st.rage === 'calm') drawPretender(c, x, y, S, kind, 'hunt', o);
 }
 
-/** The picked flare's colours. */
-const tint = (): FlareTint =>
-	st.lure === 'off' || st.lure === 'green' ? GREEN_FLARE : FLARE_TINTS[st.lure];
-
 /** The panel: the picked rage in its four headings and the lure, large. */
 function panel(c: CanvasRenderingContext2D, vw: number, t: number): void {
 	if (!st.big || (st.rage === 'off' && st.lure === 'off')) return;
@@ -328,7 +316,7 @@ function panel(c: CanvasRenderingContext2D, vw: number, t: number): void {
 	if (st.lure !== 'off') {
 		c.fillStyle = '#cfd8d4';
 		c.fillText('приманка', x0 + 12, y0 + 318);
-		drawLureFlare(c, x0 + w / 2, y0 + 395, 90, t, 1, tint());
+		drawLureFlare(c, x0 + w / 2, y0 + 395, 90, t, 1);
 	}
 	c.restore();
 }
@@ -353,7 +341,7 @@ function frame(now: number): void {
 			x: sc.MAZE_X + (lx + 0.5) * 34,
 			y: sc.MAZE_Y + (ly + 0.5) * 34,
 			r: 34 * 3.2,
-			rgb: tint().light,
+			rgb: LURE_RGB,
 			alpha: 0.8 + 0.15 * Math.sin(t * 5)
 		});
 	}
@@ -382,7 +370,7 @@ function frame(now: number): void {
 			drawRage(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, look(w.gait, p.dx, p.dy, t));
 		}
 	}
-	if (st.lure !== 'off') drawLureFlare(ctx, L.offsetX + (lx + 0.5) * S, L.offsetY + (ly + 0.5) * S, S, t, 1, tint());
+	if (st.lure !== 'off') drawLureFlare(ctx, L.offsetX + (lx + 0.5) * S, L.offsetY + (ly + 0.5) * S, S, t, 1);
 	world.drawGrain(ctx, t);
 	ctx.setTransform(D, 0, 0, D, 0, 0);
 	panel(ctx, vw, t);

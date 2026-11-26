@@ -64,8 +64,8 @@ describe('level routing', () => {
 		for (const run of [regular.slice(0, 4), regular.slice(4, 8)]) {
 			expect(run.map((s) => s.maze).sort()).toEqual(['grid_01', 'grid_02', 'grid_03', 'grid_04']);
 		}
-		// the hell both times: the station is shelved, out of the rotation
-		expect(bossMazes).toEqual(['doom', 'doom']);
+		// the hell and the station, one each: never the same boss twice in a row
+		expect([...bossMazes].sort()).toEqual(['doom', 'station']);
 	});
 
 	it('peekNextLevel shows the maze the next level will get', () => {

@@ -5,11 +5,8 @@ export type BossId = 'hell' | 'station';
 
 export const BOSSES: readonly BossId[] = ['hell', 'station'];
 
-/**
- * The bosses a run draws from: the finished ones. The station is shelved (unfinished, 2026-11-25):
- * only the dev panel brings it.
- */
-export const BOSS_ROTATION: readonly BossId[] = ['hell'];
+/** The bosses a run draws from: the finished ones (the station back in since 2026-11-26). */
+export const BOSS_ROTATION: readonly BossId[] = ['hell', 'station'];
 
 /** Every HELL_LEVEL_INTERVAL-th level is a boss level, for both heroes. */
 export function isBossLevel(level: number): boolean {

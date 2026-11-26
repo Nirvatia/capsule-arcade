@@ -55,7 +55,7 @@ size of one tile.
 
 - A new game starts on level 1 with 3 lives and runs until the lives are gone.
 - Level `n` is a season: 1 summer, 2 autumn, 3 winter, 4 spring, then again
-  (`logic/level/SeasonCatalog.ts`). Every 5th level is a boss level, for both heroes: the boss is picked at random per run from the finished bosses and never the same twice in a row while there are two (`logic/level/BossCatalog.ts`, `BOSS_ROTATION`). Now that is the hell alone: the station (§7a) is shelved, unfinished, and comes only from the dev panel. Boss levels do not count in the season cycle: season levels run 1–4, 6–9, 11–14, … The four season mazes `grid_01`–`grid_04` come one per season level: the first cycle in order, every later cycle in a random order (never the same maze twice in a row), so each run of four plays all four. The hell and the secret level keep the old maze for now.
+  (`logic/level/SeasonCatalog.ts`). Every 5th level is a boss level, for both heroes: the boss is picked at random per run from the finished bosses and never the same twice in a row while there are two (`logic/level/BossCatalog.ts`, `BOSS_ROTATION`). Both are in: the hell and the station (§7a, since 2026-11-26). Boss levels do not count in the season cycle: season levels run 1–4, 6–9, 11–14, … The four season mazes `grid_01`–`grid_04` come one per season level: the first cycle in order, every later cycle in a random order (never the same maze twice in a row), so each run of four plays all four. The hell and the secret level keep the old maze for now.
 - Level 7 hides the way into the secret level (§8, the arcade); after it the run continues
   on the level after the one it was entered from.
 - Score and lives carry over between levels. Extra life at 10 000 points, then every
@@ -294,8 +294,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   station's lights flicker, a sound, the creatures' eyes turn one colour) and an **answer** the
   player can find. A surprise without a tell is unfair; with one it reads "they are lining up:
   the train is coming".
-- **Place in the run**: shelved until done (out of `BOSS_ROTATION`, the dev panel's Station
-  brings it).
+- **Place in the run**: in `BOSS_ROTATION` with the hell since 2026-11-26 (the owner); the dev
+  panel's Station still brings it at once.
 - **Heroes**: both, each with a station look of their own (prototyped first). Controls and speed
   unchanged. The station's kit only: no season abilities, no overdrive or hypnosis, no fruit, no
   Easter egg.
@@ -409,8 +409,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   claw gouges and soot, heavy deck plates with drag trails, the specimen tanks, the hull breach,
   the dead crew, the window in the deck onto the storm below), a cold grade, light grain. The
   lair is the burst containment the squad comes out of. The food: plain energy capsules (the owner: the spores' shape is too
-  busy), and its mimic, the power cell, the escape's lure (a green signal flare on the deck: fire, sparks,
-  smoke; green so it reads in the alarm's red; `lureFlare`), the console, the route's strip lights, the doors and the hatch:
+  busy), and its mimic, the power cell, the escape's lure (a cyan signal flare on the deck: fire, sparks,
+  smoke; cyan so it reads in the alarm's red, clear of the acid rage; `lureFlare`), the console, the route's strip lights, the doors and the hatch:
   art of their own. The hell's look rules hold: walls as blocks, no height, all reads at one
   tile.
 - **Sound**: the station's hum, a sting for each tell, the train's rhythm, the alarm in the
