@@ -512,7 +512,10 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   the mouth and shrink. No tongue for either hero.
 - Ms. Pac-Man, the jade squall vessel: the same glass ball in jade, a sculpted cinnabar-red silk bow with a gold knot and swallow tails, a curl of jade wind on the nape, the wedge eye curved; in the power a glowing white-mint rim and an obsidian-jade body. The ball: a jade triskele.
 - The heroes' trail is a ribbon stream (the vessels' one exception to "no ribbons"): his a crimson stroke with a gold thread and glossy drops, hers a mint ribbon of wind with white air cuts; in the power the stream mirrors the inverted body (a glowing shell, a dark core, gold stars / a double braid of wind). The same in every season (the owner, 2026-11-25: no season particles on the vessels); it bends with a turn and is never drawn across a tunnel jump.
-- The menu and HUD coins carry smooth vector versions of the classic arcade icons (`heroPortrait`), not the in-game sun and pearl star.
+- The menu and HUD coins carry a simplified version of the heroes' real art (the owner, 2026-11-26;
+  `heroIcon`): the cinnabar and the jade glass vessels with the dark rim, the mouth, the glowing
+  wedge eye, the highlight, the liquid's line and the stream behind, her red bow with the gold
+  knot; no particles or aura, so they read at twenty pixels.
 - Eyes show where an actor is heading.
 - Food is calm (§6); energizers read differently from dots.
 - Boss: harsh and dangerous, changes visibly by phase, fits in one tile.
