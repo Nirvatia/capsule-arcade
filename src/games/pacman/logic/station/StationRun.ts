@@ -22,8 +22,12 @@ import type { StationSound } from '../../audio/StationSynth';
 
 export const RUN_TUNE = {
 	hp: 3,
-	/** The power cell, s. */
-	power: 6,
+	/** The power cell, s (the owner: 6 was too strong); the frightened's pace; the eyes' pace
+	 *  home; the enraged's pace in the escape (the seasons' 1.2 felt too fast). */
+	power: 3.5,
+	flee: 0.8,
+	eyes: 2.2,
+	rage: 1.1,
 	contact: 0.6,
 	/** A hit: his safe time, s; the stun on the one that bit and those round him, s; the reach, tiles. */
 	safe: 1.5,
@@ -49,8 +53,9 @@ export const RUN_TUNE = {
 		{ x: 6, y: 24 },
 		{ x: 18, y: 24 }
 	],
-	/** The lair's exit delays against the season levels'. */
-	exitScale: 0.35,
+	/** The lair's exit delays against the season levels': all out at once (the owner), 0.15 s
+	 *  apart so they do not jam the door. */
+	exitScale: 0.05,
 	console: { x: 12, y: 24 },
 	hatch: { x: 6, y: 1 }
 } as const;
@@ -204,10 +209,10 @@ export class StationRun {
 		this.player.update(dt);
 		this.ghosts.update(dt);
 		const hero = under(this.player.position);
-		// the power cell: the play breaks, the mimics show, the squad can be eaten
+		// the power cell: the ring falls, the squad can be eaten; the hidden stay hidden
 		if (this.progress.consumePendingEnergizer()) {
 			this.squad.onPower(this.ghosts);
-			this.ghosts.frightenActive();
+			this.ghosts.frightenActive((kind) => this.squad.hidden(kind) !== undefined);
 			this.ghosts.setPowerActive(true);
 			this.power = RUN_TUNE.power;
 			this.chain = 0;

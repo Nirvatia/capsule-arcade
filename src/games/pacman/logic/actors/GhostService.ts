@@ -85,6 +85,9 @@ export class GhostService {
 	private waveIndex = 0;
 	/** Seconds each ghost the shock struck still stands still. */
 	private readonly frozen = new Map<GhostKind, number>();
+	/** An enraged ghost's and the eyes' pace against the base speed (the station sets its own). */
+	private rageFactor = 1.2;
+	private eyesFactor = 1.6;
 	/** The hero wears the mask: no ghost hunts him. */
 	private heroHiddenValue = false;
 
@@ -181,6 +184,16 @@ export class GhostService {
 			return;
 		}
 		this.kindSpeed.set(kind, factor);
+	}
+
+	/** The station: an enraged ghost's pace and the eyes' (1.2 and 1.6 elsewhere). */
+	setRageEyesFactors(rage: number, eyes: number): void {
+		if (!(rage > 0) || !(eyes > 0)) {
+			console.error('GhostService.setRageEyesFactors', 'invalid factors', { rage, eyes });
+			return;
+		}
+		this.rageFactor = rage;
+		this.eyesFactor = eyes;
 	}
 
 	/** A frightened ghost's pace, a share of its base speed (0.6 on the season levels). */
@@ -299,9 +312,11 @@ export class GhostService {
 		ghost.setForceReverse(false);
 	}
 
-	frightenActive(): void {
-		this.frozen.clear();
+	/** A power cell: the active ones frightened (and freed); `spare` ones stay as they are. */
+	frightenActive(spare?: (kind: GhostKind) => boolean): void {
 		for (const ghost of this.ghosts) {
+			if (spare?.(ghost.kind)) continue;
+			this.frozen.delete(ghost.kind);
 			if (ghost.state === 'active') {
 				ghost.setState('frightened');
 				ghost.setForceReverse(true);
@@ -483,13 +498,13 @@ export class GhostService {
 
 	private effectiveSpeed(ghost: GhostModel): number {
 		if (ghost.state === 'eyes') {
-			return ghost.speed * 1.6;
+			return ghost.speed * this.eyesFactor;
 		}
 		if (ghost.state === 'hypnotized') {
 			return ghost.speed * (this.hypnosisGuide?.speedFactor(ghost) ?? HYPNOSIS.speedFactor);
 		}
 		if (ghost.state === 'enraged') {
-			return ghost.speed * 1.2;
+			return ghost.speed * this.rageFactor;
 		}
 		if (ghost.state === 'frightened') {
 			return ghost.speed * this.fleeFactor;

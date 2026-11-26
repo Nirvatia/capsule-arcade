@@ -366,7 +366,7 @@ describe('the roles', () => {
 });
 
 describe('a power cell', () => {
-	it('breaks the tactic: the ring goes dark, the hidden come out', () => {
+	it('leaves the hidden hidden and their play on (it no longer shows the mimics)', () => {
 		const s = station();
 		release(s);
 		const squad = new StationSquad(s.world, 2);
@@ -374,11 +374,68 @@ describe('a power cell', () => {
 		for (let x = 1; x <= 12; x += 1) s.eaten.add(`${x},24`);
 		squad.update(0.01, s.ghosts, { x: 12, y: 24 }, 'LEFT');
 		force(s, squad, { x: 12, y: 24 }, 'ambush');
-		expect(squad.hiddenList.length).toBeGreaterThan(0);
+		const hidden = squad.hiddenList.length;
+		expect(hidden).toBeGreaterThan(0);
 		squad.onPower(s.ghosts);
-		expect(squad.hiddenList).toHaveLength(0);
+		expect(squad.hiddenList).toHaveLength(hidden);
+		expect(squad.phase).toBe('on');
+	});
+
+	it('breaks the ring', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 1);
+		s.ghosts.setSquadGuide(squad);
+		const hero = { x: 12, y: 24 };
+		force(s, squad, hero, 'fence');
+		run(s, squad, hero, SQUAD_TUNE.walk);
+		expect(squad.ring?.lit).toBe(true);
+		squad.onPower(s.ghosts);
 		expect(squad.ring).toBeNull();
 		expect(squad.phase).toBe('calm');
+	});
+});
+
+describe('the squad on its way', () => {
+	it('never turns a hunter back on its way while another way is open', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 1);
+		s.ghosts.setSquadGuide(squad);
+		const opposite = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' } as const;
+		let turnedBack = 0;
+		let asked = 0;
+		for (let t = 0; t < 20; t += 1 / 60) {
+			squad.update(1 / 60, s.ghosts, { x: 12, y: 24 }, null);
+			for (const g of s.ghosts.list) {
+				if (g.state !== 'active' || !g.facing) continue;
+				squad.roles.set(g.kind, 'hunter');
+				const ways = (['UP', 'DOWN', 'LEFT', 'RIGHT'] as const).filter((d) => {
+					const [dx, dy] = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[d];
+					return s.world.walkable(g.tile.x + dx, g.tile.y + dy);
+				});
+				if (ways.length < 2) continue;
+				(squad as unknown as { phase: string }).phase = 'on';
+				const d = squad.direction(g);
+				asked += 1;
+				if (d === opposite[g.facing]) turnedBack += 1;
+			}
+			s.ghosts.update(1 / 60);
+		}
+		expect(asked).toBeGreaterThan(100);
+		expect(turnedBack).toBe(0);
+	});
+
+	it('in the escape, stops at the lure instead of running back and forth round it', () => {
+		const s = station();
+		release(s);
+		const squad = new StationSquad(s.world, 1);
+		s.ghosts.setSquadGuide(squad);
+		squad.chase(s.ghosts, null, null, { lane: () => false });
+		const g = s.ghosts.list.find((x) => x.state === 'active')!;
+		squad.lure = { x: g.tile.x, y: g.tile.y };
+		squad.update(1 / 60, s.ghosts, { x: 12, y: 24 }, null);
+		expect(s.ghosts.frozenFor(g.kind)).toBeGreaterThan(0);
 	});
 });
 

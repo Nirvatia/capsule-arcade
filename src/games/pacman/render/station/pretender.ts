@@ -75,8 +75,9 @@ export function pretenderStateFor(input: {
 export const GAIT_TUNE = {
 	/** The mask's turn toward the heading, per second (exponential). */
 	face: 12,
-	/** The stride, radians of the step's phase per tile travelled. */
-	stride: 2.4,
+	/** The stride, radians of the step's phase per tile travelled: the season ghosts' (a longer
+	 *  one read as a faster glide). */
+	stride: 5.7,
 	/** The mask's way up in the rage (and back down), seconds. */
 	reveal: 0.22,
 	/** A step longer than this is a jump (a tunnel, back to the lair), tiles. */

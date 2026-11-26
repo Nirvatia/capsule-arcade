@@ -259,9 +259,13 @@ export class StationSquad implements SquadGuide {
 		this.trail.length = 0;
 	}
 
-	/** A power cell: the tactic breaks, the ring goes dark, the hidden show (frighten them after). */
+	/**
+	 * A power cell: the ring goes dark (its tactic ends); a lurker or a venter stays hidden and its
+	 * play goes on after the fright (the owner: the cell no longer shows the mimics).
+	 */
 	onPower(ghosts: SquadGhosts): void {
-		if (!this.chasing) this.end(ghosts, 0);
+		if (this.chasing) return;
+		if (this.tactic === 'fence' || this.next === 'fence') this.end(ghosts, 0);
 	}
 
 	/** A lit seal stands there: the hero cannot pass (the squad can); a torn one lets him. */
@@ -300,6 +304,13 @@ export class StationSquad implements SquadGuide {
 		}
 		this.foreseen = this.foresee();
 		if (this.chasing) {
+			// at the lure they stop and sniff at it (not back and forth round it) till it dies
+			if (this.rage && this.lure) {
+				for (const g of this.hunters()) {
+					const d = Math.abs(g.tile.x - this.lure.x) + Math.abs(g.tile.y - this.lure.y);
+					if (d <= 1) ghosts.freeze(g.kind, 0.25);
+				}
+			}
 			this.followLeader();
 			if (!this.rage) this.updateIntercept(dt);
 			return events;
@@ -371,10 +382,10 @@ export class StationSquad implements SquadGuide {
 			if (this.intercept?.kind === ghost.kind) return SQUAD_TUNE.dash;
 			return ghost.kind === this.leader ? SQUAD_TUNE.chaseLead : SQUAD_TUNE.chaseLead * 1.08;
 		}
-		// the fencers hurry to their lines
-		if (this.role(ghost.kind) === 'fencer' && this.phase !== 'calm') return 1.15;
+		// the fencers hurry to their posts, a little (more read as too fast)
+		if (this.role(ghost.kind) === 'fencer' && this.phase !== 'calm') return 1.05;
 		// so do those going into hiding
-		if (this.going.some((g) => g.kind === ghost.kind)) return 1.15;
+		if (this.going.some((g) => g.kind === ghost.kind)) return 1.05;
 		return 1;
 	}
 
@@ -1056,14 +1067,14 @@ export class StationSquad implements SquadGuide {
 		};
 	}
 
+	/** The first step toward `goal`, never turning back on its way (the classic ghosts' rule: a
+	 *  turn back on the way read as twitchy); only a dead end turns it. */
 	private stepTo(ghost: GhostModel, goal: GhostTile): GhostDirection | null {
 		if (ghost.tile.x === goal.x && ghost.tile.y === goal.y) return null;
-		const route = shortestRoute(
-			this.ways(),
-			{ tile: ghost.tile, facing: null },
-			(x, y) => x === goal.x && y === goal.y,
-			80
-		);
+		const isGoal = (x: number, y: number) => x === goal.x && y === goal.y;
+		const route =
+			shortestRoute(this.ways(), { tile: ghost.tile, facing: ghost.facing }, isGoal, 80) ??
+			shortestRoute(this.ways(), { tile: ghost.tile, facing: null }, isGoal, 80);
 		return route?.directions[0] ?? null;
 	}
 

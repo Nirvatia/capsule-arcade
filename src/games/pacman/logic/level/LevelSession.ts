@@ -153,8 +153,10 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		player.setSpeedModifier(mods.playerSpeedModifier);
 	}
 	if (stationRun) {
-		// the squad is out of its containment quickly: it plays as four
+		// the squad is out of its containment at once: it plays as four
 		ghosts.setTuning(ghosts.waves.scatter, ghosts.waves.chase, RUN_TUNE.exitScale);
+		ghosts.setFleeFactor(RUN_TUNE.flee);
+		ghosts.setRageEyesFactors(RUN_TUNE.rage, RUN_TUNE.eyes);
 	}
 	return {
 		season,

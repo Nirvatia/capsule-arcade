@@ -329,9 +329,10 @@ Numbers are starting points, later in `config/stationConfig.ts`.
      The tripwire (one strings a thread across a corridor on his way; touching it calls the squad)
      and the shadow (one follows at a fixed distance and strikes when he stops or turns back) are
      in reserve.
-- **The power cells**: four, in the corners (where the energizers are): about 6 s the squad is
-  frightened and can be eaten (eyes home, 200-1600), whatever tactic is on: the beams go dark,
-  the hidden come out and flee.
+- **The power cells**: four, in the corners (where the energizers are): 3.5 s the squad is
+  frightened (fleeing at 0.8 of its pace) and can be eaten (eyes home fast, 200-1600); the ring
+  goes dark, but a lurker or a venter stays hidden and its play goes on after (the owner,
+  2026-11-26: 6 s and showing the mimics made the cell too strong).
 - **The food** charges the hatch: the HUD shows the charge; at about 75% of the food the
   escape is ready (the rest is score). The classic eating route stays the core; the mimics turn
   the eaten corridors into the place to watch.
