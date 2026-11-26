@@ -12,7 +12,7 @@ import { boardPlacement } from '../../common/boardScale';
 import type { RenderQuality } from '../../common/renderQuality';
 import type { GridLayout } from '../../maze/GridView';
 import { createB7Scene } from './b7Scene';
-import { B7Hive, type HivePalette } from './b7Hive';
+import { B7Hive } from './b7Hive';
 
 export type B7Phase = 1 | 2 | 3;
 export type B7Light = 'quarantine' | 'alert';
@@ -54,19 +54,13 @@ export class B7World {
 	private lightMap: HTMLCanvasElement | null = null;
 	private bloom: HTMLCanvasElement | null = null;
 
-	constructor(grid: GridMatrix, hivePalette: HivePalette = 'flesh') {
+	constructor(grid: GridMatrix) {
 		// the lair's doors are the hive's (torn apart), not the scene's
 		this.scene = createB7Scene(grid, { lairDoors: false });
 		this.base = this.scene.bakeBaseScene();
 		this.grain = this.scene.buildGrainTile();
 		// the infestation at its fullest, baked once with the level
-		this.hive = new B7Hive(this.scene, grid, hivePalette);
-	}
-
-	/** Whether the hive's infestation shows (the `station-b7` page tries another one without it). */
-	private hiveShown = true;
-	showHive(on: boolean): void {
-		this.hiveShown = on;
+		this.hive = new B7Hive(this.scene, grid);
 	}
 
 	setQuality(quality: RenderQuality): void {
@@ -149,7 +143,7 @@ export class B7World {
 				g.drawImage(this.base, 0, 0, s.STAGE_W, s.STAGE_H);
 			});
 		}
-		if (this.hiveShown) this.hive.update(infection, dt);
+		this.hive.update(infection, dt);
 		ctx.drawImage(this.staticView, 0, 0, this.vw, this.vh);
 		this.enter(ctx);
 		s.drawLiveDuctTurbines(ctx, time, phase);
@@ -157,7 +151,7 @@ export class B7World {
 		s.drawLiveViewportAndWindowGlint(ctx, time);
 		s.drawLiveObsConsoleScreens(ctx, time, phase);
 		s.drawLiveRoofFans(ctx, time, phase);
-		if (this.hiveShown) this.hive.draw(ctx);
+		this.hive.draw(ctx);
 		if (showProps) s.drawEscapeProps(ctx, time, phase);
 		s.drawLairCocoons(ctx, time, phase);
 		s.drawBioSpores(ctx, time, showProps);
@@ -222,7 +216,7 @@ export class B7World {
 			ctx.drawImage(bloom, 0, 0, this.vw, this.vh);
 		}
 		ctx.restore();
-		if (this.quality !== 'low' && this.hiveShown) {
+		if (this.quality !== 'low') {
 			// the hive's heartbeat, a light of its own
 			this.enter(ctx);
 			this.hive.drawPulse(ctx, infection, time);

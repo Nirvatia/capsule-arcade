@@ -1,9 +1,8 @@
 // Prototype: the station B-7 as the game draws it (`render/station/b7`: the scene, the hive's
 // takeover, the lamps under its film, the heartbeat) with the game's quarantine ring, its lure
-// (the cyan flare) and its Pretenders (the rage, the acid overheat) on the real maze, the hive in
-// two materials: the game's red flesh and the candidate black parasite with a lime life in it
-// (`B7Hive`'s palette); the game's Cinnabar vessel walks a corridor. Everything is switched by the
-// buttons on top; a panel shows the squad large.
+// (the cyan flare) and its squad, the amoebas (their rage boils lime), on the real maze, in the
+// black parasite's hive; the game's Cinnabar vessel walks a corridor. Everything is switched by
+// the buttons on top; a panel shows the squad large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
@@ -16,22 +15,17 @@ import { CinnabarHero } from '../../../src/games/pacman/render/actors/hero/Cinna
 import { GAME_FEEL } from '../../../src/games/pacman/render/actors/HeroView';
 import { drawHeroGlow } from '../../../src/games/pacman/render/station/pretender';
 import type { PretenderState } from '../../../src/games/pacman/render/station/pretender';
-import { drawJelly, type CandState, type Look } from './jelly';
+type CandState = PretenderState;
 
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const bar = document.getElementById('bar') as HTMLDivElement;
 const D = Math.min(window.devicePixelRatio || 1, 2);
-const worlds = {
-	parasite: new B7World(GRID_STATION, 'parasite'),
-	hive: new B7World(GRID_STATION, 'flesh')
-};
-let world = worlds.parasite;
+const world = new B7World(GRID_STATION);
 const heroView = new CinnabarHero();
 heroView.setFeel(GAME_FEEL);
-worlds.parasite.setQuality('medium');
-worlds.hive.setQuality('medium');
+world.setQuality('medium');
 const grid = GRID_STATION;
 const H = grid.length;
 const W = grid[0].length;
@@ -42,28 +36,22 @@ const open = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && OPE
 
 type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'off';
 type Pick = 'now' | 'off';
-type Mim = Look | 'now' | 'off';
+type Mim = 'now' | 'off';
 type Lure = 'on' | 'off';
 const st = {
 	inf: 0.65,
-	style: 'parasite' as 'hive' | 'parasite',
 	alarm: false,
 	ring: 'off' as RingMode,
-	mimic: 'a' as Mim,
+	mimic: 'now' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
 	big: true
 };
 
 const NOTES: Record<string, string> = {
-	'rage-now': 'Ярость: желе вскипает лаймом (для вариантов A, B, C своя)',
-	'mimic-now': 'Мимики как в игре: Pretender в маске',
-	'mimic-a': 'A «Амёба»: светящееся желе его цвета, ложноножки выстреливают по ходу, два тёмных ядра-глаза; у каждого свой характер формы',
-	'mimic-b': 'B «Желейный призрак»: силуэт призрака из желе, капающий подол, один крупный выступ сверху у каждого свой',
-	'mimic-c': 'C «Пожиратель»: амёба, спереди раскрывается полость с лаймом внутри, край полости у каждого свой',
+	'rage-now': 'Ярость как в игре: амёба вскипает лаймом',
+	'mimic-now': 'Мимики как в игре: амёбы',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
-	'style-parasite': 'Заражение «Паразит»: тот же улей (вены, узлы, плоть по пластинам, кладки, сердцебиение), но чёрный, а жизнь в нём лаймовая',
-	'style-hive': 'Заражение как в игре: красный улей',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'
 };
 
@@ -93,9 +81,6 @@ const GROUPS: Group[] = [
 		key: 'mimic',
 		items: [
 			['Как в игре', 'now'],
-			['A Амёба', 'a'],
-			['B Желейный призрак', 'b'],
-			['C Пожиратель', 'c'],
 			['Выкл', 'off']
 		]
 	},
@@ -133,14 +118,6 @@ const GROUPS: Group[] = [
 		items: [
 			['Карантин', false],
 			['Тревога', true]
-		]
-	},
-	{
-		label: 'Стиль',
-		key: 'style',
-		items: [
-			['Паразит', 'parasite'],
-			['Как в игре', 'hive']
 		]
 	},
 	{
@@ -187,7 +164,6 @@ function render(): void {
 		bar.append(row);
 	}
 	const lines = [
-		NOTES[`style-${st.style}`],
 		st.ring === 'cycle' ? NOTES['ring-cycle'] : '',
 		st.mimic !== 'off' ? NOTES[`mimic-${st.mimic}`] : '',
 		st.rage !== 'off' ? NOTES[`rage-${st.rage}`] : '',
@@ -375,8 +351,7 @@ function drawMimic(
 	o: PretenderOpts
 ): void {
 	if (st.mimic === 'off') return;
-	if (st.mimic === 'now') drawPretender(c, x, y, S, kind, cs as PretenderState, o);
-	else drawJelly(c, x, y, S, kind, st.mimic, cs, o);
+	drawPretender(c, x, y, S, kind, cs, o);
 }
 
 /** The sheet: the four kinds, the headings and the tell, the fright, the eyes and the mimicry. */
@@ -502,7 +477,6 @@ function frame(now: number): void {
 		view.height = Math.round(vh * D);
 	}
 	ctx.setTransform(D, 0, 0, D, 0, 0);
-	world = worlds[st.style];
 	world.resize(vw, vh, D);
 	const sc = world.scene;
 	const lights = [];
@@ -520,7 +494,6 @@ function frame(now: number): void {
 		lights.push({ x: sc.MAZE_X + (lx - 2.5) * 34, y: sc.MAZE_Y + (ly + 0.5) * 34, r: 34 * 3.8, rgb: '236, 242, 230', alpha: 0.95 });
 	}
 	sc.setExtraLights(lights);
-	sc.setFilm(st.style === 'hive' ? 'flesh' : 'parasite');
 	world.drawScene(ctx, t, dt, st.inf, true);
 	const hero = heroAt(t);
 	world.drawLight(ctx, t, st.inf, st.alarm ? 'alert' : 'quarantine', true);

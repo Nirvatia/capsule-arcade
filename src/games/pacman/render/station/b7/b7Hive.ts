@@ -18,64 +18,34 @@ import type { createB7Scene } from './b7Scene';
 type Scene = ReturnType<typeof createB7Scene>;
 type Ctx = CanvasRenderingContext2D;
 
-/** The hive's material: the red flesh the game had, or a black parasite with a lime life in it
- *  (the owner, 2026-11-26: alien organics are black and parasitic; the red reads as the hell). */
-export type HivePalette = 'flesh' | 'parasite';
-const PALETTES = {
-	flesh: {
-		ink: '#1e080e',
-		body: '#5e1c2a',
-		body2: '#7c2c36',
-		lit: '#94413f',
-		glint: 'rgba(255, 226, 192, 0.5)',
-		glint2: 'rgba(255, 226, 192, 0.45)',
-		cystCore: '#ffe2c0',
-		cystMid: 'rgb(255, 160, 86)',
-		cystEdge: '#7a1e2c',
-		stain: 'rgba(26, 8, 12, 0.65)',
-		stain0: 'rgba(26, 8, 12, 0)',
-		vein: '#6a1c2a',
-		veinLit: '#a2383e',
-		veinTop: 'rgba(255, 206, 176, 0.55)',
-		veinTop2: 'rgba(255, 206, 176, 0.5)',
-		node: '#c4544c',
-		nodeEdge: '#5e1826',
-		nodeGlint: 'rgba(255, 196, 140, 0.85)',
-		glowLine: 'rgba(255, 140, 84, 1)',
-		glowNode: 'rgba(255, 214, 160, 1)',
-		breach: '#0c0306',
-		under0: 'rgba(70, 30, 18, 0)',
-		under1: 'rgba(70, 30, 18, 0.7)'
-	},
-	parasite: {
-		ink: '#030405',
-		body: '#15181e',
-		body2: '#252a33',
-		lit: '#3c4452',
-		glint: 'rgba(214, 230, 248, 0.75)',
-		glint2: 'rgba(214, 230, 248, 0.6)',
-		cystCore: '#efffb0',
-		cystMid: 'rgb(170, 240, 60)',
-		cystEdge: '#1c2a0c',
-		stain: 'rgba(3, 5, 4, 0.6)',
-		stain0: 'rgba(3, 5, 4, 0)',
-		vein: '#181b21',
-		veinLit: '#3d4552',
-		veinTop: 'rgba(210, 228, 246, 0.7)',
-		veinTop2: 'rgba(210, 228, 246, 0.6)',
-		node: '#c2ff4c',
-		nodeEdge: '#16220a',
-		nodeGlint: 'rgba(226, 255, 170, 0.85)',
-		glowLine: 'rgba(150, 255, 70, 1)',
-		glowNode: 'rgba(220, 255, 150, 1)',
-		breach: '#020303',
-		under0: 'rgba(30, 50, 10, 0)',
-		under1: 'rgba(30, 50, 10, 0.6)'
-	}
+/** The hive's material (the owner, 2026-11-26: alien organics are black and parasitic, the red
+ *  flesh read as the hell): black glossy organics, cold wet glints, a lime life in the nodes,
+ *  the cysts and the pulse (the squad's rage boils in the same lime). */
+const P = {
+	ink: '#030405',
+	body: '#15181e',
+	body2: '#252a33',
+	lit: '#3c4452',
+	glint: 'rgba(214, 230, 248, 0.75)',
+	glint2: 'rgba(214, 230, 248, 0.6)',
+	cystCore: '#efffb0',
+	cystMid: 'rgb(170, 240, 60)',
+	cystEdge: '#1c2a0c',
+	stain: 'rgba(3, 5, 4, 0.6)',
+	stain0: 'rgba(3, 5, 4, 0)',
+	vein: '#181b21',
+	veinLit: '#3d4552',
+	veinTop: 'rgba(210, 228, 246, 0.7)',
+	veinTop2: 'rgba(210, 228, 246, 0.6)',
+	node: '#c2ff4c',
+	nodeEdge: '#16220a',
+	nodeGlint: 'rgba(226, 255, 170, 0.85)',
+	glowLine: 'rgba(150, 255, 70, 1)',
+	glowNode: 'rgba(220, 255, 150, 1)',
+	breach: '#020303',
+	under0: 'rgba(30, 50, 10, 0)',
+	under1: 'rgba(30, 50, 10, 0.6)'
 } as const;
-/** The palette the hive is baked in (set by the B7Hive being built). */
-let P: (typeof PALETTES)[HivePalette] = PALETTES.flesh;
-
 const SCALE = 1.25;
 const GLOW_SCALE = 0.75;
 const FACADE = 7;
@@ -504,10 +474,8 @@ export class B7Hive {
 
 	constructor(
 		private readonly scene: Scene,
-		rows: readonly (readonly string[])[],
-		palette: HivePalette = 'flesh'
+		rows: readonly (readonly string[])[]
 	) {
-		P = PALETTES[palette];
 		this.hive = bakeHive(scene, rows);
 		this.scratch = canvas(this.hive.glow.width, this.hive.glow.height);
 		this.beat = canvas(scene.COLS, scene.ROWS);

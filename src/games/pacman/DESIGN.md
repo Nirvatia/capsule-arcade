@@ -381,31 +381,31 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   maze. Its phase follows the hatch: containment, the breakout from half the charge, the
   absorption in the escape; the light is the quarantine's, the alarm's (dark, red beacons) in
   the escape, with **a flashlight round the hero** (the owner) so the dark maze reads. The infestation is a
-  **total takeover** (the owner, 2026-11-26; `b7Hive`): from the lair out, volumetric veins
-  first (every wall by 90% infection), then flesh over the wall plates (every wall at 100%, the
-  escape), cysts, lips over the edges (the corridors' middles stay clean, the walls' amber edges
-  keep the maze readable), a soft heartbeat out of the lair every 6 s; the corridor lamps do not go out but shine on
-  through the film (each at its own point: a falter, then warm, dimmer, beating with the hive, the
-  shadows of its veins on the floor); the lair's blast doors
-  are torn apart from inside, flesh in the breach (its grate and cocoons as before). The squad
-  are **Pretenders** (the owner's `STATION_MIMIC.html`, its `smileMimic` refined for B-7,
-  2026-11-26; `render/station/pretender`): the season ghosts' grammar (upright, never turned, two
-  bean feet stepping with the distance, a lean, eyes that show the way; a gliding or crawling
-  body read clumsy on the rails, worst on a 180), drawn at their real point. A creature in the
-  squad's colour (a little cooler, a cold rim light) wears a strapped ivory mask (the spore's
-  ivory, button eyes that look nowhere, a stitched smile); the mask hangs back and slips away
-  from the heading, so a gold slit eye peeks on the heading's side; the tell slips it further
-  (the eye pulses, the smile widens); in the rage the mask bursts into shards in a moment and it
-  **overheats** (the owner's pick, 2026-11-26, in acid: its red was lost in the infected maze):
-  lime-hot inside to a deep green rim, the shards circling its head, hollow glowing sockets that
-  look the way it goes, a jagged grin across the whole body, embers, afterimages along its way; it
-  throbs and shakes (`paintOverheat`), its body 10% smaller than the base (the owner: it read
-  big); the fright is the classic blue with a sweat drop and the blink at the end; out of the rage 7.5%
-  larger still (the owner, 2026-11-26); a little larger than
-  the season ghosts, a soft glow in its state's colour round it so it reads in the dark maze (the
-  hero has a warm one on the station too);
-  eaten, its gold eyes run home; it folds into the level's spore for the disguise (the mask
-  home, the feet tucked, then the spore). A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
+  **total takeover** (the owner, 2026-11-26; `b7Hive`) by a **black parasite**: alien organics,
+  not the hell's red flesh (the owner: the red read as the hell; alien organics are black and
+  parasitic). Black glossy organics with cold wet glints and a **lime life** (the nodes, the
+  cysts, the heartbeat; the squad's rage boils in the same lime): from the lair out, volumetric
+  veins first (every wall by 90% infection), then the organics over the wall plates (every wall at
+  100%, the escape), cysts, lips over the edges (the corridors' middles stay clean, the walls'
+  amber edges keep the maze readable), a soft heartbeat out of the lair every 6 s; the corridor
+  lamps do not go out but shine on through the black film (each at its own point: a falter, then
+  dim and cold, beating with the hive, the shadows of its veins on the floor); the lair's blast
+  doors are torn apart from inside, the black in the breach (its grate and cocoons as before).
+  Tried and dropped on the way (2026-11-26): the tanks' murk (a leak, walls engulfed), a coral, a
+  crystal, a ferrofluid. The squad are **amoebas** (the owner's pick of the `station-b7` page's
+  jelly, 2026-11-26; `render/station/pretender`, the name kept: they pretend): at a tile's size
+  only a silhouette, a bright patch of colour and motion read. A gel lit from inside, brightest
+  at its membrane, in its kind's colour on the black hive; its eyes two dark nuclei drifting
+  toward its heading (no face); its form flows, a pseudopod shooting out ahead and drawing back
+  (the threat); the kind told by its colour and its form's character (spiky lunges, many small
+  lobes, long thin threads, heavy lumps); no feet, it wobbles (feet rocked). The tell turns the
+  nuclei gold; the fright is the classic blue with the white blink at the end; the **rage** boils
+  it lime (bubbles, the outline lashing, lime-hot nuclei), no afterimages, its glow 10% smaller
+  (the owner); a soft glow in its state's colour round it so it reads in the dark maze (the hero
+  has a warm one on the station too); eaten, its gold eyes run home; for the disguise it shrinks
+  and fades as the level's spore comes up in its place. Rejected before it: the Pretender in its
+  ivory mask (too few expressive details), a cartoon face, toy colours, a single eye, a black
+  silhouette, a jar, the parasites (small details, a dark body). A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
   its gold slit eye opening for a moment every few seconds, turned toward him, a tremble when he comes within 3 tiles, the
   breathing out of step; the run's first lurkers teach (a slow fold of 1.5 s at least 5 steps
   along his way, every tell stronger, fading over three ambushes). The tells are the logic's

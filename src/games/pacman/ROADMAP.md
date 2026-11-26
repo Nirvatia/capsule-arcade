@@ -192,31 +192,14 @@ last (see Later).
          stage-sized layers into new canvases, ~+85 ms in headless Chromium, 141 times a level);
          now it repaints the front's tiles into one standing canvas (no stall). Left: the
          heartbeat's cost on a weak GPU.
-      6. **A new look for the infestation and the squad** (the owner, 2026-11-26: the red flesh
-         does not fit the station's palette and echoes the hell, the walls under it read heavy;
-         the mimics lack the season critters' expressive details; the rage, the acid overheat,
-         stays). The tanks' murk was tried and **dropped** (2026-11-26): the leak made the
-         maze a mess at 100% with no threat; the walls engulfed in it read as recoloured walls;
-         its squad (a specimen in a drop, a ghost, a film) never looked right. Rejected for the
-         squad too: a cartoon face (a meme), toy colours (Among Us), a single eye (a cyclops), a
-         black silhouette (cyberpunk), a jar (unreadable), feet (they rock).
-         The coral, the crystal and the ferrofluid were a wrong turn too (the owner, 2026-11-26:
-         we left alien organics for liquid metals and corals). His point: the red veins do their
-         job, the maze becomes a place to flee; only the red flesh is the hell's language, alien
-         organics are black and parasitic. So **the hive stays as it is in form** (veins, nodes,
-         flesh over the plates by phase, cysts, lips, the heartbeat, the lamps under the film, the
-         torn lair doors) and changes its material: `B7Hive`'s palette `parasite` (black glossy
-         organics, cold wet glints, a lime life in the nodes, the cysts and the pulse; the rage's
-         acid lime reads as its blood) with the scene's `setFilm('parasite')` (the lamps dim and
-         cold under it, the veins' shadows black); on the `station-b7` page beside the red one,
-         awaiting his look. He found it definitely better (2026-11-26). The squad as the hive's
-         parasites (a host mask, a larva, a clutch) suffered from small details and a dark body.
-         Now jelly (`jelly.ts` on the page, awaiting his pick): a gel lit from inside, brightest at
-         its membrane, in its kind's colour on the black hive, two dark nuclei for eyes drifting
-         toward the heading, the form reaching ahead; A the amoeba (pseudopods shooting out ahead;
-         spiky, lobed, threads, lumps), B the gel ghost (the classic silhouette, a dripping hem,
-         one big lobe on top per kind), C the devourer (its front opens into a cavity lit lime;
-         the rim per kind). The rage boils each lime. Next: larvae crawling the hive's veins, the cysts as clutches.
+      6. **A new look for the infestation and the squad**: in the game (2026-11-26, after many
+         candidates; `DESIGN.md` §7a lists what was dropped): the hive is a black parasite with a
+         lime life (its form kept), the squad amoebas of gel in their kinds' colours, their rage
+         boiling lime (no afterimages, a 10% smaller glow). Left: the lurker's eye tell is still
+         the Pretender's gold slit eye (an amoeba has dark nuclei; whether it changes, the owner);
+         the station's red beacons at high infection may want amber or lime beside the black hive;
+         parasites crawling the veins now and then, the cysts as clutches (the owner liked the
+         idea); his play of the amoebas' readability on a real screen.
       7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance

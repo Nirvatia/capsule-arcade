@@ -1,16 +1,14 @@
-// The station's squad creature, the Pretender (the owner's mock-up STATION_MIMIC.html, its
-// `smileMimic`, refined for B-7 in the `pretender` prototype and approved 2026-11-26; DESIGN.md
-// §7a). It keeps the season ghosts' grammar (`render/actors/cuteGhost`): upright and never turned,
-// two bean feet stepping with the distance, a bob, a lean to the heading; on the maze's rails a
-// gliding body read clumsy, worst on a 180. A pale cute mask (the spore's ivory, button eyes, a
-// stitched smile) is strapped over a creature in the squad's colour; the mask hangs back and slips
-// away from the heading, so the real gold eye peeks on the heading's side; the tell slips it
-// further; in the rage the mask bursts into shards and it overheats (the owner's pick of the
-// `station-b7` page, 2026-11-26, in acid: red was lost in the infected maze): lime-hot inside,
-// the shards circling its head, hollow glowing sockets, a jagged grin across the whole body,
-// afterimages behind it; it folds into the level's spore for the disguise.
+// The station's squad creature (DESIGN.md §7a): since 2026-11-26 the amoeba (the owner's pick of
+// the `station-b7` page's jelly candidates, after the Pretender in its mask and the parasites:
+// at a tile's size only a silhouette, a bright patch of colour and motion read). A gel lit from
+// inside, brightest at its membrane (a jellyfish against the light, not a sweet), in its kind's
+// colour on the black hive; its eyes two dark nuclei drifting toward its heading (no face); its
+// form flows, a pseudopod shooting out ahead and drawing back (the threat); the kind told by its
+// colour and the character of its form: spiky lunges, many small lobes, long thin threads, heavy
+// lumps. No feet, no rocking: it wobbles. The tell turns the nuclei gold; the fright is the classic
+// blue and white; the rage boils it lime, the hive's life (no afterimages, the owner); eaten, its
+// eyes run home; it sinks into the level's spore for the disguise. The name stays: it pretends.
 import type { GhostKind } from '../../logic/actors/GhostModel';
-import { footLift } from '../actors/cuteGhost';
 
 export type PretenderState = 'hunt' | 'tell' | 'rage' | 'fright' | 'eyes' | 'mimic';
 
@@ -18,7 +16,7 @@ export interface PretenderOpts {
 	/** The heading as a unit vector, instant (the eyes). */
 	readonly lookX: number;
 	readonly lookY: number;
-	/** The heading eased (the mask): a 180 swings it across the face. */
+	/** The heading eased. */
 	readonly faceX: number;
 	readonly faceY: number;
 	readonly time: number;
@@ -26,7 +24,7 @@ export interface PretenderOpts {
 	readonly step: number;
 	/** The mimicry: 0 the creature .. 1 the spore. */
 	readonly fold?: number;
-	/** The rage: 0 the mask still on .. 1 pushed up onto the head. */
+	/** The rage coming on: 0 calm .. 1 boiling. */
 	readonly reveal?: number;
 	/** The fright about to end, and the white half of its blink. */
 	readonly flashing?: boolean;
@@ -36,44 +34,72 @@ export interface PretenderOpts {
 }
 
 type Ctx = CanvasRenderingContext2D;
-type Pal = { readonly b: string; readonly s: string };
+/** Edge (bright), mid, core (dark) of a gel; its glow's rgb. */
+type Gel = {
+	readonly edge: string;
+	readonly mid: string;
+	readonly core: string;
+	readonly rgb: string;
+};
 
 const TAU = Math.PI * 2;
 export const INK = '#241418';
-/** The squad's hues a little cooler and deeper than the seasons': bred in a lab, cold lamps. */
-const BODY: Readonly<Record<GhostKind, Pal>> = {
-	BLINKY: { b: '#ee6b60', s: '#b03c40' },
-	PINKY: { b: '#ec95d2', s: '#b0609e' },
-	INKY: { b: '#62d8ea', s: '#2c90a8' },
-	CLYDE: { b: '#f3ab55', s: '#b8732a' }
+const GEL: Readonly<Record<GhostKind, Gel>> = {
+	BLINKY: {
+		edge: '#ff7a68',
+		mid: 'rgba(214, 54, 54, 0.9)',
+		core: 'rgba(52, 6, 10, 0.92)',
+		rgb: '255, 96, 80'
+	},
+	PINKY: {
+		edge: '#ff9ae6',
+		mid: 'rgba(196, 70, 160, 0.9)',
+		core: 'rgba(48, 10, 40, 0.92)',
+		rgb: '255, 130, 225'
+	},
+	INKY: {
+		edge: '#7df4ff',
+		mid: 'rgba(34, 156, 190, 0.9)',
+		core: 'rgba(6, 36, 48, 0.92)',
+		rgb: '90, 230, 255'
+	},
+	CLYDE: {
+		edge: '#ffbe62',
+		mid: 'rgba(206, 116, 30, 0.9)',
+		core: 'rgba(52, 26, 6, 0.92)',
+		rgb: '255, 176, 70'
+	}
 };
-const SCARED: Pal = { b: '#4f68ff', s: '#3346d0' };
-const WHITE: Pal = { b: '#f4f7ff', s: '#c3cfea' };
-/** The overheat (the rage): lime-hot inside to a deep green rim. */
-const HEAT = {
-	core: '#fbffe0',
-	mid: '#c6ff4a',
-	rim: '#3f9a18',
-	feet: '#2e7414',
-	after: '#b8ff50',
-	halo: '190, 255, 90',
-	socket: '#fffbe8',
-	pupil: '#1f4a0a',
-	throat: '220, 255, 120'
-} as const;
+const SCARED: Gel = {
+	edge: '#a9b8ff',
+	mid: 'rgba(58, 80, 214, 0.9)',
+	core: 'rgba(14, 20, 80, 0.92)',
+	rgb: '96, 120, 255'
+};
+const WHITE: Gel = {
+	edge: '#ffffff',
+	mid: 'rgba(214, 222, 246, 0.92)',
+	core: 'rgba(150, 160, 196, 0.92)',
+	rgb: '230, 236, 255'
+};
+/** The rage: boiling in the hive's lime. */
+const RAGE: Gel = {
+	edge: '#e4ff8a',
+	mid: 'rgba(120, 210, 40, 0.92)',
+	core: 'rgba(22, 48, 8, 0.94)',
+	rgb: '170, 255, 70'
+};
 export const PHASE: Readonly<Record<GhostKind, number>> = {
 	BLINKY: 0,
 	PINKY: 0.8,
 	INKY: 1.6,
 	CLYDE: 2.4
 };
-export const IVORY = '#f1e7cf';
-/** The body's size in the cute ghosts' frame: a little larger than theirs (the owner). */
-export const SCALE = 1.08;
-/** Out of the rage, larger still by this. */
-const CALM_SCALE = 1.075;
-/** In the rage, smaller by this (the owner, 2026-11-26). */
-const RAGE_SCALE = 0.9;
+/** The body's size in the cute ghosts' frame: a little larger than theirs (the owner, twice). */
+const SCALE = 1.08 * 1.075;
+/** The glow round it; the rage's 10% smaller (the owner). */
+const HALO_R = 0.82;
+const RAGE_HALO = 0.9;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -81,8 +107,10 @@ const smooth = (e0: number, e1: number, x: number) => {
 	const k = clamp((x - e0) / (e1 - e0), 0, 1);
 	return k * k * (3 - 2 * k);
 };
+/** The angle between two headings, -PI..PI. */
+const diff = (a: number, b: number) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
-/** The game's ghost state to the Pretender's look. */
+/** The game's ghost state to the creature's look. */
 export function pretenderStateFor(input: {
 	readonly state: string;
 	readonly escaping: boolean;
@@ -95,19 +123,18 @@ export function pretenderStateFor(input: {
 }
 
 export const GAIT_TUNE = {
-	/** The mask's turn toward the heading, per second (exponential). */
+	/** The heading eased, per second (exponential). */
 	face: 12,
-	/** The stride, radians of the step's phase per tile travelled: the season ghosts' (a longer
-	 *  one read as a faster glide). */
+	/** The stride, radians of the step's phase per tile travelled. */
 	stride: 5.7,
-	/** The rage's reveal (the mask bursting, the overheat) and back, seconds. */
+	/** The rage coming on (and going), seconds. */
 	reveal: 0.22,
 	/** A step longer than this is a jump (a tunnel, back to the lair), tiles. */
 	jump: 1.5
 } as const;
 
-/** How a Pretender walks the rails: drawn at its real point (no glide), its heading turned at once
- *  for the eyes, eased for the mask, its stride counted from the distance, the mask's reveal. */
+/** How it moves on the rails: drawn at its real point (no glide), its heading turned at once for
+ *  the eyes, eased for the body, its stride counted from the distance, the rage coming on. */
 export class RailGait {
 	faceX = 1;
 	faceY = 0;
@@ -157,24 +184,6 @@ export function ellipse(
 	}
 }
 
-function line(
-	c: Ctx,
-	x1: number,
-	y1: number,
-	x2: number,
-	y2: number,
-	color: string,
-	width: number
-): void {
-	c.beginPath();
-	c.moveTo(x1, y1);
-	c.lineTo(x2, y2);
-	c.strokeStyle = color;
-	c.lineWidth = width;
-	c.lineCap = 'round';
-	c.stroke();
-}
-
 export function glow(c: Ctx, x: number, y: number, r: number, inner: string, mid: string): void {
 	const g = c.createRadialGradient(x, y, 0.2, x, y, r);
 	g.addColorStop(0, inner);
@@ -186,212 +195,146 @@ export function glow(c: Ctx, x: number, y: number, r: number, inner: string, mid
 	c.fill();
 }
 
-export const traceBody = (c: Ctx) => {
-	c.beginPath();
-	c.ellipse(0, 1.6, 10.0, 9.2, 0, 0, TAU);
-};
-
-const traceMask = (c: Ctx) => {
-	c.beginPath();
-	c.moveTo(0, -5.6);
-	c.bezierCurveTo(6.4, -5.8, 8.2, -1.0, 7.6, 4.4);
-	c.bezierCurveTo(6.8, 8.2, 3.4, 9.2, 0, 9.0);
-	c.bezierCurveTo(-3.6, 9.2, -7.0, 8.0, -7.8, 4.0);
-	c.bezierCurveTo(-8.4, -1.2, -6.2, -5.4, 0, -5.6);
-	c.closePath();
-};
-
-/** The mask in its own frame: the cute face, its crack on the heading's side, the smile. */
-export function paintMask(c: Ctx, st: PretenderState, white: boolean, o: PretenderOpts): void {
-	const scared = st === 'fright';
-	const cracked = st === 'hunt' || st === 'tell' || st === 'rage';
-	traceMask(c);
-	c.fillStyle = scared ? (white ? '#ffffff' : '#dce6ff') : IVORY;
-	c.fill();
-	c.save();
-	traceMask(c);
-	c.clip();
-	ellipse(c, 2.2, 9.6, 8.6, 3.8, scared ? 'rgba(79,104,255,0.2)' : '#d9c194');
-	if (cracked) {
-		const cs = o.faceX < 0 ? -1 : 1;
-		c.strokeStyle = INK;
-		c.lineWidth = st === 'rage' ? 1.15 : 0.9;
-		c.lineCap = 'round';
-		c.beginPath();
-		c.moveTo(cs * 7.4, -1.4);
-		c.lineTo(cs * 4.2, -0.2);
-		c.lineTo(cs * 2.6, 2.2);
-		c.moveTo(cs * 4.2, -0.2);
-		c.lineTo(cs * 2.8, -2.6);
-		c.stroke();
-	}
-	c.restore();
-	traceMask(c);
-	c.strokeStyle = INK;
-	c.lineWidth = 1.7;
+function stroke(c: Ctx, color: string, w: number): void {
+	c.strokeStyle = color;
+	c.lineWidth = w;
+	c.lineCap = 'round';
 	c.lineJoin = 'round';
 	c.stroke();
-	// the painted button eyes look nowhere; in the fright they are hollow rings with tiny pupils
-	for (const be of [
-		{ x: -3.6, y: 0.7, r: 2.35 },
-		{ x: 3.7, y: 1.6, r: 1.95 }
-	]) {
-		if (scared) {
-			ellipse(c, be.x, be.y, be.r + 0.3, be.r + 0.3, '#ffffff', 1.1);
-			ellipse(c, be.x + o.lookX * 0.7, be.y + o.lookY * 0.7, 0.95, 0.95, white ? '#ff6a3a' : INK);
-		} else {
-			ellipse(c, be.x, be.y, be.r, be.r * 1.05, INK);
-			c.fillStyle = '#ffffff';
-			c.beginPath();
-			c.arc(be.x - be.r * 0.32, be.y - be.r * 0.3, 0.58, 0, TAU);
-			c.arc(be.x + be.r * 0.25, be.y + be.r * 0.22, 0.32, 0, TAU);
-			c.fill();
-		}
-	}
-	c.fillStyle = scared ? 'rgba(120,150,255,0.4)' : 'rgba(226,112,104,0.36)';
-	c.beginPath();
-	c.ellipse(-5.4, 3.6, 1.5, 0.95, 0, 0, TAU);
-	c.ellipse(5.5, 4.2, 1.4, 0.9, 0, 0, TAU);
-	c.fill();
-	if (scared) {
-		// a zigzag mouth and a drop of sweat
-		c.beginPath();
-		c.moveTo(-3.4, 6.8);
-		for (let i = 1; i <= 6; i++) c.lineTo(-3.4 + i * 1.13, 5.4 + (i % 2 ? 0 : 1.4));
-		c.strokeStyle = white ? '#ff4d4d' : INK;
-		c.lineWidth = 0.95;
-		c.lineJoin = 'round';
-		c.stroke();
-		if (!white) {
-			c.beginPath();
-			c.moveTo(7.4, -4.8);
-			c.bezierCurveTo(9.4, -2.2, 9.2, -0.8, 7.4, -0.6);
-			c.bezierCurveTo(5.6, -0.8, 5.4, -2.2, 7.4, -4.8);
-			c.fillStyle = '#bfe9ff';
-			c.fill();
-			c.strokeStyle = INK;
-			c.lineWidth = 0.6;
-			c.stroke();
-		}
-		return;
-	}
-	const wide = st === 'tell' || st === 'rage';
-	const w = wide ? 5.0 : 4.0;
-	const dip = wide ? 8.2 : 6.9;
-	c.beginPath();
-	c.moveTo(-w, 4.4);
-	c.quadraticCurveTo(0, dip, w, 4.9);
-	c.strokeStyle = INK;
-	c.lineWidth = 1.05;
-	c.lineCap = 'round';
-	c.stroke();
-	for (const sx of [-2.4, 0, 2.5]) {
-		const sy = 5.4 + (1 - (sx * sx) / (w * w)) * (dip - 5.2) * 0.55;
-		line(c, sx, sy - 0.85, sx + 0.15, sy + 0.85, INK, 0.72);
-	}
 }
 
-/** The body, the void behind the mask with the real eye, the mask. */
-function paintBody(c: Ctx, pal: Pal, st: PretenderState, white: boolean, o: PretenderOpts): void {
-	const lx = o.faceX;
-	const ly = o.faceY;
-	const k = o.fold ?? 0;
+/** The way it goes as an angle (down when it does not say). */
+const heading = (o: PretenderOpts) =>
+	o.lookX || o.lookY ? Math.atan2(o.lookY, o.lookX) : Math.PI / 2;
+
+/** Its outline: a radius per angle; the lunge ahead, its kind's character, the rage's boil. */
+function amoebaR(
+	kind: GhostKind,
+	o: PretenderOpts,
+	st: PretenderState,
+	ph: number
+): (a: number) => number {
+	const t = o.time;
+	const rage = st === 'rage';
 	const tell = st === 'tell';
-	const hunting = st === 'hunt' || tell;
+	const h = heading(o);
+	// the lunge: a pseudopod shooting out ahead and drawing back
+	const lunge = 0.35 + 0.65 * Math.max(0, Math.sin(t * (rage ? 6 : 2.4) + ph)) ** 2;
+	const ahead = (st === 'fright' ? 0.6 : 3.2) * lunge * (tell ? 1.3 : 1);
+	const rot = t * (kind === 'CLYDE' ? 0.25 : 0.6) + ph;
+	return (a: number) => {
+		let r = 8.2;
+		if (kind === 'BLINKY') r += Math.max(0, Math.cos(5 * (a - rot))) ** 6 * 3.2;
+		else if (kind === 'PINKY') r += (0.5 + 0.5 * Math.cos(8 * (a - rot))) ** 1.5 * 1.5;
+		else if (kind === 'INKY') r += Math.max(0, Math.cos(3 * (a - rot))) ** 18 * 5.4;
+		else r += (0.5 + 0.5 * Math.cos(3 * (a - rot))) ** 2 * 2.4;
+		r += Math.exp(-((diff(a, h) / 0.38) ** 2)) * ahead;
+		if (rage)
+			r += Math.sin(a * 7 + t * 12) * 0.9 + Math.max(0, Math.cos(4 * (a + t * 2))) ** 8 * 2.5;
+		r += Math.sin(a * 3 + t * 2.2 + ph) * 0.35;
+		return r * (st === 'fright' ? 0.92 : 1);
+	};
+}
 
-	traceBody(c);
-	c.lineJoin = 'round';
-	c.lineWidth = 3.2;
-	c.strokeStyle = INK;
-	c.stroke();
-	c.fillStyle = pal.b;
-	c.fill();
-	c.save();
-	traceBody(c);
-	c.clip();
-	ellipse(c, 3.4, 12.4, 14, 7.4, pal.s);
-	c.restore();
-	c.fillStyle = 'rgba(255,255,255,0.6)';
+function polar(c: Ctx, r: (a: number) => number, n = 72): void {
 	c.beginPath();
-	c.ellipse(-5.0, -3.2, 2.5, 1.5, -0.6, 0, TAU);
-	c.fill();
-	if (!white) {
-		// the station's cold lamp along the upper-left rim
-		c.beginPath();
-		c.ellipse(0, 1.6, 8.9, 8.1, 0, Math.PI * 1.05, Math.PI * 1.55);
-		c.strokeStyle = 'rgba(206, 236, 255, 0.55)';
-		c.lineWidth = 1.0;
-		c.lineCap = 'round';
-		c.stroke();
+	for (let i = 0; i <= n; i++) {
+		const a = (i / n) * TAU;
+		const rr = r(a);
+		if (i === 0) c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+		else c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
 	}
+	c.closePath();
+}
 
-	// the strap that holds the mask on
+/** The gel: dark inside, bright at the membrane, outlined to part it from the floor; bubbles
+ *  rising in it, a glint at the upper left. */
+function paintGel(
+	c: Ctx,
+	trace: () => void,
+	g: Gel,
+	o: PretenderOpts,
+	ph: number,
+	boil: boolean
+): void {
+	trace();
+	stroke(c, INK, 2.2);
+	const f = c.createRadialGradient(0, 0, 1, 0, 0, 11);
+	f.addColorStop(0, g.core);
+	f.addColorStop(0.55, g.mid);
+	f.addColorStop(0.9, g.edge);
+	f.addColorStop(1, g.edge);
+	trace();
+	c.fillStyle = f;
+	c.fill();
+	trace();
+	stroke(c, g.edge, 0.9);
 	c.save();
-	traceBody(c);
+	trace();
 	c.clip();
-	c.fillStyle = 'rgba(36, 20, 24, 0.5)';
-	c.fillRect(-11, 1.3, 22, 1.5);
-	c.restore();
-
-	c.save();
-	c.translate(lx * 1.4, ly * 1.1);
-	// the mask hangs back from the face's lean and slips away from the heading
-	const amt = (tell ? 2.9 : st === 'hunt' ? 2.1 : 0) * (1 - k);
-	const mdx = -lx * (amt + 1.0);
-	const mdy = -ly * (amt + 0.7) * 0.95;
-	const mrot =
-		-0.085 * (1 - Math.abs(lx)) -
-		lx * (tell ? 0.22 : st === 'hunt' ? 0.12 : 0) +
-		(st === 'fright' ? Math.sin(o.time * 36) * 0.05 : 0);
-
-	if (hunting && k < 0.999) {
-		// the void behind the mask and the gold eye on the heading's side, over it or under it
-		c.save();
+	const n = boil ? 7 : 3;
+	for (let i = 0; i < n; i++) {
+		const u = (o.time * ((boil ? 1.4 : 0.35) + i * 0.07) + i / n + ph) % 1;
 		c.beginPath();
-		c.ellipse(-lx * 1.4, 1.6 - ly * 1.1, 9.5, 8.7, 0, 0, TAU);
-		c.clip();
-		const ay = Math.abs(ly);
-		c.beginPath();
-		c.ellipse(
-			lx * 4.2,
-			1.0 + ly * (ly < 0 ? 4.6 : 5.8),
-			lerp(4.4, 6.4, ay),
-			lerp(6.6, 3.8, ay),
-			0,
+		c.arc(
+			-6 + ((i * 3.7) % 12) + Math.sin(u * 6 + i) * 0.8,
+			8 - u * 16,
+			(boil ? 0.9 : 0.6) + (i % 2) * 0.4,
 			0,
 			TAU
 		);
-		c.fillStyle = '#12060b';
-		c.fill();
-		c.strokeStyle = INK;
-		c.lineWidth = 1.2;
-		c.stroke();
-		const ex = lx * 6.6;
-		const ey = 0.6 + ly * (ly < 0 ? 5.1 : 7.0);
-		const pulse = tell ? 0.75 + 0.25 * Math.sin((o.time / 1.3) * TAU) : 0.6;
-		const r = tell ? 2.7 : 2.3;
-		glow(
+		stroke(c, `rgba(255, 255, 255, ${(boil ? 0.75 : 0.5) * Math.sin(u * Math.PI)})`, 0.5);
+	}
+	c.restore();
+	ellipse(c, -4.6, -5.0, 2.0, 1.1, 'rgba(255, 255, 255, 0.65)');
+	ellipse(c, -2.2, -6.6, 0.7, 0.45, 'rgba(255, 255, 255, 0.6)');
+}
+
+/** The eyes: two dark nuclei drifting toward the heading, a glint in each; gold in the tell,
+ *  white rings in the fright, lime-hot in the rage. */
+function paintNuclei(c: Ctx, o: PretenderOpts, st: PretenderState): void {
+	const vertical = Math.abs(o.lookY) > Math.abs(o.lookX);
+	const cx = o.lookX * 2.6;
+	const cy = -0.4 + o.lookY * 2.2;
+	for (const side of [-1, 1]) {
+		const ex = cx + side * (vertical ? 2.5 : 2.4);
+		const ey = cy + (vertical ? 0 : side * 0.3);
+		if (st === 'fright') {
+			const tr = Math.sin(o.time * 40) * 0.25;
+			ellipse(c, ex + tr, ey, 1.9, 1.9, '#ffffff', 0.9);
+			ellipse(c, ex + tr + o.lookX * 0.6, ey + o.lookY * 0.6, 0.7, 0.7, INK);
+			continue;
+		}
+		const rage = st === 'rage';
+		if (st === 'tell' || rage) {
+			const rgb = rage ? '226, 255, 160' : '255, 200, 71';
+			glow(c, ex, ey, 4.2, `rgba(${rgb}, 0.9)`, `rgba(${rgb}, 0.35)`);
+		}
+		ellipse(
 			c,
 			ex,
 			ey,
-			r * 1.9,
-			`rgba(255, 214, 120, ${0.95 * pulse})`,
-			`rgba(255, 120, 60, ${0.5 * pulse})`
+			rage ? 2.0 : 2.3,
+			rage ? 1.4 : 2.6,
+			rage ? '#f4ffd8' : 'rgba(8, 4, 8, 0.92)'
 		);
-		ellipse(c, ex, ey, r, r * 0.86, '#ffc847', 0.7);
-		ellipse(c, ex + o.lookX * 0.55, ey + o.lookY * 0.45, tell ? 0.45 : 0.6, r * 0.62, INK);
-		c.restore();
+		if (rage) ellipse(c, ex + o.lookX * 0.6, ey + o.lookY * 0.5, 0.5, 1.1, '#1f4a0a');
+		else {
+			const r = st === 'tell' ? 1.1 : 0.75;
+			ellipse(
+				c,
+				ex + o.lookX * 0.8,
+				ey + o.lookY * 0.8,
+				r,
+				r,
+				st === 'tell' ? '#ffc847' : 'rgba(255, 255, 255, 0.85)'
+			);
+		}
 	}
-	c.save();
-	c.translate(mdx, mdy);
-	c.rotate(mrot);
-	paintMask(c, st, white, o);
-	c.restore();
-	c.restore();
 }
 
-/** One walking Pretender in `unit` space (the cute ghosts' frame), `k` its fold. */
-function paintWalker(
+/** One amoeba in `unit` space (the cute ghosts' frame), `k` its fold. */
+function paintAmoeba(
 	c: Ctx,
 	kind: GhostKind,
 	st: PretenderState,
@@ -399,12 +342,11 @@ function paintWalker(
 	unit: number,
 	k: number
 ): void {
-	const phase = PHASE[kind];
-	// a little larger out of the rage (the owner, 2026-11-26); the rage's body is large already
-	c.scale(unit * SCALE * CALM_SCALE, unit * SCALE * CALM_SCALE);
+	const ph = PHASE[kind];
+	c.scale(unit * SCALE, unit * SCALE);
 	if (st === 'eyes') {
 		// eaten: its gold eyes run home
-		c.translate(0, Math.sin(o.time * 4 + phase) * 0.6 - 1);
+		c.translate(0, Math.sin(o.time * 4 + ph) * 0.6 - 1);
 		for (const side of [-1, 1]) {
 			const ex = side * 4.6;
 			const px = ex + o.lookX * 1.6;
@@ -419,226 +361,23 @@ function paintWalker(
 		}
 		return;
 	}
-	const fright = st === 'fright';
-	const white = fright && Boolean(o.white);
-	if (fright && !o.flashing) c.translate(Math.sin(o.time * 38 + phase) * 0.45, 0);
-	const step = o.step * (1 - k);
-	const lift = footLift(step);
-	c.translate(0, -Math.abs(Math.sin(step)) * 0.7 * (1 - k));
-	c.translate(0, 10);
-	c.rotate((Math.sin(step) * 0.08 + o.lookX * 0.1) * (1 - k));
-	c.translate(0, -10);
-	let pal = BODY[kind];
-	if (fright) pal = white ? WHITE : SCARED;
-	// two bean feet; they tuck in as it folds
-	for (const [side, up] of [
-		[-1, lift.left],
-		[1, lift.right]
-	] as const) {
-		c.beginPath();
-		c.ellipse(side * 4.2 * (1 - 0.3 * k), 11 - up - 3.4 * k, 3.3, 2.5 * (1 - 0.5 * k), 0, 0, TAU);
-		c.fillStyle = pal.s;
-		c.fill();
-		c.strokeStyle = INK;
-		c.lineWidth = 1.5;
-		c.stroke();
-	}
-	const squash = Math.sin(o.time * 5 + phase);
-	c.translate(0, 10);
-	c.scale(1 - 0.04 * squash, 1 + 0.05 * squash);
-	c.translate(0, -10);
-	paintBody(c, pal, st, white, { ...o, fold: k });
+	const scared = st === 'fright';
+	if (scared && !o.flashing) c.translate(Math.sin(o.time * 38 + ph) * 0.4, 0);
+	if (st === 'rage') c.translate(Math.sin(o.time * 47 + ph) * 0.3, 0);
+	// jelly: it wobbles, no feet, no rocking
+	const w = Math.sin(o.time * 3.1 + ph) * (1 - k);
+	c.translate(0, Math.sin(o.time * 2.4 + ph) * 0.4 * (1 - k));
+	c.scale(1 + 0.04 * w, 1 - 0.04 * w);
+	const g = st === 'rage' ? RAGE : scared ? (o.white ? WHITE : SCARED) : GEL[kind];
+	const r = amoebaR(kind, o, st, ph);
+	paintGel(c, () => polar(c, r), g, o, ph, st === 'rage');
+	paintNuclei(c, o, st);
 }
 
-/** Where "behind" is: against the heading. */
-function behind(o: PretenderOpts): [number, number] {
-	const d = Math.hypot(o.lookX, o.lookY);
-	return d > 0.01 ? [-o.lookX / d, -o.lookY / d] : [0, 1];
-}
-
-/** The mask's shards circling the head, behind it or before it; `burst` 0 at the face .. 1 out. */
-function paintShards(c: Ctx, o: PretenderOpts, front: boolean, burst: number): void {
-	for (let i = 0; i < 5; i++) {
-		const a = o.time * 1.6 + (i * TAU) / 5;
-		if (Math.sin(a) >= 0 !== front) continue;
-		const r = lerp(4, 12.5 + Math.sin(o.time * 3 + i) * 1.2, burst);
-		c.save();
-		c.translate(Math.cos(a) * r, lerp(2, -3, burst) + Math.sin(a) * r * 0.45);
-		c.rotate(o.time * 3 + i * 1.3);
-		const z = 1.8 + ((i * 0.37) % 1) * 1.2;
-		c.beginPath();
-		c.moveTo(-z, -z * 0.6);
-		c.lineTo(z * 0.9, -z * 0.8);
-		c.lineTo(z * 0.3, z);
-		c.closePath();
-		c.fillStyle = IVORY;
-		c.fill();
-		c.strokeStyle = INK;
-		c.lineWidth = 0.7;
-		c.stroke();
-		c.restore();
-	}
-}
-
-/** The overheated body: lime-hot inside, hollow glowing sockets, a grin across it all, embers. */
-function paintHeatBody(c: Ctx, o: PretenderOpts, throb: number): void {
-	traceBody(c);
-	c.lineJoin = 'round';
-	c.lineWidth = 3.2;
-	c.strokeStyle = INK;
-	c.stroke();
-	const g = c.createRadialGradient(0, 2.4, 0.5, 0, 1.6, 10.5);
-	g.addColorStop(0, HEAT.core);
-	g.addColorStop(0.35 + 0.1 * throb, HEAT.mid);
-	g.addColorStop(1, HEAT.rim);
-	c.fillStyle = g;
-	c.fill();
-	c.save();
-	c.translate(o.faceX * 1.4, o.faceY * 1.2);
-	for (const side of [-1, 1]) {
-		c.save();
-		c.translate(o.lookX * 0.9, o.lookY * 0.8);
-		glow(c, side * 4.2, -1.6, 5.2, 'rgba(255, 250, 220, 0.85)', 'rgba(255, 150, 60, 0.45)');
-		c.beginPath();
-		c.moveTo(side * 1.2, -1.2);
-		c.lineTo(side * 7.4, -4.6);
-		c.lineTo(side * 6.6, 0.2);
-		c.lineTo(side * 1.8, 0.6);
-		c.closePath();
-		c.fillStyle = HEAT.socket;
-		c.fill();
-		c.strokeStyle = INK;
-		c.lineWidth = 1.2;
-		c.stroke();
-		ellipse(c, side * 4.4 + o.lookX * 1.2, -1.2 + o.lookY * 0.6, 0.5, 1.4, HEAT.pupil);
-		c.restore();
-	}
-	c.restore();
-	// the grin, across the whole body
-	const chomp = 0.5 + 0.5 * Math.sin(o.time * 10);
-	c.save();
-	traceBody(c);
-	c.clip();
-	c.translate(o.faceX * 1.2, o.faceY * 1.0);
-	const trace = () => {
-		c.beginPath();
-		c.moveTo(-11, 2.6);
-		c.quadraticCurveTo(0, 4.6, 11, 2.6);
-		c.quadraticCurveTo(0, 10 + 2.2 * chomp, -11, 2.6);
-		c.closePath();
-	};
-	trace();
-	c.fillStyle = '#0d1a05';
-	c.fill();
-	c.save();
-	trace();
-	c.clip();
-	glow(c, 0, 7, 6.5, `rgba(${HEAT.throat}, 0.9)`, `rgba(${HEAT.throat}, 0.45)`);
-	c.fillStyle = IVORY;
-	c.strokeStyle = INK;
-	c.lineWidth = 0.5;
-	for (let i = 0, x = -9.5; x <= 9.6; i += 1, x += 1.9) {
-		const y = 2.6 + (1 - (x / 11) ** 2) * 1.9;
-		c.beginPath();
-		c.moveTo(x - 0.95, y - 0.4);
-		c.lineTo(x + 0.1, y + 2.1 + ((i * 0.618) % 1) * 0.8);
-		c.lineTo(x + 0.95, y - 0.4);
-		c.fill();
-		c.stroke();
-	}
-	c.restore();
-	trace();
-	c.strokeStyle = INK;
-	c.lineWidth = 1.3;
-	c.stroke();
-	c.restore();
-	// embers off the top
-	for (let i = 0; i < 3; i++) {
-		const u = (o.time * 1.3 + i / 3) % 1;
-		ellipse(
-			c,
-			(i - 1) * 4.5 + Math.sin(u * 5 + i) * 1.2,
-			-7 - u * 9,
-			0.7 * (1 - u) + 0.2,
-			0.7 * (1 - u) + 0.2,
-			`rgba(210, 255, ${120 - u * 60}, ${1 - u})`
-		);
-	}
-}
-
-/** The rage, the overheat, in `unit` space: afterimages along its way, the shards, it shakes and
- *  throbs; `burst` 0..1 the mask's shards flying out (the reveal's second half). */
-function paintOverheat(
-	c: Ctx,
-	kind: GhostKind,
-	o: PretenderOpts,
-	unit: number,
-	burst: number
-): void {
-	const phase = PHASE[kind];
-	const throb = Math.max(0, Math.sin(o.time * 9 + phase));
-	// the rage's body a little smaller than the base: with its shards and afterimages it read big
-	c.scale(unit * SCALE * RAGE_SCALE, unit * SCALE * RAGE_SCALE);
-	const [bx, by] = behind(o);
-	for (let i = 3; i >= 1; i--) {
-		c.save();
-		c.translate(bx * i * 5.5, by * i * 5.5);
-		c.globalAlpha *= (0.32 - i * 0.08) * burst;
-		traceBody(c);
-		c.fillStyle = HEAT.after;
-		c.fill();
-		c.restore();
-	}
-	c.translate(Math.sin(o.time * 47 + phase) * 0.3, 0);
-	const lift = footLift(o.step);
-	c.translate(0, -Math.abs(Math.sin(o.step)) * 0.7);
-	c.translate(0, 10);
-	c.rotate(Math.sin(o.step) * 0.08 + o.lookX * 0.1);
-	c.translate(0, -10);
-	paintShards(c, o, false, burst);
-	for (const [side, up] of [
-		[-1, lift.left],
-		[1, lift.right]
-	] as const) {
-		c.beginPath();
-		c.ellipse(side * 4.2, 11 - up, 3.3, 2.5, 0, 0, TAU);
-		c.fillStyle = HEAT.feet;
-		c.fill();
-		c.strokeStyle = INK;
-		c.lineWidth = 1.5;
-		c.stroke();
-	}
-	const squash = Math.sin(o.time * 5 + phase);
-	c.translate(0, 10);
-	c.scale(1 - 0.04 * squash + 0.035 * throb, 1 + 0.05 * squash + 0.035 * throb);
-	c.translate(0, -10);
-	paintHeatBody(c, o, throb);
-	paintShards(c, o, true, burst);
-}
-
-/** A soft glow round a Pretender in its state's colour, so it reads in the dark maze. */
-function halo(
-	c: Ctx,
-	x: number,
-	y: number,
-	tile: number,
-	kind: GhostKind,
-	st: PretenderState,
-	k: number
-): void {
-	const rgb =
-		st === 'rage'
-			? HEAT.halo
-			: st === 'fright'
-				? '96, 120, 255'
-				: st === 'eyes'
-					? '255, 214, 140'
-					: (BODY[kind].b.match(/[0-9a-f]{2}/gi) ?? ['ff', 'ff', 'ff'])
-							.map((h) => parseInt(h, 16))
-							.join(', ');
-	const a = (st === 'eyes' ? 0.18 : st === 'rage' ? 0.42 : 0.34) * (1 - k);
+/** A soft glow round it in its state's colour, so it reads in the dark maze. */
+function halo(c: Ctx, x: number, y: number, tile: number, rgb: string, a: number, scale = 1): void {
 	if (a <= 0.01) return;
-	const r = tile * 0.78;
+	const r = tile * HALO_R * scale;
 	const g = c.createRadialGradient(x, y, 0, x, y, r);
 	g.addColorStop(0, `rgba(${rgb}, ${a})`);
 	g.addColorStop(0.55, `rgba(${rgb}, ${a * 0.4})`);
@@ -668,7 +407,7 @@ export function drawHeroGlow(c: Ctx, x: number, y: number, tile: number): void {
 	c.restore();
 }
 
-/** One Pretender centred at (x, y), `tile` the tile's size in px. */
+/** One squad creature centred at (x, y), `tile` the tile's size in px. */
 export function drawPretender(
 	c: Ctx,
 	x: number,
@@ -680,9 +419,9 @@ export function drawPretender(
 ): void {
 	const unit = (tile / 25) * 0.78;
 	if (st === 'mimic') {
-		// the mask slips home, the feet tuck in, it sinks to the spore's size, then the spore
+		// it shrinks and fades as the spore comes up in its place
 		const k = clamp(o.fold ?? 0, 0, 1);
-		halo(c, x, y, tile, kind, 'hunt', k);
+		halo(c, x, y, tile, GEL[kind].rgb, 0.36 * (1 - k));
 		if (k > 0.55 && o.spore) {
 			c.save();
 			c.translate(x, y);
@@ -694,23 +433,24 @@ export function drawPretender(
 		c.globalAlpha *= 1 - smooth(0.72, 0.97, k);
 		c.translate(x, y + k * tile * 0.06);
 		c.scale(lerp(1, 0.4, k), lerp(1, 0.4, k));
-		paintWalker(c, kind, 'hunt', o, unit, k);
+		paintAmoeba(c, kind, 'hunt', o, unit, k);
 		c.restore();
 		return;
 	}
-	// the rage: the mask's first half is the hunt's, then it bursts and it overheats
-	const reveal = st === 'rage' ? (o.reveal ?? 1) : 0;
-	const heat = st === 'rage' && reveal >= 0.5;
-	halo(c, x, y, tile, kind, heat ? 'rage' : st === 'rage' ? 'hunt' : st, 0);
+	// the rage comes on in a moment: the tell's gold, then the boil
+	const shown = st === 'rage' && (o.reveal ?? 1) < 0.5 ? 'tell' : st;
+	if (shown !== 'eyes') {
+		const rgb = shown === 'rage' ? RAGE.rgb : shown === 'fright' ? SCARED.rgb : GEL[kind].rgb;
+		halo(c, x, y, tile, rgb, shown === 'rage' ? 0.44 : 0.38, shown === 'rage' ? RAGE_HALO : 1);
+	} else halo(c, x, y, tile, '255, 214, 140', 0.18);
 	c.save();
 	c.translate(x, y);
-	if (heat) paintOverheat(c, kind, o, unit, smooth(0.5, 1, reveal));
-	else paintWalker(c, kind, st === 'rage' ? 'tell' : st, o, unit, 0);
+	paintAmoeba(c, kind, shown, o, unit, 0);
 	c.restore();
 }
 
-/** A lurker's tell over its spore (stage space, a 34 px tile): the Pretender's gold eye opens
- *  for a moment beside the pearl, its slit turned toward the hero. `open` 0 shut .. 1 open. */
+/** A lurker's tell over its spore (stage space, a 34 px tile): its eye opens for a moment beside
+ *  the pearl, turned toward the hero. `open` 0 shut .. 1 open. */
 export function drawLurkerEye(
 	c: Ctx,
 	x: number,
