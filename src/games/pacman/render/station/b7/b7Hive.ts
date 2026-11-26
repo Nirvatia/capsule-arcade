@@ -28,6 +28,14 @@ const veinReach = (inf: number, far: number) => (inf / 0.9) * (far + 1);
 const fleshReach = (inf: number, far: number) => inf * (far + 5) - 4;
 const BEAT = { period: 6, speed: 9, width: 1.2, dub: 0.3 } as const;
 
+/** The heartbeat's swell at `time` (0..1, lub-dub), for whatever beats with the hive (the lamps
+ *  under its film); `delay` the wave's way out from the lair, tiles. */
+export function heartbeat(time: number, delay = 0): number {
+	const u = (((time - delay / BEAT.speed) % BEAT.period) + BEAT.period) % BEAT.period;
+	const one = (t: number) => (t < 0 ? 0 : Math.exp(-((t / 0.22) ** 2)));
+	return Math.min(1, one(u) + 0.7 * one(u - BEAT.dub));
+}
+
 function canvas(w: number, h: number): HTMLCanvasElement {
 	const c = document.createElement('canvas');
 	c.width = Math.max(1, Math.ceil(w));
@@ -394,7 +402,7 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 	const gg = ctx2d(glow);
 	gg.scale(GLOW_SCALE, GLOW_SCALE);
 	gg.lineCap = 'round';
-	gg.strokeStyle = 'rgba(255, 176, 104, 1)';
+	gg.strokeStyle = 'rgba(255, 140, 84, 1)';
 	for (const s of segs) {
 		gg.lineWidth = 3.6 * s.k;
 		path(gg, s);
@@ -518,9 +526,9 @@ export class B7Hive {
 		g.drawImage(this.beat, s.MAZE_X * k, s.MAZE_Y * k, s.COLS * s.TILE * k, s.ROWS * s.TILE * k);
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';
-		ctx.globalAlpha = 0.5;
+		ctx.globalAlpha = 0.34;
 		ctx.drawImage(this.scratch, 0, 0, s.STAGE_W, s.STAGE_H);
-		ctx.globalAlpha = 0.18;
+		ctx.globalAlpha = 0.12;
 		ctx.drawImage(this.scratch, -3, -3, s.STAGE_W + 6, s.STAGE_H + 6);
 		ctx.restore();
 	}

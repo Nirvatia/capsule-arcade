@@ -3,6 +3,8 @@
 // 2.5D bulkhead walls merged into engineering modules, the sunken lair pit, the infestation per
 // phase, the live props (fans, turbines, tanks, the storm planet, the console screens), the food
 // (bio-spores, power cells) and the light map. Stage space: 1920x1080, a tile is 34 px.
+import { heartbeat } from './b7Hive';
+
 /** `lairDoors`: false leaves out the lair's bent blast doors and the hazard band before them
  *  (the infestation C draws its own torn doors). */
 export function createB7Scene(
@@ -263,7 +265,7 @@ export function createB7Scene(
 	};
 	const lerp3 = (a: readonly number[], b: readonly number[], k: number) =>
 		`rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(', ')})`;
-	/** Each lamp's failing point on the infection (0 and 3 hang on, weak, to the end). */
+	/** Each lamp's point on the infection where the hive's film grows over it. */
 	const lampFails = (i: number) =>
 		0.3 + 0.62 * ((((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1);
 
@@ -3571,7 +3573,7 @@ export function createB7Scene(
 					? lerp3([68, 62, 64], [56, 50, 52], k)
 					: k < 0.5
 						? lerp3([124, 134, 132], [104, 113, 111], k * 2)
-						: lerp3([104, 113, 111], [74, 80, 80], k * 2 - 1);
+						: lerp3([104, 113, 111], [84, 72, 74], k * 2 - 1); // warming under the hive's flesh
 		} else if (mode === 'alert') {
 			lg.fillStyle = phase === 3 ? 'rgb(56, 50, 52)' : 'rgb(68, 62, 64)';
 		} else {
@@ -3587,17 +3589,47 @@ export function createB7Scene(
 			const l = CORRIDOR_LAMPS[i];
 			let power = 0;
 			if (infection >= 0) {
-				// the game: each lamp falters (slowly, unevenly) and goes out at its own point
+				// the game: at its own point each lamp falters while the hive's film grows over it,
+				// then shines on through the flesh: warm, dimmer, beating with the hive, the
+				// shadows of its veins on the floor (the owner: lamps under film, not darkness)
 				const fail = lampFails(i);
+				const g = Math.max(0, Math.min(1, (infection - fail + 0.14) / 0.22));
+				const film = g * g * (3 - 2 * g);
 				const base = (mode === 'alert' ? 0.32 : 0.68) - 0.06 * infection;
 				const uneven = 0.28 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.15 + l.ph));
-				if (infection < fail - 0.14) power = base;
-				else if (infection < fail)
-					power = base * (uneven + (1 - uneven) * ((fail - infection) / 0.14));
-				else if (i === 0 || i === 3)
-					power =
-						(mode === 'alert' ? 0.18 : 0.38) *
-						(0.35 + 0.45 * (0.5 + 0.5 * Math.sin(time * 0.9 + l.ph)));
+				const growing = film > 0 && film < 1 ? uneven + (1 - uneven) * Math.abs(film - 0.5) * 2 : 1;
+				const beat = heartbeat(time, infectionDistance(Math.floor(l.x), Math.floor(l.y)));
+				const power2 = base * (1 - 0.35 * film) * growing * (1 + 0.4 * film * beat);
+				if (power2 > 0.01) {
+					const rgb = [196, 222, 216].map((c, k) => Math.round(c + ([255, 132, 92][k] - c) * film));
+					radialLight(lg, toX(tx(l.x)), toY(ty(l.y)), R(TILE * 4.5), rgb.join(', '), 0.56 * power2);
+				}
+				if (film > 0.3) {
+					// the veins of the film, their shadows thrown on the floor
+					lg.save();
+					lg.globalCompositeOperation = 'source-over';
+					lg.strokeStyle = `rgba(52, 16, 22, ${0.32 * film})`;
+					lg.lineWidth = Math.max(1, R(3.2));
+					lg.lineCap = 'round';
+					const lx = toX(tx(l.x));
+					const ly = toY(ty(l.y));
+					for (let v = 0; v < 4; v++) {
+						const a = l.ph * 2.3 + v * 1.7;
+						const r0 = R(TILE * 0.5);
+						const r1 = R(TILE * (2.2 + (v % 2)));
+						lg.beginPath();
+						lg.moveTo(lx + Math.cos(a) * r0, ly + Math.sin(a) * r0);
+						lg.quadraticCurveTo(
+							lx + Math.cos(a + 0.5) * (r0 + r1) * 0.5,
+							ly + Math.sin(a + 0.5) * (r0 + r1) * 0.5,
+							lx + Math.cos(a + 0.2) * r1,
+							ly + Math.sin(a + 0.2) * r1
+						);
+						lg.stroke();
+					}
+					lg.restore();
+				}
+				continue;
 			} else if (phase === 1) {
 				power = mode === 'alert' ? 0.32 : 0.68;
 			} else if (phase === 2) {
