@@ -10,10 +10,11 @@
 //          tongues hanging over the south facades; it trails
 //          the veins' front, so the station is veined first and overgrown later;
 //   pulse  a heartbeat (lub-dub every 6 s, soft) running out of the lair along the walls' veins;
-//   lair   the lair's gate (the owner: the bent blast doors fought the new style): a sphincter
-//          of the same flesh across the entrance, a slit glowing from inside that parts with the
-//          beat, lips over the pit's rim and cords from its walls to the cocoons (the grate and
-//          the cocoons kept); the scene drawn with `lairDoors: false`.
+//   lair   the lair in the new style (the owner): massive blast doors torn apart from inside,
+//          their ends peeled outward, flesh oozing through the breach (no hazard lintel); cocoons
+//          of the hive (wine membranes lit amber from inside, a Pretender curled in each, glowing
+//          with the beat), lips over the pit's rim, cords from its walls to the cocoons; the grate
+//          kept; the scene drawn with `lairDoors: false, lairCocoons: false`.
 import type { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
 
 type Scene = ReturnType<typeof createB7Scene>;
@@ -524,7 +525,16 @@ export class HiveCView {
 		return Math.min(1, one(u - 0.05) + 0.7 * one(u - 0.05 - BEAT.dub));
 	}
 
-	/** The lair: its gate of flesh, lips over the pit's rim, cords to the cocoons (stage space). */
+	/** The lair's cocoons (`createB7Scene`'s spots), breathing with their own phase. */
+	private static readonly PODS = [
+		{ x: 10.9, y: 13.44, r: 11.4, ph: 0.0 },
+		{ x: 11.96, y: 13.56, r: 12.2, ph: 1.55 },
+		{ x: 13.06, y: 13.56, r: 12.0, ph: 3.1 },
+		{ x: 14.1, y: 13.44, r: 11.2, ph: 4.6 }
+	] as const;
+
+	/** The lair: its torn blast doors, cocoons of the hive, lips over the pit's rim and cords from
+	 *  its walls to the cocoons (stage space, under the light). */
 	drawLair(ctx: Ctx, time: number): void {
 		const { tx, ty, TILE } = this.scene;
 		const sw = this.swell(time);
@@ -559,18 +569,84 @@ export class HiveCView {
 		};
 		ctx.save();
 		ctx.lineCap = 'round';
-		// cords from the pit's walls down to the cocoons (the cocoons' tops at y 13.44..13.56)
-		const pods = [10.9, 11.96, 13.06, 14.1];
+		ctx.lineJoin = 'round';
+
+		// the cocoons: egg sacs of the hive, a Pretender curled inside each
+		for (const pod of HiveCView.PODS) {
+			const x = tx(pod.x);
+			const y = ty(pod.y);
+			const k = 1 + 0.04 * Math.sin(time * 1.4 + pod.ph) + 0.03 * sw;
+			const rx = pod.r * 0.74 * k;
+			const ry = pod.r * 1.08 * k;
+			// roots gripping the pit's floor
+			ctx.strokeStyle = '#1e080e';
+			ctx.lineWidth = 2.2;
+			for (const a of [-0.6, 0, 0.55]) {
+				ctx.beginPath();
+				ctx.moveTo(x + Math.sin(a) * rx * 0.6, y + ry * 0.7);
+				ctx.quadraticCurveTo(x + Math.sin(a) * rx * 1.1, y + ry * 1.05, x + Math.sin(a) * rx * 1.5, y + ry * 1.12);
+				ctx.stroke();
+			}
+			ctx.fillStyle = '#1e080e';
+			ctx.beginPath();
+			ctx.ellipse(x, y, rx + 1.3, ry + 1.3, 0, 0, TAU);
+			ctx.fill();
+			const g = ctx.createRadialGradient(x - rx * 0.1, y - ry * 0.05, 0, x, y, ry);
+			g.addColorStop(0, '#d98a52');
+			g.addColorStop(0.3, '#a8463c');
+			g.addColorStop(0.7, '#5e1c2a');
+			g.addColorStop(1, '#3a0f18');
+			ctx.fillStyle = g;
+			ctx.beginPath();
+			ctx.ellipse(x, y, rx, ry, 0, 0, TAU);
+			ctx.fill();
+			// the embryo: a body curled like a comma, its tiny pale mask at the head
+			ctx.save();
+			ctx.translate(x, y + ry * 0.05);
+			ctx.strokeStyle = 'rgba(30, 8, 14, 0.8)';
+			ctx.lineWidth = rx * 0.42;
+			ctx.lineCap = 'round';
+			ctx.beginPath();
+			ctx.arc(0, ry * 0.08, rx * 0.36, -0.4, Math.PI * 1.35);
+			ctx.stroke();
+			ctx.fillStyle = 'rgba(30, 8, 14, 0.85)';
+			ctx.beginPath();
+			ctx.arc(rx * 0.3, -ry * 0.22, rx * 0.3, 0, TAU);
+			ctx.fill();
+			ctx.fillStyle = 'rgba(241, 231, 207, 0.8)';
+			ctx.beginPath();
+			ctx.ellipse(rx * 0.33, -ry * 0.22, rx * 0.19, rx * 0.17, 0.3, 0, TAU);
+			ctx.fill();
+			ctx.restore();
+			// veins over the membrane, a wet glint
+			ctx.strokeStyle = 'rgba(42, 12, 20, 0.85)';
+			ctx.lineWidth = 1.2;
+			for (const [a0, a1] of [
+				[-2.4, -0.9],
+				[-0.5, 0.9],
+				[1.4, 2.6]
+			]) {
+				ctx.beginPath();
+				ctx.ellipse(x, y, rx * 0.9, ry * 0.9, 0, a0 + pod.ph * 0.1, a1);
+				ctx.stroke();
+			}
+			ctx.fillStyle = 'rgba(255, 236, 214, 0.75)';
+			ctx.beginPath();
+			ctx.ellipse(x - rx * 0.42, y - ry * 0.5, rx * 0.2, ry * 0.1, -0.6, 0, TAU);
+			ctx.fill();
+		}
+
+		// cords from the pit's walls, sagging down to the cocoons
 		const tops = [
 			[tx(10) + 1, ty(12) + 6],
 			[tx(11.6), ty(12) + 1],
 			[tx(13.4), ty(12) + 1],
 			[tx(15) - 1, ty(12) + 6]
 		];
-		pods.forEach((px, i) => {
+		HiveCView.PODS.forEach((pod, i) => {
 			const [x0, y0] = tops[i];
-			const x1 = tx(px);
-			const y1 = ty(13.5) - 11;
+			const x1 = tx(pod.x);
+			const y1 = ty(pod.y) - pod.r + 1;
 			cord(x0, y0, (x0 + x1) / 2 + (i < 2 ? -7 : 7), y1 + 4, x1, y1, 4.2);
 		});
 		// lips of flesh over the pit's rim
@@ -584,70 +660,164 @@ export class HiveCView {
 		]) {
 			blob(x, y, rx, ry);
 		}
-		// the gate: a sphincter across the entrance (row 11, columns 11..13), rooted in both walls
-		const x0 = tx(11) - 3;
-		const x1 = tx(14) + 3;
+
+		// the blast doors: two massive steel leaves (row 11), torn apart from inside: a breach a
+		// tile wide, each leaf's inner end bent outward toward the corridor, petals of torn steel,
+		// flesh oozing through
 		const cy = ty(11) + TILE * 0.5;
-		const half = TILE * 0.42;
-		const mx = (x0 + x1) / 2;
-		const rx = (x1 - x0) / 2;
-		const open = 2.2 + 3.6 * sw;
-		// two puffed lips meeting at the slit, pinched at the roots
+		const top = cy - 12;
+		const face = cy + 6;
+		const foot = cy + 13;
+		const mid = tx(12.5);
+		const L0 = tx(11) - 6;
+		const R1 = tx(14) + 6;
+		const steel = (pts: Array<[number, number]>, fill: string) => {
+			ctx.beginPath();
+			pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+			ctx.closePath();
+			ctx.fillStyle = fill;
+			ctx.fill();
+			ctx.strokeStyle = '#0b0f0e';
+			ctx.lineWidth = 1.5;
+			ctx.stroke();
+		};
+		// the tracks in the side walls
+		ctx.fillStyle = '#060908';
+		ctx.fillRect(L0 - 1, top + 1, 8, foot - top - 1);
+		ctx.fillRect(R1 - 7, top + 1, 8, foot - top - 1);
+		// the breach: dark, flesh pushing through
+		ctx.fillStyle = '#0c0306';
+		ctx.fillRect(mid - 20, top - 3, 40, foot - top + 5);
+		blob(mid - 3, cy + 3, 9, 8);
+		blob(mid + 8, cy - 6, 5.5, 5);
+		blob(mid - 11, cy + 8, 5, 4);
+		blob(mid + 12, cy + 7, 4, 3.5);
 		for (const side of [-1, 1]) {
-			const ly = cy + side * (half * 0.5 + open * 0.35);
-			const ry = half * 0.56;
-			for (const [grow, col, ox, oy] of [
-				[1.3, '#1e080e', 0, 0],
-				[0, '#561a28', 0, 0],
-				[-2, '#6e2432', -0.6, -1],
-				[-4.5, '#86363c', -1, -1.8]
-			] as const) {
-				ctx.fillStyle = col;
+			const outer = side < 0 ? L0 : R1;
+			const hinge = mid + side * 30; // where the steel bends
+			const end = mid + side * 17; // the torn end, before it is bent
+			// the straight part: front face, top face, bevel, rivets
+			steel(
+				[
+					[outer, face],
+					[hinge, face],
+					[hinge, foot],
+					[outer, foot]
+				],
+				'#1d2422'
+			);
+			steel(
+				[
+					[outer, top],
+					[hinge, top],
+					[hinge, face],
+					[outer, face]
+				],
+				'#414c49'
+			);
+			ctx.strokeStyle = 'rgba(200, 222, 214, 0.3)';
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.moveTo(outer, top + 1.6);
+			ctx.lineTo(hinge, top + 1.6);
+			ctx.stroke();
+			ctx.fillStyle = 'rgba(150, 168, 160, 0.6)';
+			for (let i = 1; i <= 3; i++) {
+				const rx = outer + ((hinge - outer) * i) / 4;
+				for (const ry of [top + 4, face - 3]) {
+					ctx.beginPath();
+					ctx.arc(rx, ry, 1.1, 0, TAU);
+					ctx.fill();
+				}
+			}
+			// a worn hazard band by the bend
+			ctx.save();
+			ctx.beginPath();
+			ctx.rect(Math.min(outer, hinge), top, Math.abs(hinge - outer), face - top);
+			ctx.clip();
+			for (let i = 0; i < 4; i++) {
+				const x = hinge - side * (4 + i * 5);
+				ctx.fillStyle = i % 2 ? 'rgba(20, 18, 12, 0.5)' : 'rgba(176, 138, 52, 0.38)';
 				ctx.beginPath();
-				ctx.ellipse(mx + ox, ly + oy, rx + grow, ry + grow, 0, 0, TAU);
+				ctx.moveTo(x, top);
+				ctx.lineTo(x - side * 5, top);
+				ctx.lineTo(x - side * 5 - 5, face);
+				ctx.lineTo(x - 5, face);
 				ctx.fill();
 			}
-			// the folds running into the slit
-			ctx.strokeStyle = 'rgba(30, 8, 14, 0.7)';
-			ctx.lineWidth = 1.1;
-			for (let i = 1; i < 10; i++) {
-				const fx = x0 + ((x1 - x0) * i) / 10;
-				const k = 1 - ((fx - mx) / rx) ** 2;
-				ctx.beginPath();
-				ctx.moveTo(fx + (fx - mx) * 0.08, ly + side * ry * 0.85 * Math.sqrt(Math.max(0, k)));
-				ctx.quadraticCurveTo(fx + (fx - mx) * 0.05, ly, fx, ly - side * ry * 0.7);
-				ctx.stroke();
+			ctx.restore();
+			// the bent end: a plate turned up about the hinge, its underside lit, its edge torn
+			ctx.save();
+			ctx.translate(hinge, top);
+			ctx.rotate(side * 0.55);
+			const len = Math.abs(end - hinge);
+			const d = -side;
+			steel(
+				[
+					[0, 0],
+					[d * len * 0.55, -1],
+					[d * len * 0.75, 4],
+					[d * len, 1],
+					[d * len * 0.9, 9],
+					[d * len * 1.05, 14],
+					[d * len * 0.7, face - top],
+					[0, face - top]
+				],
+				'#5d6864'
+			);
+			const sg = ctx.createLinearGradient(0, 0, d * len, 0);
+			sg.addColorStop(0, 'rgba(70, 30, 18, 0)');
+			sg.addColorStop(1, 'rgba(70, 30, 18, 0.7)');
+			ctx.fillStyle = sg;
+			ctx.fillRect(Math.min(0, d * len), 0, len, face - top);
+			ctx.restore();
+			// petals of torn steel curling up from the breach
+			for (const [px, ln, w] of [
+				[end - side * 2, 13, 6],
+				[end + side * 4, 9, 4.5]
+			]) {
+				steel(
+					[
+						[px - w / 2, top + 3],
+						[px + side * 3, top - ln],
+						[px + w / 2, top + 3]
+					],
+					'#77827d'
+				);
 			}
-			ctx.fillStyle = 'rgba(255, 226, 192, 0.55)';
-			ctx.beginPath();
-			ctx.ellipse(mx - rx * 0.35, ly - ry * 0.45, 2.2, 0.9, -0.15, 0, TAU);
-			ctx.fill();
 		}
-		// the slit between them, lit from inside the lair, parting with the beat
-		ctx.beginPath();
-		ctx.moveTo(x0 + 6, cy);
-		ctx.quadraticCurveTo(mx, cy - open, x1 - 6, cy);
-		ctx.quadraticCurveTo(mx, cy + open, x0 + 6, cy);
-		ctx.closePath();
-		ctx.fillStyle = '#0c0306';
-		ctx.fill();
+		// claw gouges on the left leaf
+		ctx.strokeStyle = 'rgba(8, 10, 10, 0.85)';
+		ctx.lineWidth = 1.3;
+		for (let i = 0; i < 3; i++) {
+			ctx.beginPath();
+			ctx.moveTo(L0 + 12 + i * 3.4, top + 2);
+			ctx.lineTo(L0 + 19 + i * 3.4, face - 1);
+			ctx.stroke();
+		}
+		// tendrils gripping the torn ends
+		cord(mid - 4, cy + 2, mid - 14, top - 4, mid - 26, top + 2, 2.6);
+		cord(mid + 4, cy, mid + 14, top - 5, mid + 24, top + 3, 2.4);
+		ctx.restore();
+	}
+
+	/** Over the light: the cocoons' inner glow, swelling with the beat. */
+	drawLairGlow(ctx: Ctx, time: number): void {
+		const { tx, ty } = this.scene;
+		const sw = this.swell(time);
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';
-		const sg = ctx.createRadialGradient(mx, cy, 0, mx, cy, rx * 0.8);
-		sg.addColorStop(0, `rgba(255, 170, 96, ${0.5 + 0.35 * sw})`);
-		sg.addColorStop(1, 'rgba(255, 120, 60, 0)');
-		ctx.strokeStyle = sg;
-		ctx.lineWidth = 1.6 + open * 0.3;
-		ctx.beginPath();
-		ctx.moveTo(x0 + 10, cy);
-		ctx.lineTo(x1 - 10, cy);
-		ctx.stroke();
-		ctx.restore();
-		// the roots in both walls: knots of flesh
-		for (const side of [-1, 1]) {
-			const ax = side < 0 ? x0 : x1;
-			blob(ax, cy - 5, 5.5, 5);
-			blob(ax + side * -1, cy + 6, 4.5, 4.2);
+		for (const pod of HiveCView.PODS) {
+			const x = tx(pod.x);
+			const y = ty(pod.y);
+			const breathe = 0.5 + 0.5 * Math.sin(time * 1.4 + pod.ph);
+			const g = ctx.createRadialGradient(x, y, 0, x, y, pod.r * 0.9);
+			g.addColorStop(0, `rgba(255, 160, 90, ${0.1 + 0.05 * breathe + 0.1 * sw})`);
+			g.addColorStop(1, 'rgba(255, 120, 60, 0)');
+			ctx.fillStyle = g;
+			ctx.beginPath();
+			ctx.arc(x, y, pod.r * 0.9, 0, TAU);
+			ctx.fill();
 		}
 		ctx.restore();
 	}

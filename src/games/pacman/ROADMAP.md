@@ -173,10 +173,11 @@ last (see Later).
          with nodes, a heartbeat out of the lair, cysts on crests, lamps under film). Candidate C
          in the `station-b7` page (`?scene`, `hiveC.ts`): the veins reach every wall by 90%, the
          flesh trails them and covers all at 100% (the escape). The owner likes it; the beat
-         every 6 s and soft (it hurt the eyes); the lair's bent blast doors gave way to a gate of
-         the same flesh (a sphincter whose slit parts with the beat, `createB7Scene`'s
-         `lairDoors: false`), lips over the pit's rim, cords to the cocoons (the grate and the
-         cocoons kept). Next: the lamps under film, then into the game in place of `b7Veins`
+         every 6 s and soft (it hurt the eyes); the lair (the owner: no flesh lips for a gate):
+         massive blast doors torn apart from inside (a breach a tile wide, the ends bent outward,
+         petals of steel, flesh oozing through), no hazard lintel; cocoons of the hive (wine egg
+         sacs lit from inside, a Pretender curled in each); lips over the pit's rim, cords to the
+         cocoons; the grate kept (`createB7Scene`'s `lairDoors` / `lairCocoons: false`). Next: the lamps under film, then into the game in place of `b7Veins`
          (and a frame-time check of the heartbeat's layer).
       6. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
