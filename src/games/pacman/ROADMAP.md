@@ -155,10 +155,13 @@ last (see Later).
          screens (READY, pause, the menu's plates) are the station's steel, square and still (a
          riveted plate with hazard bands for READY).
          The owner (2026-11-26): a gliding or crawling body reads clumsy on the rails, worst on a
-         180; the season ghosts' grammar works (upright, feet, eyes that show the way). Candidates
-         from his mock-up `STATION_MIMIC.html` in the `station-b7` prototype, awaiting his pick: the
-         Pretender for B-7 (the mock-up's, the gold eye peeking on the heading side) and the spore
-         hermit (Claude's own); then into the game in place of the albino.
+         180; the season ghosts' grammar works (upright, feet, eyes that show the way). **The
+         Pretender is in the game** in place of the albino (`render/station/pretender`, the
+         `pretender` prototype's sheet, `DESIGN.md` §7a; the rage without a ring, the mask up and
+         the true face). Left, from his play: its readability at game scale; whether the lurker's
+         eye tell (two pale slits over the spore) becomes its gold slit eye; the phantom as the
+         Pretender almost clear. Then delete `albino`, `creatureMotion` (and its test), the
+         spore hermit and the station-b7 page's candidate keys.
       4. A fourth tactic if the three need company (the tripwire or the shadow).
       5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors

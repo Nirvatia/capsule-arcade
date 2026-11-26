@@ -3,18 +3,19 @@
 // effects (the tell's pulse, the rage's ring and hanging mask, the fright's tremble and sweat, the
 // flashing, the eyes), the mimicry frame by frame and looped into the level's own spore, the
 // squad's four colours and the game's scale. No station, no play.
-//   `node prototypes/pacman/build.mjs pretender`, open the file.  ?candy: the mock-up's colours
+//   `node prototypes/pacman/build.mjs pretender`, open the file. Drawn by the game's own
+//   `render/station/pretender` (in the game since 2026-11-26).
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
-import type { SquadKind } from '../../../src/games/pacman/render/station/albino';
-import { drawMimic, type MOpts, type MState } from '../station-b7/mimicLooks';
+import type { GhostKind as SquadKind } from '../../../src/games/pacman/logic/actors/GhostModel';
+import { drawPretender, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
 
-const q = new URLSearchParams(location.search);
+type MState = 'hunt' | 'tell' | 'rage' | 'fright' | 'flash' | 'mimic' | 'eyes';
+
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const scene = createB7Scene(GRID_STATION);
-const candy = q.has('candy');
 
 const KINDS: readonly SquadKind[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
 const DIRS: Record<string, readonly [number, number]> = {
@@ -59,7 +60,8 @@ function one(
 ): void {
 	const [lx, ly] = o.dir ?? [1, 0];
 	const kind = o.kind ?? 'BLINKY';
-	const opts: MOpts = {
+	const flash = st === 'flash';
+	const opts: PretenderOpts = {
 		lookX: lx,
 		lookY: ly,
 		faceX: o.face?.x ?? lx,
@@ -68,10 +70,11 @@ function one(
 		step: o.walk === false ? 0 : t * 6 + KINDS.indexOf(kind) * 0.8,
 		fold: o.fold ?? 0,
 		reveal: o.reveal,
-		candy,
+		flashing: flash,
+		white: flash && Math.sin(t * 2.2 * Math.PI * 2) > 0,
 		spore: sporeAt(S, t)
 	};
-	drawMimic(ctx, x, y, S, kind, 'pretender', st, opts);
+	drawPretender(ctx, x, y, S, kind, flash ? 'fright' : st, opts);
 }
 
 /** A heading that turns back every `period` s, its face eased at `rate` /s (12 is the game's feel). */
@@ -200,7 +203,7 @@ function frame(now: number): void {
 	ctx.fillStyle = '#e8e2d4';
 	ctx.font = '600 15px ui-sans-serif, system-ui, sans-serif';
 	ctx.textBaseline = 'middle';
-	ctx.fillText(`ПРИТВОРЩИК B-7${candy ? ' · цвета макета' : ''}`, 14, head / 2);
+	ctx.fillText('ПРИТВОРЩИК B-7', 14, head / 2);
 	const cols = 6;
 	const cw = vw / cols;
 	const ch = (vh - head) / ROWS.length;

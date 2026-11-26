@@ -80,7 +80,7 @@ render/
                    the hull and baked architecture as one screen layer per resize, the phase's
                    infestation one per phase change, the live props in stage space, the light
                    map of sprite lights with the flashlight, bloom by downscale, grain on High),
-                   b7Veins (the infestation in the bulkheads, the owner's pick), albino (the squad's creature, from Station_Mimics_2), creatureMotion (how it glides off the rails), squadMarks (the plays'
+                   b7Veins (the infestation in the bulkheads, the owner's pick), pretender (the squad's creature, the owner's STATION_MIMIC: the painter and its RailGait), albino + creatureMotion (the glass albino that glided, now only in the `station-b7` prototype; delete after the owner's play), squadMarks (the plays'
                    and the escape's marks). The older style B, kept for the prototypes until
                    the owner has played B-7:
                    StationBake (the scene baked once at a scale fitted

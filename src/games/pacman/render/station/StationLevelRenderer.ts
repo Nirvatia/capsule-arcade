@@ -10,17 +10,16 @@ import type { SharedLayers } from '../SharedLayers';
 import { B7World } from './b7/B7World';
 import { bakeVeins } from './b7/b7Veins';
 import type { B7Light } from './b7/B7World';
-import { drawAlbino } from './albino';
-import { CreatureMotion } from './creatureMotion';
-import type { AlbinoState } from './albino';
+import { RailGait, drawPretender, pretenderStateFor } from './pretender';
+import type { PretenderOpts, PretenderState } from './pretender';
 import { KIND_COLOR, drawBeam, drawDoor, drawEmitter, drawLane, drawShaft } from './squadMarks';
 
 const KINDS: readonly GhostKind[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
-const ANGLE: Readonly<Record<GhostDirection, number>> = {
-	RIGHT: 0,
-	DOWN: Math.PI / 2,
-	LEFT: Math.PI,
-	UP: -Math.PI / 2
+const DIR: Readonly<Record<GhostDirection, readonly [number, number]>> = {
+	RIGHT: [1, 0],
+	DOWN: [0, 1],
+	LEFT: [-1, 0],
+	UP: [0, -1]
 };
 
 /** The lure's cold light. */
@@ -45,8 +44,10 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 	private world: { grid: GridMatrix; world: B7World } | null = null;
 	private previewWorld: { grid: GridMatrix; world: B7World } | null = null;
 	private quality: RenderQuality = 'high';
-	/** How each creature is drawn moving (the squad by kind, the rush by id). */
-	private readonly motions = new Map<string, CreatureMotion>();
+	/** How each creature walks the rails (the squad by kind, the rush by id). */
+	private readonly gaits = new Map<string, RailGait>();
+	/** The power cell's time left (the fright's blink at its end). */
+	private powerTimer = 0;
 	/** Where each lurker's disguise is drawn (it glides a creep), and the frame's step, s. */
 	private readonly lying = new Map<GhostKind, { x: number; y: number }>();
 	private lastDt = 1 / 60;
@@ -64,6 +65,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 	render(frame: RenderFrame): GridLayout {
 		const { ctx, state, level, progress, time, dt } = frame;
 		this.lastDt = dt;
+		this.powerTimer = level.combat?.powerTimer ?? 0;
 		const world = this.worldFor(frame.season.grid);
 		world.resize(frame.width, frame.height, frame.pixelRatio);
 		const layout = world.layout;
@@ -131,14 +133,14 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 			run.rush.runners.forEach((rn) => {
 				const p = run.rush.position(rn);
 				const kind = KINDS[rn.id % KINDS.length];
-				const m = this.motion(`rush${rn.id}`);
-				m.update(dt, p.x, p.y, Math.atan2(rn.ny - rn.y, rn.nx - rn.x));
+				const gait = this.gait(`rush${rn.id}`);
+				const dx = Math.sign(rn.nx - rn.x);
+				const dy = dx ? 0 : Math.sign(rn.ny - rn.y);
+				const st: PretenderState = rn.stun > 0 ? 'fright' : 'rage';
+				gait.update(dt, p.x, p.y, dx || dy ? dx : gait.faceX, dy, st === 'rage');
 				ctx.save();
 				if (rn.stun > 0) ctx.globalAlpha = 0.55;
-				drawAlbino(ctx, sx(m.x), sy(m.y), S, kind, rn.stun > 0 ? 'frightened' : 'rage', time, {
-					angle: m.heading,
-					bodyTime: m.clock
-				});
+				drawPretender(ctx, sx(p.x), sy(p.y), S, kind, st, this.look(gait, dx, dy, time));
 				ctx.restore();
 			});
 		}
@@ -339,27 +341,22 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 	): void {
 		const squad = run.squad;
 		const hidden = squad.hidden(g.kind);
-		const m = this.motion(g.kind);
-		m.update(dt, g.position.x, g.position.y, g.facing ? ANGLE[g.facing] : null);
-		const p = { x: m.x, y: m.y };
-		const angle = m.heading;
-		const bodyTime = m.clock;
+		// drawn at its real point on the rails, like the season ghosts (a glide read clumsy)
+		const p = g.position;
+		const [dx, dy] = g.facing ? DIR[g.facing] : [0, 0];
+		const st = pretenderStateFor({ state: g.state, escaping, tell: squad.phase === 'tell' });
+		const gait = this.gait(g.kind);
+		gait.update(dt, p.x, p.y, dx || dy ? dx : gait.faceX, dy, st === 'rage');
 		const scene = this.world?.world.scene;
-		const spore = (
-			c: CanvasRenderingContext2D,
-			x: number,
-			y: number,
-			alpha: number,
-			scale: number
-		) => {
+		const spore = (c: CanvasRenderingContext2D, alpha: number, scale: number) => {
 			if (!scene) return;
 			c.save();
 			c.globalAlpha *= alpha;
-			c.translate(x, y);
 			c.scale(S / 34, S / 34);
 			scene.drawSporeAt(c, 0, 0, scale);
 			c.restore();
 		};
+		const look = { ...this.look(gait, dx, dy, time), spore };
 		if (hidden) {
 			if (hidden.as === 'vent') {
 				// it goes into the vent's grille: it shrinks and fades where it stands
@@ -369,55 +366,59 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 					ctx.globalAlpha = 1 - k;
 					ctx.translate(sx(p.x), sy(p.y));
 					ctx.scale(1 - 0.5 * k, 1 - 0.5 * k);
-					drawAlbino(ctx, 0, 0, S, g.kind, 'hunt', time, { angle, bodyTime });
+					drawPretender(ctx, 0, 0, S, g.kind, 'hunt', look);
 					ctx.restore();
 				}
 				return;
 			}
 			if (hidden.state === 'fading') {
-				// the fold into a spore (the mock-up's mimicry), slow on the run's first lurker
+				// the fold into a spore (the mask slips home, it sinks), slow on the run's first lurker
 				const k = Math.min(1, hidden.time / hidden.fade);
-				drawAlbino(ctx, sx(hidden.x + 0.5), sy(hidden.y + 0.5), S, g.kind, 'mimic', time, {
-					angle,
-					mimicK: k,
-					spore
+				drawPretender(ctx, sx(hidden.x + 0.5), sy(hidden.y + 0.5), S, g.kind, 'mimic', {
+					...look,
+					fold: k
 				});
 			}
 			return;
 		}
-		if (g.state === 'eyes') {
-			ctx.save();
-			ctx.globalAlpha = 0.35;
-			drawAlbino(ctx, sx(p.x), sy(p.y), S, g.kind, 'frightened', time, { angle, bodyTime });
-			ctx.restore();
-			return;
-		}
 		const role = squad.role(g.kind);
 		if (role === 'phantom' && !escaping) {
-			// the phantom: the glass body almost clear, a glint running over it
+			// the phantom: almost clear, guttering
 			ctx.save();
 			ctx.globalAlpha = 0.18 + 0.07 * Math.sin(time * 2.3);
-			drawAlbino(ctx, sx(p.x), sy(p.y), S, g.kind, 'hunt', time, { angle, bodyTime });
+			drawPretender(ctx, sx(p.x), sy(p.y), S, g.kind, 'hunt', look);
 			ctx.restore();
 			return;
 		}
-		let st: AlbinoState = 'hunt';
-		if (g.state === 'frightened') st = 'frightened';
-		else if (escaping || g.state === 'enraged') st = 'rage';
-		else if (squad.phase === 'tell') st = 'tell';
 		ctx.save();
 		if (squad.harmless(g.kind)) ctx.globalAlpha = 0.7;
-		drawAlbino(ctx, sx(p.x), sy(p.y), S, g.kind, st, time, { angle, spore, bodyTime });
+		drawPretender(ctx, sx(p.x), sy(p.y), S, g.kind, st, look);
 		ctx.restore();
 	}
 
-	private motion(key: string): CreatureMotion {
-		let m = this.motions.get(key);
+	private gait(key: string): RailGait {
+		let m = this.gaits.get(key);
 		if (!m) {
-			m = new CreatureMotion();
-			this.motions.set(key, m);
+			m = new RailGait();
+			this.gaits.set(key, m);
 		}
 		return m;
+	}
+
+	/** A Pretender's look this frame: its heading, its gait, the fright's blink at the end. */
+	private look(gait: RailGait, dx: number, dy: number, time: number): PretenderOpts {
+		const flashing = this.powerTimer > 0 && this.powerTimer < 2;
+		return {
+			lookX: dx,
+			lookY: dy,
+			faceX: gait.faceX,
+			faceY: gait.faceY,
+			time,
+			step: gait.step,
+			reveal: gait.reveal,
+			flashing,
+			white: flashing && Math.floor(this.powerTimer * 4) % 2 === 0
+		};
 	}
 
 	/** The pulse: a ring thrown out round him. */

@@ -363,9 +363,18 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   maze. Its phase follows the hatch: containment, the breakout from half the charge, the
   absorption in the escape; the light is the quarantine's, the alarm's (dark, red beacons) in
   the escape, with **a flashlight round the hero** (the owner) so the dark maze reads. The squad
-  are **glass albinos** (`Station_Mimics_2.html`, concept 02: milky blind eels with a dark heart
-  and a glowing nerve cord, tile-sized; hunt, tell (gold), frightened, rage, the fold into a
-  spore). A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
+  are **Pretenders** (the owner's `STATION_MIMIC.html`, its `smileMimic` refined for B-7,
+  2026-11-26; `render/station/pretender`): the season ghosts' grammar (upright, never turned, two
+  bean feet stepping with the distance, a lean, eyes that show the way; a gliding or crawling
+  body read clumsy on the rails, worst on a 180), drawn at their real point. A creature in the
+  squad's colour (a little cooler, a cold rim light) wears a strapped ivory mask (the spore's
+  ivory, button eyes that look nowhere, a stitched smile); the mask hangs back and slips away
+  from the heading, so a gold slit eye peeks on the heading's side; the tell slips it further
+  (the eye pulses, the smile widens); the rage pushes it up onto the head in a moment and shows
+  the true face (gold slit eyes, a chomping mouth of bone teeth, a coral throat; it throbs and
+  shakes, no ring); the fright is the classic blue with a sweat drop and the blink at the end;
+  eaten, its gold eyes run home; it folds into the level's spore for the disguise (the mask
+  home, the feet tucked, then the spore). A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
   its eyes opening for a moment every few seconds, a tremble when he comes within 3 tiles, the
   breathing out of step; the run's first lurkers teach (a slow fold of 1.5 s at least 5 steps
   along his way, every tell stronger, fading over three ambushes). The tells are the logic's
