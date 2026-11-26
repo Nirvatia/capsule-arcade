@@ -27,6 +27,9 @@ const TAU = Math.PI * 2;
 const veinReach = (inf: number, far: number) => (inf / 0.9) * (far + 1);
 const fleshReach = (inf: number, far: number) => inf * (far + 5) - 4;
 const BEAT = { period: 6, speed: 9, width: 1.2, dub: 0.3 } as const;
+/** The reveal's soft edge, tiles, and how fast a tile's alpha follows it, per second. */
+const SOFT = 2.4;
+const REVEAL_RATE = 1.6;
 
 /** The heartbeat's swell at `time` (0..1, lub-dub), for whatever beats with the hive (the lamps
  *  under its film); `delay` the wave's way out from the lair, tiles. */
@@ -418,11 +421,26 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 }
 
 /** The infestation in stage space: the layers revealed from the lair, the lair, the heartbeat. */
+/**
+ * The infestation in stage space. The reveal goes tile by tile (the owner felt the old way stall
+ * the frame while he ate: every step of its front masked two stage-sized layers into new
+ * canvases): each tile's share of the baked layers is copied into one standing canvas at its own
+ * alpha (soft over `SOFT` tiles from the front, eased in time), so a frame repaints only the few
+ * tiles on the front and nothing large is ever allocated again. The lair is baked once.
+ */
 export class B7Hive {
 	private readonly hive: HiveLayers;
 	/** The farthest wall from the lair, tiles. */
 	private far = 0;
-	private cache: { key: string; veins: HTMLCanvasElement; flesh: HTMLCanvasElement } | null = null;
+	/** The revealed infestation, the layers' size. */
+	private readonly acc: HTMLCanvasElement;
+	private readonly accG: Ctx;
+	/** The lair (doors, lips), baked once over its tiles. */
+	private readonly lair: HTMLCanvasElement;
+	/** Each tile's distance from the lair, and the veins' and the flesh's alpha shown on it. */
+	private readonly dist: Float32Array;
+	private readonly shownV: Float32Array;
+	private readonly shownF: Float32Array;
 	private readonly scratch: HTMLCanvasElement;
 	private readonly beat: HTMLCanvasElement;
 
@@ -433,63 +451,76 @@ export class B7Hive {
 		this.hive = bakeHive(scene, rows);
 		this.scratch = canvas(this.hive.glow.width, this.hive.glow.height);
 		this.beat = canvas(scene.COLS, scene.ROWS);
+		const n = scene.COLS * scene.ROWS;
+		this.dist = new Float32Array(n);
+		this.shownV = new Float32Array(n);
+		this.shownF = new Float32Array(n);
 		for (let y = 0; y < scene.ROWS; y += 1)
-			for (let x = 0; x < scene.COLS; x += 1)
-				if (rows[y]?.[x] === 'WL') {
-					// walls no way reaches (the outer hull) count as nothing
-					const d = scene.infectionDistance(x, y);
-					if (Number.isFinite(d)) this.far = Math.max(this.far, d);
-				}
-	}
-
-	/** A tile mask of the reveal at `reach`, soft at its edge. */
-	private mask(reach: number): HTMLCanvasElement {
-		const s = this.scene;
-		const m = canvas(s.COLS, s.ROWS);
-		const mg = ctx2d(m);
-		const img = mg.createImageData(s.COLS, s.ROWS);
-		for (let y = 0; y < s.ROWS; y += 1) {
-			for (let x = 0; x < s.COLS; x += 1) {
-				const a = Math.max(0, Math.min(1, (reach - s.infectionDistance(x, y)) / 1.2 + 0.5));
-				img.data[(y * s.COLS + x) * 4 + 3] = Math.round(a * 255);
+			for (let x = 0; x < scene.COLS; x += 1) {
+				const d = scene.infectionDistance(x, y);
+				this.dist[y * scene.COLS + x] = Number.isFinite(d) ? d : 1e9;
+				// walls no way reaches (the outer hull) count as nothing
+				if (rows[y]?.[x] === 'WL' && Number.isFinite(d)) this.far = Math.max(this.far, d);
 			}
-		}
-		mg.putImageData(img, 0, 0);
-		return m;
+		this.acc = canvas(this.hive.veins.width, this.hive.veins.height);
+		this.accG = ctx2d(this.acc);
+		const { tx, ty } = scene;
+		this.lair = canvas((tx(16) - tx(9)) * SCALE, (ty(16) - ty(9)) * SCALE);
+		const lg = ctx2d(this.lair);
+		lg.scale(SCALE, SCALE);
+		lg.translate(-tx(9), -ty(9));
+		this.drawLair(lg);
 	}
 
-	private masked(layer: HTMLCanvasElement, reach: number): HTMLCanvasElement {
+	/** The reveal at this infection, eased over `dt` (a jump, as on a new level, eases in too). */
+	update(infection: number, dt: number): void {
 		const s = this.scene;
-		const out = canvas(layer.width, layer.height);
-		const g = ctx2d(out);
-		g.drawImage(layer, 0, 0);
-		g.globalCompositeOperation = 'destination-in';
-		g.imageSmoothingEnabled = true;
-		const k = layer.width / s.STAGE_W;
-		g.drawImage(
-			this.mask(reach),
-			s.MAZE_X * k,
-			s.MAZE_Y * k,
-			s.COLS * s.TILE * k,
-			s.ROWS * s.TILE * k
-		);
-		return out;
+		const vr = veinReach(infection, this.far);
+		const fr = fleshReach(infection, this.far);
+		const step = Math.max(0, dt) * REVEAL_RATE;
+		const q = (a: number) => Math.round(a * 24);
+		for (let i = 0; i < this.dist.length; i += 1) {
+			const d = this.dist[i];
+			const tv = Math.max(0, Math.min(1, (vr - d) / SOFT + 0.5));
+			const tf = Math.max(0, Math.min(1, (fr - d) / SOFT + 0.5));
+			const v0 = this.shownV[i];
+			const f0 = this.shownF[i];
+			const v1 = v0 + Math.max(-step, Math.min(step, tv - v0));
+			const f1 = f0 + Math.max(-step, Math.min(step, tf - f0));
+			this.shownV[i] = v1;
+			this.shownF[i] = f1;
+			if (q(v1) !== q(v0) || q(f1) !== q(f0)) this.paintTile(i % s.COLS, Math.floor(i / s.COLS));
+		}
 	}
 
-	/** The flesh, then the veins over it, as far as the infection has reached (stage space). */
-	private draw(ctx: Ctx, infection: number): void {
+	/** One tile's share of the layers, at its alphas, into the standing canvas. */
+	private paintTile(x: number, y: number): void {
 		const s = this.scene;
-		const key = this.key(infection);
-		const [vr, fr] = key.split('|').map(Number);
-		if (!this.cache || this.cache.key !== key) {
-			this.cache = {
-				key,
-				veins: this.masked(this.hive.veins, vr),
-				flesh: this.masked(this.hive.flesh, fr)
-			};
+		const i = y * s.COLS + x;
+		const x0 = Math.floor(s.tx(x) * SCALE);
+		const y0 = Math.floor(s.ty(y) * SCALE);
+		const w = Math.floor(s.tx(x + 1) * SCALE) - x0;
+		const h = Math.floor(s.ty(y + 1) * SCALE) - y0;
+		const g = this.accG;
+		g.clearRect(x0, y0, w, h);
+		const f = Math.round(this.shownF[i] * 24) / 24;
+		const v = Math.round(this.shownV[i] * 24) / 24;
+		if (f > 0) {
+			g.globalAlpha = f;
+			g.drawImage(this.hive.flesh, x0, y0, w, h, x0, y0, w, h);
 		}
-		ctx.drawImage(this.cache.flesh, 0, 0, s.STAGE_W, s.STAGE_H);
-		ctx.drawImage(this.cache.veins, 0, 0, s.STAGE_W, s.STAGE_H);
+		if (v > 0) {
+			g.globalAlpha = v;
+			g.drawImage(this.hive.veins, x0, y0, w, h, x0, y0, w, h);
+		}
+		g.globalAlpha = 1;
+	}
+
+	/** The revealed flesh and veins, then the lair (stage space, under the light). */
+	draw(ctx: Ctx): void {
+		const s = this.scene;
+		ctx.drawImage(this.acc, 0, 0, s.STAGE_W, s.STAGE_H);
+		ctx.drawImage(this.lair, s.tx(9), s.ty(9), s.tx(16) - s.tx(9), s.ty(16) - s.ty(9));
 	}
 
 	/** The heartbeat over the light: a lub-dub out of the lair along the revealed veins. */
@@ -531,19 +562,6 @@ export class B7Hive {
 		ctx.globalAlpha = 0.12;
 		ctx.drawImage(this.scratch, -3, -3, s.STAGE_W + 6, s.STAGE_H + 6);
 		ctx.restore();
-	}
-
-	/** The reveal's key at this infection: a new one wants the layer painted again. */
-	key(infection: number): string {
-		const vr = Math.round(veinReach(infection, this.far) * 4) / 4;
-		const fr = Math.round(fleshReach(infection, this.far) * 4) / 4;
-		return `${vr}|${fr}`;
-	}
-
-	/** The flesh, the veins and the lair (stage space, under the light). */
-	paint(ctx: Ctx, infection: number): void {
-		this.draw(ctx, infection);
-		this.drawLair(ctx);
 	}
 
 	/** The lair: its torn blast doors and lips over the pit's rim (stage space). */

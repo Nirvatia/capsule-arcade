@@ -1,8 +1,8 @@
 // The station B-7 on screen (the owner's mock-up, `b7Scene`), composed for the game's frame
 // budget: the hull and the baked architecture are one screen-sized layer, redrawn only on a
-// resize; the infestation of the phase is a second one, redrawn only when the phase changes; the
+// resize; the infestation is a standing canvas the hive repaints a few tiles at a time; the
 // live props draw over them in stage space; the infection (0..1) reveals the infestation from
-// the lair out (`B7Hive`: veins, then flesh, the torn lair doors) and sinks the light, the
+// the lair out (`B7Hive`: veins, then flesh, tile by tile, the torn lair doors) and sinks the light, the
 // hive's heartbeat over the light (not on Low); the light map is a small canvas of sprite lights
 // (no gradient per frame), its bloom a downscale (no canvas filter, which Safari lacks); the
 // grain and the bloom are High only, the food's emissive lift Medium and up.
@@ -51,7 +51,6 @@ export class B7World {
 	private offX = 0;
 	private offY = 0;
 	private staticView: HTMLCanvasElement | null = null;
-	private hiveView: { key: string; canvas: HTMLCanvasElement } | null = null;
 	private lightMap: HTMLCanvasElement | null = null;
 	private bloom: HTMLCanvasElement | null = null;
 
@@ -90,7 +89,6 @@ export class B7World {
 		this.offX = board.x - MAZE_X * board.scale;
 		this.offY = board.y - MAZE_Y * board.scale;
 		this.staticView = null;
-		this.hiveView = null;
 		const lw = Math.max(64, Math.ceil(vw * LIGHT_SCALE));
 		const lh = Math.max(64, Math.ceil(vh * LIGHT_SCALE));
 		this.lightMap = canvas(lw, lh);
@@ -145,13 +143,7 @@ export class B7World {
 				g.drawImage(this.base, 0, 0, s.STAGE_W, s.STAGE_H);
 			});
 		}
-		const key = this.hive.key(infection);
-		if (!this.hiveView || this.hiveView.key !== key) {
-			this.hiveView = {
-				key,
-				canvas: this.screenLayer((g) => this.hive.paint(g, infection))
-			};
-		}
+		this.hive.update(infection, dt);
 		ctx.drawImage(this.staticView, 0, 0, this.vw, this.vh);
 		this.enter(ctx);
 		s.drawLiveDuctTurbines(ctx, time, phase);
@@ -159,9 +151,7 @@ export class B7World {
 		s.drawLiveViewportAndWindowGlint(ctx, time);
 		s.drawLiveObsConsoleScreens(ctx, time, phase);
 		s.drawLiveRoofFans(ctx, time, phase);
-		ctx.restore();
-		ctx.drawImage(this.hiveView.canvas, 0, 0, this.vw, this.vh);
-		this.enter(ctx);
+		this.hive.draw(ctx);
 		if (showProps) s.drawEscapeProps(ctx, time, phase);
 		s.drawLairCocoons(ctx, time, phase);
 		s.drawBioSpores(ctx, time, showProps);

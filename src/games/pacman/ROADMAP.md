@@ -178,7 +178,10 @@ last (see Later).
          to the cocoons; the grate and the old cocoons kept (the owner; `createB7Scene`'s
          `lairDoors: false`). In the game since (`b7Hive`), with the lamps under the film (they shine
          on warm, beating with the hive) and the Pretenders larger with a soft glow (the hero's
-         too). The world with the hive bakes in ~0.7 s in headless Chromium; left: the
+         too). The world with the hive bakes in ~0.7 s in headless Chromium. The reveal
+         stalled the frame as he ate (the owner, a 5070 Ti; each step of its front masked two
+         stage-sized layers into new canvases, ~+85 ms in headless Chromium, 141 times a level);
+         now it repaints the front's tiles into one standing canvas (no stall). Left: the
          heartbeat's cost on a weak GPU.
       6. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
