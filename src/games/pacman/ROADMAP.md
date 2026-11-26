@@ -168,6 +168,13 @@ last (see Later).
          the spore cloud (an amber cloud out of a vent cutting a part of the station, slowing him
          inside; the owner likes it). Then a fourth tactic if the three need company (the
          tripwire or the shadow).
+      5. **The total takeover** (the owner, 2026-11-26: the veins lack the feeling of alien
+         organics seizing the station; agreed: flesh over the plates by phase, volumetric veins
+         with nodes, a heartbeat out of the lair, cysts on crests, lamps under film). Candidate C
+         in the `station-b7` page (`?scene`, `hiveC.ts`): the veins reach every wall by 90%, the
+         flesh trails them and covers all at 100% (the escape). Awaits the owner's look; then the
+         lamps under film, then into the game in place of `b7Veins` (and a frame-time check of
+         the heartbeat's layer).
       5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance
