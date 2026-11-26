@@ -21,9 +21,13 @@
 				? STATION_THEME
 				: SEASON_THEMES[$hudFrame && isSeasonKey($hudFrame.world) ? $hudFrame.world : 'autumn']
 	);
+	// the secret level is our arcade: its sound switch is a white pixel speaker, not the wooden knob
+	const retro = $derived($hudFrame?.world === 'secret');
 	const layout = $derived(hudLayoutFor(innerWidth, innerHeight));
 	// stacked, the knob stands in the bottom band's row with the dial and the pause knob
-	const size = $derived(Math.round((layout.mode === 'stack' ? 46 : 54) * layout.scale));
+	const size = $derived(
+		retro ? 36 : Math.round((layout.mode === 'stack' ? 46 : 54) * layout.scale)
+	);
 	const gap = $derived(Math.round(14 * layout.scale));
 	const percent = $derived(Math.round($volume * 100));
 
@@ -41,6 +45,7 @@
 <div
 	class="sound"
 	class:roomy={layout.mode === 'side'}
+	class:retro
 	style:left="max({gap}px, env(safe-area-inset-left, 0px))"
 	style:bottom="max({gap}px, env(safe-area-inset-bottom, 0px))"
 	style:height="{size}px"
@@ -65,37 +70,48 @@
 		onmousedown={(event) => event.preventDefault()}
 		onclick={() => muted.toggle()}
 	>
-		<svg viewBox="-30 -30 60 60" aria-hidden="true">
-			<ellipse cx="3" cy="25" rx="22" ry="5" fill="#000" opacity="0.3" />
-			<circle r="24" fill={theme.mid} stroke={theme.ink} stroke-width="4" />
-			<path
-				d="M-18 -9 A21 21 0 0 1 9 -19"
-				fill="none"
-				stroke={theme.light}
-				stroke-width="4"
-				stroke-linecap="round"
-				opacity="0.85"
-			/>
-			<path
-				d="M-12 -14 A24 24 0 0 0 0 20"
-				fill="none"
-				stroke={theme.shade}
-				stroke-width="5"
-				opacity="0.5"
-			/>
-			<g stroke={theme.ink} stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
-				<path d="M-13 -5 H-7 L1 -12 V12 L-7 5 H-13Z" fill={theme.num} />
+		{#if retro}
+			<svg viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true">
+				<path fill="#fff" d="M1 4h3v4H1z M4 3h1v6H4z M5 2h1v8H5z M6 1h1v10H6z" />
 				{#if $muted}
-					<path d="M7 -6 L16 6 M16 -6 L7 6" fill="none" stroke={theme.ink} stroke-width="6" />
-					<path d="M7 -6 L16 6 M16 -6 L7 6" fill="none" stroke="#ff5a4a" stroke-width="3" />
+					<path fill="#f33" d="M8 4h1v1H8z M11 4h1v1h-1z M9 5h2v2H9z M8 7h1v1H8z M11 7h1v1h-1z" />
 				{:else}
-					<path d="M7 -6 A9 9 0 0 1 7 6" fill="none" stroke={theme.ink} stroke-width="6" />
-					<path d="M7 -6 A9 9 0 0 1 7 6" fill="none" stroke={theme.num} stroke-width="3" />
-					<path d="M12 -11 A15 15 0 0 1 12 11" fill="none" stroke={theme.ink} stroke-width="6" />
-					<path d="M12 -11 A15 15 0 0 1 12 11" fill="none" stroke={theme.num} stroke-width="3" />
+					<path fill="#fff" d="M8 4h1v4H8z M10 2h1v8h-1z" />
 				{/if}
-			</g>
-		</svg>
+			</svg>
+		{:else}
+			<svg viewBox="-30 -30 60 60" aria-hidden="true">
+				<ellipse cx="3" cy="25" rx="22" ry="5" fill="#000" opacity="0.3" />
+				<circle r="24" fill={theme.mid} stroke={theme.ink} stroke-width="4" />
+				<path
+					d="M-18 -9 A21 21 0 0 1 9 -19"
+					fill="none"
+					stroke={theme.light}
+					stroke-width="4"
+					stroke-linecap="round"
+					opacity="0.85"
+				/>
+				<path
+					d="M-12 -14 A24 24 0 0 0 0 20"
+					fill="none"
+					stroke={theme.shade}
+					stroke-width="5"
+					opacity="0.5"
+				/>
+				<g stroke={theme.ink} stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
+					<path d="M-13 -5 H-7 L1 -12 V12 L-7 5 H-13Z" fill={theme.num} />
+					{#if $muted}
+						<path d="M7 -6 L16 6 M16 -6 L7 6" fill="none" stroke={theme.ink} stroke-width="6" />
+						<path d="M7 -6 L16 6 M16 -6 L7 6" fill="none" stroke="#ff5a4a" stroke-width="3" />
+					{:else}
+						<path d="M7 -6 A9 9 0 0 1 7 6" fill="none" stroke={theme.ink} stroke-width="6" />
+						<path d="M7 -6 A9 9 0 0 1 7 6" fill="none" stroke={theme.num} stroke-width="3" />
+						<path d="M12 -11 A15 15 0 0 1 12 11" fill="none" stroke={theme.ink} stroke-width="6" />
+						<path d="M12 -11 A15 15 0 0 1 12 11" fill="none" stroke={theme.num} stroke-width="3" />
+					{/if}
+				</g>
+			</svg>
+		{/if}
 	</button>
 	<input
 		class="slider"
@@ -205,6 +221,47 @@
 	}
 	.mute.off:hover svg {
 		filter: saturate(0.7) brightness(1.1);
+	}
+	/* the arcade's switch: square pixels, no wood, no easing; the volume a blocky white bar */
+	.retro .mute svg {
+		transition: none;
+		image-rendering: pixelated;
+	}
+	.retro .mute:hover svg {
+		transform: none;
+		filter: none;
+		opacity: 0.8;
+	}
+	.retro .mute.off svg,
+	.retro .mute.off:hover svg {
+		filter: none;
+	}
+	.retro .slider::-webkit-slider-runnable-track {
+		height: 6px;
+		border: 0;
+		border-radius: 0;
+		background: linear-gradient(90deg, #fff var(--p), #333 var(--p));
+	}
+	.retro .slider::-moz-range-track {
+		height: 6px;
+		border: 0;
+		border-radius: 0;
+		background: linear-gradient(90deg, #fff var(--p), #333 var(--p));
+	}
+	.retro .slider::-webkit-slider-thumb {
+		width: 10px;
+		height: 14px;
+		margin-top: -4px;
+		border: 0;
+		border-radius: 0;
+		background: #fff;
+	}
+	.retro .slider::-moz-range-thumb {
+		width: 10px;
+		height: 14px;
+		border: 0;
+		border-radius: 0;
+		background: #fff;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.mute svg,

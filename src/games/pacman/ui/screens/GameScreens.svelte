@@ -57,7 +57,7 @@
 		<div class="veil"></div>
 		<div class="card wide">
 			<h1>{snap.profile === 'ms-pacman' ? 'MS. PAC-MAN' : 'PAC-MAN'}</h1>
-			<div class="modes">
+			<div class="modes" class:hidden={arcade}>
 				<button
 					type="button"
 					tabindex={-1}
@@ -174,6 +174,9 @@
 	h2.over {
 		color: #ff4d4d;
 	}
+	.modes.hidden {
+		display: none;
+	}
 	.modes {
 		display: flex;
 		gap: 8px;
@@ -289,6 +292,7 @@
 	}
 	/* the original game's titles: yellow READY!, red GAME OVER, blocky letters */
 	.arcade .ready .title,
+	.arcade h1,
 	.arcade h2 {
 		font-family: 'Press Start 2P', 'Courier New', monospace;
 		font-weight: 700;
@@ -299,6 +303,89 @@
 	}
 	.arcade h2.over {
 		color: #ff0000;
+	}
+	/* the arcade's own menu: black, a square white frame, blocky letters, a > marks the choice */
+	.arcade {
+		font-family: 'Press Start 2P', 'Courier New', monospace;
+		text-transform: uppercase;
+		image-rendering: pixelated;
+	}
+	.arcade .veil {
+		background: rgba(0, 0, 0, 0.78);
+	}
+	.arcade .card {
+		background: #000;
+		border: 0;
+		border-radius: 0;
+		box-shadow:
+			0 0 0 4px #000,
+			0 0 0 8px #fff,
+			0 0 0 12px #000;
+		backdrop-filter: none;
+		gap: 22px;
+		padding: 28px 32px;
+		min-width: 300px;
+	}
+	.arcade .buttons {
+		gap: 14px;
+	}
+	.arcade button {
+		border: 0;
+		border-radius: 0;
+		background: none;
+		color: #fff;
+		font: inherit;
+		font-size: 12px;
+		letter-spacing: 1px;
+		text-align: left;
+		padding: 4px 4px 4px 22px;
+		position: relative;
+		transition: none;
+	}
+	.arcade button.primary {
+		background: none;
+		color: #ffff00;
+	}
+	.arcade button.ghost {
+		font-size: 10px;
+		color: #8a8a8a;
+	}
+	.arcade button:hover,
+	.arcade button.on {
+		background: none;
+		color: #ffff00;
+		filter: none;
+	}
+	.arcade button:hover::before,
+	.arcade button.primary::before {
+		content: '\25B6';
+		position: absolute;
+		left: 0;
+		font-size: 10px;
+		line-height: 20px;
+	}
+	.arcade .stat {
+		font-size: 10px;
+		color: #fff;
+	}
+	.arcade .stat b {
+		font-size: 12px;
+		margin-left: 10px;
+		color: #fff;
+	}
+	.arcade .record {
+		border-radius: 0;
+		background: none;
+		color: #ffff00;
+		animation: blink 0.53s steps(1) infinite;
+	}
+	.arcade .ready .where {
+		display: none;
+	}
+	@keyframes blink {
+		50% {
+			opacity: 0;
+		}
 	}
 	@keyframes pop {
 		to {
