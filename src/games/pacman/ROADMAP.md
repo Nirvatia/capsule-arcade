@@ -192,7 +192,20 @@ last (see Later).
          stage-sized layers into new canvases, ~+85 ms in headless Chromium, 141 times a level);
          now it repaints the front's tiles into one standing canvas (no stall). Left: the
          heartbeat's cost on a weak GPU.
-      6. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
+      6. **A new look for the infestation and the squad** (the owner, 2026-11-26: the red flesh
+         does not fit the station's palette and echoes the hell, the walls under it read heavy;
+         the mimics lack the season critters' expressive details; the rage, the acid overheat,
+         stays). Direction A, the leak: the infestation is the murk of the specimen tanks behind
+         the maze seeping out, low (pools along the walls' feet and in the corners, threads on
+         the seams, bubbles, drips, a haze), the walls' tops and the corridors' middles clean;
+         candidate `murk.ts` on the `station-b7` page (the scene's `setFilm('murk')` greens the
+         lamps, `B7World.showHive(false)` hides the hive), awaiting his look. The squad: three
+         rounds of candidates (`looks.ts`); his candidate is round three's **film** (a dark
+         specimen with limbs in a thin film of murk, a smear trailing, eyes in its kind's colour;
+         the creepiest and most alien, but it reads poorly at game scale). Rejected: a cartoon face
+         (a meme), toy colours (Among Us), a single eye (a cyclops), a black silhouette (cyberpunk),
+         a jar (unreadable), feet (they rock).
+      7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance
          check of the lit station.

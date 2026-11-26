@@ -290,6 +290,12 @@ export function createB7Scene(
 	const setInfection = (k: number) => {
 		infection = k;
 	};
+	/** What grows over the lamps: the hive's flesh (warm, its veins' shadows, beating) or a film
+	 *  of murk (green, still; the `station-b7` page's leak candidate). */
+	let film: 'flesh' | 'murk' = 'flesh';
+	const setFilm = (kind: 'flesh' | 'murk') => {
+		film = kind;
+	};
 	const lerp3 = (a: readonly number[], b: readonly number[], k: number) =>
 		`rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(', ')})`;
 	/** Each lamp's point on the infection where the hive's film grows over it. */
@@ -3653,21 +3659,26 @@ export function createB7Scene(
 				// shadows of its veins on the floor (the owner: lamps under film, not darkness)
 				const fail = lampFails(i);
 				const g = Math.max(0, Math.min(1, (infection - fail + 0.14) / 0.22));
-				const film = g * g * (3 - 2 * g);
+				const filmK = g * g * (3 - 2 * g);
 				const base = (mode === 'alert' ? 0.32 : 0.68) - 0.06 * infection;
 				const uneven = 0.28 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.15 + l.ph));
-				const growing = film > 0 && film < 1 ? uneven + (1 - uneven) * Math.abs(film - 0.5) * 2 : 1;
-				const beat = heartbeat(time, infectionDistance(Math.floor(l.x), Math.floor(l.y)));
-				const power2 = base * (1 - 0.35 * film) * growing * (1 + 0.4 * film * beat);
+				const growing =
+					filmK > 0 && filmK < 1 ? uneven + (1 - uneven) * Math.abs(filmK - 0.5) * 2 : 1;
+				const beat =
+					film === 'flesh'
+						? heartbeat(time, infectionDistance(Math.floor(l.x), Math.floor(l.y)))
+						: 0;
+				const power2 = base * (1 - 0.35 * filmK) * growing * (1 + 0.4 * filmK * beat);
 				if (power2 > 0.01) {
-					const rgb = [196, 222, 216].map((c, k) => Math.round(c + ([255, 132, 92][k] - c) * film));
+					const tint = film === 'flesh' ? [255, 132, 92] : [140, 226, 160];
+					const rgb = [196, 222, 216].map((c, k) => Math.round(c + (tint[k] - c) * filmK));
 					radialLight(lg, toX(tx(l.x)), toY(ty(l.y)), R(TILE * 4.5), rgb.join(', '), 0.56 * power2);
 				}
-				if (film > 0.3) {
+				if (film === 'flesh' && filmK > 0.3) {
 					// the veins of the film, their shadows thrown on the floor
 					lg.save();
 					lg.globalCompositeOperation = 'source-over';
-					lg.strokeStyle = `rgba(52, 16, 22, ${0.32 * film})`;
+					lg.strokeStyle = `rgba(52, 16, 22, ${0.32 * filmK})`;
 					lg.lineWidth = Math.max(1, R(3.2));
 					lg.lineCap = 'round';
 					const lx = toX(tx(l.x));
@@ -3915,6 +3926,7 @@ export function createB7Scene(
 		radialLight,
 		setExtraLights,
 		setInfection,
+		setFilm,
 		setCellPalette,
 		infectionDistance
 	};

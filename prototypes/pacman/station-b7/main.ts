@@ -2,7 +2,7 @@
 // takeover, the lamps under its film, the heartbeat) with the game's quarantine ring, its lure
 // (the cyan flare) and its Pretenders (the rage, the acid overheat) on the real maze, beside the
 // candidates of `looks.ts` for the squad's calm look (the tanks' specimen in a drop, a ghost, a
-// film of murk). Everything is switched by the buttons on top; a panel shows them large.
+// film of murk) and of `murk.ts` for the infestation (the leak, in place of the hive). Everything is switched by the buttons on top; a panel shows them large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
@@ -11,12 +11,14 @@ import { drawPretender, RailGait, type PretenderOpts } from '../../../src/games/
 import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
 import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
 import { drawCandidate, type CandState, type Look } from './looks';
+import { createMurk } from './murk';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const bar = document.getElementById('bar') as HTMLDivElement;
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const world = new B7World(GRID_STATION);
+const murk = createMurk(world.scene, GRID_STATION);
 world.setQuality('medium');
 const grid = GRID_STATION;
 const H = grid.length;
@@ -31,10 +33,11 @@ type Pick = 'now' | 'off';
 type Mim = Look | 'now' | 'off';
 type Lure = 'on' | 'off';
 const st = {
-	inf: 0.35,
+	inf: 0.65,
+	style: 'murk' as 'hive' | 'murk',
 	alarm: false,
 	ring: 'off' as RingMode,
-	mimic: 'a' as Mim,
+	mimic: 'c' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
 	big: true
@@ -47,6 +50,8 @@ const NOTES: Record<string, string> = {
 	'mimic-b': 'б «Призрак»: силуэт призрака из мути, волнистый капающий подол, образец внутри',
 	'mimic-c': 'в «Плёнка»: тёмный образец в тонкой плёнке мути, за ним тянется мутный след',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
+	'style-murk': 'Заражение «Утечка»: муть из колб у подножия стен, в углах и по стыкам, пузыри, капли, туман; стены и середина коридоров чистые',
+	'style-hive': 'Заражение как в игре: улей',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'
 };
 
@@ -126,6 +131,14 @@ const GROUPS: Group[] = [
 		]
 	},
 	{
+		label: 'Стиль',
+		key: 'style',
+		items: [
+			['Утечка', 'murk'],
+			['Как в игре', 'hive']
+		]
+	},
+	{
 		label: 'Заражение',
 		key: 'inf',
 		items: [
@@ -169,6 +182,7 @@ function render(): void {
 		bar.append(row);
 	}
 	const lines = [
+		NOTES[`style-${st.style}`],
 		st.ring === 'cycle' ? NOTES['ring-cycle'] : '',
 		st.mimic !== 'off' ? NOTES[`mimic-${st.mimic}`] : '',
 		st.rage !== 'off' ? NOTES[`rage-${st.rage}`] : '',
@@ -466,8 +480,20 @@ function frame(now: number): void {
 		lights.push({ x: sc.MAZE_X + (lx - 2.5) * 34, y: sc.MAZE_Y + (ly + 0.5) * 34, r: 34 * 3.8, rgb: '236, 242, 230', alpha: 0.95 });
 	}
 	sc.setExtraLights(lights);
+	world.showHive(st.style === 'hive');
+	sc.setFilm(st.style === 'hive' ? 'flesh' : 'murk');
 	world.drawScene(ctx, t, dt, st.inf, true);
+	if (st.style === 'murk') {
+		world.enter(ctx);
+		murk.draw(ctx, st.inf);
+		ctx.restore();
+	}
 	world.drawLight(ctx, t, st.inf, st.alarm ? 'alert' : 'quarantine', true);
+	if (st.style === 'murk') {
+		world.enter(ctx);
+		murk.drawGlow(ctx, st.inf, t);
+		ctx.restore();
+	}
 	const L = world.layout;
 	const S = L.tileSize;
 	const ph = ringPhase(t);
