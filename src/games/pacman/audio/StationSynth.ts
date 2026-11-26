@@ -1,8 +1,9 @@
 /**
  * The station's sound effects (DESIGN.md §7a, OST.md), synthesised with WebAudio, placeholders
  * until real samples: a sting for each play's tell (the fence's rising hum, the ambush's wet
- * clicks, the vent's hiss), the lurker's fold and its grab, a hit, the power cell's plasma, the
- * hatch charged, the alarm, the lure's sonar ping, the way out. The AudioContext is created on the
+ * clicks, the vent's hiss), the lurker's fold and its grab, a hit, the power cell's charge and
+ * crack, the hatch charged, the alarm (a klaxon over a falling bass), the lure's sonar ping, the
+ * way out, and the food: a soft wet pop on two pitches by turns (the station's own chomp). The AudioContext is created on the
  * first sound, after the player has pressed a key.
  */
 export type StationSound =
@@ -16,7 +17,8 @@ export type StationSound =
 	| 'armed'
 	| 'alarm'
 	| 'lure'
-	| 'out';
+	| 'out'
+	| 'eat';
 
 export class StationSynth {
 	private ac: AudioContext | null = null;
@@ -25,6 +27,8 @@ export class StationSynth {
 	private muted = false;
 	private volume = 1;
 	private readonly available = typeof window !== 'undefined' && 'AudioContext' in window;
+	/** The food's two pitches, by turns. */
+	private eatTurn = false;
 
 	play(sound: StationSound): void {
 		const ac = this.context();
@@ -62,9 +66,11 @@ export class StationSynth {
 				this.noise(t, 0.25, 'lowpass', 2200, 400, 0.3);
 				break;
 			case 'power':
-				// plasma: a whoom up and a shimmer
-				this.tone('sine', 140, 620, t, 0.5, 0.2);
-				this.noise(t, 0.6, 'bandpass', 3000, 6000, 0.08);
+				// the cell: an electric charge whining up, a crack, a low thump under it
+				this.tone('sawtooth', 180, 1400, t, 0.32, 0.07, 3200);
+				this.tone('sine', 360, 2200, t, 0.32, 0.06);
+				this.noise(t + 0.3, 0.18, 'highpass', 2500, 7000, 0.22);
+				this.tone('sine', 110, 40, t + 0.3, 0.4, 0.4);
 				break;
 			case 'armed':
 				[0, 0.14, 0.28].forEach((d, i) =>
@@ -72,15 +78,27 @@ export class StationSynth {
 				);
 				break;
 			case 'alarm':
-				[0, 0.5, 1].forEach((d, i) =>
-					this.tone('square', i % 2 ? 880 : 660, i % 2 ? 880 : 660, t + d, 0.42, 0.06, 1800)
-				);
+				// the escape: a klaxon twice over a bass falling away under it
+				[0, 0.55].forEach((d) => {
+					this.tone('sawtooth', 420, 380, t + d, 0.5, 0.09, 1600);
+					this.tone('sawtooth', 560, 510, t + d, 0.5, 0.06, 1600);
+				});
+				this.tone('sine', 130, 34, t, 1.2, 0.45);
+				this.noise(t, 0.9, 'lowpass', 1200, 150, 0.12);
 				break;
 			case 'lure':
 				// a sonar ping and its echo
 				this.tone('sine', 1250, 1150, t, 0.9, 0.18);
 				this.tone('sine', 1250, 1150, t + 0.32, 0.7, 0.06);
 				break;
+			case 'eat': {
+				// a soft wet pop: a short falling blip and a breath of noise, two pitches by turns
+				this.eatTurn = !this.eatTurn;
+				const f = this.eatTurn ? 520 : 400;
+				this.tone('sine', f, f * 0.55, t, 0.09, 0.16);
+				this.noise(t, 0.05, 'bandpass', 1800, 900, 0.05);
+				break;
+			}
 			case 'out':
 				this.noise(t, 0.8, 'highpass', 600, 2400, 0.12);
 				[392, 494, 587].forEach((f) => this.tone('triangle', f, f, t + 0.2, 1.4, 0.08));

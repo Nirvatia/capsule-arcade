@@ -232,6 +232,15 @@ export class PacmanAudioPlayer {
 			this.play('start.wav', 0.8);
 			return;
 		}
+		if (cue === 'dot' && this.station()) {
+			// the station's own chomp
+			this.stationSynth.play('eat');
+			return;
+		}
+		if (cue === 'energizer' && this.station()) {
+			// the station run plays the cell's own sound
+			return;
+		}
 		if (cue === 'dot') {
 			this.dotToggle = !this.dotToggle;
 			this.play(this.dotToggle ? 'eat_dot_0.wav' : 'eat_dot_1.wav', 0.55);

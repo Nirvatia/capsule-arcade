@@ -63,33 +63,35 @@ A real track replaces the file; nothing else changes.
 
 ### Station — the brief
 
-The quarantine lab in the storm: dark corridors, the squad of Pretenders, the escape
-(`DESIGN.md` §7a). Cold, sparse, listening: the player should hear the squad.
+The quarantine lab being taken over: the squad of Pretenders on the hunt, the escape
+(`DESIGN.md` §7a). **Dynamic, not ambient** (the owner, 2026-11-26): it drives the chase; the
+infection brings up a harder layer; the escape is faster still.
 
-- **Tempo**: 80 bpm; a soft pulse (a ticking reactor, a muffled heartbeat) that the game may
-  later speed up with danger (a second, faster stem: 100 bpm, the same key and length).
-- **Key**: C minor with clusters; long tones, little melody.
-- **Layers**: a hum of machinery, a low pulse, metallic resonances, a distant alarm motif
-  (two notes, a minor second), storm rumble far away.
-- **Avoid**: jump-scare stingers inside the loop (the game makes its own), anything that
-  masks the squad's sounds (mid-high clicks and growls).
+- **Tempo**: 124 bpm; the escape 150 bpm.
+- **Key**: E minor (Em, C, D under a rolling bass).
+- **Layers**: a four-on-the-floor kick, offbeat hats, claps on 2 and 4, a rolling bass arpeggio
+  in sixteenths with a filter that breathes, metallic stabs; the infection's layer (the same
+  length, synced): sixteenth hats, a hard bass a minor second against it, toms, scrapes.
+- **Avoid**: anything that masks the squad's sounds (mid-high clicks and growls), vocals.
 
 **Prompt**:
 
-> Sci-fi horror ambient loop for a quarantine lab in a storm. Instrumental, 80 bpm, C minor.
-> Low machinery hum, a soft ticking pulse like a reactor, metallic resonances, a distant
-> two-note alarm motif a minor second apart, far thunder. Cold, sparse, tense, lots of space;
-> no melody hooks, no drums kit, no vocals. Seamless loop, no intro or outro, 90 seconds.
+> Dark sci-fi chase loop for a biolab overrun by alien organics. Instrumental, 124 bpm, E minor.
+> Four-on-the-floor kick, offbeat hats, claps on 2 and 4, a rolling sixteenth-note synth bass
+> arpeggio with a breathing filter, metallic industrial stabs, a low pad. Driving, tense, no
+> vocals, no melody hooks. Seamless loop, no intro or outro, 90 seconds.
 
-**The placeholders** (2026-11-25), synthesised offline by
+**The placeholders** (2026-11-26), synthesised offline by
 `node prototypes/pacman/music/station.mjs calm|dread|escape out.wav`, then
-`ffmpeg … -q:a 4 static/assets/pacman/music/station-<kind>.ogg`: `station-calm.ogg` (48 s: the
-mains hum, the ventilation's air, a low E-minor pad, sparse metallic pings), `station-dread.ogg`
-(48 s, a layer over the calm, its volume the infection: an irregular heartbeat, a minor-second
-cluster, scrapes, creaks) and `station-escape.ogg` (32 s at 140 bpm: a two-tone siren, a driving
-bass, a kick and hats). The station's effects are synthesised live (`audio/StationSynth`): the
+`ffmpeg … -q:a 4 static/assets/pacman/music/station-<kind>.ogg`: `station-calm.ogg` (24 bars at
+124 bpm, 46.5 s: the kick, hats, claps, the rolling bass, a pad, stabs), `station-dread.ogg` (the
+same 24 bars, a layer over the calm, its volume the infection: sixteenth hats, a hard bass a
+minor second against the calm's, toms, scrapes) and `station-escape.ogg` (16 bars at 150 bpm: a
+broken beat, the two-tone siren, a fast bass, stabs). The station's effects are synthesised live (`audio/StationSynth`): the
 tells' stings (the fence's rising hum, the ambush's wet clicks, the vent's hiss), the lurker's
-fold and grab, a hit, the power cell, the hatch charged, the alarm, the lure's ping, the way out.
+fold and grab, a hit, the power cell (a charge whining up, a crack), the hatch charged, the
+alarm (a klaxon over a falling bass), the lure's ping, the way out, and the food (a soft wet pop on
+two pitches by turns, in place of the seasons' chomp).
 
 ### Seasons (optional)
 

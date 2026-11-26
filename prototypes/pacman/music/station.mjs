@@ -1,10 +1,11 @@
-// The station's placeholder music, synthesised offline (no dependencies), three seamless loops:
-//   calm   48 s: the station's hum (mains and its harmonics), the ventilation's air, a low pad in
-//               E minor, sparse metallic pings in a cold reverb: an abandoned lab, still working;
-//   dread  48 s: the layer the infection brings up: an irregular heartbeat, a minor-second cluster,
-//               scrapes rising through a band pass, creaks: played over the calm, louder as it grows;
-//   escape 32 s: the alarm: a two-tone siren, a driving bass in eighths at 140 bpm, a kick, hats,
-//               stabs.
+// The station's placeholder music, synthesised offline (no dependencies), three seamless loops
+// (the owner, 2026-11-26: dynamic, not ambient):
+//   calm   24 bars at 124 bpm: a four-on-the-floor kick, offbeat hats, claps on 2 and 4, a rolling
+//          E-minor bass arpeggio in sixteenths whose filter opens and closes, a low pad, metallic
+//          stabs: the station still working, the squad on the hunt;
+//   dread  the same 24 bars, played over the calm as loud as the infection is far: sixteenth hats,
+//          a hard saw bass an octave up a minor second against the calm's, toms, rising scrapes;
+//   escape 16 bars at 150 bpm: a broken beat, the two-tone siren, a fast bass, stabs.
 // Renders two loops and keeps the second, so the reverb's tail runs into the loop's start.
 // Writes a WAV; ffmpeg makes the game's OGG (see OST.md).
 //   node prototypes/pacman/music/station.mjs calm|dread|escape out.wav
@@ -12,7 +13,9 @@ import { writeFileSync } from 'node:fs';
 
 const KIND = process.argv[2] ?? 'calm';
 const SR = 44100;
-const LOOP = KIND === 'escape' ? 32 : 48;
+const BPM = KIND === 'escape' ? 150 : 124;
+const BEAT = 60 / BPM;
+const LOOP = (KIND === 'escape' ? 16 : 24) * 4 * BEAT;
 const N = Math.round(LOOP * SR);
 const L = new Float32Array(N * 2);
 const R = new Float32Array(N * 2);
@@ -76,96 +79,112 @@ function noiseHit(t0, gain, cut, len, pan = 0) {
 	}
 }
 
-if (KIND === 'calm') {
-	// the hum: mains at A1 and its odd harmonics, breathing slowly
-	const f = lp(400);
+/** A bass line: `notes` (midi, null a rest) on sixteenths, a saw through a moving low pass. */
+function bassLine(notes, gain, cut0, cut1, octave = 0, detune = 0) {
+	let y = 0;
+	const step = BEAT / 4;
 	for (let i = 0; i < N * 2; i++) {
-		const t = i / SR;
-		const breath = 0.8 + 0.2 * Math.sin((TAU * 3 * t) / LOOP);
-		const s = Math.sin(TAU * hz(33) * t) + 0.35 * Math.sin(TAU * hz(52) * t) + 0.15 * Math.sin(TAU * hz(61) * t);
-		const v = f(s) * 0.22 * breath;
+		const t = (i % N) / SR;
+		const n = notes[Math.floor(t / step) % notes.length];
+		if (n === null) {
+			add(i, 0, 0);
+			continue;
+		}
+		const e = (t % step) / step;
+		// fitted to the loop, so the saw meets itself at the seam
+		const hzN = fit(440 * 2 ** ((n + octave * 12 - 69) / 12) * (1 + detune));
+		const saw = 2 * ((hzN * (i / SR)) % 1) - 1;
+		// the filter breathes over the loop
+		const open = cut0 + (cut1 - cut0) * (0.5 + 0.5 * Math.sin((TAU * 2 * t) / LOOP));
+		const a = Math.exp((-TAU * open) / SR);
+		y = (1 - a) * saw + a * y;
+		const v = y * gain * Math.exp(-e * 2.2);
 		add(i, v, v);
 	}
-	// the ventilation's air: band-passed noise drifting
-	const air = bp(700, 0.7);
-	for (let i = 0; i < N * 2; i++) {
-		const t = i / SR;
-		const v = air(rnd() * 2 - 1, 500 + 300 * Math.sin((TAU * 2 * t) / LOOP)) * 0.05;
-		add(i, v * (0.8 + 0.2 * Math.sin(t)), v * (0.8 - 0.2 * Math.sin(t)));
-	}
-	// a low pad, E minor (E2 B2 G3), slowly opening and closing
-	const pad = lp(900);
-	for (let i = 0; i < N * 2; i++) {
-		const t = i / SR;
-		const s = [40, 47, 55, 62].reduce((a, m, j) => a + Math.sin(TAU * hz(m) * t + j) * (j === 3 ? 0.3 : 1), 0);
-		const v = pad(s) * 0.05 * (0.6 + 0.4 * Math.sin((TAU * 2 * t) / LOOP - 1));
-		add(i, v, v);
-	}
-	// sparse pings, E minor pentatonic high up
-	const notes = [76, 79, 81, 83, 86, 88];
-	for (let t = 1.5; t < LOOP; t += 2.5 + rnd() * 3.5) ping(t, hz(notes[Math.floor(rnd() * notes.length)]), 0.07, rnd() * 1.2 - 0.6);
+}
+function clap(t0, gain) {
+	for (const d of [0, 0.011, 0.023]) noiseHit(t0 + d, gain, 1500, 0.14);
 }
 
-if (KIND === 'dread') {
-	// an irregular heartbeat: a double beat, the gap wavering
-	for (let t = 0.4, n = 0; t < LOOP - 1; n += 1) {
-		thump(t, 0.5, 90, 42, 0.32);
-		thump(t + 0.26, 0.32, 80, 40, 0.28);
-		t += 1.15 + (n % 3 === 2 ? 0.45 : 0) + rnd() * 0.12;
+if (KIND === 'calm' || KIND === 'dread') {
+	const bars = Math.round(LOOP / (BEAT * 4));
+	// E minor, a bar each: Em, Em, C, D (the roots' arpeggio: root, octave, fifth, octave)
+	const roots = [28, 28, 24, 26];
+	const arp = [];
+	for (let bar = 0; bar < 4; bar++) {
+		const r = roots[bar];
+		for (const o of [0, 12, 7, 12, 0, 12, 7, 10, 0, 12, 7, 12, 0, 15, 12, 7]) arp.push(r + o);
 	}
-	// a minor-second cluster, swelling
-	const c = lp(1200);
-	for (let i = 0; i < N * 2; i++) {
-		const t = i / SR;
-		const s = Math.sin(TAU * hz(52) * t) + Math.sin(TAU * hz(53) * t + 1) + 0.5 * Math.sin(TAU * hz(64) * t);
-		const v = c(s) * 0.06 * (0.5 + 0.5 * Math.sin((TAU * 3 * t) / LOOP));
-		add(i, v * 0.9, v);
-	}
-	// scrapes: noise through a band pass sweeping up
-	for (let t = 3; t < LOOP - 4; t += 6 + rnd() * 5) {
-		const s0 = Math.round(t * SR);
-		const f = bp(400, 6);
-		const len = 1.8 + rnd();
-		const pan = rnd() * 1.4 - 0.7;
-		for (let k = 0; k < len * SR; k++) {
-			const u = k / (len * SR);
-			const v = f(rnd() * 2 - 1, 300 + 2200 * u) * Math.sin(Math.PI * u) * 0.12;
-			for (const loop of [0, N]) add(s0 + k + loop, v * (1 - pan), v * (1 + pan));
+	if (KIND === 'calm') {
+		bassLine(arp, 0.2, 260, 1400);
+		for (let i = 0; i < bars * 4; i++) {
+			const t = i * BEAT;
+			thump(t, 0.62, 150, 46, 0.3);
+			noiseHit(t + BEAT / 2, 0.07, 8000, 0.05, 0.25);
+			if (i % 2 === 1) clap(t, 0.12);
+		}
+		// a low pad under it, E minor
+		const pad = lp(700);
+		for (let i = 0; i < N * 2; i++) {
+			const t = i / SR;
+			const s2 = [40, 47, 55].reduce((acc, m, j) => acc + Math.sin(TAU * hz(m) * t + j), 0);
+			add(i, pad(s2) * 0.035, pad(s2) * 0.035);
+		}
+		// metallic stabs: the last beat of every second bar
+		for (let bar = 1; bar < bars; bar += 2) ping(bar * 4 * BEAT + 3 * BEAT, hz([76, 79, 83, 81][bar % 4]), 0.1, bar % 4 < 2 ? -0.4 : 0.4, 1.1);
+	} else {
+		// the hard bass an octave up, a minor second against the calm's, on the off sixteenths
+		bassLine(
+			arp.map((n, i) => (i % 2 ? n + 1 : null)),
+			0.12,
+			900,
+			2600,
+			1
+		);
+		for (let i = 0; i < bars * 16; i++) noiseHit(i * (BEAT / 4), i % 4 === 2 ? 0.06 : 0.035, 9000, 0.035, i % 2 ? 0.3 : -0.3);
+		// toms down the last bar of every four
+		for (let bar = 3; bar < bars; bar += 4)
+			[0, 0.5, 1, 1.5, 2, 2.5].forEach((d, k) => thump(bar * 4 * BEAT + (2 + d * 0.66) * BEAT, 0.35, 220 - k * 22, 90 - k * 8, 0.22));
+		// scrapes rising through a band pass, every four bars
+		for (let bar = 0; bar < bars; bar += 4) {
+			const s0 = Math.round(bar * 4 * BEAT * SR);
+			const f = bp(400, 6);
+			const len = BEAT * 4;
+			for (let k = 0; k < len * SR; k++) {
+				const u = k / (len * SR);
+				const v = f(rnd() * 2 - 1, 300 + 2600 * u) * Math.sin(Math.PI * u) * 0.1;
+				for (const loop of [0, N]) add(s0 + k + loop, v * 0.8, v);
+			}
 		}
 	}
-	// creaks: low metal groans
-	for (let t = 5; t < LOOP - 2; t += 7 + rnd() * 6) ping(t, hz(40 + Math.floor(rnd() * 5)), 0.08, rnd() - 0.5, 3.5);
 }
 
 if (KIND === 'escape') {
-	const BEAT = 60 / 140;
-	// the siren: two tones, half a second each, a soft square through a low pass
-	const s = lp(1800);
+	const bars = Math.round(LOOP / (BEAT * 4));
+	// the siren: two tones, half a bar each, a soft square through a low pass
+	const s2 = lp(1800);
 	for (let i = 0; i < N * 2; i++) {
 		const t = i / SR;
-		const f = Math.floor(t / 0.5) % 2 === 0 ? fit(660) : fit(880);
+		const f = Math.floor(t / (BEAT * 2)) % 2 === 0 ? fit(660) : fit(880);
 		const sq = Math.sign(Math.sin(TAU * f * t)) * 0.6 + Math.sin(TAU * f * t) * 0.4;
-		const v = s(sq) * 0.05;
-		add(i, v, v * 0.85);
+		add(i, s2(sq) * 0.04, s2(sq) * 0.034);
 	}
-	// the bass: eighths on E1 / G1 / D1
-	const roots = [28, 28, 31, 26];
-	const b = lp(500);
-	for (let i = 0; i < N * 2; i++) {
-		const t = i / SR;
-		const bar = Math.floor(t / (BEAT * 4)) % roots.length;
-		const e = (t % (BEAT / 2)) / (BEAT / 2);
-		const f = hz(roots[bar]);
-		const saw = 2 * ((f * t) % 1) - 1;
-		const v = b(saw) * 0.22 * Math.exp(-e * 3);
-		add(i, v, v);
+	// the fast bass: sixteenths on E1 / G1 / D1 / C1
+	const roots = [28, 31, 26, 24];
+	const line = [];
+	for (const r of roots) for (const o of [0, 0, 12, 0, 0, 12, 0, 7, 0, 0, 12, 0, 10, 0, 12, 7]) line.push(r + o);
+	bassLine(line, 0.22, 400, 1800);
+	// the broken beat: kick on 1 and the and of 2, snare on 2 and 4, hats in sixteenths
+	for (let bar = 0; bar < bars; bar++) {
+		const t0 = bar * 4 * BEAT;
+		for (const k of [0, 1.5, 2.75]) thump(t0 + k * BEAT, 0.66, 160, 45, 0.24);
+		for (const sn of [1, 3]) {
+			noiseHit(t0 + sn * BEAT, 0.2, 2200, 0.16);
+			thump(t0 + sn * BEAT, 0.25, 240, 180, 0.08);
+		}
+		for (let h = 0; h < 16; h++) noiseHit(t0 + (h * BEAT) / 4, h % 2 ? 0.035 : 0.055, 9000, 0.03, 0.2);
+		if (bar % 2 === 1) ping(t0 + 3.5 * BEAT, hz(76), 0.12, 0, 0.9);
 	}
-	for (let t = 0; t < LOOP; t += BEAT) {
-		thump(t, 0.6, 140, 45, 0.25);
-		noiseHit(t + BEAT / 2, 0.08, 7000, 0.06, 0.2);
-	}
-	// stabs every two bars
-	for (let t = BEAT * 7; t < LOOP; t += BEAT * 8) ping(t, hz(64), 0.12, 0, 1.2);
 }
 
 // reverb (Schroeder)
@@ -195,7 +214,7 @@ function reverb(x, delays) {
 	}
 	return out;
 }
-const wet = KIND === 'escape' ? 0.06 : 0.16;
+const wet = KIND === 'escape' ? 0.05 : 0.08;
 const wetL = reverb(L, [[1557, 0.85], [1617, 0.84], [1491, 0.85], [1422, 0.84]]);
 const wetR = reverb(R, [[1580, 0.85], [1640, 0.84], [1514, 0.85], [1445, 0.84]]);
 let peak = 0;
