@@ -57,7 +57,7 @@
 		<div class="veil"></div>
 		<div class="card wide">
 			<h1>{snap.profile === 'ms-pacman' ? 'MS. PAC-MAN' : 'PAC-MAN'}</h1>
-			<div class="modes">
+			<div class="modes" class:hidden={arcade}>
 				<button
 					type="button"
 					tabindex={-1}
