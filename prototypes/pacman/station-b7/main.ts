@@ -1,8 +1,7 @@
 // Prototype: the station B-7 as the game draws it (`render/station/b7`: the scene, the hive's
 // takeover, the lamps under its film, the heartbeat) with the game's quarantine ring, its lure
 // (the cyan flare) and its Pretenders (the rage, the acid overheat) on the real maze, beside the
-// candidates of `looks.ts` for the squad's calm look (A the specimen, B the hatchling, C the jar
-// runner). Everything is switched by the buttons on top; a panel shows them large.
+// candidates of `looks.ts` for the squad's calm look (1 the core, 2 the crew, 3 the shadow). Everything is switched by the buttons on top; a panel shows them large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
@@ -43,9 +42,9 @@ const st = {
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: кислотный перегрев',
 	'mimic-now': 'Мимики как в игре: Pretender в маске',
-	'mimic-a': 'A «Образец»: сгусток мути, внутри проглоченное (ключ, бейдж, глаз, каска) светится его цветом',
-	'mimic-b': 'B «Вылупившийся»: молочная оболочка, внутри свёрнутый зародыш, сердце его цвета, бирка образца',
-	'mimic-c': 'C «Беглец в банке»: банка на ножках, муть плещется, внутри кто-то смотрит глазами его цвета',
+	'mimic-a': '1 «Ядро»: сгусток мути его цвета, одно светящееся ядро со щелью, свой верх у каждого',
+	'mimic-b': '2 «Экипаж»: сгусток его цвета в снаряжении погибших: противогаз, очки, шлем, каска с фонарём',
+	'mimic-c': '3 «Тень»: чёрный силуэт из колбы, подсветка и глаза-щели его цвета, корона отростков',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'
 };
@@ -76,9 +75,9 @@ const GROUPS: Group[] = [
 		key: 'mimic',
 		items: [
 			['Как в игре', 'now'],
-			['A Образец', 'a'],
-			['B Вылупившийся', 'b'],
-			['C Беглец в банке', 'c'],
+			['1 Ядро', 'a'],
+			['2 Экипаж', 'b'],
+			['3 Тень', 'c'],
 			['Выкл', 'off']
 		],
 		after: (v) => {

@@ -1,16 +1,16 @@
-// Candidates for the station's squad (throwaway, the owner picks one; 2026-11-26): its look closer
-// to the specimen tanks behind the maze, the murk that leaked out of them. All keep the season
-// ghosts' grammar (upright, never turned, two bean feet stepping with the distance, a lean, eyes
-// that show the way); the rage stays the game's acid overheat.
-//   A the specimen    a clot of the tanks' murk, a glassy rim, bubbles; inside it the thing it
-//                     swallowed, lit in its colour (a wrench, a crew badge, an eyeball, a hard hat)
-//   B the hatchling   a milky membrane, the curled dark embryo inside with its colour beating as a
-//                     heart, big eyes, a specimen tag on a strap; a head of its own per kind
-//   C the jar runner  the specimen still in its broken jar: the jar walks on two dark feet, murk
-//                     sloshing inside, the thing in it peering out with eyes in its colour,
-//                     tendrils out of the popped lid, a lab label
+// Candidates for the station's squad, round two (throwaway, the owner picks one; 2026-11-26). The
+// owner on round one: the specimen looked like a meme engine face and blended with the palette,
+// the hatchling creepy the wrong way, the jar unreadable; the feet rocked too much. So: no cartoon
+// face (no mouth, no pair of human eyes), each kind told by the colour of its body and a silhouette
+// of its own, and no feet: the body holds still over a hem of murk whose waves run along it and
+// drip, like the classic ghosts' skirt (a 180 reads at once). The rage stays the acid overheat.
+//   1 the core    a clot of murk in its kind's colour, one big glowing nucleus with a slit for an
+//                 eye; on top crystal spikes, two lobes, three cilia or a lumpy growth
+//   2 the crew    the same clot wearing a dead crewman's gear: a gas mask, lab goggles, a glass
+//                 helmet, a hard hat with a lamp; the eyes glow behind it
+//   3 the shadow  the tanks' near-black silhouette, a rim light and two slit eyes in its colour, a
+//                 crown of tendrils trailing back against its heading, a smoky hem
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
-import { footLift } from '../../../src/games/pacman/render/actors/cuteGhost';
 import {
 	INK,
 	PHASE,
@@ -18,7 +18,6 @@ import {
 	drawPretender,
 	ellipse,
 	glow,
-	traceBody,
 	type PretenderOpts
 } from '../../../src/games/pacman/render/station/pretender';
 
@@ -28,11 +27,21 @@ export type CandState = 'hunt' | 'tell' | 'fright' | 'eyes' | 'mimic';
 
 const TAU = Math.PI * 2;
 const CALM = 1.075;
+/** Light, mid, dark of each kind's murk. */
+const MURK: Record<GhostKind, readonly [string, string, string]> = {
+	BLINKY: ['#ff9a8a', '#d9473f', '#6e1418'],
+	PINKY: ['#ffc2ea', '#d870b8', '#6a2458'],
+	INKY: ['#a8f2ff', '#3fb4cc', '#11505e'],
+	CLYDE: ['#ffd49a', '#e08a2e', '#6e3a0c']
+};
+const SCARED: readonly [string, string, string] = ['#a9b6ff', '#4f68ff', '#1d2a8a'];
+const WHITE: readonly [string, string, string] = ['#ffffff', '#e8eeff', '#aebde0'];
+const SHADOW: readonly [string, string, string] = ['#2a3a32', '#121c17', '#060b08'];
 const KIND_RGB: Record<GhostKind, string> = {
-	BLINKY: '238, 107, 96',
-	PINKY: '236, 149, 210',
-	INKY: '98, 216, 234',
-	CLYDE: '243, 171, 85'
+	BLINKY: '255, 120, 104',
+	PINKY: '255, 160, 226',
+	INKY: '120, 230, 250',
+	CLYDE: '255, 186, 100'
 };
 const FRIGHT_RGB = '96, 120, 255';
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -40,10 +49,6 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const smooth = (e0: number, e1: number, x: number) => {
 	const k = clamp((x - e0) / (e1 - e0), 0, 1);
 	return k * k * (3 - 2 * k);
-};
-const beat = (t: number) => {
-	const u = t % 1.3;
-	return 0.35 + Math.exp(-u * u * 90) + 0.55 * Math.exp(-(u - 0.22) * (u - 0.22) * 90);
 };
 
 function stroke(c: Ctx, color: string, w: number): void {
@@ -54,433 +59,426 @@ function stroke(c: Ctx, color: string, w: number): void {
 	c.stroke();
 }
 
-function rrect(c: Ctx, x: number, y: number, w: number, h: number, r: number): void {
+// --------------------------------------------------------------------------- the shared body
+
+/** The body: a dome over straight sides, the hem's four scallops waving, the wave running along. */
+function traceHem(c: Ctx, t: number, ph: number): void {
 	c.beginPath();
-	c.roundRect(x, y, w, h, r);
+	c.moveTo(-9.6, 7.6);
+	c.lineTo(-9.6, 0);
+	c.arc(0, 0, 9.6, Math.PI, TAU);
+	c.lineTo(9.6, 7.6);
+	for (let i = 0; i < 4; i++) {
+		const x0 = 9.6 - i * 4.8;
+		const x1 = x0 - 4.8;
+		const wave = Math.sin(t * 7 + ph + i * 1.6);
+		c.quadraticCurveTo(x0 - 2.4, 11.4 + wave * 1.3, x1, 7.6 + Math.sin(t * 7 + ph + i * 1.6 + 0.8) * 0.6);
+	}
+	c.closePath();
 }
 
-/** The classic fright's face: hollow ring eyes with tiny pupils, a zigzag mouth, a drop of sweat. */
-function frightFace(c: Ctx, o: PretenderOpts, white: boolean, y: number, gap: number): void {
-	for (const side of [-1, 1]) {
-		const ex = side * gap;
-		ellipse(c, ex, y, 2.3, 2.3, '#ffffff', 1.1);
-		ellipse(c, ex + o.lookX * 0.7, y + o.lookY * 0.7, 0.95, 0.95, white ? '#ff6a3a' : INK);
+/** The murk's fill: lit from the upper left, darker inside, a glassy rim, bubbles rising. */
+function paintMurk(c: Ctx, pal: readonly [string, string, string], o: PretenderOpts, ph: number, bubbles: boolean): void {
+	traceHem(c, o.time, ph);
+	stroke(c, INK, 3.0);
+	const g = c.createRadialGradient(-3, -3.5, 0.6, 0, 1.5, 12);
+	g.addColorStop(0, pal[0]);
+	g.addColorStop(0.5, pal[1]);
+	g.addColorStop(1, pal[2]);
+	traceHem(c, o.time, ph);
+	c.fillStyle = g;
+	c.fill();
+	c.save();
+	traceHem(c, o.time, ph);
+	c.clip();
+	// darker swirls of murk inside
+	c.globalAlpha = 0.28;
+	ellipse(c, 3.4 + Math.sin(o.time * 0.7 + ph) * 1.2, 5, 4.6, 2.6, pal[2]);
+	ellipse(c, -4.2, 2.6 + Math.cos(o.time * 0.6 + ph) * 1.0, 2.8, 1.8, pal[2]);
+	c.globalAlpha = 1;
+	if (bubbles) {
+		for (let i = 0; i < 4; i++) {
+			const u = (o.time * (0.32 + i * 0.05) + i / 4 + ph) % 1;
+			c.beginPath();
+			c.arc(-6 + i * 4 + Math.sin(u * 6 + i) * 0.8, 10 - u * 18, 0.55 + (i % 2) * 0.35, 0, TAU);
+			stroke(c, `rgba(255, 255, 255, ${0.6 * Math.sin(u * Math.PI)})`, 0.45);
+		}
 	}
+	c.restore();
 	c.beginPath();
-	c.moveTo(-3.4, y + 6.2);
-	for (let i = 1; i <= 6; i++) c.lineTo(-3.4 + i * 1.13, y + 4.8 + (i % 2 ? 0 : 1.4));
-	stroke(c, white ? '#ff4d4d' : INK, 0.95);
+	c.arc(0, 0, 8.2, Math.PI * 1.1, Math.PI * 1.45);
+	stroke(c, 'rgba(255, 255, 255, 0.55)', 1.1);
+	ellipse(c, -5.4, -5.6, 1.0, 0.7, 'rgba(255, 255, 255, 0.75)');
+}
+
+/** Drips off the hem (the shadow trails smoke instead). */
+function drips(c: Ctx, color: string, o: PretenderOpts, ph: number, smoke: boolean): void {
+	for (let i = 0; i < 3; i++) {
+		const u = (o.time * (smoke ? 0.7 : 0.9) + i / 3 + ph) % 1;
+		const x = (i - 1) * 4.8 + Math.sin(i * 2.3 + ph) * 1.2 - o.lookX * u * 3;
+		const y = 10.6 + u * (smoke ? 3 : 5);
+		if (smoke) ellipse(c, x, y, 1.2 + u * 2, 0.9 + u * 1.4, `rgba(40, 56, 48, ${0.5 * (1 - u)})`);
+		else {
+			c.save();
+			c.globalAlpha *= 1 - u;
+			ellipse(c, x, y, 0.9 * (1 - u * 0.4), 1.1 * (1 - u * 0.4), color);
+			c.restore();
+		}
+	}
+}
+
+/** The fright's cue on any of them: hollow ring eyes with tiny pupils, a drop of sweat. */
+function frightEyes(c: Ctx, o: PretenderOpts, white: boolean, y: number): void {
+	const tremble = Math.sin(o.time * 40) * 0.25;
+	for (const side of [-1, 1]) {
+		ellipse(c, side * 3.4 + tremble, y, 2.3, 2.3, '#ffffff', 1.0);
+		ellipse(c, side * 3.4 + tremble + o.lookX * 0.7, y + o.lookY * 0.7, 0.9, 0.9, white ? '#ff6a3a' : INK);
+	}
 	if (!white) {
 		c.beginPath();
-		c.moveTo(7.2, -5.6);
-		c.bezierCurveTo(9.2, -3, 9, -1.6, 7.2, -1.4);
-		c.bezierCurveTo(5.4, -1.6, 5.2, -3, 7.2, -5.6);
+		c.moveTo(7.2, -6.4);
+		c.bezierCurveTo(9.2, -3.8, 9, -2.4, 7.2, -2.2);
+		c.bezierCurveTo(5.4, -2.4, 5.2, -3.8, 7.2, -6.4);
 		c.fillStyle = '#bfe9ff';
 		c.fill();
 		stroke(c, INK, 0.6);
 	}
 }
 
-// ---------------------------------------------------------------------------- A the specimen
+// ---------------------------------------------------------------------------------- 1 the core
 
-/** What a specimen swallowed, in its own frame (about 6 units across). */
-function swallowed(c: Ctx, kind: GhostKind, t: number): void {
+/** Its kind's top, as paths: crystal spikes, two lobes, three cilia, a lumpy growth. */
+function topShapes(kind: GhostKind, o: PretenderOpts, tell: boolean): Array<(c: Ctx) => void> {
 	if (kind === 'BLINKY') {
-		// a wrench
-		c.rotate(-0.5);
-		rrect(c, -3.6, -0.65, 6.2, 1.3, 0.6);
-		c.fillStyle = '#a7b2ae';
-		c.fill();
-		stroke(c, '#2a3230', 0.5);
-		ellipse(c, 3.1, 0, 1.7, 1.7, '#a7b2ae');
-		c.fillStyle = '#1f4a34';
-		c.fillRect(3.4, -0.55, 1.6, 1.1);
-		c.beginPath();
-		c.arc(-3.7, 0, 0.95, 0, TAU);
-		stroke(c, '#a7b2ae', 0.6);
-	} else if (kind === 'PINKY') {
-		// a crew badge on its lanyard
-		c.rotate(0.18);
-		c.beginPath();
-		c.moveTo(-1.6, -3);
-		c.quadraticCurveTo(0, -7, 1.6, -3);
-		stroke(c, '#ec95d2', 0.7);
-		rrect(c, -2.3, -3, 4.6, 5.8, 0.6);
-		c.fillStyle = '#eef2f2';
-		c.fill();
-		stroke(c, '#2a3230', 0.5);
-		c.fillStyle = '#ec95d2';
-		c.fillRect(-2.3, -3, 4.6, 1.3);
-		ellipse(c, -0.9, 0.2, 0.9, 0.9, '#8fa19b');
-		c.fillStyle = '#4a5552';
-		c.fillRect(0.4, -0.4, 1.4, 0.35);
-		c.fillRect(0.4, 0.4, 1.1, 0.35);
-		c.fillRect(-1.8, 1.6, 3.4, 0.35);
-	} else if (kind === 'INKY') {
-		// somebody's eye, looking about on its own
-		ellipse(c, 0, 0, 2.8, 2.8, '#f3efe4');
-		stroke(c, '#5a4a40', 0.5);
-		for (const a of [0.4, 2.3, 4.1]) {
+		return [
+			[-5.0, 4.6, -0.42],
+			[0, 7.2, 0],
+			[5.0, 4.6, 0.42]
+		].map(([x, h, a]) => (c: Ctx) => {
+			const bx = x;
+			const by = -7.4 + Math.abs(x) * 0.3;
+			const tip = h + (tell ? 1.2 : 0);
 			c.beginPath();
-			c.moveTo(Math.cos(a) * 2.7, Math.sin(a) * 2.7);
-			c.quadraticCurveTo(Math.cos(a + 0.3) * 1.9, Math.sin(a + 0.3) * 1.9, Math.cos(a) * 1.4, Math.sin(a) * 1.4);
-			stroke(c, 'rgba(200, 50, 60, 0.75)', 0.35);
-		}
-		const ix = Math.cos(t * 0.7) * 1.0;
-		const iy = Math.sin(t * 0.9) * 0.8;
-		ellipse(c, ix, iy, 1.3, 1.3, '#3fb7d0');
-		ellipse(c, ix, iy, 0.6, 0.6, INK);
-		ellipse(c, ix - 0.5, iy - 0.5, 0.3, 0.3, '#ffffff');
-	} else {
-		// a hard hat
-		c.rotate(-0.25);
+			c.moveTo(bx + Math.cos(a) * -2.4, by + Math.sin(a) * -2.4 + 1.6);
+			c.lineTo(bx + Math.sin(a) * tip, by - Math.cos(a) * tip);
+			c.lineTo(bx + Math.cos(a) * 2.4, by + Math.sin(a) * 2.4 + 1.6);
+			c.closePath();
+		});
+	}
+	if (kind === 'PINKY') {
+		return [-1, 1].map((side) => (c: Ctx) => {
+			c.beginPath();
+			c.arc(side * 4.6, -7.0, 4.5, 0, TAU);
+		});
+	}
+	if (kind === 'CLYDE') {
+		return [
+			[4.4, -8.4, 3.6],
+			[7.6, -5.0, 2.8],
+			[0.2, -10.0, 2.6]
+		].map(([x, y, r]) => (c: Ctx) => {
+			c.beginPath();
+			c.arc(x, y, r, 0, TAU);
+		});
+	}
+	return [];
+}
+
+/** INKY's cilia, waving, over the body. */
+function cilia(c: Ctx, pal: readonly [string, string, string], o: PretenderOpts, tell: boolean): void {
+	for (const [x, h] of [
+		[-3.4, 5],
+		[0, 6.4],
+		[3.4, 5]
+	] as const) {
+		const w = Math.sin(o.time * (tell ? 9 : 3) + x) * 1.4;
 		c.beginPath();
-		c.arc(0, 0.7, 2.9, Math.PI, TAU);
-		c.closePath();
-		c.fillStyle = '#f3b23a';
-		c.fill();
-		stroke(c, '#5a3a10', 0.5);
-		rrect(c, -4.1, 0.4, 8.2, 1.2, 0.5);
-		c.fillStyle = '#e09a28';
-		c.fill();
-		stroke(c, '#5a3a10', 0.5);
-		c.beginPath();
-		c.moveTo(0, -2.1);
-		c.lineTo(0, 0.4);
-		stroke(c, '#ffd27a', 0.7);
+		c.moveTo(x, -8.4);
+		c.quadraticCurveTo(x + w, -8.4 - h * 0.6, x - w * 0.6, -8.4 - h);
+		stroke(c, INK, 2.2);
+		stroke(c, pal[0], 1.0);
+		ellipse(c, x - w * 0.6, -8.4 - h, 1.0, 1.0, pal[0], 0.7);
 	}
 }
 
-function bodyA(c: Ctx, kind: GhostKind, st: CandState, o: PretenderOpts, scared: boolean, white: boolean): void {
+function bodyCore(c: Ctx, kind: GhostKind, st: CandState, o: PretenderOpts, pal: readonly [string, string, string], scared: boolean, white: boolean): void {
 	const ph = PHASE[kind];
 	const tell = st === 'tell';
-	traceBody(c);
-	stroke(c, INK, 3.2);
-	const g = c.createRadialGradient(-2.5, -1.5, 0.5, 0, 1.6, 10.5);
-	g.addColorStop(0, scared ? (white ? '#ffffff' : '#8d9fff') : '#7fc79a');
-	g.addColorStop(0.55, scared ? (white ? '#e8eeff' : '#4f68ff') : '#3a8058');
-	g.addColorStop(1, scared ? (white ? '#c3cfea' : '#2a3cb8') : '#1c4a33');
-	c.fillStyle = g;
-	traceBody(c);
-	c.fill();
-	c.save();
-	traceBody(c);
-	c.clip();
-	if (!scared) {
-		const p = tell ? 0.7 + 0.3 * Math.sin((o.time / 1.3) * TAU) : 0.8;
-		glow(c, 1.2, 4.8, 7, `rgba(${KIND_RGB[kind]}, ${0.75 * p})`, `rgba(${KIND_RGB[kind]}, ${0.28 * p})`);
+	const tops = scared ? [] : topShapes(kind, o, tell);
+	// the top's outline behind the body, the body, then the top's fill over the body's outline
+	for (const shape of tops) {
+		shape(c);
+		stroke(c, INK, kind === 'BLINKY' ? 2.4 : 3.0);
 	}
-	c.save();
-	const jit = tell ? Math.sin(o.time * 31) * 0.35 : 0;
-	c.translate(1.2 + Math.sin(o.time * 1.1 + ph) * 0.5 + jit, 4.9 + Math.sin(o.time * 1.7 + ph) * 0.4);
-	c.rotate(Math.sin(o.time * 0.9 + ph) * 0.22);
-	c.scale(0.95, 0.95);
-	swallowed(c, kind, o.time);
-	c.restore();
-	// the murk over it: it is inside
-	traceBody(c);
-	c.fillStyle = scared ? 'rgba(40, 60, 200, 0.28)' : `rgba(30, 80, 55, ${tell ? 0.45 : 0.3})`;
-	c.fill();
-	for (let i = 0; i < 5; i++) {
-		const u = (o.time * (0.3 + i * 0.04) + i / 5 + ph) % 1;
-		c.beginPath();
-		c.arc(-6 + i * 3 + Math.sin(u * 6 + i) * 0.8, 9.5 - u * 17, 0.55 + (i % 2) * 0.35, 0, TAU);
-		stroke(c, `rgba(190, 242, 188, ${0.7 * Math.sin(u * Math.PI)})`, 0.45);
+	paintMurk(c, pal, o, ph, true);
+	for (const shape of tops) {
+		const g = c.createLinearGradient(0, -16, 0, -5);
+		g.addColorStop(0, pal[0]);
+		g.addColorStop(1, pal[1]);
+		shape(c);
+		c.fillStyle = g;
+		c.fill();
+		if (kind === 'BLINKY') stroke(c, 'rgba(255, 255, 255, 0.35)', 0.5);
 	}
-	c.restore();
-	// the glassy rim
-	c.beginPath();
-	c.ellipse(0, 1.6, 8.7, 7.9, 0, Math.PI * 1.08, Math.PI * 1.52);
-	stroke(c, 'rgba(220, 244, 236, 0.6)', 1.1);
-	ellipse(c, -5.6, -3.6, 1.0, 0.7, 'rgba(240, 255, 248, 0.75)');
+	if (!scared && kind === 'INKY') cilia(c, pal, o, tell);
 	if (scared) {
-		frightFace(c, o, white, -1.6, 3.8);
+		frightEyes(c, o, white, -1.2);
+		return;
+	}
+	const rgb = tell ? '255, 200, 71' : KIND_RGB[kind];
+	const cores = tell ? [-2.6, 2.6] : [0];
+	for (const dx of cores) {
+		const cx = dx + o.lookX * 2.2;
+		const cy = -0.4 + o.lookY * 1.8;
+		const r = tell ? 3.2 + Math.sin((o.time / 1.3) * TAU) * 0.3 : 4.4;
+		glow(c, cx, cy, r * 2.2, `rgba(${rgb}, 0.85)`, `rgba(${rgb}, 0.3)`);
+		const g = c.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 0.2, cx, cy, r);
+		g.addColorStop(0, '#fffbe8');
+		g.addColorStop(0.55, `rgb(${rgb})`);
+		g.addColorStop(1, tell ? '#b8781a' : pal[1]);
+		c.beginPath();
+		c.arc(cx, cy, r, 0, TAU);
+		c.fillStyle = g;
+		c.fill();
+		stroke(c, INK, 0.9);
+		// the slit, toward the way it goes
+		const sx = cx + o.lookX * r * 0.35;
+		const sy = cy + o.lookY * r * 0.35;
+		c.save();
+		c.translate(sx, sy);
+		if (Math.abs(o.lookY) > Math.abs(o.lookX)) c.rotate(Math.PI / 2);
+		ellipse(c, 0, 0, r * 0.18, r * 0.7, '#0a0a0a');
+		c.restore();
+	}
+}
+
+// ----------------------------------------------------------------------------------- 2 the crew
+
+function glowEyes(c: Ctx, o: PretenderOpts, y: number, gap: number, rgb: string, r: number): void {
+	for (const side of [-1, 1]) {
+		const ex = side * gap + o.lookX * 1.6;
+		const ey = y + o.lookY * 1.3;
+		glow(c, ex, ey, r * 2.4, `rgba(${rgb}, 0.9)`, `rgba(${rgb}, 0.3)`);
+		ellipse(c, ex, ey, r, r * 1.1, `rgb(${rgb})`);
+		ellipse(c, ex + o.lookX * r * 0.4, ey + o.lookY * r * 0.4, r * 0.35, r * 0.55, 'rgba(10, 10, 10, 0.8)');
+	}
+}
+
+function bodyCrew(c: Ctx, kind: GhostKind, st: CandState, o: PretenderOpts, pal: readonly [string, string, string], scared: boolean, white: boolean): void {
+	const ph = PHASE[kind];
+	const tell = st === 'tell';
+	const rattle = tell ? Math.sin(o.time * 34) * 0.4 : 0;
+	const eyeRgb = tell ? '255, 200, 71' : '235, 255, 240';
+	const lx = o.lookX * 1.6 + rattle;
+	const ly = o.lookY * 1.2;
+	paintMurk(c, pal, o, ph, kind !== 'BLINKY');
+	if (kind === 'BLINKY') {
+		// a gas mask: rubber, two round lenses, a filter canister
+		if (scared) frightEyes(c, o, white, -1.4);
+		else
+			for (const side of [-1, 1]) {
+				glow(c, side * 2.8 + lx, -1.2 + ly, 4, `rgba(${eyeRgb}, 0.6)`, `rgba(${eyeRgb}, 0.2)`);
+			}
+		c.save();
+		c.translate(lx, ly);
+		c.beginPath();
+		c.moveTo(-6.4, -4.2);
+		c.quadraticCurveTo(0, -6.6, 6.4, -4.2);
+		c.quadraticCurveTo(7.4, 2.2, 3.2, 5.2);
+		c.lineTo(-3.2, 5.2);
+		c.quadraticCurveTo(-7.4, 2.2, -6.4, -4.2);
+		c.closePath();
+		c.fillStyle = scared ? '#4a5470' : '#2c3432';
+		c.fill();
+		stroke(c, INK, 1.4);
+		for (const side of [-1, 1]) {
+			ellipse(c, side * 2.8, -1.3, 2.3, 2.3, scared ? 'rgba(200, 210, 255, 0.5)' : `rgba(${eyeRgb}, ${tell ? 0.95 : 0.75})`);
+			c.beginPath();
+			c.arc(side * 2.8, -1.3, 2.3, 0, TAU);
+			stroke(c, '#9aa6a2', 1.1);
+			ellipse(c, side * 2.8 - 0.8, -2.1, 0.6, 0.4, 'rgba(255, 255, 255, 0.85)');
+		}
+		ellipse(c, 0, 5.0, 2.7, 2.2, '#6b7774', 1.2);
+		for (const yy of [4.2, 5.2]) {
+			c.beginPath();
+			c.moveTo(-2.2, yy);
+			c.lineTo(2.2, yy);
+			stroke(c, '#3a4442', 0.5);
+		}
+		c.restore();
+		c.beginPath();
+		c.moveTo(-9.3, -2.6);
+		c.lineTo(-6.2 + lx, -2.4 + ly);
+		c.moveTo(9.3, -2.6);
+		c.lineTo(6.2 + lx, -2.4 + ly);
+		stroke(c, '#2c3432', 1.2);
+	} else if (kind === 'PINKY') {
+		// lab goggles on a strap
+		c.save();
+		c.beginPath();
+		c.moveTo(-9.6, -2.6);
+		c.lineTo(9.6, -2.6);
+		stroke(c, '#3a4442', 1.8);
+		c.restore();
+		if (scared) frightEyes(c, o, white, -2.4);
+		else glowEyes(c, o, -2.4, 3.3, eyeRgb, 1.5);
+		for (const side of [-1, 1]) {
+			const gx = side * 3.4 + lx;
+			const gy = -2.4 + ly;
+			c.beginPath();
+			c.arc(gx, gy, 2.9, 0, TAU);
+			c.fillStyle = 'rgba(210, 236, 255, 0.28)';
+			c.fill();
+			stroke(c, INK, 2.2);
+			stroke(c, '#d6dde0', 1.1);
+			ellipse(c, gx - 1.1, gy - 1.2, 0.8, 0.5, 'rgba(255, 255, 255, 0.85)');
+		}
+		c.beginPath();
+		c.moveTo(-0.6 + lx, -2.6 + ly);
+		c.lineTo(0.6 + lx, -2.6 + ly);
+		stroke(c, '#d6dde0', 1.0);
+	} else if (kind === 'INKY') {
+		// a glass helmet over the head, a collar ring, a little antenna
+		if (scared) frightEyes(c, o, white, -1.6);
+		else glowEyes(c, o, -1.6, 3.4, eyeRgb, 1.6);
+		c.beginPath();
+		c.arc(0, -0.6, 9.0, Math.PI * 0.92, Math.PI * 2.08);
+		c.fillStyle = 'rgba(200, 240, 255, 0.12)';
+		c.fill();
+		stroke(c, INK, 2.0);
+		stroke(c, '#cfe8f0', 0.9);
+		c.beginPath();
+		c.arc(0, -0.6, 7.4, Math.PI * 1.12, Math.PI * 1.42);
+		stroke(c, 'rgba(255, 255, 255, 0.8)', 1.4);
+		c.beginPath();
+		c.moveTo(-9.4, 3.4);
+		c.quadraticCurveTo(0, 5.4, 9.4, 3.4);
+		stroke(c, INK, 3.4);
+		stroke(c, '#8d9a96', 2.0);
+		c.beginPath();
+		c.moveTo(5.6, -7.6);
+		c.lineTo(7.4, -11.2);
+		stroke(c, INK, 1.2);
+		ellipse(c, 7.4, -11.2, 0.9, 0.9, Math.floor(o.time * 1.5) % 2 ? '#ff5a4a' : '#5a1a14', 0.6);
+	} else {
+		// a hard hat with a lamp that looks the way it goes
+		if (scared) frightEyes(c, o, white, 0.2);
+		else glowEyes(c, o, 0.4, 3.3, eyeRgb, 1.5);
+		const hx = rattle;
+		if (!scared) {
+			const ax = o.lookX;
+			const ay = o.lookY || 0.0001;
+			const g = c.createRadialGradient(hx + ax * 9, -6 + ay * 9, 0.5, hx + ax * 9, -6 + ay * 9, 7);
+			g.addColorStop(0, 'rgba(255, 240, 190, 0.45)');
+			g.addColorStop(1, 'rgba(255, 240, 190, 0)');
+			c.fillStyle = g;
+			c.beginPath();
+			c.arc(hx + ax * 9, -6 + ay * 9, 7, 0, TAU);
+			c.fill();
+		}
+		c.beginPath();
+		c.arc(hx, -4.6, 7.6, Math.PI, TAU);
+		c.closePath();
+		c.fillStyle = scared ? '#c9b47a' : '#f3b23a';
+		c.fill();
+		stroke(c, INK, 1.5);
+		c.beginPath();
+		c.ellipse(hx, -4.4, 10.2, 1.6, 0, 0, TAU);
+		c.fillStyle = scared ? '#b39f6a' : '#e09a28';
+		c.fill();
+		stroke(c, INK, 1.3);
+		c.beginPath();
+		c.moveTo(hx, -12);
+		c.lineTo(hx, -5);
+		stroke(c, '#ffd27a', 0.9);
+		ellipse(c, hx + o.lookX * 3, -8.4, 1.6, 1.4, '#fff6d8', 1.0);
+	}
+}
+
+// --------------------------------------------------------------------------------- 3 the shadow
+
+function crown(c: Ctx, kind: GhostKind, o: PretenderOpts, rgb: string, st: CandState): void {
+	const tell = st === 'tell';
+	const scared = st === 'fright';
+	const shape: Record<GhostKind, { len: number; curl: number; w: number }> = {
+		BLINKY: { len: 7.5, curl: 0.4, w: 2.4 },
+		PINKY: { len: 6.5, curl: 1.6, w: 2.2 },
+		INKY: { len: 9.5, curl: 0.8, w: 1.7 },
+		CLYDE: { len: 5.5, curl: 0.6, w: 3.0 }
+	};
+	const s = shape[kind];
+	// they trail back against the heading; they bristle up in the tell, droop in the fright
+	const back = tell ? 0 : -o.lookX * 4.5;
+	const lift = tell ? 1.3 : scared ? 0.45 : 1;
+	for (let i = 0; i < 5; i++) {
+		const a = Math.PI * (1.18 + i * 0.16);
+		const bx = Math.cos(a) * 8.6;
+		const by = Math.sin(a) * 8.6;
+		const w = Math.sin(o.time * (tell ? 10 : 3.2) + i * 1.3 + PHASE[kind]) * 1.2;
+		const ex = bx * 1.2 + back + w;
+		const ey = by - s.len * lift + (scared ? 5 : 0);
+		c.beginPath();
+		c.moveTo(bx, by);
+		c.bezierCurveTo(bx, by - s.len * 0.5 * lift, ex + s.curl * 3, ey + s.curl * 2, ex, ey);
+		stroke(c, INK, s.w + 1.2);
+		stroke(c, scared ? '#3346d0' : '#101a15', s.w);
+		if (!scared) ellipse(c, ex, ey, 0.7, 0.7, `rgba(${rgb}, 0.9)`);
+	}
+}
+
+function bodyShadow(c: Ctx, kind: GhostKind, st: CandState, o: PretenderOpts, scared: boolean, white: boolean): void {
+	const ph = PHASE[kind];
+	const tell = st === 'tell';
+	const rgb = tell ? '255, 200, 71' : KIND_RGB[kind];
+	crown(c, kind, o, rgb, st);
+	paintMurk(c, scared ? (white ? WHITE : SCARED) : SHADOW, o, ph, false);
+	if (!scared) {
+		// the rim light in its colour
+		c.beginPath();
+		c.arc(0, 0, 9.1, Math.PI * 1.0, Math.PI * 2.0);
+		stroke(c, `rgba(${rgb}, 0.95)`, 1.3);
+		c.beginPath();
+		c.moveTo(-9.1, 0);
+		c.lineTo(-9.1, 7);
+		c.moveTo(9.1, 0);
+		c.lineTo(9.1, 7);
+		stroke(c, `rgba(${rgb}, 0.55)`, 1.0);
+	}
+	if (scared) {
+		frightEyes(c, o, white, -0.8);
 		return;
 	}
 	for (const side of [-1, 1]) {
-		const r = side < 0 ? 2.35 : 2.0;
-		const ex = side * 3.9 + o.lookX * 1.7;
-		const ey = -2.4 + o.lookY * 1.5 + Math.sin(o.time * 1.3 + side + ph) * 0.25;
-		glow(c, ex, ey, r * 2, tell ? 'rgba(255, 214, 120, 0.8)' : 'rgba(220, 255, 225, 0.5)', 'rgba(140, 220, 160, 0.15)');
-		ellipse(c, ex, ey, r, r * 1.12, tell ? '#ffc847' : '#e6fff0', 0.9);
-		ellipse(c, ex + o.lookX * 0.75, ey + o.lookY * 0.75, tell ? 0.45 : 0.8, 1.2, INK);
-		ellipse(c, ex - r * 0.35, ey - r * 0.4, 0.4, 0.4, '#ffffff');
+		const ex = side * 3.6 + o.lookX * 2.0;
+		const ey = -0.8 + o.lookY * 1.6;
+		glow(c, ex, ey, 4.6, `rgba(${rgb}, 0.9)`, `rgba(${rgb}, 0.3)`);
+		c.save();
+		c.translate(ex, ey);
+		c.rotate(side * -0.32);
+		ellipse(c, 0, 0, tell ? 2.8 : 2.6, tell ? 1.4 : 0.75, `rgb(${rgb})`);
+		ellipse(c, o.lookX * 0.8, o.lookY * 0.3, 0.55, tell ? 1.2 : 0.6, '#fffbe8');
+		c.restore();
 	}
-	if (tell) {
-		ellipse(c, o.lookX * 1.2, 2.6 + o.lookY, 1.3, 1.7, '#06120c', 0.7);
-	} else {
-		c.beginPath();
-		c.moveTo(-1.8 + o.lookX, 2.6 + o.lookY);
-		c.quadraticCurveTo(-0.6 + o.lookX, 3.4 + o.lookY, 0.4 + o.lookX, 2.7 + o.lookY);
-		c.quadraticCurveTo(1.2 + o.lookX, 2.2 + o.lookY, 1.9 + o.lookX, 2.9 + o.lookY);
-		stroke(c, '#06120c', 0.8);
-	}
-}
-
-// --------------------------------------------------------------------------- B the hatchling
-
-function headB(c: Ctx, kind: GhostKind, o: PretenderOpts, memb: string, behind: boolean): void {
-	if (behind && kind === 'CLYDE') {
-		// a frill crest
-		for (let i = -2; i <= 2; i++) {
-			ellipse(c, i * 2.6, -7.2 - (2 - Math.abs(i)) * 0.5, 1.8, 2.2, memb, 1.0);
-		}
-	}
-	if (!behind && kind === 'INKY') {
-		// two sprouts with glowing tips
-		for (const side of [-1, 1]) {
-			const sway = Math.sin(o.time * 2.2 + side) * 0.8;
-			c.beginPath();
-			c.moveTo(side * 3, -6.6);
-			c.quadraticCurveTo(side * 3.6, -9.5, side * 4.8 + sway, -11.2);
-			stroke(c, INK, 2.0);
-			stroke(c, memb, 0.9);
-			glow(c, side * 4.8 + sway, -11.2, 2.6, `rgba(${KIND_RGB.INKY}, 0.9)`, `rgba(${KIND_RGB.INKY}, 0.3)`);
-			ellipse(c, side * 4.8 + sway, -11.2, 0.9, 0.9, '#e8fbff', 0.6);
-		}
-	}
-}
-
-function eyeB(c: Ctx, x: number, y: number, rx: number, ry: number, o: PretenderOpts, tell: boolean): void {
-	ellipse(c, x, y, rx, ry, '#f4f8f2', 1.0);
-	const px = x + o.lookX * rx * 0.42;
-	const py = y + o.lookY * ry * 0.4;
-	ellipse(c, px, py, rx * 0.62, ry * 0.66, tell ? '#ffc847' : '#0b0f0e');
-	if (tell) ellipse(c, px, py, rx * 0.18, ry * 0.5, INK);
-	ellipse(c, px - rx * 0.25, py - ry * 0.3, rx * 0.2, rx * 0.2, '#ffffff');
-}
-
-function bodyB(c: Ctx, kind: GhostKind, st: CandState, o: PretenderOpts, scared: boolean, white: boolean): void {
-	const ph = PHASE[kind];
-	const tell = st === 'tell';
-	const memb = scared ? (white ? '#ffffff' : '#8d9fff') : '#cfe5cf';
-	headB(c, kind, o, memb, true);
-	traceBody(c);
-	stroke(c, INK, 3.2);
-	const g = c.createRadialGradient(-2, -2, 0.5, 0, 1.6, 10.5);
-	g.addColorStop(0, scared ? (white ? '#ffffff' : '#b3c0ff') : '#eef8ec');
-	g.addColorStop(0.6, memb);
-	g.addColorStop(1, scared ? (white ? '#c3cfea' : '#4f68ff') : '#8fb59a');
-	c.fillStyle = g;
-	traceBody(c);
-	c.fill();
-	c.save();
-	traceBody(c);
-	c.clip();
-	// its colour, beating as a heart, and the curled embryo
-	const b = beat(o.time + ph) * (tell ? 1.4 : 1);
-	if (!scared) glow(c, 0.6, 4.6, 6.4, `rgba(${KIND_RGB[kind]}, ${0.5 * b})`, `rgba(${KIND_RGB[kind]}, ${0.2 * b})`);
-	c.save();
-	c.translate(0.8, 4.6);
-	c.rotate(Math.sin(o.time * 0.6 + ph) * 0.3 + (tell ? Math.sin(o.time * 24) * 0.12 : 0));
-	c.beginPath();
-	c.arc(0, 0, 2.4, -0.5, Math.PI * 1.45);
-	c.globalAlpha *= scared ? 0.45 : 0.85;
-	stroke(c, '#0b1410', 2.3);
-	const hx = Math.cos(-0.5) * 2.4;
-	const hy = Math.sin(-0.5) * 2.4;
-	ellipse(c, hx, hy, 1.55, 1.4, '#0b1410');
-	for (let i = 0; i < 3; i++) {
-		c.beginPath();
-		c.moveTo(hx + 0.8, hy - 0.4 + i * 0.4);
-		c.quadraticCurveTo(hx + 2, hy - 1.2 + i, hx + 2.6 + Math.sin(o.time * 2 + i) * 0.4, hy - 0.4 + i * 0.9);
-		stroke(c, '#0b1410', 0.45);
-	}
-	c.restore();
-	// the membrane's cells
-	for (let i = 0; i < 6; i++) {
-		c.beginPath();
-		c.arc(-6 + (i % 3) * 6 + (i > 2 ? 3 : 0), -3 + Math.floor(i / 3) * 9, 1.6, 0, TAU);
-		stroke(c, 'rgba(255, 255, 255, 0.18)', 0.5);
-	}
-	// the strap of its tag
-	c.beginPath();
-	c.moveTo(-10, 6.2);
-	c.quadraticCurveTo(0, 8.2, 10, 6.4);
-	stroke(c, 'rgba(70, 52, 36, 0.85)', 0.9);
-	c.restore();
-	headB(c, kind, o, memb, false);
-	c.beginPath();
-	c.ellipse(0, 1.6, 8.7, 7.9, 0, Math.PI * 1.08, Math.PI * 1.52);
-	stroke(c, 'rgba(255, 255, 255, 0.7)', 1.1);
-	// the specimen tag, swinging on the side away from the heading
-	const s = o.faceX > 0.1 ? -1 : 1;
-	c.save();
-	c.translate(s * 6.4, 7.4);
-	c.rotate(Math.sin(o.time * 3 + ph) * 0.18 + s * 0.15);
-	rrect(c, -1.9, 0, 3.8, 2.6, 0.4);
-	c.fillStyle = '#d9c99a';
-	c.fill();
-	stroke(c, '#5a4a30', 0.5);
-	ellipse(c, -1.0, 1.3, 0.45, 0.45, scared ? '#4f68ff' : `rgb(${KIND_RGB[kind]})`);
-	c.fillStyle = '#6a5a40';
-	c.fillRect(-0.3, 0.7, 1.7, 0.3);
-	c.fillRect(-0.3, 1.5, 1.3, 0.3);
-	c.restore();
-	if (scared) {
-		frightFace(c, o, white, -1.4, 3.8);
-		return;
-	}
-	const ox = o.lookX * 1.4;
-	const oy = o.lookY * 1.2;
-	if (kind === 'BLINKY') eyeB(c, ox, -1.4 + oy, 3.6, 4.0, o, tell);
-	else {
-		eyeB(c, -3.7 + ox, -1.2 + oy, 2.6, 3.0, o, tell);
-		eyeB(c, 3.7 + ox, -1.2 + oy, 2.6, 3.0, o, tell);
-		if (kind === 'PINKY') eyeB(c, ox * 0.8, -5.4 + oy * 0.8, 1.4, 1.5, o, tell);
-	}
-	c.beginPath();
-	c.moveTo(-1 + ox, 3.6 + oy);
-	c.quadraticCurveTo(ox, tell ? 5 : 4.3, 1 + ox, 3.6 + oy);
-	stroke(c, '#2a3a2e', 0.8);
-}
-
-// -------------------------------------------------------------------------- C the jar runner
-
-const traceJar = (c: Ctx) => rrect(c, -8.4, -6.6, 16.8, 16.4, 4.4);
-
-function bodyC(c: Ctx, kind: GhostKind, st: CandState, o: PretenderOpts, scared: boolean, white: boolean): void {
-	const ph = PHASE[kind];
-	const tell = st === 'tell';
-	// tendrils out of the popped lid (behind it)
-	for (let i = 0; i < 4; i++) {
-		const w = Math.sin(o.time * (tell ? 7 : 2.4) + i * 1.7 + ph);
-		const x0 = 1 + i * 1.2;
-		c.beginPath();
-		c.moveTo(x0, -8);
-		c.quadraticCurveTo(x0 + 1.5 + w * 1.2, -10.5 - i * 0.4, x0 + 2.8 + w * 2.2, -11.6 - (i % 2) * 1.3);
-		stroke(c, INK, 1.9 - i * 0.25);
-		stroke(c, scared ? '#3346d0' : '#0b1410', 1.0 - i * 0.15);
-	}
-	traceJar(c);
-	stroke(c, INK, 3.2);
-	traceJar(c);
-	c.fillStyle = '#0b1410';
-	c.fill();
-	c.save();
-	traceJar(c);
-	c.clip();
-	// the murk sloshing: it tilts against the heading and with the step
-	const tilt = -o.faceX * 0.14 - Math.sin(o.step) * 0.08;
-	const level = -1.6 + Math.sin(o.time * 2 + ph) * 0.35;
-	c.beginPath();
-	c.moveTo(-9, level + tilt * -9);
-	for (let x = -9; x <= 9; x += 1.5) c.lineTo(x, level + tilt * x + Math.sin(x * 0.9 + o.time * 3) * 0.3);
-	c.lineTo(9, 11);
-	c.lineTo(-9, 11);
-	c.closePath();
-	c.fillStyle = scared ? (white ? '#e8eeff' : '#3346d0') : '#1f4a34';
-	c.fill();
-	c.beginPath();
-	for (let x = -9; x <= 9; x += 1.5) {
-		const y = level + tilt * x + Math.sin(x * 0.9 + o.time * 3) * 0.3;
-		if (x === -9) c.moveTo(x, y);
-		else c.lineTo(x, y);
-	}
-	stroke(c, scared ? 'rgba(200, 210, 255, 0.8)' : 'rgba(143, 214, 160, 0.75)', 0.7);
-	// the thing inside, peering out
-	ellipse(c, o.faceX * 0.8, 3.4, 6.2, 5.6, scared ? '#1a2470' : '#050b08');
-	for (let i = 0; i < 4; i++) {
-		const u = (o.time * (tell ? 1.6 : 0.5) + i / 4 + ph) % 1;
-		c.beginPath();
-		c.arc(-5 + i * 3.2, 8.8 - u * 10, 0.5 + (i % 2) * 0.3, 0, TAU);
-		stroke(c, `rgba(190, 242, 188, ${0.7 * Math.sin(u * Math.PI)})`, 0.45);
-	}
-	if (!scared) {
-		for (const side of [-1, 1]) {
-			const ex = side * 2.7 + o.lookX * 1.5;
-			const ey = 1.6 + o.lookY * 1.2;
-			const rgb = tell ? '255, 200, 71' : KIND_RGB[kind];
-			glow(c, ex, ey, 3.6, `rgba(${rgb}, 0.95)`, `rgba(${rgb}, 0.35)`);
-			c.save();
-			c.translate(ex, ey);
-			c.rotate(side * -0.35);
-			ellipse(c, 0, 0, tell ? 1.9 : 1.6, tell ? 1.2 : 0.95, `rgb(${rgb})`);
-			ellipse(c, o.lookX * 0.4, o.lookY * 0.3, 0.35, 0.75, INK);
-			c.restore();
-		}
-	}
-	c.restore();
-	// the glass: a tint, the highlights, the crack
-	traceJar(c);
-	c.fillStyle = 'rgba(190, 240, 220, 0.07)';
-	c.fill();
-	c.beginPath();
-	c.moveTo(-6.2, -3.6);
-	c.lineTo(-6.2, 5.2);
-	stroke(c, 'rgba(220, 244, 236, 0.6)', 1.2);
-	ellipse(c, -4.6, -4.4, 0.8, 0.5, 'rgba(240, 255, 248, 0.8)');
-	c.beginPath();
-	c.moveTo(4.2, -6.6);
-	c.lineTo(5.4, -4.2);
-	c.lineTo(4.4, -2.6);
-	c.lineTo(6.2, -0.8);
-	stroke(c, 'rgba(230, 250, 244, 0.7)', 0.5);
-	// the label
-	c.save();
-	c.translate(0, 5.6);
-	c.rotate(-0.04);
-	c.fillStyle = 'rgba(217, 212, 192, 0.92)';
-	c.fillRect(-4.4, -1.6, 8.8, 3.4);
-	c.fillStyle = scared ? '#4f68ff' : `rgb(${KIND_RGB[kind]})`;
-	c.fillRect(-4.4, -1.6, 1.4, 3.4);
-	c.fillStyle = '#4a4a3c';
-	c.fillRect(-2.4, -0.9, 5.4, 0.45);
-	c.fillRect(-2.4, 0.2, 3.6, 0.45);
-	c.restore();
-	// the lid, popped a little
-	c.save();
-	c.translate(6.4, -6.6);
-	c.rotate(-0.12 - (tell ? Math.abs(Math.sin(o.time * 12)) * 0.12 : 0));
-	c.translate(-6.4, 6.6);
-	const lg = c.createLinearGradient(0, -9.6, 0, -6.6);
-	lg.addColorStop(0, '#8d9a96');
-	lg.addColorStop(1, '#3a4442');
-	rrect(c, -6.6, -9.6, 13.2, 3.0, 0.8);
-	c.fillStyle = lg;
-	c.fill();
-	stroke(c, INK, 1.3);
-	for (const bx of [-4.6, 0, 4.6]) ellipse(c, bx, -8.1, 0.45, 0.45, '#cfd8d4');
-	c.restore();
-	if (scared) frightFace(c, o, white, 1.4, 2.9);
 }
 
 // ---------------------------------------------------------------------------------- the walker
 
-function feetColor(v: Look, scared: boolean, white: boolean): string {
-	if (scared) return white ? '#c3cfea' : '#3346d0';
-	return v === 'a' ? '#245c3e' : v === 'b' ? '#9fbf9f' : '#0b1410';
-}
-
 function walker(c: Ctx, kind: GhostKind, v: Look, st: CandState, o: PretenderOpts, unit: number, k: number): void {
-	const phase = PHASE[kind];
+	const ph = PHASE[kind];
 	c.scale(unit * SCALE * CALM, unit * SCALE * CALM);
 	const scared = st === 'fright';
 	const white = scared && Boolean(o.white);
-	if (scared && !o.flashing) c.translate(Math.sin(o.time * 38 + phase) * 0.45, 0);
-	const step = o.step * (1 - k);
-	const lift = footLift(step);
-	c.translate(0, -Math.abs(Math.sin(step)) * 0.7 * (1 - k));
-	c.translate(0, 10);
-	c.rotate((Math.sin(step) * 0.08 + o.lookX * 0.1) * (1 - k));
-	c.translate(0, -10);
-	for (const [side, up] of [
-		[-1, lift.left],
-		[1, lift.right]
-	] as const) {
-		c.beginPath();
-		c.ellipse(side * 4.2 * (1 - 0.3 * k), 11 - up - 3.4 * k, 3.3, 2.5 * (1 - 0.5 * k), 0, 0, TAU);
-		c.fillStyle = feetColor(v, scared, white);
-		c.fill();
-		stroke(c, INK, 1.5);
-	}
-	const squash = Math.sin(o.time * 5 + phase);
-	c.translate(0, 10);
-	c.scale(1 - 0.04 * squash, 1 + 0.05 * squash);
-	c.translate(0, -10);
-	if (v === 'a') bodyA(c, kind, st, o, scared, white);
-	else if (v === 'b') bodyB(c, kind, st, o, scared, white);
-	else bodyC(c, kind, st, o, scared, white);
+	if (scared && !o.flashing) c.translate(Math.sin(o.time * 38 + ph) * 0.4, 0);
+	// no feet, no rocking: a slow hover and a soft breath
+	c.translate(0, Math.sin(o.time * 2.6 + ph) * 0.45 * (1 - k) - 1);
+	const breath = Math.sin(o.time * 2.2 + ph);
+	c.scale(1 + 0.02 * breath, 1 - 0.02 * breath);
+	const pal = scared ? (white ? WHITE : SCARED) : MURK[kind];
+	if (v !== 'c' || scared) drips(c, pal[1], o, ph, false);
+	else drips(c, '', o, ph, true);
+	if (v === 'a') bodyCore(c, kind, st, o, pal, scared, white);
+	else if (v === 'b') bodyCrew(c, kind, st, o, pal, scared, white);
+	else bodyShadow(c, kind, st, o, scared, white);
 }
 
 function halo(c: Ctx, x: number, y: number, tile: number, rgb: string, a: number): void {
@@ -500,16 +498,7 @@ function halo(c: Ctx, x: number, y: number, tile: number, rgb: string, a: number
 }
 
 /** A candidate at (x, y), `tile` the tile's size in px; `o.fold` the mimicry (0 creature .. 1 food). */
-export function drawCandidate(
-	c: Ctx,
-	x: number,
-	y: number,
-	tile: number,
-	kind: GhostKind,
-	v: Look,
-	st: CandState,
-	o: PretenderOpts
-): void {
+export function drawCandidate(c: Ctx, x: number, y: number, tile: number, kind: GhostKind, v: Look, st: CandState, o: PretenderOpts): void {
 	if (st === 'eyes') {
 		drawPretender(c, x, y, tile, kind, 'eyes', o);
 		return;
@@ -533,7 +522,7 @@ export function drawCandidate(
 		c.restore();
 		return;
 	}
-	halo(c, x, y, tile, st === 'fright' ? FRIGHT_RGB : v === 'a' ? '143, 214, 160' : KIND_RGB[kind], v === 'a' ? 0.4 : 0.32);
+	halo(c, x, y, tile, st === 'fright' ? FRIGHT_RGB : KIND_RGB[kind], v === 'c' ? 0.44 : 0.32);
 	c.save();
 	c.translate(x, y);
 	walker(c, kind, v, st, o, unit, 0);
