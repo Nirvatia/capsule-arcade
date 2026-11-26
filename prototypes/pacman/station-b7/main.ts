@@ -16,7 +16,7 @@ import { CinnabarHero } from '../../../src/games/pacman/render/actors/hero/Cinna
 import { GAME_FEEL } from '../../../src/games/pacman/render/actors/HeroView';
 import { drawHeroGlow } from '../../../src/games/pacman/render/station/pretender';
 import type { PretenderState } from '../../../src/games/pacman/render/station/pretender';
-import { drawParasite, type CandState, type Look } from './parasites';
+import { drawJelly, type CandState, type Look } from './jelly';
 
 
 const view = document.getElementById('view') as HTMLCanvasElement;
@@ -56,11 +56,11 @@ const st = {
 };
 
 const NOTES: Record<string, string> = {
-	'rage-now': 'Ярость: маска разлетается, лайм прорывается из тела (для вариантов A, B, C своя)',
+	'rage-now': 'Ярость: желе вскипает лаймом (для вариантов A, B, C своя)',
 	'mimic-now': 'Мимики как в игре: Pretender в маске',
-	'mimic-a': 'A «Носитель»: чёрный паразит в маске её цвета, лаймовые швы, глаз под маской, бахрома отростков; нарост у каждого свой (жвалы, воротник, усы, шипы)',
-	'mimic-b': 'B «Личинка»: три чёрных кольца, между ними светится лайм, ползёт волной; маска на голове, хвост у каждого свой',
-	'mimic-c': 'C «Кладка»: мешок чёрной перепонки, внутри толкаются лаймовые личинки, на лицевой стороне маска',
+	'mimic-a': 'A «Амёба»: светящееся желе его цвета, ложноножки выстреливают по ходу, два тёмных ядра-глаза; у каждого свой характер формы',
+	'mimic-b': 'B «Желейный призрак»: силуэт призрака из желе, капающий подол, один крупный выступ сверху у каждого свой',
+	'mimic-c': 'C «Пожиратель»: амёба, спереди раскрывается полость с лаймом внутри, край полости у каждого свой',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
 	'style-parasite': 'Заражение «Паразит»: тот же улей (вены, узлы, плоть по пластинам, кладки, сердцебиение), но чёрный, а жизнь в нём лаймовая',
 	'style-hive': 'Заражение как в игре: красный улей',
@@ -93,9 +93,9 @@ const GROUPS: Group[] = [
 		key: 'mimic',
 		items: [
 			['Как в игре', 'now'],
-			['A Носитель', 'a'],
-			['B Личинка', 'b'],
-			['C Кладка', 'c'],
+			['A Амёба', 'a'],
+			['B Желейный призрак', 'b'],
+			['C Пожиратель', 'c'],
 			['Выкл', 'off']
 		]
 	},
@@ -376,7 +376,7 @@ function drawMimic(
 ): void {
 	if (st.mimic === 'off') return;
 	if (st.mimic === 'now') drawPretender(c, x, y, S, kind, cs as PretenderState, o);
-	else drawParasite(c, x, y, S, kind, st.mimic, cs, o);
+	else drawJelly(c, x, y, S, kind, st.mimic, cs, o);
 }
 
 /** The sheet: the four kinds, the headings and the tell, the fright, the eyes and the mimicry. */

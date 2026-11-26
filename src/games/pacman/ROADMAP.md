@@ -210,12 +210,13 @@ last (see Later).
          acid lime reads as its blood) with the scene's `setFilm('parasite')` (the lamps dim and
          cold under it, the veins' shadows black); on the `station-b7` page beside the red one,
          awaiting his look. He found it definitely better (2026-11-26). The squad as the hive's
-         parasites (`parasites.ts` on the page, each with a rage of its own: the mask bursts and
-         the lime breaks out of that body), awaiting his pick: A the host mask (the Pretender
-         remade black with lime seams, a fringe of tendrils for feet, a growth per kind:
-         mandibles, a collar of tendrils, feelers, spines), B the larva (three black rings, lime
-         between them, a tail per kind), C the clutch (a black sac with lime larvae pushing inside,
-         the mask stuck high on it). Next: larvae crawling the hive's veins, the cysts as clutches.
+         parasites (a host mask, a larva, a clutch) suffered from small details and a dark body.
+         Now jelly (`jelly.ts` on the page, awaiting his pick): a gel lit from inside, brightest at
+         its membrane, in its kind's colour on the black hive, two dark nuclei for eyes drifting
+         toward the heading, the form reaching ahead; A the amoeba (pseudopods shooting out ahead;
+         spiky, lobed, threads, lumps), B the gel ghost (the classic silhouette, a dripping hem,
+         one big lobe on top per kind), C the devourer (its front opens into a cavity lit lime;
+         the rim per kind). The rage boils each lime. Next: larvae crawling the hive's veins, the cysts as clutches.
       7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance
