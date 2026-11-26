@@ -318,8 +318,9 @@ Numbers are starting points, later in `config/stationConfig.ts`.
      fencers holding it do not bite. **It can be survived** (the owner): one ring in two has a
      thin seal (torn in the middle, flickering) that tears if he pushes into it for 0.6 s; the
      side tunnels lead out too.
-  2. **The ambush**: one fades out and lies as food on a tile he has already eaten, along his
-     way (the tell for an attentive player: "there was nothing here"; it breathes out of step);
+  2. **The ambush** (likelier as the food runs low): one fades out and lies as food on a tile he
+     has already eaten, along his way; with half the food eaten a second lies among the food
+     still left, with three quarters a third (always one left to hunt) (the tell for an attentive player: "there was nothing here"; it breathes out of step);
      the others shut every way out of where he is but the one that leads to it. Stepping on it
      holds him 0.8 s while the rest close in. It creeps a tile along the eaten corridors now
      and then, but only while he does not look its way.
@@ -333,8 +334,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   frightened (fleeing at 0.8 of its pace) and can be eaten (eyes home fast, 200-1600); the ring
   goes dark, but a lurker or a venter stays hidden and its play goes on after (the owner,
   2026-11-26: 6 s and showing the mimics made the cell too strong).
-- **The food** charges the hatch: the HUD shows the charge; at about 75% of the food the
-  escape is ready (the rest is score). The classic eating route stays the core; the mimics turn
+- **The food** charges the hatch: the HUD shows the charge; at 90% of the food the escape is
+  ready (the rest is score; 75% before, the owner: the late lurkers want the last food hunted). The classic eating route stays the core; the mimics turn
   the eaten corridors into the place to watch.
 - **Caught** before the escape: the station's three hits (its own, not the run's lives); the
   third ends the level without the reward (the hell's rule), the run goes on.

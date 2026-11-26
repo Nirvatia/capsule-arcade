@@ -365,6 +365,38 @@ describe('the roles', () => {
 	});
 });
 
+describe('the mimic food', () => {
+	/** Lurkers on their way or lying hidden. */
+	const lurkers = (squad: StationSquad) =>
+		new Set([...squad.going, ...squad.hiddenList].filter((h) => h.as !== 'vent').map((h) => h.kind))
+			.size;
+
+	it('lays one lurker while most food is left, up to three when little is', () => {
+		for (const [eat, least, most] of [
+			[0.1, 1, 1],
+			[0.85, 2, 3]
+		] as const) {
+			const s = station();
+			release(s);
+			const squad = new StationSquad(s.world, 2);
+			s.ghosts.setSquadGuide(squad);
+			// he ate the bottom row left of the console, then from the top rows: `eat` of the food
+			const food: string[] = [];
+			for (let y = 0; y < s.grid.height; y += 1)
+				for (let x = 0; x < s.grid.width; x += 1) if (s.world.food(x, y)) food.push(`${x},${y}`);
+			for (let x = 1; x <= 12; x += 1) s.eaten.add(`${x},24`);
+			for (const k of food) {
+				if (s.eaten.size >= Math.round(food.length * eat)) break;
+				s.eaten.add(k);
+			}
+			squad.update(0.01, s.ghosts, { x: 12, y: 24 }, 'LEFT');
+			force(s, squad, { x: 12, y: 24 }, 'ambush');
+			expect(lurkers(squad)).toBeGreaterThanOrEqual(least);
+			expect(lurkers(squad)).toBeLessThanOrEqual(most);
+		}
+	});
+});
+
 describe('a power cell', () => {
 	it('leaves the hidden hidden and their play on (it no longer shows the mimics)', () => {
 		const s = station();

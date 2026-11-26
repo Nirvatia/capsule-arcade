@@ -450,7 +450,8 @@ export class StationSquad implements SquadGuide {
 		const n = this.hunters().length;
 		const scores: Array<[SquadTactic, number]> = [];
 		if (n >= 3) scores.push(['fence', 1]);
-		if (n >= 2 && this.ambushSpot()) scores.push(['ambush', 1.2]);
+		// the less food is left, the likelier the ambush (the last food is where they wait)
+		if (n >= 2 && this.ambushSpot()) scores.push(['ambush', 1.2 + 1.6 * (1 - this.foodLeft())]);
 		if (n >= 2 && this.ventSpot()) scores.push(['vent', 1.4]);
 		const fresh = scores.filter(([t]) => t !== this.last);
 		const pool = fresh.length ? fresh : scores;
@@ -503,6 +504,7 @@ export class StationSquad implements SquadGuide {
 			if (!spot) return;
 			// the one nearest the tile (not the hunter at him) walks there to hide; the rest herd
 			const lurker = this.nearestTo(byDist, spot);
+			const lurkers = [lurker];
 			this.roles.set(lurker.kind, 'lurker');
 			this.targets.set(lurker.kind, spot);
 			this.going.push({
@@ -514,9 +516,30 @@ export class StationSquad implements SquadGuide {
 				lesson: Math.max(0, 1 - this.ambushes / SQUAD_TUNE.lessons),
 				time: 0
 			});
+			// the less food is left, the more lie among it (the owner): one, two, then three,
+			// always one left to hunt
+			const left = this.foodLeft();
+			const more = Math.min(left > 0.5 ? 0 : left > 0.25 ? 1 : 2, byDist.length - 2);
+			for (const at of this.lurkSpots(more, [spot])) {
+				const rest = byDist.filter((e) => !lurkers.includes(e.g));
+				const g = this.nearestTo(rest, at); // rest[0] stays the hunter
+				if (lurkers.includes(g)) break;
+				lurkers.push(g);
+				this.roles.set(g.kind, 'lurker');
+				this.targets.set(g.kind, at);
+				this.going.push({
+					kind: g.kind,
+					to: at,
+					spot: at,
+					as: 'food',
+					fade: SQUAD_TUNE.fade,
+					lesson: 0,
+					time: 0
+				});
+			}
 			this.ambushes += 1;
 			byDist
-				.filter((e) => e.g !== lurker)
+				.filter((e) => !lurkers.includes(e.g))
 				.forEach((e, i) => this.roles.set(e.g.kind, i === 0 ? 'hunter' : 'cutter'));
 			this.herd();
 		} else {
@@ -545,6 +568,47 @@ export class StationSquad implements SquadGuide {
 	}
 
 	/** Of those not at him (the nearest is the hunter), the one nearest `spot`. */
+	/** The share of the station's food not eaten yet, 0..1. */
+	foodLeft(): number {
+		let food = 0;
+		let eaten = 0;
+		for (let y = 0; y < this.world.height; y += 1) {
+			for (let x = 0; x < this.world.width; x += 1) {
+				if (this.world.food(x, y)) food += 1;
+				else if (this.world.eaten(x, y)) eaten += 1;
+			}
+		}
+		return food + eaten > 0 ? food / (food + eaten) : 1;
+	}
+
+	/**
+	 * Late lurkers' tiles: eaten tiles right beside food still lying there (they pass for the
+	 * last food), not by him, apart from each other, nearest his way first.
+	 */
+	private lurkSpots(n: number, taken: GhostTile[]): GhostTile[] {
+		if (n <= 0) return [];
+		const near = this.foreseen.slice(0, SQUAD_TUNE.foresee);
+		const out: GhostTile[] = [];
+		const all: Array<{ t: GhostTile; score: number }> = [];
+		for (let y = 0; y < this.world.height; y += 1) {
+			for (let x = 0; x < this.world.width; x += 1) {
+				if (!this.world.eaten(x, y) || this.world.vent(x, y) || this.world.cell(x, y)) continue;
+				if (Math.abs(x - this.hero.x) + Math.abs(y - this.hero.y) < 4) continue;
+				const byFood = Object.values(DIRS).some(([dx, dy]) => this.world.food(x + dx, y + dy));
+				if (!byFood) continue;
+				const way = near.reduce((m, t) => Math.min(m, Math.abs(t.x - x) + Math.abs(t.y - y)), 99);
+				all.push({ t: { x, y }, score: way + this.random() * 2 });
+			}
+		}
+		all.sort((a, b) => a.score - b.score);
+		for (const { t } of all) {
+			if (out.length >= n) break;
+			const apart = [...taken, ...out].every((o) => Math.abs(o.x - t.x) + Math.abs(o.y - t.y) >= 4);
+			if (apart) out.push(t);
+		}
+		return out;
+	}
+
 	private nearestTo(byDist: Array<{ g: GhostModel; d: number }>, spot: GhostTile): GhostModel {
 		const pool = byDist.length > 1 ? byDist.slice(1) : byDist;
 		let best = pool[0].g;

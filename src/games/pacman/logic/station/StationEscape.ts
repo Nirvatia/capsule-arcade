@@ -7,7 +7,7 @@ import type { GhostTile } from '../actors/GhostModel';
 
 export const ESCAPE_TUNE = {
 	/** The share of the food that charges the hatch. */
-	charge: 0.75,
+	charge: 0.9,
 	/** A door starts closing when he is this many route steps from it. */
 	warn: 3,
 	/** Seconds a door takes to close. */
