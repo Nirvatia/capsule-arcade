@@ -2,7 +2,8 @@
 // budget: the hull and the baked architecture are one screen-sized layer, redrawn only on a
 // resize; the infestation of the phase is a second one, redrawn only when the phase changes; the
 // live props draw over them in stage space; the infection (0..1) reveals the infestation from
-// the lair out and sinks the light; the light map is a small canvas of sprite lights
+// the lair out (`B7Hive`: veins, then flesh, the torn lair doors) and sinks the light, the
+// hive's heartbeat over the light (not on Low); the light map is a small canvas of sprite lights
 // (no gradient per frame), its bloom a downscale (no canvas filter, which Safari lacks); the
 // grain and the bloom are High only, the food's emissive lift Medium and up.
 import type { GridMatrix } from '../../../config/gridConfig';
@@ -11,15 +12,13 @@ import { boardPlacement } from '../../common/boardScale';
 import type { RenderQuality } from '../../common/renderQuality';
 import type { GridLayout } from '../../maze/GridView';
 import { createB7Scene } from './b7Scene';
+import { B7Hive } from './b7Hive';
 
 export type B7Phase = 1 | 2 | 3;
 export type B7Light = 'quarantine' | 'alert';
 
 /** The light map's resolution against the screen (the mock-up's). */
 const LIGHT_SCALE = 0.32;
-/** The infestation's farthest reach from the lair (the mock-up's phase 3), tiles; redrawn per step. */
-const HIVE_REACH = 11.6;
-const REACH_STEP = 0.25;
 
 /** The mock-up's phase for the props that still go by it (the tanks, the screens, the steam). */
 export function phaseOf(infection: number): B7Phase {
@@ -41,7 +40,7 @@ export class B7World {
 	readonly scene: ReturnType<typeof createB7Scene>;
 	private readonly base: HTMLCanvasElement;
 	/** The infestation at its fullest, revealed from the lair out as the infection grows. */
-	private readonly hive: HTMLCanvasElement;
+	private readonly hive: B7Hive;
 	private readonly grain: HTMLCanvasElement;
 	private quality: RenderQuality = 'high';
 	private vw = 0;
@@ -52,22 +51,17 @@ export class B7World {
 	private offX = 0;
 	private offY = 0;
 	private staticView: HTMLCanvasElement | null = null;
-	private hiveView: { step: number; canvas: HTMLCanvasElement } | null = null;
+	private hiveView: { key: string; canvas: HTMLCanvasElement } | null = null;
 	private lightMap: HTMLCanvasElement | null = null;
 	private bloom: HTMLCanvasElement | null = null;
 
-	/** `bakeHive`: another infestation at its fullest, in stage space (the mock-up's by default);
-	 *  `sceneOpts`: the scene's own switches (`createB7Scene`). */
-	constructor(
-		grid: GridMatrix,
-		bakeHive?: (scene: ReturnType<typeof createB7Scene>) => HTMLCanvasElement,
-		sceneOpts?: Parameters<typeof createB7Scene>[1]
-	) {
-		this.scene = createB7Scene(grid, sceneOpts);
+	constructor(grid: GridMatrix) {
+		// the lair's doors are the hive's (torn apart), not the scene's
+		this.scene = createB7Scene(grid, { lairDoors: false });
 		this.base = this.scene.bakeBaseScene();
 		this.grain = this.scene.buildGrainTile();
 		// the infestation at its fullest, baked once with the level
-		this.hive = bakeHive ? bakeHive(this.scene) : this.scene.bakeRestrainedHivePhase(3);
+		this.hive = new B7Hive(this.scene, grid);
 	}
 
 	setQuality(quality: RenderQuality): void {
@@ -151,11 +145,11 @@ export class B7World {
 				g.drawImage(this.base, 0, 0, s.STAGE_W, s.STAGE_H);
 			});
 		}
-		const step = Math.round((infection * HIVE_REACH) / REACH_STEP);
-		if (!this.hiveView || this.hiveView.step !== step) {
+		const key = this.hive.key(infection);
+		if (!this.hiveView || this.hiveView.key !== key) {
 			this.hiveView = {
-				step,
-				canvas: this.screenLayer((g) => this.paintHive(g, step * REACH_STEP))
+				key,
+				canvas: this.screenLayer((g) => this.hive.paint(g, infection))
 			};
 		}
 		ctx.drawImage(this.staticView, 0, 0, this.vw, this.vh);
@@ -174,31 +168,6 @@ export class B7World {
 		s.drawLabPowerCellsEU(ctx, time);
 		s.drawAtmosphereFX(ctx, dt, time, phase);
 		ctx.restore();
-	}
-
-	/**
-	 * The infestation as far as `reach` tiles from the lair (the floor's and the walls' ways): the
-	 * full layer cut by a mask of the tiles, soft at its edge (a tile-sized canvas stretched).
-	 */
-	private paintHive(g: CanvasRenderingContext2D, reach: number): void {
-		const s = this.scene;
-		g.drawImage(this.hive, 0, 0, s.STAGE_W, s.STAGE_H);
-		const mask = canvas(s.COLS, s.ROWS);
-		const mg = ctx2d(mask);
-		const img = mg.createImageData(s.COLS, s.ROWS);
-		for (let y = 0; y < s.ROWS; y += 1) {
-			for (let x = 0; x < s.COLS; x += 1) {
-				const d = s.infectionDistance(x, y);
-				const a = Math.max(0, Math.min(1, (reach - d) / 1.2 + 0.5));
-				img.data[(y * s.COLS + x) * 4 + 3] = Math.round(a * 255);
-			}
-		}
-		mg.putImageData(img, 0, 0);
-		g.save();
-		g.globalCompositeOperation = 'destination-in';
-		g.imageSmoothingEnabled = true;
-		g.drawImage(mask, s.MAZE_X, s.MAZE_Y, s.COLS * s.TILE, s.ROWS * s.TILE);
-		g.restore();
 	}
 
 	/** Step 12: the light map multiplied over the world, the food's lift, the bloom. */
@@ -257,6 +226,12 @@ export class B7World {
 			ctx.drawImage(bloom, 0, 0, this.vw, this.vh);
 		}
 		ctx.restore();
+		if (this.quality !== 'low') {
+			// the hive's heartbeat, a light of its own
+			this.enter(ctx);
+			this.hive.drawPulse(ctx, infection, time);
+			ctx.restore();
+		}
 	}
 
 	/** Step 13: the film grain, High only. */

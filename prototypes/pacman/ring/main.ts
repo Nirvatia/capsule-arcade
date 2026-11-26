@@ -6,7 +6,6 @@
 //   4 the fade.  Query: ?r=<radius in tiles> ?inf=0..1
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
-import { bakeVeins } from '../../../src/games/pacman/render/station/b7/b7Veins';
 import { drawPretender } from '../../../src/games/pacman/render/station/pretender';
 import type { PretenderState } from '../../../src/games/pacman/render/station/pretender';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
@@ -20,7 +19,7 @@ const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const legend = document.getElementById('legend') as HTMLDivElement;
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const inf = Math.min(1, Math.max(0, Number(q.get('inf') ?? 0.3)));
-const world = new B7World(GRID_STATION, (s) => bakeVeins(s, GRID_STATION));
+const world = new B7World(GRID_STATION);
 world.setQuality('medium');
 const hero = new CinnabarHero();
 

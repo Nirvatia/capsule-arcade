@@ -79,7 +79,7 @@ render/
                    the hull and baked architecture as one screen layer per resize, the phase's
                    infestation one per phase change, the live props in stage space, the light
                    map of sprite lights with the flashlight, bloom by downscale, grain on High),
-                   b7Veins (the infestation in the bulkheads, the owner's pick), pretender (the squad's creature, the owner's STATION_MIMIC: the painter and its RailGait), drawLurkerEye (the lurker's gold eye tell), squadMarks (the plays'
+                   b7Hive (the infestation, the total takeover: veins, flesh over the plates, the torn lair doors, the heartbeat; revealed from the lair by the infection), pretender (the squad's creature, the owner's STATION_MIMIC: the painter and its RailGait), drawLurkerEye (the lurker's gold eye tell), squadMarks (the plays'
                    and the escape's marks). The older style B, kept for the prototypes until
                    the owner has played B-7:
                    StationBake (the scene baked once at a scale fitted

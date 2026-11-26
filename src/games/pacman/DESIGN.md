@@ -366,7 +366,12 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   infestation creeping per phase, amber bio-spores for food, lab power cells), on the game's
   maze. Its phase follows the hatch: containment, the breakout from half the charge, the
   absorption in the escape; the light is the quarantine's, the alarm's (dark, red beacons) in
-  the escape, with **a flashlight round the hero** (the owner) so the dark maze reads. The squad
+  the escape, with **a flashlight round the hero** (the owner) so the dark maze reads. The infestation is a
+  **total takeover** (the owner, 2026-11-26; `b7Hive`): from the lair out, volumetric veins
+  first (every wall by 90% infection), then flesh over the wall plates (every wall at 100%, the
+  escape), cysts, lips over the edges (the corridors' middles stay clean, the walls' amber edges
+  keep the maze readable), a soft heartbeat out of the lair every 6 s; the lair's blast doors
+  are torn apart from inside, flesh in the breach (its grate and cocoons as before). The squad
   are **Pretenders** (the owner's `STATION_MIMIC.html`, its `smileMimic` refined for B-7,
   2026-11-26; `render/station/pretender`): the season ghosts' grammar (upright, never turned, two
   bean feet stepping with the distance, a lean, eyes that show the way; a gliding or crawling

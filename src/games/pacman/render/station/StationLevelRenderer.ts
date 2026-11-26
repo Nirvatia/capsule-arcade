@@ -9,7 +9,6 @@ import type { GridLayout } from '../maze/GridView';
 import type { LevelRenderer, PreviewFrame, RenderFrame, WorldPreview } from '../RenderFrame';
 import type { SharedLayers } from '../SharedLayers';
 import { B7World } from './b7/B7World';
-import { bakeVeins } from './b7/b7Veins';
 import type { B7Light } from './b7/B7World';
 import { RailGait, drawLurkerEye, drawPretender, pretenderStateFor } from './pretender';
 import type { PretenderOpts, PretenderState } from './pretender';
@@ -166,7 +165,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		if (!this.previewWorld || this.previewWorld.grid !== frame.season.grid) {
 			this.previewWorld = {
 				grid: frame.season.grid,
-				world: new B7World(frame.season.grid, (sc) => bakeVeins(sc, frame.season.grid))
+				world: new B7World(frame.season.grid)
 			};
 			this.previewWorld.world.setQuality(this.quality);
 		}
@@ -185,10 +184,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 	private worldFor(grid: GridMatrix): B7World {
 		if (this.world?.grid !== grid) {
 			const preview = this.previewWorld;
-			const world =
-				preview && preview.grid === grid
-					? preview.world
-					: new B7World(grid, (sc) => bakeVeins(sc, grid));
+			const world = preview && preview.grid === grid ? preview.world : new B7World(grid);
 			world.setQuality(this.quality);
 			this.world = { grid, world };
 			this.previewWorld = null;

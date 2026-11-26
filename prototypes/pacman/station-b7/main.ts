@@ -5,15 +5,12 @@
 //   1 hunt, 2 tell, 3 rage, 4 fright, 5 flashing, 6 mimicry (they fold where they stop), 7 eyes;
 //   Space a 180 for all; Z the line-up x3 (arrows turn it, A auto); P the mock-up's candy colours.
 // Query: ?c=orig|pretender|hermit ?s=<state> ?zoom ?inf=0..1 ?escape=1 ?high
-//   ?scene: the station alone, the infestation's candidate C (`hiveC.ts`: the total takeover):
-//     keys 1 / 2 / 3 the infection 0.35 / 0.65 / 1.0, P the heartbeat; ?hive=b the game's (B)
-//     or a (the mock-up's); also ?cell=gold|ember|rose.
+//   ?scene: the station alone as the game draws it (the infestation `b7Hive`): keys 1 / 2 / 3
+//     the infection 0.35 / 0.65 / 1.0; also ?cell=gold|ember|rose.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
-import { bakeVeins } from '../../../src/games/pacman/render/station/b7/b7Veins';
 import type { GhostKind as SquadKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import { drawMimic, type Look, type MOpts, type MState } from './mimicLooks';
-import { HiveCView } from './hiveC';
 
 const q = new URLSearchParams(location.search);
 const view = document.getElementById('view') as HTMLCanvasElement;
@@ -23,18 +20,7 @@ const D = Math.min(window.devicePixelRatio || 1, 2);
 const sceneOnly = q.has('scene');
 let inf = Math.min(1, Math.max(0, Number(q.get('inf') ?? (sceneOnly ? 0.65 : 0.3))));
 const escape = q.get('escape') === '1';
-const hiveKind = q.get('hive') ?? (sceneOnly ? 'c' : 'b');
-const world = new B7World(
-	GRID_STATION,
-	hiveKind === 'a'
-		? undefined
-		: hiveKind === 'c'
-			? () => document.createElement('canvas')
-			: (s) => bakeVeins(s, GRID_STATION),
-	{ lairDoors: hiveKind !== 'c' }
-);
-const hiveC = hiveKind === 'c' ? new HiveCView(world.scene, GRID_STATION) : null;
-let pulse = true;
+const world = new B7World(GRID_STATION);
 world.setQuality(q.has('high') ? 'high' : 'medium');
 const scene = world.scene;
 
@@ -274,7 +260,6 @@ window.addEventListener('keydown', (e) => {
 	if (sceneOnly) {
 		const level: Record<string, number> = { '1': 0.35, '2': 0.65, '3': 1 };
 		if (level[key] !== undefined) inf = level[key];
-		else if (key === 'p') pulse = !pulse;
 		else return;
 		showSceneLegend();
 		return;
@@ -297,9 +282,7 @@ window.addEventListener('keydown', (e) => {
 });
 function showSceneLegend(): void {
 	legend.textContent =
-		`Заражение ${hiveKind.toUpperCase()} · ${Math.round(inf * 100)}%${hiveC ? (pulse ? ' · пульс' : '') : ''}\n` +
-		'1 / 2 / 3 заражение 35 / 65 / 100%' +
-		(hiveC ? '  P пульс' : '');
+		`Заражение · ${Math.round(inf * 100)}%\n` + '1 / 2 / 3 заражение 35 / 65 / 100%';
 }
 if (sceneOnly) showSceneLegend();
 else showLegend();
@@ -320,18 +303,7 @@ function frame(now: number): void {
 	world.resize(vw, vh, D);
 	scene.setExtraLights([]);
 	world.drawScene(ctx, t, dt, inf, true);
-	if (hiveC) {
-		world.enter(ctx);
-		hiveC.draw(ctx, inf);
-		hiveC.drawLair(ctx);
-		ctx.restore();
-	}
 	world.drawLight(ctx, t, inf, escape ? 'alert' : 'quarantine', true);
-	if (hiveC) {
-		world.enter(ctx);
-		if (pulse) hiveC.drawPulse(ctx, inf, t);
-		ctx.restore();
-	}
 	if (!sceneOnly) {
 		update(dt);
 		if (lineAuto && (autoClock += dt) > 1.8) {

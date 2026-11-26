@@ -1,25 +1,24 @@
-// A candidate for the station's infestation (the owner, 2026-11-26: "total takeover, as if alien
-// organics were seizing the station"), in place of `b7Veins` (B) for his approval. Three layers in
-// stage space, baked once at their fullest and revealed from the lair out like the game's:
-//   veins  volumetric tubes under a wet skin (a dark rim, a lit top, swollen nodes and knots), the
-//          same topology as B's (each wall tile's centre to the edges it shares with walls), the
-//          sick amber edges kept so the maze reads;
-//   flesh  tissue creeping over the wall plates in lobes (denser near the lair, steel showing in
-//          its holes), lips of it bulging over the walls' edges into the corridor's margin (its
-//          middle stays clean), wet glints, egg cysts on some crests (they flare with the beat),
-//          tongues hanging over the south facades; it trails
-//          the veins' front, so the station is veined first and overgrown later;
-//   pulse  a heartbeat (lub-dub every 6 s, soft) running out of the lair along the walls' veins;
-//   lair   the lair in the new style (the owner): massive blast doors torn apart from inside,
-//          their ends peeled outward, flesh oozing through the breach (no hazard lintel); lips
-//          over the pit's rim, cords from its walls to the cocoons; the grate and the cocoons
-//          kept (the owner); the scene drawn with `lairDoors: false`.
-import type { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
+// The station's infestation (the owner, 2026-11-26: "total takeover, as if alien organics were
+// seizing the station"; the `station-b7` prototype's candidate C), in place of the earlier veins.
+// Baked once at its fullest in stage space and revealed from the lair out with the infection:
+//   veins  volumetric tubes under a wet skin (a dark rim, a lit top, swollen nodes and knots), each
+//          wall tile's centre to the edges it shares with walls; the sick amber edges kept so the
+//          maze reads; they reach the farthest wall at 90% infection;
+//   flesh  tissue over the wall plates in lobes (denser near the lair, steel showing in its holes),
+//          lips over the walls' edges into the corridor's margin (its middle stays clean), wet
+//          glints, egg cysts on some crests, tongues over the south facades; it trails the veins
+//          and covers every wall at 100% (the escape);
+//   pulse  a heartbeat (lub-dub every 6 s, soft) running out of the lair along the veins, the
+//          cysts flaring with it (drawn over the light, not on Low);
+//   lair   massive blast doors torn apart from inside (a breach a tile wide, the ends bent outward,
+//          petals of steel, claw marks, flesh oozing through), lips over the pit's rim; the
+//          scene's own grate and cocoons kept (`createB7Scene`'s `lairDoors: false`).
+import type { createB7Scene } from './b7Scene';
 
 type Scene = ReturnType<typeof createB7Scene>;
 type Ctx = CanvasRenderingContext2D;
 
-const SCALE = 1.5;
+const SCALE = 1.25;
 const GLOW_SCALE = 0.75;
 const FACADE = 7;
 const TAU = Math.PI * 2;
@@ -76,19 +75,20 @@ interface Node {
 	r: number;
 }
 
-export interface HiveC {
+interface HiveLayers {
 	readonly veins: HTMLCanvasElement;
 	readonly flesh: HTMLCanvasElement;
 	readonly glow: HTMLCanvasElement;
 }
 
-export function bakeHiveC(scene: Scene, rows: readonly (readonly string[])[]): HiveC {
+function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayers {
 	const { STAGE_W, STAGE_H, TILE, COLS, ROWS, tx, ty } = scene;
 	const at = (x: number, y: number) => rows[y]?.[x] ?? 'ES';
 	const wall = (x: number, y: number) => at(x, y) === 'WL';
 	const open = (x: number, y: number) => !['WL', 'ES'].includes(at(x, y));
 	/** How thick the takeover is on a wall: 1 by the lair, about 0.45 at the far edge. */
-	const dense = (x: number, y: number) => Math.max(0.45, Math.min(1, 1 - scene.infectionDistance(x, y) / 20));
+	const dense = (x: number, y: number) =>
+		Math.max(0.45, Math.min(1, 1 - scene.infectionDistance(x, y) / 20));
 
 	// the veins' paths, shared by the skin and the glow
 	const segs: Seg[] = [];
@@ -97,7 +97,9 @@ export function bakeHiveC(scene: Scene, rows: readonly (readonly string[])[]): H
 		const ex = x + (dx === 1 ? 1 : 0);
 		const ey = y + (dy === 1 ? 1 : 0);
 		const w = (rng(hash(ex * 2 + (dx !== 0 ? 1 : 0), ey * 2 + (dy !== 0 ? 1 : 0)))() - 0.5) * 8;
-		return dx !== 0 ? { x: tx(ex), y: ty(y) + TILE / 2 + w } : { x: tx(x) + TILE / 2 + w, y: ty(ey) };
+		return dx !== 0
+			? { x: tx(ex), y: ty(y) + TILE / 2 + w }
+			: { x: tx(x) + TILE / 2 + w, y: ty(ey) };
 	};
 	for (let y = 1; y < ROWS - 1; y += 1) {
 		for (let x = 1; x < COLS - 1; x += 1) {
@@ -173,7 +175,8 @@ export function bakeHiveC(scene: Scene, rows: readonly (readonly string[])[]): H
 			for (let py = ty(y) - 2; py <= ty(y + 1) + 2; py += 4.2) {
 				for (let px = tx(x) - 2; px <= tx(x + 1) + 2; px += 4.2) {
 					const n = fbm(px * 0.055, py * 0.055) + (noise(px * 0.16, py * 0.16, 7) - 0.5) * 0.22;
-					if (n < cover) pts.push({ x: px, y: py, r: Math.min(5.6, 3 + (cover - n) * 9), t: cover - n });
+					if (n < cover)
+						pts.push({ x: px, y: py, r: Math.min(5.6, 3 + (cover - n) * 9), t: cover - n });
 				}
 			}
 			const pass = (fill: string, grow: number, dx = 0, dy = 0, only = 0) => {
@@ -406,9 +409,11 @@ export function bakeHiveC(scene: Scene, rows: readonly (readonly string[])[]): H
 	return { veins, flesh, glow };
 }
 
-/** Draws the candidate in stage space: the layers revealed from the lair, the heartbeat. */
-export class HiveCView {
-	private readonly hive: HiveC;
+/** The infestation in stage space: the layers revealed from the lair, the lair, the heartbeat. */
+export class B7Hive {
+	private readonly hive: HiveLayers;
+	/** The farthest wall from the lair, tiles. */
+	private far = 0;
 	private cache: { key: string; veins: HTMLCanvasElement; flesh: HTMLCanvasElement } | null = null;
 	private readonly scratch: HTMLCanvasElement;
 	private readonly beat: HTMLCanvasElement;
@@ -417,7 +422,7 @@ export class HiveCView {
 		private readonly scene: Scene,
 		rows: readonly (readonly string[])[]
 	) {
-		this.hive = bakeHiveC(scene, rows);
+		this.hive = bakeHive(scene, rows);
 		this.scratch = canvas(this.hive.glow.width, this.hive.glow.height);
 		this.beat = canvas(scene.COLS, scene.ROWS);
 		for (let y = 0; y < scene.ROWS; y += 1)
@@ -428,8 +433,6 @@ export class HiveCView {
 					if (Number.isFinite(d)) this.far = Math.max(this.far, d);
 				}
 	}
-	/** The farthest wall from the lair, tiles. */
-	private far = 0;
 
 	/** A tile mask of the reveal at `reach`, soft at its edge. */
 	private mask(reach: number): HTMLCanvasElement {
@@ -455,16 +458,21 @@ export class HiveCView {
 		g.globalCompositeOperation = 'destination-in';
 		g.imageSmoothingEnabled = true;
 		const k = layer.width / s.STAGE_W;
-		g.drawImage(this.mask(reach), s.MAZE_X * k, s.MAZE_Y * k, s.COLS * s.TILE * k, s.ROWS * s.TILE * k);
+		g.drawImage(
+			this.mask(reach),
+			s.MAZE_X * k,
+			s.MAZE_Y * k,
+			s.COLS * s.TILE * k,
+			s.ROWS * s.TILE * k
+		);
 		return out;
 	}
 
 	/** The flesh, then the veins over it, as far as the infection has reached (stage space). */
-	draw(ctx: Ctx, infection: number): void {
+	private draw(ctx: Ctx, infection: number): void {
 		const s = this.scene;
-		const vr = Math.round(veinReach(infection, this.far) * 4) / 4;
-		const fr = Math.round(fleshReach(infection, this.far) * 4) / 4;
-		const key = `${vr}|${fr}`;
+		const key = this.key(infection);
+		const [vr, fr] = key.split('|').map(Number);
 		if (!this.cache || this.cache.key !== key) {
 			this.cache = {
 				key,
@@ -517,17 +525,21 @@ export class HiveCView {
 		ctx.restore();
 	}
 
-	/** The scene's own cocoons (`createB7Scene`'s LAIR_COCOONS): where the cords hold them. */
-	private static readonly PODS = [
-		{ x: 10.9, y: 13.44, ry: 12.8 },
-		{ x: 11.96, y: 13.56, ry: 13.6 },
-		{ x: 13.06, y: 13.56, ry: 13.4 },
-		{ x: 14.1, y: 13.44, ry: 12.6 }
-	] as const;
+	/** The reveal's key at this infection: a new one wants the layer painted again. */
+	key(infection: number): string {
+		const vr = Math.round(veinReach(infection, this.far) * 4) / 4;
+		const fr = Math.round(fleshReach(infection, this.far) * 4) / 4;
+		return `${vr}|${fr}`;
+	}
 
-	/** The lair: its torn blast doors, lips over the pit's rim and cords from its walls to the
-	 *  cocoons (stage space, under the light). */
-	drawLair(ctx: Ctx): void {
+	/** The flesh, the veins and the lair (stage space, under the light). */
+	paint(ctx: Ctx, infection: number): void {
+		this.draw(ctx, infection);
+		this.drawLair(ctx);
+	}
+
+	/** The lair: its torn blast doors and lips over the pit's rim (stage space). */
+	private drawLair(ctx: Ctx): void {
 		const { tx, ty, TILE } = this.scene;
 		const blob = (x: number, y: number, rx: number, ry: number, rot = 0) => {
 			for (const [grow, col, ox, oy] of [
@@ -543,7 +555,15 @@ export class HiveCView {
 				ctx.fill();
 			}
 		};
-		const cord = (x0: number, y0: number, cx: number, cy: number, x1: number, y1: number, w: number) => {
+		const cord = (
+			x0: number,
+			y0: number,
+			cx: number,
+			cy: number,
+			x1: number,
+			y1: number,
+			w: number
+		) => {
 			for (const [lw, col, ox, oy] of [
 				[w + 1.6, '#1e080e', 0, 0],
 				[w, '#6a1c2a', 0, 0],
@@ -562,19 +582,6 @@ export class HiveCView {
 		ctx.lineCap = 'round';
 		ctx.lineJoin = 'round';
 
-		// cords from the pit's walls, sagging down to the cocoons
-		const tops = [
-			[tx(10) + 1, ty(12) + 6],
-			[tx(11.6), ty(12) + 1],
-			[tx(13.4), ty(12) + 1],
-			[tx(15) - 1, ty(12) + 6]
-		];
-		HiveCView.PODS.forEach((pod, i) => {
-			const [x0, y0] = tops[i];
-			const x1 = tx(pod.x);
-			const y1 = ty(pod.y) - pod.ry + 2;
-			cord(x0, y0, (x0 + x1) / 2 + (i < 2 ? -7 : 7), y1 + 4, x1, y1, 4.2);
-		});
 		// lips of flesh over the pit's rim
 		for (const [x, y, rx, ry] of [
 			[tx(10) + 3, ty(12) + 2, 6, 4],
