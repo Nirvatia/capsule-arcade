@@ -313,8 +313,10 @@ Numbers are starting points, later in `config/stationConfig.ts`.
      corridor a **seal** grows in the corridor's throat (between two walls) and he cannot pass
      (the squad can); one hunts him inside; the fourth is a **phantom**. Seen as the hive's: a
      ring of mycelium (a haze of spores, a filament over the walls) and seals of flesh with a
-     bright core (`quarantineRing`). Tell: faint, then the filament creeps out of the projectors
-     and the seals grow while they charge (1.5 s): he may slip out. It holds about 9 s; the
+     bright core (`quarantineRing`). Tell: the whole contour shows at once as the fencers set out (a
+     dashed amber line, the zone faintly tinted, dashed bars where the seals will grow; the owner,
+     2026-11-26: a ring growing in pieces did not show what it would hold), then the filament creeps
+     out of the projectors along it and the seals grow while they charge (1.5 s): he may slip out. It holds about 9 s; the
      fencers holding it do not bite. **It can be survived** (the owner): one ring in two has a
      thin seal (torn in the middle, flickering) that tears if he pushes into it for 0.6 s; the
      side tunnels lead out too.
@@ -391,7 +393,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   from the heading, so a gold slit eye peeks on the heading's side; the tell slips it further
   (the eye pulses, the smile widens); the rage pushes it up onto the head in a moment and shows
   the true face (gold slit eyes, a chomping mouth of bone teeth, a coral throat; it throbs and
-  shakes, no ring); the fright is the classic blue with a sweat drop and the blink at the end; a little larger than
+  shakes, no ring); the fright is the classic blue with a sweat drop and the blink at the end; out of the rage 7.5%
+  larger still (the owner, 2026-11-26); a little larger than
   the season ghosts, a soft glow in its state's colour round it so it reads in the dark maze (the
   hero has a warm one on the station too);
   eaten, its gold eyes run home; it folds into the level's spore for the disguise (the mask
@@ -404,7 +407,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   claw gouges and soot, heavy deck plates with drag trails, the specimen tanks, the hull breach,
   the dead crew, the window in the deck onto the storm below), a cold grade, light grain. The
   lair is the burst containment the squad comes out of. The food: plain energy capsules (the owner: the spores' shape is too
-  busy), and its mimic, the power cell, the console, the route's strip lights, the doors and the hatch:
+  busy), and its mimic, the power cell, the escape's lure (a green signal flare on the deck: fire, sparks,
+  smoke; green so it reads in the alarm's red; `lureFlare`), the console, the route's strip lights, the doors and the hatch:
   art of their own. The hell's look rules hold: walls as blocks, no height, all reads at one
   tile.
 - **Sound**: the station's hum, a sting for each tell, the train's rhythm, the alarm in the

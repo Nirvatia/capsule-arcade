@@ -5,10 +5,15 @@
 // veined, a bright cream core so it reads at once, throbbing slowly; the thin seal torn in the
 // middle and flickering (he can push through it; torn wide once he has). The tell: the filament
 // creeps out of the projectors, the seals grow from their roots; lit, beads of light run along
-// it; his push bulges the seal before him.
+// it; his push bulges the seal before him. Before all that, the warning (the owner, 2026-11-26: a
+// ring growing in pieces did not show what it would hold): the whole contour at once, a dashed
+// amber line on the filament's own path, the zone faintly tinted, dashed bars where the seals will
+// grow; the filament then grows along it and the warning fades.
 import type { QuarantineRing, RingSeal } from '../../logic/station/StationSquad';
 
 export interface RingLook {
+	/** The warning contour, 0..1: shown while the projectors walk and charge. */
+	readonly guide: number;
 	/** The projectors' charge, 0..1 (the tell); lit 0..1. */
 	readonly charge: number;
 	readonly lit: number;
@@ -259,6 +264,61 @@ function paintSeal(
 	c.restore();
 }
 
+/** The warning: the whole coming ring at once, fading as the projectors charge. */
+function paintGuide(
+	c: CanvasRenderingContext2D,
+	L: Layout,
+	ring: QuarantineRing,
+	ph: RingLook,
+	t: number
+): void {
+	const k = ph.guide;
+	if (k <= 0) return;
+	const S = L.tileSize;
+	const cx = L.offsetX + ring.cx * S;
+	const cy = L.offsetY + ring.cy * S;
+	const R = ring.r * S;
+	const pulse = 0.5 + 0.5 * Math.sin(t * TAU * 0.9);
+	const charge = ph.lit > 0 ? 1 : ph.charge;
+	const fade = k * (1 - 0.7 * charge);
+	// the zone: a faint sick tint toward the rim
+	const g = c.createRadialGradient(cx, cy, R * 0.5, cx, cy, R);
+	g.addColorStop(0, `rgba(${WINE}, 0)`);
+	g.addColorStop(1, `rgba(150, 40, 50, ${(0.1 + 0.06 * pulse) * fade})`);
+	c.fillStyle = g;
+	c.beginPath();
+	c.arc(cx, cy, R, 0, TAU);
+	c.fill();
+	// the contour on the filament's own path, so the filament lands on it
+	filament(c, cx, cy, R, S, 0, TAU, t);
+	c.lineJoin = 'round';
+	c.strokeStyle = `rgba(255, 150, 80, ${(0.1 + 0.1 * pulse) * fade})`;
+	c.lineWidth = S * 0.34;
+	c.stroke();
+	c.setLineDash([S * 0.34, S * 0.22]);
+	c.lineDashOffset = -t * S * 0.5;
+	c.strokeStyle = `rgba(${CREAM}, ${(0.5 + 0.35 * pulse) * fade})`;
+	c.lineWidth = Math.max(1.5, S * 0.07);
+	c.stroke();
+	// the seals to come: a dashed bar across each corridor's throat
+	c.setLineDash([S * 0.12, S * 0.08]);
+	c.lineDashOffset = 0;
+	const a = (0.35 + 0.45 * pulse) * k * (1 - charge);
+	for (const s of ring.seals) {
+		if (a <= 0.01) break;
+		c.save();
+		c.translate(L.offsetX + (s.x + 0.5) * S, L.offsetY + (s.y + 0.5) * S);
+		c.rotate(Math.atan2(s.dy, s.dx) - Math.PI / 2);
+		c.fillStyle = `rgba(255, 120, 90, ${a * 0.35})`;
+		c.fillRect(-S * 0.5, -S * 0.12, S, S * 0.24);
+		c.strokeStyle = `rgba(${CREAM}, ${a})`;
+		c.lineWidth = Math.max(1, S * 0.045);
+		c.strokeRect(-S * 0.5, -S * 0.12, S, S * 0.24);
+		c.restore();
+	}
+	c.setLineDash([]);
+}
+
 export function drawRing(
 	c: CanvasRenderingContext2D,
 	L: Layout,
@@ -270,6 +330,7 @@ export function drawRing(
 	const cx = L.offsetX + ring.cx * S;
 	const cy = L.offsetY + ring.cy * S;
 	c.save();
+	paintGuide(c, L, ring, ph, time);
 	paintRim(
 		c,
 		cx,

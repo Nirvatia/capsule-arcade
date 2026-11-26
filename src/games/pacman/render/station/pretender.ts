@@ -34,7 +34,7 @@ export interface PretenderOpts {
 }
 
 type Ctx = CanvasRenderingContext2D;
-export type Pal = { readonly b: string; readonly s: string };
+type Pal = { readonly b: string; readonly s: string };
 
 const TAU = Math.PI * 2;
 export const INK = '#241418';
@@ -57,6 +57,8 @@ export const PHASE: Readonly<Record<GhostKind, number>> = {
 export const IVORY = '#f1e7cf';
 /** The body's size in the cute ghosts' frame: a little larger than theirs (the owner). */
 export const SCALE = 1.08;
+/** Out of the rage, larger still by this. */
+const CALM_SCALE = 1.075;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -140,7 +142,7 @@ export function ellipse(
 	}
 }
 
-export function line(
+function line(
 	c: Ctx,
 	x1: number,
 	y1: number,
@@ -185,7 +187,7 @@ const traceMask = (c: Ctx) => {
 };
 
 /** The mask in its own frame: the cute face, its crack on the heading's side, the smile. */
-export function paintMask(c: Ctx, st: PretenderState, white: boolean, o: PretenderOpts): void {
+function paintMask(c: Ctx, st: PretenderState, white: boolean, o: PretenderOpts): void {
 	const scared = st === 'fright';
 	const cracked = st === 'hunt' || st === 'tell' || st === 'rage';
 	traceMask(c);
@@ -276,7 +278,7 @@ export function paintMask(c: Ctx, st: PretenderState, white: boolean, o: Pretend
 
 /** Under the mask (the rage): gold slit eyes under angry lids, a mouth across the face with the
  *  mask's bone for teeth, a coral glow in the throat. */
-export function paintTrueFace(c: Ctx, pal: Pal, o: PretenderOpts): void {
+function paintTrueFace(c: Ctx, pal: Pal, o: PretenderOpts): void {
 	const p = 0.8 + 0.2 * Math.sin(o.time * 9);
 	c.save();
 	c.translate(o.faceX * 1.6, o.faceY * 1.3);
@@ -474,7 +476,9 @@ function paintWalker(
 	k: number
 ): void {
 	const phase = PHASE[kind];
-	c.scale(unit * SCALE, unit * SCALE);
+	// a little larger out of the rage (the owner, 2026-11-26); the rage's body is large already
+	const size = st === 'rage' ? SCALE : SCALE * CALM_SCALE;
+	c.scale(unit * size, unit * size);
 	if (st === 'eyes') {
 		// eaten: its gold eyes run home
 		c.translate(0, Math.sin(o.time * 4 + phase) * 0.6 - 1);

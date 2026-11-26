@@ -21,6 +21,7 @@ import {
 import type { PretenderOpts, PretenderState } from './pretender';
 import { KIND_COLOR, drawDoor, drawLane, drawShaft } from './squadMarks';
 import { drawRing } from './quarantineRing';
+import { drawLureFlare, LURE_RGB } from './lureFlare';
 import { drawGoalMark } from './goalMark';
 import { t as translate } from '../../ui/i18n';
 import type { I18nKey } from '../../ui/i18n';
@@ -33,8 +34,6 @@ const DIR: Readonly<Record<GhostDirection, readonly [number, number]>> = {
 	UP: [0, -1]
 };
 
-/** The lure's cold light. */
-const LURE_RGB = '150, 230, 255';
 /** How long the screen's edges pulse after a hit, s. */
 const HURT_TIME = 0.6;
 
@@ -169,7 +168,15 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 			}
 		}
 		if (run && !clear) {
-			if (lure) this.drawLure(ctx, sx(lure.x + 0.5), sy(lure.y + 0.5), S, time, lure.left);
+			if (lure)
+				drawLureFlare(
+					ctx,
+					sx(lure.x + 0.5),
+					sy(lure.y + 0.5),
+					S,
+					time,
+					Math.min(1, lure.left / 0.6)
+				);
 			this.drawPulse(ctx, run, hero, sx, sy, S);
 			this.drawHurt(ctx, run, frame.width, frame.height);
 			this.drawWords(ctx, run, sx, sy, S);
@@ -297,7 +304,8 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 			const p = at(d.x, d.y);
 			drawDoor(ctx, d, p.x, p.y, S, 'h');
 		}
-		// the fence: the quarantine ring, faint while the projectors walk, growing as they charge
+		// the fence: the quarantine ring, its contour shown while the projectors walk, the filament
+		// growing along it as they charge
 		const ring = squad.ring;
 		if (ring) {
 			const charge = ring.posts.length
@@ -309,7 +317,8 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 				layout,
 				ring,
 				{
-					charge: 0.08 + 0.92 * charge,
+					guide: ring.lit ? 0 : 1,
+					charge,
 					lit: ring.lit ? 1 : 0,
 					pressed: thin && ring.push > 0 ? thin : null,
 					press: Math.min(1, ring.push / SQUAD_TUNE.breach)
@@ -478,36 +487,6 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		if (!goal) return;
 		const at = RUN_TUNE[goal];
 		drawGoalMark(ctx, goal, sx(at.x + 0.5), sy(at.y + 0.5), S, time, at.y < 3, this.word(goal));
-	}
-
-	/** The lure: a cold beacon pulsing where it lies, a ring running out of it. */
-	private drawLure(
-		ctx: CanvasRenderingContext2D,
-		x: number,
-		y: number,
-		S: number,
-		time: number,
-		left: number
-	): void {
-		const fade = Math.min(1, left / 0.6);
-		ctx.save();
-		ctx.globalCompositeOperation = 'lighter';
-		const g = ctx.createRadialGradient(x, y, 0, x, y, S * 0.9);
-		g.addColorStop(0, `rgba(${LURE_RGB},${0.9 * fade})`);
-		g.addColorStop(1, `rgba(${LURE_RGB},0)`);
-		ctx.fillStyle = g;
-		ctx.fillRect(x - S, y - S, S * 2, S * 2);
-		const k = (time * 0.8) % 1;
-		ctx.strokeStyle = `rgba(${LURE_RGB},${0.7 * (1 - k) * fade})`;
-		ctx.lineWidth = Math.max(1.5, S * 0.08);
-		ctx.beginPath();
-		ctx.arc(x, y, S * (0.3 + 1.2 * k), 0, Math.PI * 2);
-		ctx.stroke();
-		ctx.fillStyle = `rgba(240,252,255,${fade})`;
-		ctx.beginPath();
-		ctx.arc(x, y, S * 0.14, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.restore();
 	}
 
 	/** The damage: the screen's edges pulse red for a moment after a hit. */
