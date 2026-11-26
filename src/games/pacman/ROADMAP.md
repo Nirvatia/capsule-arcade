@@ -175,7 +175,7 @@ last (see Later).
          flesh trails them and covers all at 100% (the escape). Awaits the owner's look; then the
          lamps under film, then into the game in place of `b7Veins` (and a frame-time check of
          the heartbeat's layer).
-      5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
+      6. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance
          check of the lit station.
