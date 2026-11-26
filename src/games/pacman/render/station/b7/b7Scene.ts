@@ -290,10 +290,10 @@ export function createB7Scene(
 	const setInfection = (k: number) => {
 		infection = k;
 	};
-	/** What grows over the lamps: the hive's flesh (warm, its veins' shadows, beating) or a film
-	 *  of murk (green, still; the `station-b7` page's leak candidate). */
-	let film: 'flesh' | 'murk' = 'flesh';
-	const setFilm = (kind: 'flesh' | 'murk') => {
+	/** What grows over the lamps: the hive's flesh (warm, its veins' shadows, beating), a film of
+	 *  murk (green, still) or nothing (the `station-b7` page's candidates). */
+	let film: 'flesh' | 'murk' | 'none' = 'flesh';
+	const setFilm = (kind: 'flesh' | 'murk' | 'none') => {
 		film = kind;
 	};
 	const lerp3 = (a: readonly number[], b: readonly number[], k: number) =>
@@ -3659,7 +3659,7 @@ export function createB7Scene(
 				// shadows of its veins on the floor (the owner: lamps under film, not darkness)
 				const fail = lampFails(i);
 				const g = Math.max(0, Math.min(1, (infection - fail + 0.14) / 0.22));
-				const filmK = g * g * (3 - 2 * g);
+				const filmK = film === 'none' ? 0 : g * g * (3 - 2 * g);
 				const base = (mode === 'alert' ? 0.32 : 0.68) - 0.06 * infection;
 				const uneven = 0.28 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.15 + l.ph));
 				const growing =

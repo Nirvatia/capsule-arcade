@@ -195,20 +195,20 @@ last (see Later).
       6. **A new look for the infestation and the squad** (the owner, 2026-11-26: the red flesh
          does not fit the station's palette and echoes the hell, the walls under it read heavy;
          the mimics lack the season critters' expressive details; the rage, the acid overheat,
-         stays). Direction A, the tanks' murk. The leak (`murk.ts`: pools along the walls' feet,
-         bubbles, drips, a haze) looked striking but at 100% the maze was a mess and the threat was
-         gone (a maze in green waste). Now **the engulfing** (`engulf.ts` on the `station-b7` page,
-         awaiting his look): the murk takes the walls, not the floor; wall by wall from the lair a
-         translucent green mass over the steel, its edges lit like the tanks' glass, a lit front
-         with tendrils over the clean steel, specimens drifting inside some walls that turn and
-         open their eyes for the hero, a ring of light breathing out of the lair; the corridors
-         clean, so the maze stays two masses at any infection. The scene's `setFilm('murk')`
-         greens the lamps, `B7World.showHive(false)` hides the hive. The squad: three
-         rounds of candidates (`looks.ts`); his candidate is round three's **film** (a dark
-         specimen with limbs in a thin film of murk, a smear trailing, eyes in its kind's colour;
-         the creepiest and most alien, but it reads poorly at game scale). Rejected: a cartoon face
-         (a meme), toy colours (Among Us), a single eye (a cyclops), a black silhouette (cyberpunk),
-         a jar (unreadable), feet (they rock).
+         stays). The tanks' murk was tried and **dropped** (2026-11-26): the leak made the
+         maze a mess at 100% with no threat; the walls engulfed in it read as recoloured walls;
+         its squad (a specimen in a drop, a ghost, a film) never looked right. Rejected for the
+         squad too: a cartoon face (a meme), toy colours (Among Us), a single eye (a cyclops), a
+         black silhouette (cyberpunk), a jar (unreadable), feet (they rock).
+         Now **the ferrofluid** (the owner's pick of coral, crystal and ferrofluid; `ferro.ts` on
+         the `station-b7` page, awaiting his look): a living black metal with an oily sheen takes
+         the walls from the lair out, covers their tops (pebbled with small cones), bulges over
+         their edges and stands in rows of spikes along them; the spikes rise in a wave toward the
+         hero as he passes and sink slowly behind (the game's Cinnabar vessel walks on the page);
+         the corridors stay clean. The squad is the same fluid sculpting a fake face of itself
+         (unequal dimples for eyes with a light deep in them, a too-wide carved grin), a crown of
+         spikes per kind, the sheen in its kind's colour. The scene's `setFilm('none')` keeps the
+         lamps clean, `B7World.showHive(false)` hides the hive.
       7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance

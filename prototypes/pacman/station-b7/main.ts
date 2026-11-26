@@ -1,9 +1,9 @@
 // Prototype: the station B-7 as the game draws it (`render/station/b7`: the scene, the hive's
 // takeover, the lamps under its film, the heartbeat) with the game's quarantine ring, its lure
 // (the cyan flare) and its Pretenders (the rage, the acid overheat) on the real maze, beside the
-// candidates of `looks.ts` for the squad's calm look (the tanks' specimen in a drop, a ghost, a
-// film of murk) and of `engulf.ts` and `murk.ts` for the infestation (the walls engulfed, the leak),
-// in place of the hive; a stand-in hero walks a corridor for the walls to notice. Everything is switched by the buttons on top; a panel shows them large.
+// candidate of `ferro.ts`: the station taken by a living black metal, its spikes rising for the
+// hero (the game's Cinnabar vessel walks a corridor), and the squad of the same fluid. Everything
+// is switched by the buttons on top; a panel shows the squad large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
@@ -11,17 +11,20 @@ import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
 import { drawPretender, RailGait, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
 import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
 import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
-import { drawCandidate, type CandState, type Look } from './looks';
-import { createMurk } from './murk';
-import { createEngulf } from './engulf';
+import { CJ_BODY_RATIO } from '../../../src/games/pacman/render/actors/hero/vesselHero';
+import { CinnabarHero } from '../../../src/games/pacman/render/actors/hero/CinnabarHero';
+import { GAME_FEEL } from '../../../src/games/pacman/render/actors/HeroView';
+import { drawHeroGlow } from '../../../src/games/pacman/render/station/pretender';
+import { createFerro, drawFerroMimic, type CandState } from './ferro';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const bar = document.getElementById('bar') as HTMLDivElement;
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const world = new B7World(GRID_STATION);
-const murk = createMurk(world.scene, GRID_STATION);
-const engulf = createEngulf(world.scene, GRID_STATION);
+const ferro = createFerro(world.scene, GRID_STATION);
+const heroView = new CinnabarHero();
+heroView.setFeel(GAME_FEEL);
 world.setQuality('medium');
 const grid = GRID_STATION;
 const H = grid.length;
@@ -33,14 +36,14 @@ const open = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && OPE
 
 type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'off';
 type Pick = 'now' | 'off';
-type Mim = Look | 'now' | 'off';
+type Mim = 'ferro' | 'now' | 'off';
 type Lure = 'on' | 'off';
 const st = {
 	inf: 0.65,
-	style: 'engulf' as 'hive' | 'murk' | 'engulf',
+	style: 'ferro' as 'hive' | 'ferro',
 	alarm: false,
 	ring: 'off' as RingMode,
-	mimic: 'c' as Mim,
+	mimic: 'ferro' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
 	big: true
@@ -49,12 +52,9 @@ const st = {
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: кислотный перегрев',
 	'mimic-now': 'Мимики как в игре: Pretender в маске',
-	'mimic-a': 'а «Капля»: капля мути, внутри тёмный образец с отростками, глаза его цвета на нём',
-	'mimic-b': 'б «Призрак»: силуэт призрака из мути, волнистый капающий подол, образец внутри',
-	'mimic-c': 'в «Плёнка»: тёмный образец в тонкой плёнке мути, за ним тянется мутный след',
+	'mimic-ferro': 'Мимики из феррожидкости: лепят из себя фальшивое лицо, корона шипов у каждого своя, отлив его цвета',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
-	'style-engulf': 'Заражение «Поглощение»: масса мути забирает стены от логова, фронт с отростками, образцы в стенах смотрят на героя, волна дыхания; коридоры чистые',
-	'style-murk': 'Заражение «Утечка»: муть из колб у подножия стен, в углах и по стыкам, пузыри, капли, туман; стены и середина коридоров чистые',
+	'style-ferro': 'Заражение «Феррожидкость»: чёрный живой металл забирает стены от логова, ряды шипов по краям поднимаются за героем; коридоры чистые',
 	'style-hive': 'Заражение как в игре: улей',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'
 };
@@ -85,9 +85,7 @@ const GROUPS: Group[] = [
 		key: 'mimic',
 		items: [
 			['Как в игре', 'now'],
-			['а Капля', 'a'],
-			['б Призрак', 'b'],
-			['в Плёнка', 'c'],
+			['Феррожидкость', 'ferro'],
 			['Выкл', 'off']
 		],
 		after: (v) => {
@@ -138,8 +136,7 @@ const GROUPS: Group[] = [
 		label: 'Стиль',
 		key: 'style',
 		items: [
-			['Поглощение', 'engulf'],
-			['Утечка', 'murk'],
+			['Феррожидкость', 'ferro'],
 			['Как в игре', 'hive']
 		]
 	},
@@ -376,7 +373,7 @@ function drawMimic(
 ): void {
 	if (st.mimic === 'off') return;
 	if (st.mimic === 'now') drawPretender(c, x, y, S, kind, cs, o);
-	else drawCandidate(c, x, y, S, kind, st.mimic, cs, o);
+	else drawFerroMimic(c, x, y, S, kind, cs, o);
 }
 
 /** The sheet: the four kinds, the headings and the tell, the fright, the eyes and the mimicry. */
@@ -516,26 +513,18 @@ function frame(now: number): void {
 	}
 	sc.setExtraLights(lights);
 	world.showHive(st.style === 'hive');
-	sc.setFilm(st.style === 'hive' ? 'flesh' : 'murk');
+	sc.setFilm(st.style === 'hive' ? 'flesh' : 'none');
 	world.drawScene(ctx, t, dt, st.inf, true);
 	const hero = heroAt(t);
-	if (st.style === 'murk') {
+	if (st.style === 'ferro') {
 		world.enter(ctx);
-		murk.draw(ctx, st.inf);
-		ctx.restore();
-	} else if (st.style === 'engulf') {
-		world.enter(ctx);
-		engulf.draw(ctx, st.inf, t, hero);
+		ferro.draw(ctx, st.inf, t);
 		ctx.restore();
 	}
 	world.drawLight(ctx, t, st.inf, st.alarm ? 'alert' : 'quarantine', true);
-	if (st.style === 'murk') {
+	if (st.style === 'ferro') {
 		world.enter(ctx);
-		murk.drawGlow(ctx, st.inf, t);
-		ctx.restore();
-	} else if (st.style === 'engulf') {
-		world.enter(ctx);
-		engulf.drawGlow(ctx, st.inf, t, hero);
+		ferro.drawGlow(ctx, st.inf, t, dt, hero);
 		ctx.restore();
 	}
 	const L = world.layout;
@@ -558,18 +547,21 @@ function frame(now: number): void {
 			else drawRage(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, o);
 		}
 	}
-	if (st.style === 'engulf') {
-		// the stand-in hero: a plain disc with a mouth
+	{
+		// the game's hero, the Cinnabar vessel, walking his corridor
 		const hx = L.offsetX + hero.x * S;
 		const hy = L.offsetY + hero.y * S;
-		const m = 0.12 + 0.5 * Math.abs(Math.sin(t * 12));
-		const a0 = Math.atan2(hero.dy, hero.dx);
-		ctx.fillStyle = '#ffd24a';
-		ctx.beginPath();
-		ctx.moveTo(hx, hy);
-		ctx.arc(hx, hy, S * 0.4, a0 + m, a0 + Math.PI * 2 - m);
-		ctx.closePath();
-		ctx.fill();
+		drawHeroGlow(ctx, hx, hy, S);
+		heroView.setRadius(S * CJ_BODY_RATIO);
+		heroView.update(dt, {
+			x: hx,
+			y: hy,
+			angle: Math.atan2(hero.dy, hero.dx),
+			moving: true,
+			power: false,
+			ending: false
+		});
+		heroView.draw(ctx);
 	}
 	if (st.lure !== 'off') drawLureFlare(ctx, L.offsetX + (lx + 0.5) * S, L.offsetY + (ly + 0.5) * S, S, t, 1);
 	world.drawGrain(ctx, t);
