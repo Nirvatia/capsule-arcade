@@ -357,9 +357,11 @@ Numbers are starting points, later in `config/stationConfig.ts`.
     something is near (two per escape) gets out every time. The console is at the bottom of the
     maze (12,24), the hatch is the top-left vent (6,1): about five seconds of running.
   - **The goal is held**, not only said (the words fade; the owner: the first time one gets
-    lost): once charged, a beacon stands on the console until he reaches it, then on the hatch
-    (rings running out over the floor, a column of light, a bobbing chevron, the hatch gauge's
-    green); the HUD's hatch line reads → CONSOLE, then → HATCH, pulsing slowly.
+    lost): once charged, a mark stands on the console until he reaches it, then on the hatch
+    (`goalMark`: a reticle of steel corner brackets breathing, a riveted plate with the goal's
+    name in the player's language, the console's screen lit with a holographic chevron over it,
+    the hatch spilling light with hazard stripes running round its frame; the owner found the
+    first beacon's ellipses poor); the HUD's hatch line reads → CONSOLE, then → HATCH.
 - **Light** (no endless dark): the station runs on its working and emergency lights, the walls,
   the floor, the food and the creatures always read; mood comes from light that changes (a
   flicker as a play's tell, a lamp dying in one corridor, the alarm's red in the escape), fog and

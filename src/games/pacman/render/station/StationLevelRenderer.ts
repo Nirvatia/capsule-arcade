@@ -21,6 +21,9 @@ import {
 import type { PretenderOpts, PretenderState } from './pretender';
 import { KIND_COLOR, drawDoor, drawLane, drawShaft } from './squadMarks';
 import { drawRing } from './quarantineRing';
+import { drawGoalMark } from './goalMark';
+import { t as translate } from '../../ui/i18n';
+import type { I18nKey } from '../../ui/i18n';
 
 const KINDS: readonly GhostKind[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
 const DIR: Readonly<Record<GhostDirection, readonly [number, number]>> = {
@@ -59,9 +62,13 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 	/** Where each lurker's disguise is drawn (it glides a creep), and the frame's step, s. */
 	private readonly lying = new Map<GhostKind, { x: number; y: number }>();
 	private lastDt = 1 / 60;
+	/** The interface's words (the goal's plate). */
+	private word: (key: I18nKey) => string = (key) => key;
 
 	constructor(shared: SharedLayers) {
 		this.shared = shared;
+		// the goal's name in the player's language, followed as it changes
+		translate.subscribe((fn) => (this.word = fn));
 	}
 
 	setQuality(quality: RenderQuality): void {
@@ -457,9 +464,8 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		ctx.restore();
 	}
 
-	/** The goal's beacon, held until it is reached (the words fade, it does not): the console once
-	 *  the hatch is charged, then the hatch. Rings running out over the floor, a column of light
-	 *  and a chevron bobbing over it, in the hatch gauge's green (nothing faster than 1 Hz). */
+	/** The goal's mark, held until it is reached (the words fade, it does not): the console once
+	 *  the hatch is charged, then the hatch (`goalMark`), named in the player's language. */
 	private drawGoal(
 		ctx: CanvasRenderingContext2D,
 		run: StationRun,
@@ -471,44 +477,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 		const goal = escapeGoal(run.escape.state);
 		if (!goal) return;
 		const at = RUN_TUNE[goal];
-		const x = sx(at.x + 0.5);
-		const y = sy(at.y + 0.5);
-		const TAU = Math.PI * 2;
-		ctx.save();
-		ctx.globalCompositeOperation = 'lighter';
-		// the column of light standing on the tile
-		const col = ctx.createLinearGradient(x, y - S * 2.2, x, y + S * 0.3);
-		col.addColorStop(0, 'rgba(120, 255, 200, 0)');
-		col.addColorStop(0.7, 'rgba(120, 255, 200, 0.28)');
-		col.addColorStop(1, 'rgba(200, 255, 232, 0.5)');
-		ctx.fillStyle = col;
-		ctx.fillRect(x - S * 0.32, y - S * 2.2, S * 0.64, S * 2.5);
-		// rings running out over the floor
-		for (let i = 0; i < 2; i++) {
-			const u = (time / 1.4 + i / 2) % 1;
-			ctx.beginPath();
-			ctx.ellipse(x, y, S * (0.4 + u * 1.1), S * (0.4 + u * 1.1) * 0.8, 0, 0, TAU);
-			ctx.strokeStyle = `rgba(140, 255, 210, ${0.75 * (1 - u)})`;
-			ctx.lineWidth = Math.max(1.5, S * 0.09);
-			ctx.stroke();
-		}
-		ctx.restore();
-		// the chevron, bobbing over it, with a dark rim so it reads on the alarm's red
-		const by = y - S * (1.45 + 0.18 * Math.sin(time * 4));
-		ctx.save();
-		ctx.beginPath();
-		ctx.moveTo(x - S * 0.34, by - S * 0.22);
-		ctx.lineTo(x, by + S * 0.18);
-		ctx.lineTo(x + S * 0.34, by - S * 0.22);
-		ctx.lineJoin = 'round';
-		ctx.lineCap = 'round';
-		ctx.strokeStyle = 'rgba(6, 18, 14, 0.85)';
-		ctx.lineWidth = S * 0.24;
-		ctx.stroke();
-		ctx.strokeStyle = '#b8ffe0';
-		ctx.lineWidth = S * 0.12;
-		ctx.stroke();
-		ctx.restore();
+		drawGoalMark(ctx, goal, sx(at.x + 0.5), sy(at.y + 0.5), S, time, at.y < 3, this.word(goal));
 	}
 
 	/** The lure: a cold beacon pulsing where it lies, a ring running out of it. */

@@ -79,7 +79,7 @@ render/
                    the hull and baked architecture as one screen layer per resize, the phase's
                    infestation one per phase change, the live props in stage space, the light
                    map of sprite lights with the flashlight, bloom by downscale, grain on High),
-                   b7Hive (the infestation, the total takeover: veins, flesh over the plates, the torn lair doors, the heartbeat; revealed from the lair by the infection), pretender (the squad's creature, the owner's STATION_MIMIC: the painter and its RailGait), drawLurkerEye (the lurker's gold eye tell), quarantineRing (the fence's ring and seals), squadMarks (the plays'
+                   b7Hive (the infestation, the total takeover: veins, flesh over the plates, the torn lair doors, the heartbeat; revealed from the lair by the infection), pretender (the squad's creature, the owner's STATION_MIMIC: the painter and its RailGait), drawLurkerEye (the lurker's gold eye tell), quarantineRing (the fence's ring and seals), goalMark (the goal's mark on the console, then the hatch), squadMarks (the plays'
                    and the escape's marks).
   arcade/          the secret level: pixel sprites, maze bake, view, CRT pass, intermission,
                    ArcadeLevelRenderer

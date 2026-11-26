@@ -1,10 +1,10 @@
-// A candidate for the station's goal mark (the owner, 2026-11-26: the beacon's ellipses look
-// poor), in place of `StationLevelRenderer.drawGoal`'s rings and column: the station's own UI
-// and the object itself coming alive.
+// The station's goal mark (the owner's pick of the `station-b7` candidate, 2026-11-26; it took
+// the place of the beacon's rings and column): the station's own UI and the object itself
+// coming alive, held until the goal is reached.
 //   the reticle  four steel corner brackets round the tile, a green edge (the HUD's goal green),
 //                breathing slowly in and out;
-//   the plate    a small riveted steel plate with the goal in stencil (КОНСОЛЬ / ЛЮК), above the
-//                tile or below it at the top of the maze;
+//   the plate    a small riveted steel plate with the goal's name in the player's language, above
+//                the tile or below it at the top of the maze;
 //   the console  its screen lit green, a holographic chevron over it with scanlines, flickering;
 //   the hatch    light spilling out of it into the corridor, hazard stripes running round its
 //                frame.
@@ -77,7 +77,13 @@ function reticle(c: CanvasRenderingContext2D, x: number, y: number, S: number, t
 	c.restore();
 }
 
-function consoleAlive(c: CanvasRenderingContext2D, x: number, y: number, S: number, t: number): void {
+function consoleAlive(
+	c: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	S: number,
+	t: number
+): void {
 	const flick = 0.85 + 0.15 * Math.sin(t * 7.1) * Math.sin(t * 3.3);
 	c.save();
 	c.globalCompositeOperation = 'lighter';
@@ -169,10 +175,11 @@ export function drawGoalMark(
 	y: number,
 	S: number,
 	t: number,
-	top: boolean
+	top: boolean,
+	label: string
 ): void {
 	if (goal === 'console') consoleAlive(c, x, y, S, t);
 	else hatchAlive(c, x, y, S, t);
 	reticle(c, x, y, S, t);
-	plate(c, x, top ? y + S * 1.25 : y - S * (goal === 'console' ? 1.75 : 1.25), S, goal === 'console' ? 'КОНСОЛЬ' : 'ЛЮК');
+	plate(c, x, top ? y + S * 1.25 : y - S * (goal === 'console' ? 1.75 : 1.25), S, label);
 }
