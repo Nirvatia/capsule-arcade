@@ -34,10 +34,10 @@ export interface PretenderOpts {
 }
 
 type Ctx = CanvasRenderingContext2D;
-type Pal = { readonly b: string; readonly s: string };
+export type Pal = { readonly b: string; readonly s: string };
 
 const TAU = Math.PI * 2;
-const INK = '#241418';
+export const INK = '#241418';
 /** The squad's hues a little cooler and deeper than the seasons': bred in a lab, cold lamps. */
 const BODY: Readonly<Record<GhostKind, Pal>> = {
 	BLINKY: { b: '#ee6b60', s: '#b03c40' },
@@ -47,11 +47,16 @@ const BODY: Readonly<Record<GhostKind, Pal>> = {
 };
 const SCARED: Pal = { b: '#4f68ff', s: '#3346d0' };
 const WHITE: Pal = { b: '#f4f7ff', s: '#c3cfea' };
-const RAGE: Pal = { b: '#ff4a4a', s: '#a81622' };
-const PHASE: Readonly<Record<GhostKind, number>> = { BLINKY: 0, PINKY: 0.8, INKY: 1.6, CLYDE: 2.4 };
-const IVORY = '#f1e7cf';
+export const RAGE: Pal = { b: '#ff4a4a', s: '#a81622' };
+export const PHASE: Readonly<Record<GhostKind, number>> = {
+	BLINKY: 0,
+	PINKY: 0.8,
+	INKY: 1.6,
+	CLYDE: 2.4
+};
+export const IVORY = '#f1e7cf';
 /** The body's size in the cute ghosts' frame: a little larger than theirs (the owner). */
-const SCALE = 1.08;
+export const SCALE = 1.08;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -115,7 +120,7 @@ export class RailGait {
 	}
 }
 
-function ellipse(
+export function ellipse(
 	c: Ctx,
 	x: number,
 	y: number,
@@ -135,7 +140,7 @@ function ellipse(
 	}
 }
 
-function line(
+export function line(
 	c: Ctx,
 	x1: number,
 	y1: number,
@@ -153,7 +158,7 @@ function line(
 	c.stroke();
 }
 
-function glow(c: Ctx, x: number, y: number, r: number, inner: string, mid: string): void {
+export function glow(c: Ctx, x: number, y: number, r: number, inner: string, mid: string): void {
 	const g = c.createRadialGradient(x, y, 0.2, x, y, r);
 	g.addColorStop(0, inner);
 	g.addColorStop(0.5, mid);
@@ -164,7 +169,7 @@ function glow(c: Ctx, x: number, y: number, r: number, inner: string, mid: strin
 	c.fill();
 }
 
-const traceBody = (c: Ctx) => {
+export const traceBody = (c: Ctx) => {
 	c.beginPath();
 	c.ellipse(0, 1.6, 10.0, 9.2, 0, 0, TAU);
 };
@@ -180,7 +185,7 @@ const traceMask = (c: Ctx) => {
 };
 
 /** The mask in its own frame: the cute face, its crack on the heading's side, the smile. */
-function paintMask(c: Ctx, st: PretenderState, white: boolean, o: PretenderOpts): void {
+export function paintMask(c: Ctx, st: PretenderState, white: boolean, o: PretenderOpts): void {
 	const scared = st === 'fright';
 	const cracked = st === 'hunt' || st === 'tell' || st === 'rage';
 	traceMask(c);
@@ -271,7 +276,7 @@ function paintMask(c: Ctx, st: PretenderState, white: boolean, o: PretenderOpts)
 
 /** Under the mask (the rage): gold slit eyes under angry lids, a mouth across the face with the
  *  mask's bone for teeth, a coral glow in the throat. */
-function paintTrueFace(c: Ctx, pal: Pal, o: PretenderOpts): void {
+export function paintTrueFace(c: Ctx, pal: Pal, o: PretenderOpts): void {
 	const p = 0.8 + 0.2 * Math.sin(o.time * 9);
 	c.save();
 	c.translate(o.faceX * 1.6, o.faceY * 1.3);
