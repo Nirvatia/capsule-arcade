@@ -485,7 +485,7 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 	): void {
 		const goal = escapeGoal(run.escape.state);
 		if (!goal) return;
-		const at = RUN_TUNE[goal];
+		const at = run.layout[goal];
 		drawGoalMark(ctx, goal, sx(at.x + 0.5), sy(at.y + 0.5), S, time, at.y < 3, this.word(goal));
 	}
 

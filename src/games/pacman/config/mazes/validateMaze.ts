@@ -59,6 +59,11 @@ export function validateMaze(grid: GridMatrix, options: MazeValidationOptions = 
 			problems.push(`expected exactly one ${token}, found ${count}`);
 		}
 	}
+	for (const token of ['EX', 'CN'] as const) {
+		if (all(token).length > 1) {
+			problems.push(`expected at most one ${token}, found ${all(token).length}`);
+		}
+	}
 	if (all('LE').length === 0) {
 		problems.push('the lair has no exit tile (LE)');
 	}
@@ -85,7 +90,13 @@ export function validateMaze(grid: GridMatrix, options: MazeValidationOptions = 
 	}
 	const walkable = (x: number, y: number): boolean => {
 		const token = tileAt(x, y);
-		return token !== undefined && token !== 'WL' && token !== 'ES' && !LAIR_TOKENS.has(token);
+		return (
+			token !== undefined &&
+			token !== 'WL' &&
+			token !== 'ES' &&
+			token !== 'EX' &&
+			!LAIR_TOKENS.has(token)
+		);
 	};
 	const key = (x: number, y: number) => y * width + x;
 	const seen = new Set<number>([key(start.x, start.y)]);
@@ -126,6 +137,19 @@ export function validateMaze(grid: GridMatrix, options: MazeValidationOptions = 
 	unreachable('DT', 'dots');
 	unreachable('EU', 'energizers');
 	unreachable('FT', 'fruit pad');
+	unreachable('CN', 'console');
+	// the exit hatch opens onto a corridor he can reach
+	const exitOpen = all('EX').every((p) =>
+		[
+			{ x: p.x + 1, y: p.y },
+			{ x: p.x - 1, y: p.y },
+			{ x: p.x, y: p.y + 1 },
+			{ x: p.x, y: p.y - 1 }
+		].some((q) => seen.has(key(q.x, q.y)))
+	);
+	if (!exitOpen) {
+		problems.push('the exit hatch (EX) touches no corridor Pac-Man can reach');
+	}
 
 	const exitReachable = all('LE').some((p) =>
 		[

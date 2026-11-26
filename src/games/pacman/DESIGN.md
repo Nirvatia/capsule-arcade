@@ -335,7 +335,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
 - **The power cells**: four, in the corners (where the energizers are): 3.5 s the squad is
   frightened (fleeing at 0.8 of its pace) and can be eaten (eyes home fast, 200-1600); the ring
   goes dark, but a lurker or a venter stays hidden and its play goes on after (the owner,
-  2026-11-26: 6 s and showing the mimics made the cell too strong).
+  2026-11-26: 6 s and showing the mimics made the cell too strong). The cells not eaten go out at
+  the alarm: the escape has none (the owner, 2026-11-26).
 - **The food** charges the hatch: the HUD shows the charge; at 90% of the food the escape is
   ready (the rest is score; 75% before, the owner: the late lurkers want the last food hunted). The classic eating route stays the core; the mimics turn
   the eaten corridors into the place to watch.
@@ -346,7 +347,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   is **free** (no doors, no set route: strip lights only show the shortest way to the hatch,
   laid anew from wherever he is). The squad goes into a **rage** (a little faster than he is;
   half at him, half at his way six steps on; from anywhere, not only behind), and **1-4 more
-  break out** of the containment's door and the vents (one every 0.6 s), enraged the same way.
+  break out** of the containment's door and the vents' mouths (one every 0.6 s), enraged the same
+  way; never by the exit (the owner, 2026-11-26).
   His answer is the **breakthrough** (Space, two per escape): for 2.5 s his way to the hatch
   lights as a lane of white light; whoever stands on it is thrown to the side and stunned
   (1.5 s), none may step on it while it is lit. Kept simple:
@@ -356,8 +358,10 @@ Numbers are starting points, later in `config/stationConfig.ts`.
     squad held 3 s; no hit lost, the level is never lost in the escape.
     He goes out through the hatch: the level's end and its reward. Measured with two bots: one
     that runs the lights blind loses half its escapes to restarts; one that breaks through when
-    something is near (two per escape) gets out every time. The console is at the bottom of the
-    maze (12,24), the hatch is the top-left vent (6,1): about five seconds of running.
+    something is near (two per escape) gets out every time. The console (CN) and the exit
+    hatch (EX) stand where the maze's matrix puts them (now (12,24) and the top-left pocket
+    (6,1): about five seconds of running); the hatch is shut, a wall to all, until the escape,
+    then open to the hero alone (the owner, 2026-11-26).
   - **The goal is held**, not only said (the words fade; the owner: the first time one gets
     lost): once charged, a mark stands on the console until he reaches it, then on the hatch
     (`goalMark`: a reticle of steel corner brackets breathing, a riveted plate with the goal's
@@ -395,7 +399,8 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   **overheats** (the owner's pick, 2026-11-26, in acid: its red was lost in the infected maze):
   lime-hot inside to a deep green rim, the shards circling its head, hollow glowing sockets that
   look the way it goes, a jagged grin across the whole body, embers, afterimages along its way; it
-  throbs and shakes (`paintOverheat`); the fright is the classic blue with a sweat drop and the blink at the end; out of the rage 7.5%
+  throbs and shakes (`paintOverheat`), its body 10% smaller than the base (the owner: it read
+  big); the fright is the classic blue with a sweat drop and the blink at the end; out of the rage 7.5%
   larger still (the owner, 2026-11-26); a little larger than
   the season ghosts, a soft glow in its state's colour round it so it reads in the dark maze (the
   hero has a warm one on the station too);
@@ -417,7 +422,9 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   escape. Samples the owner brings or synthesised: open.
 - **Maze**: `grid_station` (no one-tile pillars since 2026-11-25): long corridors with blind
   corners, the side tunnels, vent pairs in
-  dead-end pockets of the outer wall; plus the console's tile and the escape route, set by hand.
+  dead-end pockets of the outer wall, the console `CN` and the exit hatch `EX` (tokens of their
+  own since 2026-11-26: the owner redraws the vents and the exit in the matrix; the scene's ducts
+  and the hatch follow it, `stationLayout`).
 
 ## 8. The arcade (secret level)
 

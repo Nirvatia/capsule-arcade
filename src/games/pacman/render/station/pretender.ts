@@ -72,6 +72,8 @@ export const IVORY = '#f1e7cf';
 export const SCALE = 1.08;
 /** Out of the rage, larger still by this. */
 const CALM_SCALE = 1.075;
+/** In the rage, smaller by this (the owner, 2026-11-26). */
+const RAGE_SCALE = 0.9;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -575,7 +577,8 @@ function paintOverheat(
 ): void {
 	const phase = PHASE[kind];
 	const throb = Math.max(0, Math.sin(o.time * 9 + phase));
-	c.scale(unit * SCALE, unit * SCALE);
+	// the rage's body a little smaller than the base: with its shards and afterimages it read big
+	c.scale(unit * SCALE * RAGE_SCALE, unit * SCALE * RAGE_SCALE);
 	const [bx, by] = behind(o);
 	for (let i = 3; i >= 1; i--) {
 		c.save();

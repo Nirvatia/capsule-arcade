@@ -106,6 +106,23 @@ export class LevelProgress {
 		return converted;
 	}
 
+	/** The power cells not eaten go out (the station's alarm): no score; the dots' count is theirs. */
+	clearEnergizers(): number {
+		let cleared = 0;
+		for (let y = 0; y < this.grid.height; y += 1) {
+			for (let x = 0; x < this.grid.width; x += 1) {
+				const id = this.key(x, y);
+				if (this.grid.tileAt(x, y) !== 'EU' || this.collected.has(id)) {
+					continue;
+				}
+				this.collected.add(id);
+				this.remainingEnergizersValue = Math.max(0, this.remainingEnergizersValue - 1);
+				cleared += 1;
+			}
+		}
+		return cleared;
+	}
+
 	destroyDotAt(x: number, y: number): boolean {
 		if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0) {
 			console.error('LevelProgress.destroyDotAt', 'invalid tile position', { x, y });

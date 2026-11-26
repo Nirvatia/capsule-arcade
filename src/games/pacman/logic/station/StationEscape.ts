@@ -210,8 +210,9 @@ export class StationEscape {
 				]) {
 					const x = t.x + dx;
 					const y = t.y + dy;
-					if (!this.world.walkable(x, y) || this.blocks(x, y)) continue;
+					// the hatch is the way out even while shut to the rest of the maze
 					const isHatch = x === this.hatch.x && y === this.hatch.y;
+					if (!isHatch && (!this.world.walkable(x, y) || this.blocks(x, y))) continue;
 					if (prev.has(key(x, y))) continue;
 					prev.set(key(x, y), key(t.x, t.y));
 					if (isHatch) {

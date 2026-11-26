@@ -69,7 +69,7 @@ export class GridService {
 			return false;
 		}
 		const tile = this.model.tileAt(x, y);
-		return tile !== 'WL' && tile !== 'ES';
+		return tile !== 'WL' && tile !== 'ES' && tile !== 'EX';
 	}
 
 	isPlayerWalkable(x: number, y: number): boolean {
@@ -77,7 +77,8 @@ export class GridService {
 			return false;
 		}
 		const tile = this.tileAt(x, y);
-		if (tile === 'WL' || tile === 'ES') {
+		// the station's exit hatch is shut (StationGrid opens it to the hero in the escape)
+		if (tile === 'WL' || tile === 'ES' || tile === 'EX') {
 			return false;
 		}
 		if (this.voidBlockedTiles.has(`${x},${y}`)) {
@@ -94,7 +95,7 @@ export class GridService {
 			return false;
 		}
 		const tile = this.tileAt(x, y);
-		if (tile === 'WL' || tile === 'ES') {
+		if (tile === 'WL' || tile === 'ES' || tile === 'EX') {
 			return false;
 		}
 		if (allowLair) {

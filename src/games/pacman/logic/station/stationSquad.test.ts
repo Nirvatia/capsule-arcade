@@ -29,7 +29,7 @@ function station() {
 		food: (x, y) =>
 			(grid.tileAt(x, y) === 'DT' || grid.tileAt(x, y) === 'EU') && !eaten.has(`${x},${y}`),
 		cell: (x, y) => grid.tileAt(x, y) === 'EU',
-		vent: (x, y) => ['0B', '0C'].includes(grid.tileAt(x, y)),
+		vent: (x, y) => /^0[ABC]$/.test(grid.tileAt(x, y)),
 		width: grid.width,
 		height: grid.height
 	};
@@ -301,8 +301,8 @@ describe('the vent', () => {
 		release(s);
 		const squad = new StationSquad(s.world, 2);
 		s.ghosts.setSquadGuide(squad);
-		// he runs the top row to the right, toward the vent mouth at (6,2)
-		const hero = { x: 1, y: 2 };
+		// he runs the top row to the right, toward the vent mouth at (18,2) (the exit is at (6,1))
+		const hero = { x: 14, y: 2 };
 		(squad as unknown as { pick: () => string }).pick = () => 'vent';
 		squad.left = 0;
 		squad.update(0.01, s.ghosts, hero, 'RIGHT');

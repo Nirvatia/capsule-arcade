@@ -168,7 +168,11 @@ last (see Later).
          the filament growing along it); the lure is a green signal flare (`lureFlare`); the
          Pretenders 7.5% larger out of the rage. The rage is the overheat in acid (the owner's pick of the page's
          candidates; red was lost in the infected maze). The flare is cyan (green met the acid
-         rage).
+         rage). From the owner (2026-11-26), done the same day: the cells go out at the alarm; the
+         rage 10% smaller; the console and the exit are tokens of the matrix (`CN`, `EX`; the exit
+         shut until the escape, then the hero's alone), the breakout comes from the vents and the
+         containment's door, never the exit, and the scene's ducts follow the matrix's vents. The
+         matrix holds one vent pair less until the owner redraws the vents and the exit.
          Left, from the owner's play: the ring's radius and hold, how often the thin seal comes;
          the spore cloud stays in reserve (the owner likes it). Then a fourth tactic if the three
          need company (the tripwire or the shadow).

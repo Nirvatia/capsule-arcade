@@ -3,6 +3,7 @@
 // 2.5D bulkhead walls merged into engineering modules, the sunken lair pit, the infestation per
 // phase, the live props (fans, turbines, tanks, the storm planet, the console screens), the food
 // (bio-spores, power cells) and the light map. Stage space: 1920x1080, a tile is 34 px.
+import { stationLayout } from '../../../logic/station/stationLayout';
 import { heartbeat } from './b7Hive';
 
 /** `lairDoors`: false leaves out the lair's bent blast doors and the hazard band before them
@@ -19,8 +20,8 @@ export function createB7Scene(
 	const ROWS = GRID.length; // 27
 	const COLS = GRID[0].length; // 25
 
-	const CONSOLE_TILE = { x: 12, y: 24 };
-	const HATCH_TILE = { x: 6, y: 1 };
+	// the console and the exit hatch where the matrix puts them (CN, EX)
+	const { console: CONSOLE_TILE, hatch: HATCH_TILE } = stationLayout(GRID);
 
 	const LAIR_TOKENS = new Set(['LT', 'BY', 'IY', 'PY', 'CE']);
 	const tileAt = (x: number, y: number) =>
@@ -33,10 +34,36 @@ export function createB7Scene(
 		const tk = tileAt(x, y);
 		return tk.length === 2 && tk[0] === '0';
 	};
+	/** A vent or the exit hatch: a recess in the wall with a grille. */
+	const isPort = (x: number, y: number) => isTeleport(x, y) || tileAt(x, y) === 'EX';
 	const isWalkable = (x: number, y: number) => !isWall(x, y) && !isVoid(x, y);
 	const isCorridorFloor = (x: number, y: number) => isWalkable(x, y) && !isLair(x, y);
 	const isOuterPerimeterWall = (x: number, y: number) =>
 		x === 1 || x === COLS - 2 || y === 1 || y === ROWS - 2;
+	/** The vents and the hatch in the outer wall, each with the side its duct leaves by. */
+	const PORTS: Array<{
+		x: number;
+		y: number;
+		tk: string;
+		side: 'top' | 'bottom' | 'left' | 'right';
+	}> = [];
+	for (let y = 0; y < ROWS; y++) {
+		for (let x = 0; x < COLS; x++) {
+			if (!isPort(x, y)) continue;
+			const side =
+				y === 1
+					? 'top'
+					: y === ROWS - 2
+						? 'bottom'
+						: x === 1
+							? 'left'
+							: x === COLS - 2
+								? 'right'
+								: null;
+			if (side) PORTS.push({ x, y, tk: tileAt(x, y), side });
+		}
+	}
+	const portsOn = (side: string) => PORTS.filter((p) => p.side === side);
 
 	// =========================================================================
 	// 2. STAGE ARCHITECTURAL CUTAWAY GEOMETRY (1920x1080)
@@ -449,14 +476,19 @@ export function createB7Scene(
 	}
 
 	// External pneumatic duct turbines (0B, 0C top/bottom and 0A left/right)
-	const DUCT_TURBINES = [
-		{ cx: tcx(6), cy: MAZE_T - 48, rx: 14, ry: 22, orient: 'v', speed: 1.5, ph: 0.2 },
-		{ cx: tcx(18), cy: MAZE_T - 48, rx: 14, ry: 22, orient: 'v', speed: -1.35, ph: 1.7 },
-		{ cx: tcx(6), cy: MAZE_B + 48, rx: 14, ry: 22, orient: 'v', speed: 1.4, ph: 3.1 },
-		{ cx: tcx(18), cy: MAZE_B + 48, rx: 14, ry: 22, orient: 'v', speed: -1.55, ph: 4.4 },
-		{ cx: MAZE_L - 36, cy: tcy(13), rx: 22, ry: 14, orient: 'h', speed: 1.45, ph: 0.9 },
-		{ cx: MAZE_R + 36, cy: tcy(13), rx: 22, ry: 14, orient: 'h', speed: -1.3, ph: 2.6 }
-	];
+	// one behind each vent and the hatch in the outer wall, where the matrix puts them
+	const DUCT_TURBINES = PORTS.map((p, i) => {
+		const v = p.side === 'top' || p.side === 'bottom';
+		return {
+			cx: v ? tcx(p.x) : p.side === 'left' ? MAZE_L - 36 : MAZE_R + 36,
+			cy: v ? (p.side === 'top' ? MAZE_T - 48 : MAZE_B + 48) : tcy(p.y),
+			rx: v ? 14 : 22,
+			ry: v ? 22 : 14,
+			orient: v ? 'v' : 'h',
+			speed: (i % 2 ? -1 : 1) * (1.3 + ((i * 0.37) % 1) * 0.25),
+			ph: (i * 1.37) % TAU
+		};
+	});
 
 	// =========================================================================
 	// 5. INDUSTRIAL ARCHITECTURAL PRIMITIVES & INFINITE HULL BACKDROP
@@ -668,10 +700,20 @@ export function createB7Scene(
 			g.restore();
 		};
 
-		drawExternalManifoldDuct(tcx(6), 0, MAZE_T, 'DUCT 0B // EXTRACTION');
-		drawExternalManifoldDuct(tcx(18), 0, MAZE_T, 'DUCT 0C // VENT');
-		drawExternalManifoldDuct(tcx(6), MAZE_B, STAGE_H, 'DUCT 0C // VENT');
-		drawExternalManifoldDuct(tcx(18), MAZE_B, STAGE_H, 'DUCT 0B // VENT');
+		for (const p of portsOn('top'))
+			drawExternalManifoldDuct(
+				tcx(p.x),
+				0,
+				MAZE_T,
+				p.tk === 'EX' ? 'HATCH // EXTRACTION' : `DUCT ${p.tk} // VENT`
+			);
+		for (const p of portsOn('bottom'))
+			drawExternalManifoldDuct(
+				tcx(p.x),
+				MAZE_B,
+				STAGE_H,
+				p.tk === 'EX' ? 'HATCH // EXTRACTION' : `DUCT ${p.tk} // VENT`
+			);
 
 		// Header & footer structural stencils
 		g.save();
@@ -759,9 +801,9 @@ export function createB7Scene(
 		drawStencil(g, 'SPECIMEN CONTAINMENT', 330, 572, 13, 0.15);
 		drawStencil(g, 'LEVEL IV BIO-HAZARD', 330, 886, 12, 0.14);
 
-		// External pneumatic steel duct docking to Left 0A Vent
-		{
-			const ay = tcy(13);
+		// External pneumatic steel ducts docking to the left wall's vents (from the biolab)
+		for (const port of portsOn('left')) {
+			const ay = tcy(port.y);
 			g.fillStyle = '#090c0c';
 			g.fillRect(innerR - 72, ay - 27, 72, 54);
 			g.fillStyle = '#283230';
@@ -981,9 +1023,9 @@ export function createB7Scene(
 		g.lineWidth = 2;
 		g.strokeRect(innerL + 22, innerT + 22, rw - 44, rh - 44);
 
-		// External pneumatic steel duct docking to Right 0A Vent
-		{
-			const ay = tcy(13);
+		// External pneumatic steel ducts docking to the right wall's vents (from the deck)
+		for (const port of portsOn('right')) {
+			const ay = tcy(port.y);
 			g.fillStyle = '#090c0c';
 			g.fillRect(innerL, ay - 27, 72, 54);
 			g.fillStyle = '#283230';
@@ -1637,7 +1679,7 @@ export function createB7Scene(
 	function paintAirlockVents(g: CanvasRenderingContext2D, rand: () => number) {
 		for (let y = 0; y < ROWS; y++) {
 			for (let x = 0; x < COLS; x++) {
-				if (!isTeleport(x, y)) continue;
+				if (!isPort(x, y)) continue;
 				const cx = tcx(x);
 				const cy = tcy(y);
 				const s = TILE * 0.46;
@@ -3400,10 +3442,27 @@ export function createB7Scene(
 
 	const STEAM_EMITTERS = [
 		// External pneumatic vents (gentle wisps in Phase 2/3)
-		{ x: MAZE_L - 66, y: tcy(13), dx: -26, dy: -6, minPhase: 2, maxR: 20, alpha: 0.1 },
-		{ x: MAZE_R + 66, y: tcy(13), dx: 26, dy: -6, minPhase: 2, maxR: 20, alpha: 0.1 },
-		{ x: tcx(18), y: MAZE_T - 20, dx: 6, dy: -22, minPhase: 2, maxR: 16, alpha: 0.09 },
-		{ x: tcx(6), y: MAZE_B + 20, dx: -6, dy: 22, minPhase: 2, maxR: 16, alpha: 0.09 },
+		...PORTS.filter((p) => p.tk !== 'EX').map((p) =>
+			p.side === 'left' || p.side === 'right'
+				? {
+						x: p.side === 'left' ? MAZE_L - 66 : MAZE_R + 66,
+						y: tcy(p.y),
+						dx: p.side === 'left' ? -26 : 26,
+						dy: -6,
+						minPhase: 2,
+						maxR: 20,
+						alpha: 0.1
+					}
+				: {
+						x: tcx(p.x),
+						y: p.side === 'top' ? MAZE_T - 20 : MAZE_B + 20,
+						dx: p.side === 'top' ? 6 : -6,
+						dy: p.side === 'top' ? -22 : 22,
+						minPhase: 2,
+						maxR: 16,
+						alpha: 0.09
+					}
+		),
 		{ x: 460, y: 74, dx: 26, dy: 14, minPhase: 2, maxR: 15, alpha: 0.15 },
 		{ x: 1450, y: 74, dx: -24, dy: 15, minPhase: 2, maxR: 15, alpha: 0.15 }
 	];

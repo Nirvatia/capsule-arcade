@@ -14,7 +14,10 @@ export const TILE_TOKENS = [
 	'IY',
 	'CE',
 	'FT',
-	'DB'
+	'DB',
+	// the station: its exit hatch (shut until the escape, then only for the hero) and its console
+	'EX',
+	'CN'
 ] as const;
 
 export type TileType = (typeof TILE_TOKENS)[number] | TeleportType;

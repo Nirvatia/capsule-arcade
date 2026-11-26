@@ -7,6 +7,7 @@
 // Then the escape: the squad in a rage and 1-4 more breaking out (`EscapeRush`); a touch costs HP
 // there too; his lure (the fire key, two per escape) glows far off his way and draws them to it,
 // round him. Out through the hatch: the level is won.
+import { stationLayout, type StationLayout } from './stationLayout';
 import type { GridPoint } from '../maze/GridModel';
 import { GridService } from '../maze/GridService';
 import type { GhostService } from '../actors/GhostService';
@@ -45,26 +46,22 @@ export const RUN_TUNE = {
 	/** The infection: its share from the hatch's charge, and the time it takes to fill by itself, s. */
 	infectionCharge: 0.85,
 	infectionTime: 300,
-	/** Where the breakout comes from: above the containment's door, the vents' mouths. */
-	doors: [
-		{ x: 12, y: 10 },
-		{ x: 6, y: 2 },
-		{ x: 18, y: 2 },
-		{ x: 6, y: 24 },
-		{ x: 18, y: 24 }
-	],
 	/** The lair's exit delays against the season levels': all out at once (the owner), 0.15 s
 	 *  apart so they do not jam the door. */
-	exitScale: 0.05,
-	console: { x: 12, y: 24 },
-	hatch: { x: 6, y: 1 }
+	exitScale: 0.05
 } as const;
 
-/** The game's grid with the escape's doors and the fence's beams in the way, the hatch no vent once open. */
+/** The game's grid with the escape's doors and the fence's ring in the way; the exit hatch (EX)
+ *  shut to all until the escape, then open to the hero alone. */
 export class StationGrid extends GridService {
 	escape: StationEscape | null = null;
 	squad: StationSquad | null = null;
+	hatch: GridPoint | null = null;
+	private isOpenHatch(x: number, y: number): boolean {
+		return this.escape?.state === 'running' && this.hatch?.x === x && this.hatch?.y === y;
+	}
 	isPlayerWalkable(x: number, y: number): boolean {
+		if (this.isOpenHatch(x, y)) return true;
 		return super.isPlayerWalkable(x, y) && !this.escape?.blocks(x, y) && !this.squad?.blocks(x, y);
 	}
 	isGhostWalkable(x: number, y: number, allowLair: boolean): boolean {
@@ -73,15 +70,6 @@ export class StationGrid extends GridService {
 			!this.escape?.blocks(x, y) &&
 			(allowLair || !this.escape?.laneBlocks(x, y))
 		);
-	}
-	private isHatch(x: number, y: number): boolean {
-		return this.escape?.state === 'running' && x === RUN_TUNE.hatch.x && y === RUN_TUNE.hatch.y;
-	}
-	isTeleport(x: number, y: number): boolean {
-		return !this.isHatch(x, y) && super.isTeleport(x, y);
-	}
-	teleportDestination(x: number, y: number): GridPoint | undefined {
-		return this.isHatch(x, y) ? undefined : super.teleportDestination(x, y);
 	}
 }
 
@@ -102,6 +90,8 @@ const SIDES = [
 ] as const;
 
 export class StationRun {
+	/** The console, the exit hatch and the breakout's doors, read from the maze. */
+	readonly layout: StationLayout;
 	readonly squad: StationSquad;
 	readonly escape: StationEscape;
 	readonly rush: EscapeRush;
@@ -152,10 +142,12 @@ export class StationRun {
 			},
 			(random() * 1e9) | 0
 		);
+		this.layout = stationLayout(rows);
+		const { hatch } = this.layout;
 		this.escape = new StationEscape(
 			{ walkable: (x, y) => GridService.prototype.isPlayerWalkable.call(grid, x, y) },
-			RUN_TUNE.console,
-			RUN_TUNE.hatch,
+			this.layout.console,
+			hatch,
 			false
 		);
 		this.rush = new EscapeRush({
@@ -163,6 +155,7 @@ export class StationRun {
 		});
 		grid.escape = this.escape;
 		grid.squad = this.squad;
+		grid.hatch = hatch;
 		ghosts.setSquadGuide(this.squad);
 		this.total = progress.remainingDots;
 	}
@@ -237,10 +230,12 @@ export class StationRun {
 		if (this.escape.state === 'running') this.infection = Math.min(1, this.infection + dt / 6);
 		const ev = this.escape.update(dt, hero);
 		if (ev.armed) {
-			this.popup(RUN_TUNE.console.x + 0.5, RUN_TUNE.console.y - 0.4, 'TO THE CONSOLE');
+			this.popup(this.layout.console.x + 0.5, this.layout.console.y - 0.4, 'TO THE CONSOLE');
 			this.sound('armed');
 		}
 		if (ev.started) {
+			// the alarm takes the power: the cells left go dark and are gone
+			this.progress.clearEnergizers();
 			this.startChase();
 			this.seal(RUN_TUNE.headStart);
 			this.popup(hero.x + 0.5, hero.y - 0.4, 'RUN');
@@ -391,7 +386,7 @@ export class StationRun {
 		this.squad.chase(this.ghosts, null, () => this.escape.route, {
 			lane: (x, y) => this.blocked(x, y)
 		});
-		this.rush.start(1 + Math.floor(this.random() * 4), RUN_TUNE.doors);
+		this.rush.start(1 + Math.floor(this.random() * 4), this.layout.doors);
 	}
 
 	/**

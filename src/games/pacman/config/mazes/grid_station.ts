@@ -1,11 +1,13 @@
 import { parseMaze } from './parseMaze';
 
 // The station (boss level, DESIGN.md §7a): long corridors and blind corners, the lair is the nest;
-// the side tunnels 0A; vents 0B and 0C in dead-end pockets of the outer wall (entered only on
-// purpose), each top pocket paired with a bottom one so the hero comes out still running.
+// the side tunnels 0A; vents 0C in dead-end pockets of the outer wall (entered only on purpose),
+// the top pocket paired with a bottom one so the hero comes out still running; the exit hatch EX
+// (shut until the escape) in the other top pocket, the console CN at the bottom. The owner redraws
+// the vents and the exit (2026-11-26).
 export const GRID_STATION = parseMaze('grid_station', [
 	'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES',
-	'ES WL WL WL WL WL 0B WL WL WL WL WL WL WL WL WL WL WL 0C WL WL WL WL WL ES',
+	'ES WL WL WL WL WL EX WL WL WL WL WL WL WL WL WL WL WL 0C WL WL WL WL WL ES',
 	'ES WL EU DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT EU WL ES',
 	'ES WL DT WL WL WL DT WL WL WL WL DT WL DT WL WL WL WL DT WL WL WL DT WL ES',
 	'ES WL DT WL DT DT DT DT DT DT WL DT WL DT WL DT DT DT DT DT DT WL DT WL ES',
@@ -28,7 +30,7 @@ export const GRID_STATION = parseMaze('grid_station', [
 	'ES WL DT WL DT WL WL WL WL DT WL DT WL DT WL DT WL WL WL WL DT WL DT WL ES',
 	'ES WL DT WL DT DT DT DT DT DT WL DT WL DT WL DT DT DT DT DT DT WL DT WL ES',
 	'ES WL DT WL WL WL DT WL WL WL WL DT WL DT WL WL WL WL DT WL WL WL DT WL ES',
-	'ES WL EU DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT EU WL ES',
-	'ES WL WL WL WL WL 0C WL WL WL WL WL WL WL WL WL WL WL 0B WL WL WL WL WL ES',
+	'ES WL EU DT DT DT DT DT DT DT DT DT CN DT DT DT DT DT DT DT DT DT EU WL ES',
+	'ES WL WL WL WL WL 0C WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
 	'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES'
 ]);
