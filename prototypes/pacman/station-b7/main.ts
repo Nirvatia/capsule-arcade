@@ -30,7 +30,8 @@ const world = new B7World(
 		? undefined
 		: hiveKind === 'c'
 			? () => document.createElement('canvas')
-			: (s) => bakeVeins(s, GRID_STATION)
+			: (s) => bakeVeins(s, GRID_STATION),
+	{ lairDoors: hiveKind !== 'c' }
 );
 const hiveC = hiveKind === 'c' ? new HiveCView(world.scene, GRID_STATION) : null;
 let pulse = true;
@@ -322,6 +323,7 @@ function frame(now: number): void {
 	if (hiveC) {
 		world.enter(ctx);
 		hiveC.draw(ctx, inf);
+		hiveC.drawLair(ctx, t);
 		ctx.restore();
 	}
 	world.drawLight(ctx, t, inf, escape ? 'alert' : 'quarantine', true);

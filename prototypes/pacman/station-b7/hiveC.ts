@@ -9,7 +9,11 @@
 //          middle stays clean), wet glints, egg cysts on some crests (they flare with the beat),
 //          tongues hanging over the south facades; it trails
 //          the veins' front, so the station is veined first and overgrown later;
-//   pulse  a heartbeat (lub-dub every 2.6 s) running out of the lair along the walls' veins.
+//   pulse  a heartbeat (lub-dub every 6 s, soft) running out of the lair along the walls' veins;
+//   lair   the lair's gate (the owner: the bent blast doors fought the new style): a sphincter
+//          of the same flesh across the entrance, a slit glowing from inside that parts with the
+//          beat, lips over the pit's rim and cords from its walls to the cocoons (the grate and
+//          the cocoons kept); the scene drawn with `lairDoors: false`.
 import type { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
 
 type Scene = ReturnType<typeof createB7Scene>;
@@ -23,7 +27,7 @@ const TAU = Math.PI * 2;
  *  covers every wall at 100% (the total takeover of the escape). `far` the farthest wall, tiles. */
 const veinReach = (inf: number, far: number) => (inf / 0.9) * (far + 1);
 const fleshReach = (inf: number, far: number) => inf * (far + 5) - 4;
-const BEAT = { period: 2.6, speed: 9, width: 1.2, dub: 0.24 } as const;
+const BEAT = { period: 6, speed: 9, width: 1.2, dub: 0.3 } as const;
 
 function canvas(w: number, h: number): HTMLCanvasElement {
 	const c = document.createElement('canvas');
@@ -506,10 +510,145 @@ export class HiveCView {
 		g.drawImage(this.beat, s.MAZE_X * k, s.MAZE_Y * k, s.COLS * s.TILE * k, s.ROWS * s.TILE * k);
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';
-		ctx.globalAlpha = 1;
+		ctx.globalAlpha = 0.5;
 		ctx.drawImage(this.scratch, 0, 0, s.STAGE_W, s.STAGE_H);
-		ctx.globalAlpha = 0.45;
+		ctx.globalAlpha = 0.18;
 		ctx.drawImage(this.scratch, -3, -3, s.STAGE_W + 6, s.STAGE_H + 6);
+		ctx.restore();
+	}
+
+	/** The beat's swell now, 0..1 (the lair's gate parts with it). */
+	private swell(time: number): number {
+		const u = time % BEAT.period;
+		const one = (t: number) => (t < 0 ? 0 : Math.exp(-((t / 0.18) ** 2)));
+		return Math.min(1, one(u - 0.05) + 0.7 * one(u - 0.05 - BEAT.dub));
+	}
+
+	/** The lair: its gate of flesh, lips over the pit's rim, cords to the cocoons (stage space). */
+	drawLair(ctx: Ctx, time: number): void {
+		const { tx, ty, TILE } = this.scene;
+		const sw = this.swell(time);
+		const blob = (x: number, y: number, rx: number, ry: number, rot = 0) => {
+			for (const [grow, col, ox, oy] of [
+				[1.2, '#1e080e', 0, 0],
+				[0, '#5e1c2a', 0, 0],
+				[-1.4, '#7c2c36', -0.7, -0.8],
+				[-2.8, '#94413f', -1.1, -1.3]
+			] as const) {
+				if (rx + grow <= 0.4 || ry + grow <= 0.4) continue;
+				ctx.fillStyle = col;
+				ctx.beginPath();
+				ctx.ellipse(x + ox, y + oy, rx + grow, ry + grow, rot, 0, TAU);
+				ctx.fill();
+			}
+		};
+		const cord = (x0: number, y0: number, cx: number, cy: number, x1: number, y1: number, w: number) => {
+			for (const [lw, col, ox, oy] of [
+				[w + 1.6, '#1e080e', 0, 0],
+				[w, '#6a1c2a', 0, 0],
+				[w * 0.5, '#a2383e', -0.4, -0.5],
+				[0.8, 'rgba(255, 206, 176, 0.5)', -0.7, -0.9]
+			] as const) {
+				ctx.strokeStyle = col;
+				ctx.lineWidth = lw;
+				ctx.beginPath();
+				ctx.moveTo(x0 + ox, y0 + oy);
+				ctx.quadraticCurveTo(cx + ox, cy + oy, x1 + ox, y1 + oy);
+				ctx.stroke();
+			}
+		};
+		ctx.save();
+		ctx.lineCap = 'round';
+		// cords from the pit's walls down to the cocoons (the cocoons' tops at y 13.44..13.56)
+		const pods = [10.9, 11.96, 13.06, 14.1];
+		const tops = [
+			[tx(10) + 1, ty(12) + 6],
+			[tx(11.6), ty(12) + 1],
+			[tx(13.4), ty(12) + 1],
+			[tx(15) - 1, ty(12) + 6]
+		];
+		pods.forEach((px, i) => {
+			const [x0, y0] = tops[i];
+			const x1 = tx(px);
+			const y1 = ty(13.5) - 11;
+			cord(x0, y0, (x0 + x1) / 2 + (i < 2 ? -7 : 7), y1 + 4, x1, y1, 4.2);
+		});
+		// lips of flesh over the pit's rim
+		for (const [x, y, rx, ry] of [
+			[tx(10) + 3, ty(12) + 2, 6, 4],
+			[tx(10) + 2, ty(13) + 10, 3.5, 7],
+			[tx(15) - 3, ty(12) + 3, 6, 4.5],
+			[tx(15) - 2, ty(14) + 4, 3.5, 6.5],
+			[tx(12) - 4, ty(15) - 2, 8, 3.5],
+			[tx(14) - 6, ty(15) - 2, 6, 3]
+		]) {
+			blob(x, y, rx, ry);
+		}
+		// the gate: a sphincter across the entrance (row 11, columns 11..13), rooted in both walls
+		const x0 = tx(11) - 3;
+		const x1 = tx(14) + 3;
+		const cy = ty(11) + TILE * 0.5;
+		const half = TILE * 0.42;
+		const mx = (x0 + x1) / 2;
+		const rx = (x1 - x0) / 2;
+		const open = 2.2 + 3.6 * sw;
+		// two puffed lips meeting at the slit, pinched at the roots
+		for (const side of [-1, 1]) {
+			const ly = cy + side * (half * 0.5 + open * 0.35);
+			const ry = half * 0.56;
+			for (const [grow, col, ox, oy] of [
+				[1.3, '#1e080e', 0, 0],
+				[0, '#561a28', 0, 0],
+				[-2, '#6e2432', -0.6, -1],
+				[-4.5, '#86363c', -1, -1.8]
+			] as const) {
+				ctx.fillStyle = col;
+				ctx.beginPath();
+				ctx.ellipse(mx + ox, ly + oy, rx + grow, ry + grow, 0, 0, TAU);
+				ctx.fill();
+			}
+			// the folds running into the slit
+			ctx.strokeStyle = 'rgba(30, 8, 14, 0.7)';
+			ctx.lineWidth = 1.1;
+			for (let i = 1; i < 10; i++) {
+				const fx = x0 + ((x1 - x0) * i) / 10;
+				const k = 1 - ((fx - mx) / rx) ** 2;
+				ctx.beginPath();
+				ctx.moveTo(fx + (fx - mx) * 0.08, ly + side * ry * 0.85 * Math.sqrt(Math.max(0, k)));
+				ctx.quadraticCurveTo(fx + (fx - mx) * 0.05, ly, fx, ly - side * ry * 0.7);
+				ctx.stroke();
+			}
+			ctx.fillStyle = 'rgba(255, 226, 192, 0.55)';
+			ctx.beginPath();
+			ctx.ellipse(mx - rx * 0.35, ly - ry * 0.45, 2.2, 0.9, -0.15, 0, TAU);
+			ctx.fill();
+		}
+		// the slit between them, lit from inside the lair, parting with the beat
+		ctx.beginPath();
+		ctx.moveTo(x0 + 6, cy);
+		ctx.quadraticCurveTo(mx, cy - open, x1 - 6, cy);
+		ctx.quadraticCurveTo(mx, cy + open, x0 + 6, cy);
+		ctx.closePath();
+		ctx.fillStyle = '#0c0306';
+		ctx.fill();
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		const sg = ctx.createRadialGradient(mx, cy, 0, mx, cy, rx * 0.8);
+		sg.addColorStop(0, `rgba(255, 170, 96, ${0.5 + 0.35 * sw})`);
+		sg.addColorStop(1, 'rgba(255, 120, 60, 0)');
+		ctx.strokeStyle = sg;
+		ctx.lineWidth = 1.6 + open * 0.3;
+		ctx.beginPath();
+		ctx.moveTo(x0 + 10, cy);
+		ctx.lineTo(x1 - 10, cy);
+		ctx.stroke();
+		ctx.restore();
+		// the roots in both walls: knots of flesh
+		for (const side of [-1, 1]) {
+			const ax = side < 0 ? x0 : x1;
+			blob(ax, cy - 5, 5.5, 5);
+			blob(ax + side * -1, cy + 6, 4.5, 4.2);
+		}
 		ctx.restore();
 	}
 }

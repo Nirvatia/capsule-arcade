@@ -3,7 +3,11 @@
 // 2.5D bulkhead walls merged into engineering modules, the sunken lair pit, the infestation per
 // phase, the live props (fans, turbines, tanks, the storm planet, the console screens), the food
 // (bio-spores, power cells) and the light map. Stage space: 1920x1080, a tile is 34 px.
-export function createB7Scene(rows: readonly (readonly string[])[]) {
+/** `lairDoors`: false leaves out the lair's bent blast doors (the infestation C's own gate). */
+export function createB7Scene(
+	rows: readonly (readonly string[])[],
+	opts: { readonly lairDoors?: boolean } = {}
+) {
 	// =========================================================================
 	// 1. EXACT 25x27 GRID_STATION LAYOUT (PURE VISUALS — ZERO GAMEPLAY LOGIC)
 	// =========================================================================
@@ -1822,77 +1826,79 @@ export function createB7Scene(rows: readonly (readonly string[])[]) {
 		g.fillRect(lx, ly, 16, lh);
 		g.restore();
 
-		// --- HEAVY YELLOW-BLACK BLAST DOORS AT LE (row 11, cols 11..13) BENT OUTWARD ---
-		const gateL = tx(11);
-		const gateR = tx(14);
-		const gateY = ty(11) + TILE * 0.52;
-		const halfSpan = (gateR - gateL) / 2;
+		if (opts.lairDoors !== false) {
+			// --- HEAVY YELLOW-BLACK BLAST DOORS AT LE (row 11, cols 11..13) BENT OUTWARD ---
+			const gateL = tx(11);
+			const gateR = tx(14);
+			const gateY = ty(11) + TILE * 0.52;
+			const halfSpan = (gateR - gateL) / 2;
 
-		g.save();
-		g.fillStyle = '#080b0b';
-		g.fillRect(gateL, ty(11) + 4, gateR - gateL, TILE - 8);
-		g.strokeStyle = 'rgba(130, 148, 142, 0.18)';
-		g.lineWidth = 1;
-		g.strokeRect(gateL + 2, ty(11) + 6, gateR - gateL - 4, TILE - 12);
-
-		for (const side of [-1, 1]) {
 			g.save();
-			const hingeX = side < 0 ? gateL + 1 : gateR - 1;
-			const doorW = halfSpan - 8;
-			const doorH = 14.5;
-			g.translate(hingeX, gateY);
-			g.rotate(side < 0 ? -0.36 : 0.36);
+			g.fillStyle = '#080b0b';
+			g.fillRect(gateL, ty(11) + 4, gateR - gateL, TILE - 8);
+			g.strokeStyle = 'rgba(130, 148, 142, 0.18)';
+			g.lineWidth = 1;
+			g.strokeRect(gateL + 2, ty(11) + 6, gateR - gateL - 4, TILE - 12);
 
-			const x0 = side < 0 ? 0 : -doorW;
-			g.fillStyle = 'rgba(0, 0, 0, 0.84)';
-			g.fillRect(x0 + 2, -doorH / 2 + 4, doorW, doorH + 2);
+			for (const side of [-1, 1]) {
+				g.save();
+				const hingeX = side < 0 ? gateL + 1 : gateR - 1;
+				const doorW = halfSpan - 8;
+				const doorH = 14.5;
+				g.translate(hingeX, gateY);
+				g.rotate(side < 0 ? -0.36 : 0.36);
 
-			g.beginPath();
-			if (side < 0) {
-				g.moveTo(0, -doorH / 2);
-				g.lineTo(doorW - 2, -doorH / 2);
-				g.lineTo(doorW + 3.5, -doorH * 0.16);
-				g.lineTo(doorW - 3, doorH * 0.14);
-				g.lineTo(doorW + 1.5, doorH / 2);
-				g.lineTo(0, doorH / 2);
-			} else {
-				g.moveTo(0, -doorH / 2);
-				g.lineTo(-doorW + 2, -doorH / 2);
-				g.lineTo(-doorW - 3.5, -doorH * 0.16);
-				g.lineTo(-doorW + 3, doorH * 0.14);
-				g.lineTo(-doorW - 1.5, doorH / 2);
-				g.lineTo(0, doorH / 2);
+				const x0 = side < 0 ? 0 : -doorW;
+				g.fillStyle = 'rgba(0, 0, 0, 0.84)';
+				g.fillRect(x0 + 2, -doorH / 2 + 4, doorW, doorH + 2);
+
+				g.beginPath();
+				if (side < 0) {
+					g.moveTo(0, -doorH / 2);
+					g.lineTo(doorW - 2, -doorH / 2);
+					g.lineTo(doorW + 3.5, -doorH * 0.16);
+					g.lineTo(doorW - 3, doorH * 0.14);
+					g.lineTo(doorW + 1.5, doorH / 2);
+					g.lineTo(0, doorH / 2);
+				} else {
+					g.moveTo(0, -doorH / 2);
+					g.lineTo(-doorW + 2, -doorH / 2);
+					g.lineTo(-doorW - 3.5, -doorH * 0.16);
+					g.lineTo(-doorW + 3, doorH * 0.14);
+					g.lineTo(-doorW - 1.5, doorH / 2);
+					g.lineTo(0, doorH / 2);
+				}
+				g.closePath();
+
+				const dg = g.createLinearGradient(0, -doorH / 2, 0, doorH / 2);
+				dg.addColorStop(0, '#4c5854');
+				dg.addColorStop(0.5, '#2b3330');
+				dg.addColorStop(1, '#161b1a');
+				g.fillStyle = dg;
+				g.fill();
+
+				g.save();
+				g.clip();
+				drawHazardBand(g, x0, -doorH / 2, doorW, 5.5, rand, 0.88, 0.5);
+				g.restore();
+
+				g.strokeStyle = 'rgba(196, 214, 208, 0.44)';
+				g.lineWidth = 1.1;
+				g.stroke();
+				drawHexBolt(g, side < 0 ? 4 : -4, 0, 2.2);
+				g.restore();
 			}
-			g.closePath();
 
-			const dg = g.createLinearGradient(0, -doorH / 2, 0, doorH / 2);
-			dg.addColorStop(0, '#4c5854');
-			dg.addColorStop(0.5, '#2b3330');
-			dg.addColorStop(1, '#161b1a');
-			g.fillStyle = dg;
-			g.fill();
-
-			g.save();
-			g.clip();
-			drawHazardBand(g, x0, -doorH / 2, doorW, 5.5, rand, 0.88, 0.5);
-			g.restore();
-
-			g.strokeStyle = 'rgba(196, 214, 208, 0.44)';
-			g.lineWidth = 1.1;
+			g.strokeStyle = '#7b8c86';
+			g.lineWidth = 2.2;
+			g.beginPath();
+			g.moveTo(gateL + 4, gateY + 6);
+			g.lineTo(gateL + 20, gateY - 4);
+			g.moveTo(gateR - 4, gateY + 6);
+			g.lineTo(gateR - 18, gateY - 3);
 			g.stroke();
-			drawHexBolt(g, side < 0 ? 4 : -4, 0, 2.2);
 			g.restore();
 		}
-
-		g.strokeStyle = '#7b8c86';
-		g.lineWidth = 2.2;
-		g.beginPath();
-		g.moveTo(gateL + 4, gateY + 6);
-		g.lineTo(gateL + 20, gateY - 4);
-		g.moveTo(gateR - 4, gateY + 6);
-		g.lineTo(gateR - 18, gateY - 3);
-		g.stroke();
-		g.restore();
 	}
 
 	// =========================================================================
