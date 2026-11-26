@@ -99,8 +99,8 @@ last (see Later).
          player bot (avoids the squad within 2 tiles, eats the nearest food): all three
          tactics come each game, something happens every 4-6 s, a step costs under 11 ms; a
          blind runner loses the pulse in most escapes, never the escape. After the owner's
-         play: tune, then delete the hounds and the swarm (pages, `HoundPack`, `SwarmField`,
-         `stationHound`, `stationSwarm`). The tripwire and the shadow are in reserve.
+         play: tune (the hounds and the swarm are deleted, 2026-11-26). The tripwire and the
+         shadow are in reserve.
          The owner played v2 (2026-11-25): much better; two creatures stuck rocking at their
          posts (fixed: one that reaches its post hunts on, tested), the escape still easy.
          **Escape v3** (same day, awaits his play): a free way, the squad in a rage, 1-4 more
@@ -117,8 +117,8 @@ last (see Later).
          effects per tactic); both come to the next chat to be reproduced in code.
          **In the game (2026-11-25, the dev panel's Station)**, the owner's call to try it so
          and tune after: the level's look is his mock-up `Station_Level_v2.html` carried over as
-         drawn on `grid_station` (`render/station/b7`); the squad are the glass albinos of his
-         `Station_Mimics_2.html` (`render/station/albino`); the rules are the prototype's, now
+         drawn on `grid_station` (`render/station/b7`); the squad were the glass albinos of his
+         `Station_Mimics_2.html` (since 2026-11-26 the Pretenders, below); the rules are the prototype's, now
          `logic/station/StationRun` in place of `StationService`; a lurker lies as one of the
          level's spores with the tells of `MimicTells` (a shadow, off the centre, its eyes now and
          then, a tremble when he is near, the breathing out of step; the run's first lurkers teach:
@@ -130,12 +130,11 @@ last (see Later).
          best takes 6-7; waits on his answer); the station's HUD (a text readout stands in); the
          level's first frame blocks ~0.8 s in the bake (the base and three infestation layers).
          The old `StationService` (and its tests), `render/station`'s style-B files and the
-         squad prototype stay until the owner has played this; then delete them with the
-         hounds and the swarm.
-      3. **The creatures' look**: done in the game as the glass albino (above); tuning after
-         the owner's play.
-         The owner's first play (2026-11-25), done the same day: the albinos glide
-         (`render/station/creatureMotion`, the mock-up's shake slowed); a touch costs one of three
+         squad prototype stay until the owner has played this; then delete them.
+      3. **The creatures' look**: the Pretender since 2026-11-26 (below); the glass albino
+         before it, deleted.
+         The owner's first play (2026-11-25), done the same day: the albinos glided
+         (deleted with them); a touch costs one of three
          HP, in the escape too (no restart; safe 1.5 s; the screen's edges pulse red); the escape's
          lure on the fire key (two per escape: far from him, off his way; the enraged run to it
          round him); no route lights; the phantom is the glass body almost clear; the infection
@@ -158,9 +157,10 @@ last (see Later).
          180; the season ghosts' grammar works (upright, feet, eyes that show the way). **The
          Pretender is in the game** in place of the albino (`render/station/pretender`, the
          `pretender` prototype's sheet, `DESIGN.md` §7a; the rage without a ring, the mask up and
-         the true face). Left, from his play: its readability at game scale; whether the lurker's
-         eye tell (two pale slits over the spore) becomes its gold slit eye; the phantom as the
-         Pretender almost clear. Then delete `albino`, `creatureMotion` (and its test), the
+         the true face). The lurker's eye tell is its gold slit eye now
+         (`drawLurkerEye`, turned toward the hero), and the albino, its glide, the hounds, the
+         swarm and the `creatures` page are deleted (2026-11-26). Left, from his play: its
+         readability at game scale; the phantom as the Pretender almost clear; then delete the
          spore hermit and the station-b7 page's candidate keys.
       4. A fourth tactic if the three need company (the tripwire or the shadow).
       5. Into the game: the squad and the escape in place of `StationService`'s ghost parts;

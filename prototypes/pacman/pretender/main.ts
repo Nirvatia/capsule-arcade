@@ -8,7 +8,11 @@
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
 import type { GhostKind as SquadKind } from '../../../src/games/pacman/logic/actors/GhostModel';
-import { drawPretender, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
+import {
+	drawLurkerEye,
+	drawPretender,
+	type PretenderOpts
+} from '../../../src/games/pacman/render/station/pretender';
 
 type MState = 'hunt' | 'tell' | 'rage' | 'fright' | 'flash' | 'mimic' | 'eyes';
 
@@ -90,6 +94,18 @@ function turner(period: number, rate: number) {
 const fast180 = turner(1.6, 12);
 const slow180 = turner(2.4, 2.2);
 
+/** The lurker's tell over its spore, as the game opens it (every 2.6 s for 0.7 s), the hero to
+ *  the lower left. */
+function lurkerEye(x: number, y: number, S: number, t: number): void {
+	const ph = t % 2.6;
+	const open = ph < 0.7 ? Math.sin((ph / 0.7) * Math.PI) : 0;
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.scale(S / scene.TILE, S / scene.TILE);
+	drawLurkerEye(ctx, 0, 0, open, -1, 0.6);
+	ctx.restore();
+}
+
 /** The rage's loop: hunting, the mask goes up, the true face, the mask back down. */
 function revealLoop(t: number): number {
 	const u = (t % 4.4) / 4.4;
@@ -144,9 +160,12 @@ const ROWS: readonly (readonly Cell[])[] = [
 	],
 	[
 		...[0, 0.35, 0.6, 0.8, 1].map((k) => ({
-			label: k === 1 ? 'мимикрия: спора' : `мимикрия ${Math.round(k * 100)}%`,
-			note: k === 0 ? 'встал на клетку' : k === 1 ? 'спора уровня' : undefined,
-			draw: (x: number, y: number, S: number, t: number) => one(x, y, S, t, 'mimic', { fold: k, walk: false })
+			label: k === 1 ? 'спора и признак лурка' : `мимикрия ${Math.round(k * 100)}%`,
+			note: k === 0 ? 'встал на клетку' : k === 1 ? 'золотой глаз смотрит на героя' : undefined,
+			draw: (x: number, y: number, S: number, t: number) => {
+				one(x, y, S, t, 'mimic', { fold: k, walk: false });
+				if (k === 1) lurkerEye(x, y, S, t);
+			}
 		})),
 		{
 			label: 'мимикрия, цикл',

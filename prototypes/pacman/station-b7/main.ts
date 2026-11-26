@@ -1,15 +1,15 @@
 // Prototype: the station's squad candidates (`mimicLooks.ts`, the owner's mock-up
 // STATION_MIMIC.html) on the game's own B-7 station (render/station/b7), four of them walking the
-// rails of `grid_station` like the season ghosts, beside the game's current glass albino.
-// Keys: Q the mock-up's Pretender, W the Pretender for B-7, E the spore hermit, R the albino (now);
+// rails of `grid_station` like the season ghosts.
+// Keys: Q the mock-up's Pretender, W the Pretender for B-7, E the spore hermit;
 //   1 hunt, 2 tell, 3 rage, 4 fright, 5 flashing, 6 mimicry (they fold where they stop), 7 eyes;
 //   Space a 180 for all; Z the line-up x3 (arrows turn it, A auto); P the mock-up's candy colours.
-// Query: ?c=orig|pretender|hermit|albino ?s=<state> ?zoom ?inf=0..1 ?escape=1 ?high
+// Query: ?c=orig|pretender|hermit ?s=<state> ?zoom ?inf=0..1 ?escape=1 ?high
 //   ?scene: the earlier static candidates (?cell=gold|ember|rose ?hive=b|a).
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
 import { bakeVeins } from '../../../src/games/pacman/render/station/b7/b7Veins';
-import { drawAlbino, type AlbinoState, type SquadKind } from '../../../src/games/pacman/render/station/albino';
+import type { GhostKind as SquadKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import { drawMimic, type Look, type MOpts, type MState } from './mimicLooks';
 
 const q = new URLSearchParams(location.search);
@@ -37,13 +37,12 @@ if (pick && CELLS[pick]) scene.setCellPalette(CELLS[pick]);
 // The candidates and their states
 // ---------------------------------------------------------------------------------------------
 
-type Cand = Look | 'albino';
-const CANDS: Record<string, Cand> = { q: 'orig', w: 'pretender', e: 'hermit', r: 'albino' };
+type Cand = Look;
+const CANDS: Record<string, Cand> = { q: 'orig', w: 'pretender', e: 'hermit' };
 const NAMES: Record<Cand, string> = {
 	orig: 'Притворщик (макет)',
 	pretender: 'Притворщик B-7',
-	hermit: 'Споровый отшельник',
-	albino: 'Альбинос (сейчас в игре)'
+	hermit: 'Споровый отшельник'
 };
 const STATES: readonly MState[] = ['hunt', 'tell', 'rage', 'fright', 'flash', 'mimic', 'eyes'];
 const STATE_NAMES: Record<MState, string> = {
@@ -161,16 +160,6 @@ function update(dt: number): void {
 // Drawing
 // ---------------------------------------------------------------------------------------------
 
-const ALBINO: Record<MState, AlbinoState> = {
-	hunt: 'hunt',
-	tell: 'tell',
-	rage: 'rage',
-	fright: 'frightened',
-	flash: 'frightened',
-	mimic: 'mimic',
-	eyes: 'frightened'
-};
-
 /** The level's own spore at the origin (stage space scaled to the tile), out of step with the food. */
 function sporeAt(S: number, t: number) {
 	return (c: CanvasRenderingContext2D, alpha: number, scale: number) => {
@@ -193,23 +182,6 @@ function drawOne(
 	look: { lx: number; ly: number; fx: number; fy: number; step: number; fold: number }
 ): void {
 	const spore = sporeAt(S, t);
-	if (cand === 'albino') {
-		c.save();
-		if (st === 'eyes') c.globalAlpha = 0.35;
-		drawAlbino(c, x, y, S, kind, ALBINO[st], t, {
-			angle: Math.atan2(look.ly, look.lx),
-			mimicK: look.fold,
-			bodyTime: look.step / 2.4,
-			spore: (g, sx, sy, a, sc) => {
-				g.save();
-				g.translate(sx, sy);
-				spore(g, a, sc);
-				g.restore();
-			}
-		});
-		c.restore();
-		return;
-	}
 	const o: MOpts = {
 		lookX: look.lx,
 		lookY: look.ly,
@@ -278,7 +250,7 @@ function drawLineup(c: CanvasRenderingContext2D, t: number, vw: number, vh: numb
 function showLegend(): void {
 	legend.textContent =
 		`${NAMES[cand]} · ${STATE_NAMES[state]}${candy ? ' · цвета макета' : ''}\n` +
-		'Q макет  W Притворщик B-7  E отшельник  R альбинос\n' +
+		'Q макет  W Притворщик B-7  E отшельник\n' +
 		'1 охота 2 сигнал 3 ярость 4 испуг 5 мигание 6 мимикрия 7 глаза\n' +
 		`Space разворот  Z витрина x3${zoom ? ' (стрелки, A авто)' : ''}  P цвета макета`;
 }

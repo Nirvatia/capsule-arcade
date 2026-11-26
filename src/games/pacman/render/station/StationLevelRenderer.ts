@@ -10,7 +10,7 @@ import type { SharedLayers } from '../SharedLayers';
 import { B7World } from './b7/B7World';
 import { bakeVeins } from './b7/b7Veins';
 import type { B7Light } from './b7/B7World';
-import { RailGait, drawPretender, pretenderStateFor } from './pretender';
+import { RailGait, drawLurkerEye, drawPretender, pretenderStateFor } from './pretender';
 import type { PretenderOpts, PretenderState } from './pretender';
 import { KIND_COLOR, drawBeam, drawDoor, drawEmitter, drawLane, drawShaft } from './squadMarks';
 
@@ -34,8 +34,8 @@ const FLASHLIGHT = { r: 34 * 3.8, rgb: '236, 242, 230', alpha: 0.95, core: 34 * 
  * The station boss level (DESIGN.md §7a): the B-7 station of the owner's mock-up (`B7World`) on
  * the game's maze, played by `StationRun`. The phase follows the hatch's charge (containment,
  * then the breakout once half charged, the absorption in the escape); the light is the
- * quarantine's, the alarm's in the escape, with the hero's flashlight. The squad are glass
- * albinos (`albino`); a lurker lies as one of the level's spores with its tells (`MimicTells`),
+ * quarantine's, the alarm's in the escape, with the hero's flashlight. The squad are
+ * Pretenders (`pretender`); a lurker lies as one of the level's spores with its tells (`MimicTells`),
  * drawn with the food under the light so it shares the food's look but for them. The marks of the
  * plays and of the escape, the hero and the words go over the light.
  */
@@ -237,22 +237,9 @@ export class StationLevelRenderer implements LevelRenderer, WorldPreview {
 			c.restore();
 			// the food breathes together; it breathes half a breath apart
 			scene.drawSporeAt(c, x, y, 1 + 0.04 * Math.sin(time * 2.0 + Math.PI * 2 * tell.breath));
-			if (tell.eyes > 0.02) {
-				// its eyes open for a moment: two pale slits over the pearl
-				c.save();
-				c.globalAlpha = tell.eyes;
-				for (const s of [-1, 1]) {
-					c.fillStyle = '#080b0c';
-					c.beginPath();
-					c.ellipse(x + s * 3.1, y - 4.6, 1.9, 1.5 * tell.eyes + 0.2, 0, 0, Math.PI * 2);
-					c.fill();
-					c.fillStyle = 'rgba(220,240,236,0.95)';
-					c.beginPath();
-					c.arc(x + s * 3.1 + 0.4, y - 4.7, 0.8, 0, Math.PI * 2);
-					c.fill();
-				}
-				c.restore();
-			}
+			// its gold eye opens for a moment, turned toward him
+			const him = hero ?? { x: at.x, y: at.y + 1 };
+			drawLurkerEye(c, x, y, tell.eyes, him.x - at.x, him.y - at.y);
 		}
 	}
 

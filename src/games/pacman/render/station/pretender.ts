@@ -557,3 +557,25 @@ export function drawPretender(
 	paintWalker(c, kind, st, o, unit, 0);
 	c.restore();
 }
+
+/** A lurker's tell over its spore (stage space, a 34 px tile): the Pretender's gold eye opens
+ *  for a moment beside the pearl, its slit turned toward the hero. `open` 0 shut .. 1 open. */
+export function drawLurkerEye(
+	c: Ctx,
+	x: number,
+	y: number,
+	open: number,
+	toX: number,
+	toY: number
+): void {
+	if (open <= 0.02) return;
+	const ex = x + 4.0;
+	const ey = y - 3.9;
+	const d = Math.hypot(toX, toY) || 1;
+	c.save();
+	c.globalAlpha *= Math.min(1, open * 1.4);
+	glow(c, ex, ey, 7.5, `rgba(255, 214, 120, ${0.8 * open})`, `rgba(255, 120, 60, ${0.4 * open})`);
+	ellipse(c, ex, ey, 3.4, 2.8 * open + 0.2, '#ffc847', 1.0);
+	ellipse(c, ex + (toX / d) * 1.0, ey + (toY / d) * 0.5 * open, 0.75, 2.2 * open + 0.1, INK);
+	c.restore();
+}

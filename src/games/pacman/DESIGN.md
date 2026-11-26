@@ -375,7 +375,7 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   shakes, no ring); the fright is the classic blue with a sweat drop and the blink at the end;
   eaten, its gold eyes run home; it folds into the level's spore for the disguise (the mask
   home, the feet tucked, then the spore). A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
-  its eyes opening for a moment every few seconds, a tremble when he comes within 3 tiles, the
+  its gold slit eye opening for a moment every few seconds, turned toward him, a tremble when he comes within 3 tiles, the
   breathing out of step; the run's first lurkers teach (a slow fold of 1.5 s at least 5 steps
   along his way, every tell stronger, fading over three ambushes). The tells are the logic's
   (`MimicTells`), any body can take them.

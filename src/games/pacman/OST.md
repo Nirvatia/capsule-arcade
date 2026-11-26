@@ -63,8 +63,8 @@ A real track replaces the file; nothing else changes.
 
 ### Station — the brief
 
-The quarantine lab in the storm: dark corridors, a torch fed by the dots, a hound pack
-(`DESIGN.md` §7a). Cold, sparse, listening: the player should hear the hounds.
+The quarantine lab in the storm: dark corridors, the squad of Pretenders, the escape
+(`DESIGN.md` §7a). Cold, sparse, listening: the player should hear the squad.
 
 - **Tempo**: 80 bpm; a soft pulse (a ticking reactor, a muffled heartbeat) that the game may
   later speed up with danger (a second, faster stem: 100 bpm, the same key and length).
@@ -72,7 +72,7 @@ The quarantine lab in the storm: dark corridors, a torch fed by the dots, a houn
 - **Layers**: a hum of machinery, a low pulse, metallic resonances, a distant alarm motif
   (two notes, a minor second), storm rumble far away.
 - **Avoid**: jump-scare stingers inside the loop (the game makes its own), anything that
-  masks the hounds' sounds (mid-high clicks and growls).
+  masks the squad's sounds (mid-high clicks and growls).
 
 **Prompt**:
 

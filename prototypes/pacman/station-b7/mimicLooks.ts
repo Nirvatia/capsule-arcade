@@ -11,7 +11,7 @@
 //              eyes look out from under the brim, the shell rises in the tell, cracks in the rage,
 //              is pulled down over the eyes in fright and shuts into the spore for the disguise
 import { footLift } from '../../../src/games/pacman/render/actors/cuteGhost';
-import type { SquadKind } from '../../../src/games/pacman/render/station/albino';
+import type { GhostKind as SquadKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 
 export type Look = 'orig' | 'pretender' | 'hermit';
 export type MState = 'hunt' | 'tell' | 'rage' | 'fright' | 'flash' | 'mimic' | 'eyes';
