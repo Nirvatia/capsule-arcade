@@ -195,11 +195,15 @@ last (see Later).
       6. **A new look for the infestation and the squad** (the owner, 2026-11-26: the red flesh
          does not fit the station's palette and echoes the hell, the walls under it read heavy;
          the mimics lack the season critters' expressive details; the rage, the acid overheat,
-         stays). Direction A, the leak: the infestation is the murk of the specimen tanks behind
-         the maze seeping out, low (pools along the walls' feet and in the corners, threads on
-         the seams, bubbles, drips, a haze), the walls' tops and the corridors' middles clean;
-         candidate `murk.ts` on the `station-b7` page (the scene's `setFilm('murk')` greens the
-         lamps, `B7World.showHive(false)` hides the hive), awaiting his look. The squad: three
+         stays). Direction A, the tanks' murk. The leak (`murk.ts`: pools along the walls' feet,
+         bubbles, drips, a haze) looked striking but at 100% the maze was a mess and the threat was
+         gone (a maze in green waste). Now **the engulfing** (`engulf.ts` on the `station-b7` page,
+         awaiting his look): the murk takes the walls, not the floor; wall by wall from the lair a
+         translucent green mass over the steel, its edges lit like the tanks' glass, a lit front
+         with tendrils over the clean steel, specimens drifting inside some walls that turn and
+         open their eyes for the hero, a ring of light breathing out of the lair; the corridors
+         clean, so the maze stays two masses at any infection. The scene's `setFilm('murk')`
+         greens the lamps, `B7World.showHive(false)` hides the hive. The squad: three
          rounds of candidates (`looks.ts`); his candidate is round three's **film** (a dark
          specimen with limbs in a thin film of murk, a smear trailing, eyes in its kind's colour;
          the creepiest and most alien, but it reads poorly at game scale). Rejected: a cartoon face

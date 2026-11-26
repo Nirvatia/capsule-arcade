@@ -2,7 +2,8 @@
 // takeover, the lamps under its film, the heartbeat) with the game's quarantine ring, its lure
 // (the cyan flare) and its Pretenders (the rage, the acid overheat) on the real maze, beside the
 // candidates of `looks.ts` for the squad's calm look (the tanks' specimen in a drop, a ghost, a
-// film of murk) and of `murk.ts` for the infestation (the leak, in place of the hive). Everything is switched by the buttons on top; a panel shows them large.
+// film of murk) and of `engulf.ts` and `murk.ts` for the infestation (the walls engulfed, the leak),
+// in place of the hive; a stand-in hero walks a corridor for the walls to notice. Everything is switched by the buttons on top; a panel shows them large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
@@ -12,6 +13,7 @@ import { drawRing } from '../../../src/games/pacman/render/station/quarantineRin
 import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
 import { drawCandidate, type CandState, type Look } from './looks';
 import { createMurk } from './murk';
+import { createEngulf } from './engulf';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
@@ -19,6 +21,7 @@ const bar = document.getElementById('bar') as HTMLDivElement;
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const world = new B7World(GRID_STATION);
 const murk = createMurk(world.scene, GRID_STATION);
+const engulf = createEngulf(world.scene, GRID_STATION);
 world.setQuality('medium');
 const grid = GRID_STATION;
 const H = grid.length;
@@ -34,7 +37,7 @@ type Mim = Look | 'now' | 'off';
 type Lure = 'on' | 'off';
 const st = {
 	inf: 0.65,
-	style: 'murk' as 'hive' | 'murk',
+	style: 'engulf' as 'hive' | 'murk' | 'engulf',
 	alarm: false,
 	ring: 'off' as RingMode,
 	mimic: 'c' as Mim,
@@ -50,6 +53,7 @@ const NOTES: Record<string, string> = {
 	'mimic-b': 'б «Призрак»: силуэт призрака из мути, волнистый капающий подол, образец внутри',
 	'mimic-c': 'в «Плёнка»: тёмный образец в тонкой плёнке мути, за ним тянется мутный след',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
+	'style-engulf': 'Заражение «Поглощение»: масса мути забирает стены от логова, фронт с отростками, образцы в стенах смотрят на героя, волна дыхания; коридоры чистые',
 	'style-murk': 'Заражение «Утечка»: муть из колб у подножия стен, в углах и по стыкам, пузыри, капли, туман; стены и середина коридоров чистые',
 	'style-hive': 'Заражение как в игре: улей',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'
@@ -134,6 +138,7 @@ const GROUPS: Group[] = [
 		label: 'Стиль',
 		key: 'style',
 		items: [
+			['Поглощение', 'engulf'],
 			['Утечка', 'murk'],
 			['Как в игре', 'hive']
 		]
@@ -286,6 +291,36 @@ function runs(): Array<{ x0: number; y0: number; dx: number; dy: number; n: numb
 const KINDS: GhostKind[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
 const walkers = runs().map((r, i) => ({ ...r, kind: KINDS[i], gait: new RailGait(), off: i * 0.37 }));
 const SPEED = 5.2;
+
+/** A stand-in hero on the longest straight run, back and forth, for the walls to notice. */
+const heroRun = (() => {
+	let best = { x0: 2, y0: 2, dx: 1, dy: 0, n: 2 };
+	for (const [dx, dy] of [
+		[1, 0],
+		[0, 1]
+	])
+		for (let y = 0; y < H; y++)
+			for (let x = 0; x < W; x++) {
+				if (!open(x, y) || open(x - dx, y - dy)) continue;
+				let n = 0;
+				while (open(x + dx * n, y + dy * n)) n++;
+				if (n > best.n && y > 3 && y < H - 4) best = { x0: x, y0: y, dx, dy, n };
+			}
+	return best;
+})();
+function heroAt(t: number): { x: number; y: number; dx: number; dy: number } {
+	const len = heroRun.n - 1;
+	const u = (t * 6) / len;
+	const f = u % 2;
+	const s = f < 1 ? f : 2 - f;
+	const dir = f < 1 ? 1 : -1;
+	return {
+		x: heroRun.x0 + heroRun.dx * s * len + 0.5,
+		y: heroRun.y0 + heroRun.dy * s * len + 0.5,
+		dx: heroRun.dx * dir,
+		dy: heroRun.dy * dir
+	};
+}
 
 function walkerAt(w: (typeof walkers)[number], t: number) {
 	const len = w.n - 1;
@@ -483,15 +518,24 @@ function frame(now: number): void {
 	world.showHive(st.style === 'hive');
 	sc.setFilm(st.style === 'hive' ? 'flesh' : 'murk');
 	world.drawScene(ctx, t, dt, st.inf, true);
+	const hero = heroAt(t);
 	if (st.style === 'murk') {
 		world.enter(ctx);
 		murk.draw(ctx, st.inf);
+		ctx.restore();
+	} else if (st.style === 'engulf') {
+		world.enter(ctx);
+		engulf.draw(ctx, st.inf, t, hero);
 		ctx.restore();
 	}
 	world.drawLight(ctx, t, st.inf, st.alarm ? 'alert' : 'quarantine', true);
 	if (st.style === 'murk') {
 		world.enter(ctx);
 		murk.drawGlow(ctx, st.inf, t);
+		ctx.restore();
+	} else if (st.style === 'engulf') {
+		world.enter(ctx);
+		engulf.drawGlow(ctx, st.inf, t, hero);
 		ctx.restore();
 	}
 	const L = world.layout;
@@ -513,6 +557,19 @@ function frame(now: number): void {
 			if (st.mimic !== 'off') drawMimic(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, 'hunt', o);
 			else drawRage(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, o);
 		}
+	}
+	if (st.style === 'engulf') {
+		// the stand-in hero: a plain disc with a mouth
+		const hx = L.offsetX + hero.x * S;
+		const hy = L.offsetY + hero.y * S;
+		const m = 0.12 + 0.5 * Math.abs(Math.sin(t * 12));
+		const a0 = Math.atan2(hero.dy, hero.dx);
+		ctx.fillStyle = '#ffd24a';
+		ctx.beginPath();
+		ctx.moveTo(hx, hy);
+		ctx.arc(hx, hy, S * 0.4, a0 + m, a0 + Math.PI * 2 - m);
+		ctx.closePath();
+		ctx.fill();
 	}
 	if (st.lure !== 'off') drawLureFlare(ctx, L.offsetX + (lx + 0.5) * S, L.offsetY + (ly + 0.5) * S, S, t, 1);
 	world.drawGrain(ctx, t);
