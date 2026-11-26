@@ -28,6 +28,8 @@ export interface MOpts {
 	readonly step: number;
 	/** The mimicry: 0 the creature .. 1 the spore. */
 	readonly fold: number;
+	/** The B-7 Pretender's rage: 0 the mask still on (the hunt's slip) .. 1 pushed up on its head. */
+	readonly reveal?: number;
 	/** The candy colours of the mock-up instead of the lab ones (the B-7 looks only). */
 	readonly candy?: boolean;
 	/** Paints the level's spore at the creature's point (origin), with alpha and scale. */
@@ -188,6 +190,22 @@ function paintPretender(c: Ctx, pal: Pal, st: MState, white: boolean, o: MOpts, 
 	c.ellipse(-5.0, -3.2, 2.5, 1.5, -0.6, 0, TAU);
 	c.fill();
 	if (b7 && !white) rimLight(c, 0, 1.6, 10, 9.2);
+	if (b7 && rage) {
+		paintTrueFace(c, pal, o);
+		// the mask goes up from the hunt's slip onto the top of its head, seen from below
+		const r = o.reveal ?? 1;
+		c.save();
+		c.translate(lerp(lx * 1.4, 0, r), lerp(ly * 1.1, 0, r));
+		c.translate(
+			lerp(-lx * 3.1, -lx * 1.6, r),
+			lerp(-ly * 2.66, -8.6 + Math.sin(o.step + 0.9) * 0.35, r)
+		);
+		c.rotate(lerp(-0.085 * (1 - Math.abs(lx)) - lx * 0.12, -0.16 - lx * 0.14, r));
+		c.scale(1, lerp(1, 0.5, r));
+		paintMask();
+		c.restore();
+		return;
+	}
 
 	// the strap that holds the mask on, across the body (the B-7 one)
 	if (b7) {
@@ -292,88 +310,170 @@ function paintPretender(c: Ctx, pal: Pal, st: MState, white: boolean, o: MOpts, 
 	c.save();
 	c.translate(mdx, mdy);
 	c.rotate(mrot);
-	const traceMask = () => {
+	paintMask();
+	c.restore();
+	c.restore();
+
+	/** The mask in its own frame (the cute face, its crack, its stitched smile). */
+	function paintMask(): void {
+		const traceMask = () => {
+			c.beginPath();
+			c.moveTo(0, -5.6);
+			c.bezierCurveTo(6.4, -5.8, 8.2, -1.0, 7.6, 4.4);
+			c.bezierCurveTo(6.8, 8.2, 3.4, 9.2, 0, 9.0);
+			c.bezierCurveTo(-3.6, 9.2, -7.0, 8.0, -7.8, 4.0);
+			c.bezierCurveTo(-8.4, -1.2, -6.2, -5.4, 0, -5.6);
+			c.closePath();
+		};
+		const ivory = b7 ? '#f1e7cf' : '#f2ede4';
+		traceMask();
+		c.fillStyle = scared ? (white ? '#ffffff' : '#dce6ff') : ivory;
+		c.fill();
+		c.save();
+		traceMask();
+		c.clip();
+		ellipse(c, 2.2, 9.6, 8.6, 3.8, scared ? 'rgba(79,104,255,0.2)' : b7 ? '#d9c194' : '#d6cec1');
+		if (chasing || rage) {
+			// the crack starts on the side the eye is (the B-7 one: the heading's side)
+			const cs = b7 ? (lx < 0 ? -1 : 1) : slipSide;
+			c.strokeStyle = INK;
+			c.lineWidth = rage ? 1.15 : 0.9;
+			c.lineCap = 'round';
+			c.beginPath();
+			c.moveTo(cs * 7.4, -1.4);
+			c.lineTo(cs * 4.2, -0.2);
+			c.lineTo(cs * 2.6, 2.2);
+			c.moveTo(cs * 4.2, -0.2);
+			c.lineTo(cs * 2.8, -2.6);
+			c.stroke();
+		}
+		c.restore();
+		traceMask();
+		c.strokeStyle = INK;
+		c.lineWidth = 1.7;
+		c.lineJoin = 'round';
+		c.stroke();
+
+		// the button eyes: the mock-up's glints follow the heading; the B-7 painted face looks nowhere
+		const gx = b7 ? 0 : o.lookX * 0.45;
+		const gy = b7 ? 0 : o.lookY * 0.45;
+		for (const be of [
+			{ x: -3.6, y: 0.7, r: 2.35 },
+			{ x: 3.7, y: 1.6, r: 1.95 }
+		]) {
+			if (scared) {
+				ellipse(c, be.x, be.y, be.r + 0.3, be.r + 0.3, '#ffffff', 1.1);
+				ellipse(c, be.x + o.lookX * 0.7, be.y + o.lookY * 0.7, 0.95, 0.95, white ? '#ff6a3a' : INK);
+			} else {
+				ellipse(c, be.x, be.y, be.r, be.r * 1.05, INK);
+				c.fillStyle = '#ffffff';
+				c.beginPath();
+				c.arc(be.x - be.r * 0.32 + gx, be.y - be.r * 0.3 + gy, 0.58, 0, TAU);
+				c.arc(be.x + be.r * 0.25 + gx, be.y + be.r * 0.22 + gy, 0.32, 0, TAU);
+				c.fill();
+			}
+		}
+		c.fillStyle = scared ? 'rgba(120,150,255,0.4)' : b7 ? 'rgba(226,112,104,0.36)' : 'rgba(245,96,128,0.48)';
 		c.beginPath();
-		c.moveTo(0, -5.6);
-		c.bezierCurveTo(6.4, -5.8, 8.2, -1.0, 7.6, 4.4);
-		c.bezierCurveTo(6.8, 8.2, 3.4, 9.2, 0, 9.0);
-		c.bezierCurveTo(-3.6, 9.2, -7.0, 8.0, -7.8, 4.0);
-		c.bezierCurveTo(-8.4, -1.2, -6.2, -5.4, 0, -5.6);
+		c.ellipse(-5.4, 3.6, 1.5, 0.95, 0, 0, TAU);
+		c.ellipse(5.5, 4.2, 1.4, 0.9, 0, 0, TAU);
+		c.fill();
+		if (scared) {
+			zigzag(c, 5.4, white ? '#ff4d4d' : INK, 0.95);
+			if (!white) sweat(c, 3.8, 0.8);
+		} else {
+			const wide = (b7 && tell) || rage;
+			const w = wide ? 5.0 : chasing && !b7 ? 4.8 : 4.0;
+			const dip = wide ? 8.2 : chasing && !b7 ? 7.8 : 6.9;
+			c.beginPath();
+			c.moveTo(-w, 4.4);
+			c.quadraticCurveTo(0, dip, w, 4.9);
+			c.strokeStyle = INK;
+			c.lineWidth = 1.05;
+			c.lineCap = 'round';
+			c.stroke();
+			for (const sx of [-2.4, 0, 2.5]) {
+				const sy = 5.4 + (1 - (sx * sx) / (w * w)) * (dip - 5.2) * 0.55;
+				line(c, sx, sy - 0.85, sx + 0.15, sy + 0.85, INK, 0.72);
+			}
+		}
+	}
+}
+
+/** Under the mask (the B-7 Pretender's rage): two gold slit eyes under angry lids, a mouth across
+ *  the face with the mask's bone for teeth, a coral glow in the throat; the body throbs. */
+function paintTrueFace(c: Ctx, pal: Pal, o: MOpts): void {
+	const lx = o.faceX;
+	const ly = o.faceY;
+	const p = 0.8 + 0.2 * Math.sin(o.time * 9);
+	c.save();
+	c.translate(lx * 1.6, ly * 1.3);
+	// where the mask sat, the skin is raw
+	ellipse(c, 0, 2.2, 8.0, 7.4, 'rgba(110, 8, 20, 0.32)');
+	const ey = -0.6;
+	for (const side of [-1, 1]) {
+		const ex = side * 4.1;
+		glow(c, ex, ey, 5.4, `rgba(255, 214, 110, ${0.55 * p})`, `rgba(255, 70, 40, ${0.35 * p})`);
+		ellipse(c, ex, ey, 3.0, 2.6, '#ffd04a', 1.1);
+		ellipse(c, ex + o.lookX * 0.9, ey + o.lookY * 0.8, 0.62, 2.0, INK);
+		c.fillStyle = '#ffffff';
+		c.beginPath();
+		c.arc(ex - 1.1, ey - 0.9, 0.55, 0, TAU);
+		c.fill();
+		// angry lids, low over the inner corners
+		c.beginPath();
+		c.moveTo(side * 7.6, ey - 3.0);
+		c.lineTo(side * 0.7, ey - 0.1);
+		c.lineTo(side * 0.7, ey - 4.4);
+		c.lineTo(side * 7.6, ey - 4.4);
 		c.closePath();
-	};
-	const ivory = b7 ? '#f1e7cf' : '#f2ede4';
-	traceMask();
-	c.fillStyle = scared ? (white ? '#ffffff' : '#dce6ff') : ivory;
+		c.fillStyle = pal.b;
+		c.fill();
+		line(c, side * 7.6, ey - 3.0, side * 0.7, ey - 0.1, INK, 1.5);
+	}
+	// the mouth, chomping
+	const chomp = 0.5 + 0.5 * Math.sin(o.time * 9);
+	const top = (x: number) => 3.6 - (1 - (x / 7) ** 2) * 0.5;
+	const bottom = (x: number) => 3.6 + (1 - (x / 7) ** 2) * (2.6 + 1.0 * chomp);
+	c.beginPath();
+	c.moveTo(-7, 3.6);
+	c.quadraticCurveTo(0, 2.6, 7, 3.6);
+	c.quadraticCurveTo(0, 8.8 + 2 * chomp, -7, 3.6);
+	c.closePath();
+	c.fillStyle = '#12060b';
 	c.fill();
 	c.save();
-	traceMask();
 	c.clip();
-	ellipse(c, 2.2, 9.6, 8.6, 3.8, scared ? 'rgba(79,104,255,0.2)' : b7 ? '#d9c194' : '#d6cec1');
-	if (chasing || rage) {
-		// the crack starts on the side the eye is (the B-7 one: the heading's side)
-		const cs = b7 ? (lx < 0 ? -1 : 1) : slipSide;
-		c.strokeStyle = INK;
-		c.lineWidth = rage ? 1.15 : 0.9;
-		c.lineCap = 'round';
+	glow(c, 0, 6.6, 5.5, 'rgba(255, 140, 80, 0.75)', 'rgba(255, 70, 50, 0.4)');
+	c.fillStyle = '#f1e7cf';
+	c.strokeStyle = INK;
+	c.lineWidth = 0.5;
+	for (let x = -5.6; x <= 5.7; x += 1.87) {
 		c.beginPath();
-		c.moveTo(cs * 7.4, -1.4);
-		c.lineTo(cs * 4.2, -0.2);
-		c.lineTo(cs * 2.6, 2.2);
-		c.moveTo(cs * 4.2, -0.2);
-		c.lineTo(cs * 2.8, -2.6);
+		c.moveTo(x - 0.85, top(x) - 0.2);
+		c.lineTo(x, top(x) + 1.9);
+		c.lineTo(x + 0.85, top(x) - 0.2);
+		c.fill();
+		c.stroke();
+	}
+	for (let x = -4.6; x <= 4.7; x += 2.3) {
+		c.beginPath();
+		c.moveTo(x - 0.8, bottom(x) + 0.2);
+		c.lineTo(x, bottom(x) - 1.6);
+		c.lineTo(x + 0.8, bottom(x) + 0.2);
+		c.fill();
 		c.stroke();
 	}
 	c.restore();
-	traceMask();
+	c.beginPath();
+	c.moveTo(-7, 3.6);
+	c.quadraticCurveTo(0, 2.6, 7, 3.6);
+	c.quadraticCurveTo(0, 8.8 + 2 * chomp, -7, 3.6);
+	c.closePath();
 	c.strokeStyle = INK;
-	c.lineWidth = 1.7;
+	c.lineWidth = 1.3;
 	c.lineJoin = 'round';
 	c.stroke();
-
-	// the button eyes: the mock-up's glints follow the heading; the B-7 painted face looks nowhere
-	const gx = b7 ? 0 : o.lookX * 0.45;
-	const gy = b7 ? 0 : o.lookY * 0.45;
-	for (const be of [
-		{ x: -3.6, y: 0.7, r: 2.35 },
-		{ x: 3.7, y: 1.6, r: 1.95 }
-	]) {
-		if (scared) {
-			ellipse(c, be.x, be.y, be.r + 0.3, be.r + 0.3, '#ffffff', 1.1);
-			ellipse(c, be.x + o.lookX * 0.7, be.y + o.lookY * 0.7, 0.95, 0.95, white ? '#ff6a3a' : INK);
-		} else {
-			ellipse(c, be.x, be.y, be.r, be.r * 1.05, INK);
-			c.fillStyle = '#ffffff';
-			c.beginPath();
-			c.arc(be.x - be.r * 0.32 + gx, be.y - be.r * 0.3 + gy, 0.58, 0, TAU);
-			c.arc(be.x + be.r * 0.25 + gx, be.y + be.r * 0.22 + gy, 0.32, 0, TAU);
-			c.fill();
-		}
-	}
-	c.fillStyle = scared ? 'rgba(120,150,255,0.4)' : b7 ? 'rgba(226,112,104,0.36)' : 'rgba(245,96,128,0.48)';
-	c.beginPath();
-	c.ellipse(-5.4, 3.6, 1.5, 0.95, 0, 0, TAU);
-	c.ellipse(5.5, 4.2, 1.4, 0.9, 0, 0, TAU);
-	c.fill();
-	if (scared) {
-		zigzag(c, 5.4, white ? '#ff4d4d' : INK, 0.95);
-		if (!white) sweat(c, 3.8, 0.8);
-	} else {
-		const wide = (b7 && tell) || rage;
-		const w = wide ? 5.0 : chasing && !b7 ? 4.8 : 4.0;
-		const dip = wide ? 8.2 : chasing && !b7 ? 7.8 : 6.9;
-		c.beginPath();
-		c.moveTo(-w, 4.4);
-		c.quadraticCurveTo(0, dip, w, 4.9);
-		c.strokeStyle = INK;
-		c.lineWidth = 1.05;
-		c.lineCap = 'round';
-		c.stroke();
-		for (const sx of [-2.4, 0, 2.5]) {
-			const sy = 5.4 + (1 - (sx * sx) / (w * w)) * (dip - 5.2) * 0.55;
-			line(c, sx, sy - 0.85, sx + 0.15, sy + 0.85, INK, 0.72);
-		}
-	}
-	c.restore();
 	c.restore();
 }
 
@@ -677,7 +777,11 @@ function drawWalker(
 	let pal = base[kind];
 	if (fright || flash) pal = white ? WHITE : SCARED;
 	else if (state === 'rage') pal = RAGE;
-	if (state === 'rage') {
+	if (state === 'rage' && look === 'pretender') {
+		// no ring: it shakes and throbs
+		c.translate(Math.sin(o.time * 47 + phase) * 0.3, 0);
+	}
+	if (state === 'rage' && look !== 'pretender') {
 		c.beginPath();
 		c.arc(0, 0.5, meta.ring, 0, TAU);
 		c.strokeStyle = 'rgba(255,77,77,0.78)';
@@ -700,6 +804,10 @@ function drawWalker(
 	const squash = Math.sin(o.time * 5 + phase);
 	c.translate(0, 10);
 	c.scale(1 - 0.04 * squash, 1 + 0.05 * squash);
+	if (state === 'rage' && look === 'pretender') {
+		const throb = Math.max(0, Math.sin(o.time * 9 + phase));
+		c.scale(1 + 0.035 * throb, 1 + 0.035 * throb);
+	}
 	c.translate(0, -10);
 	if (look === 'hermit') paintHermit(c, pal, state, white, op);
 	else paintPretender(c, pal, state, white, op, look === 'pretender');

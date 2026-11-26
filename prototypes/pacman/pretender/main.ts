@@ -48,7 +48,14 @@ function one(
 	S: number,
 	t: number,
 	st: MState,
-	o: { kind?: SquadKind; dir?: readonly [number, number]; face?: { x: number; y: number }; fold?: number; walk?: boolean }
+	o: {
+		kind?: SquadKind;
+		dir?: readonly [number, number];
+		face?: { x: number; y: number };
+		fold?: number;
+		walk?: boolean;
+		reveal?: number;
+	}
 ): void {
 	const [lx, ly] = o.dir ?? [1, 0];
 	const kind = o.kind ?? 'BLINKY';
@@ -60,6 +67,7 @@ function one(
 		time: t,
 		step: o.walk === false ? 0 : t * 6 + KINDS.indexOf(kind) * 0.8,
 		fold: o.fold ?? 0,
+		reveal: o.reveal,
 		candy,
 		spore: sporeAt(S, t)
 	};
@@ -78,6 +86,16 @@ function turner(period: number, rate: number) {
 }
 const fast180 = turner(1.6, 12);
 const slow180 = turner(2.4, 2.2);
+
+/** The rage's loop: hunting, the mask goes up, the true face, the mask back down. */
+function revealLoop(t: number): number {
+	const u = (t % 4.4) / 4.4;
+	if (u < 0.25) return 0;
+	if (u < 0.33) return (u - 0.25) / 0.08;
+	if (u < 0.85) return 1;
+	if (u < 0.93) return 1 - (u - 0.85) / 0.08;
+	return 0;
+}
 
 /** The mimicry's loop: walk, fold, lie as a spore, unfold. */
 function foldLoop(t: number): number {
@@ -107,9 +125,16 @@ const ROWS: readonly (readonly Cell[])[] = [
 		}
 	],
 	[
-		{ label: 'охота', draw: (x, y, S, t) => one(x, y, S, t, 'hunt', {}) },
+		{
+			label: 'срыв маски',
+			note: 'охота → ярость, цикл',
+			draw: (x, y, S, t) => {
+				const r = revealLoop(t);
+				one(x, y, S, t, r > 0 ? 'rage' : 'hunt', { reveal: r });
+			}
+		},
 		{ label: 'сигнал тактики', note: 'глаз пульсирует, улыбка шире', draw: (x, y, S, t) => one(x, y, S, t, 'tell', {}) },
-		{ label: 'ярость (побег)', note: 'маска висит, два глаза, кольцо', draw: (x, y, S, t) => one(x, y, S, t, 'rage', {}) },
+		{ label: 'ярость (побег)', note: 'маска на макушке, истинное лицо', draw: (x, y, S, t) => one(x, y, S, t, 'rage', {}) },
 		{ label: 'испуг', note: 'дрожь, пот, зигзаг', draw: (x, y, S, t) => one(x, y, S, t, 'fright', {}) },
 		{ label: 'мигание', note: 'конец испуга, 2.2 Гц', draw: (x, y, S, t) => one(x, y, S, t, 'flash', {}) },
 		{ label: 'глаза', note: 'съеден, бежит домой', draw: (x, y, S, t) => one(x, y, S, t, 'eyes', {}) }
