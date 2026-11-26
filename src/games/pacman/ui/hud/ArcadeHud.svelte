@@ -1,10 +1,11 @@
 <!-- The secret level is our arcade, so it gets an arcade HUD: 1UP, HIGH SCORE and the round
-	on top, the tries in reserve and the rounds' fruits at the bottom, blocky white lettering. -->
+	on top, the tries in reserve and the rounds' fruits at the bottom, blocky white lettering. The icons are
+	the level's own pixel sprites (the ones on the board), never the main game's art. -->
 <script lang="ts">
 	import type { HudSnapshot } from './hudSnapshot';
 	import { t } from '../i18n';
-	import FruitIcon from './FruitIcon.svelte';
-	import LifeIcon from './LifeIcon.svelte';
+	import ArcadeSprite from './ArcadeSprite.svelte';
+	import { fruitSprite, pacFrame } from '../../render/arcade/arcadeSprites';
 
 	let { snap }: { snap: HudSnapshot } = $props();
 	const score = (n: number) => (n > 0 ? String(Math.floor(n)) : '00');
@@ -31,10 +32,10 @@
 	</div>
 	<div class="bottom">
 		<div class="row">
-			{#each reserve as i (i)}<LifeIcon ms={snap.profile === 'ms-pacman'} size={20} />{/each}
+			{#each reserve as i (i)}<ArcadeSprite sprite={pacFrame('LEFT', 1)} scale={2} />{/each}
 		</div>
 		<div class="row">
-			{#each snap.fruits as kind, i (i)}<FruitIcon {kind} size={22} />{/each}
+			{#each snap.fruits as kind, i (i)}<ArcadeSprite sprite={fruitSprite(kind)} scale={2} />{/each}
 		</div>
 	</div>
 </div>
