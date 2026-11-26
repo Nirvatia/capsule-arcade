@@ -202,7 +202,7 @@ const traceMask = (c: Ctx) => {
 };
 
 /** The mask in its own frame: the cute face, its crack on the heading's side, the smile. */
-function paintMask(c: Ctx, st: PretenderState, white: boolean, o: PretenderOpts): void {
+export function paintMask(c: Ctx, st: PretenderState, white: boolean, o: PretenderOpts): void {
 	const scared = st === 'fright';
 	const cracked = st === 'hunt' || st === 'tell' || st === 'rage';
 	traceMask(c);

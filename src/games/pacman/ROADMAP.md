@@ -209,8 +209,13 @@ last (see Later).
          organics, cold wet glints, a lime life in the nodes, the cysts and the pulse; the rage's
          acid lime reads as its blood) with the scene's `setFilm('parasite')` (the lamps dim and
          cold under it, the veins' shadows black); on the `station-b7` page beside the red one,
-         awaiting his look. Next if he takes it: the parasites themselves (larvae crawling the
-         veins now and then, the cysts as clutches with something moving), then the squad.
+         awaiting his look. He found it definitely better (2026-11-26). The squad as the hive's
+         parasites (`parasites.ts` on the page, each with a rage of its own: the mask bursts and
+         the lime breaks out of that body), awaiting his pick: A the host mask (the Pretender
+         remade black with lime seams, a fringe of tendrils for feet, a growth per kind:
+         mandibles, a collar of tendrils, feelers, spines), B the larva (three black rings, lime
+         between them, a tail per kind), C the clutch (a black sac with lime larvae pushing inside,
+         the mask stuck high on it). Next: larvae crawling the hive's veins, the cysts as clutches.
       7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance

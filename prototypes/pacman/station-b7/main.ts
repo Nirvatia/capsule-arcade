@@ -16,7 +16,8 @@ import { CinnabarHero } from '../../../src/games/pacman/render/actors/hero/Cinna
 import { GAME_FEEL } from '../../../src/games/pacman/render/actors/HeroView';
 import { drawHeroGlow } from '../../../src/games/pacman/render/station/pretender';
 import type { PretenderState } from '../../../src/games/pacman/render/station/pretender';
-type CandState = Exclude<PretenderState, 'rage'>;
+import { drawParasite, type CandState, type Look } from './parasites';
+
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
@@ -41,22 +42,25 @@ const open = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && OPE
 
 type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'off';
 type Pick = 'now' | 'off';
-type Mim = 'now' | 'off';
+type Mim = Look | 'now' | 'off';
 type Lure = 'on' | 'off';
 const st = {
 	inf: 0.65,
 	style: 'parasite' as 'hive' | 'parasite',
 	alarm: false,
 	ring: 'off' as RingMode,
-	mimic: 'now' as Mim,
+	mimic: 'a' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
 	big: true
 };
 
 const NOTES: Record<string, string> = {
-	'rage-now': 'Ярость как в игре: кислотный перегрев',
+	'rage-now': 'Ярость: маска разлетается, лайм прорывается из тела (для вариантов A, B, C своя)',
 	'mimic-now': 'Мимики как в игре: Pretender в маске',
+	'mimic-a': 'A «Носитель»: чёрный паразит в маске её цвета, лаймовые швы, глаз под маской, бахрома отростков; нарост у каждого свой (жвалы, воротник, усы, шипы)',
+	'mimic-b': 'B «Личинка»: три чёрных кольца, между ними светится лайм, ползёт волной; маска на голове, хвост у каждого свой',
+	'mimic-c': 'C «Кладка»: мешок чёрной перепонки, внутри толкаются лаймовые личинки, на лицевой стороне маска',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
 	'style-parasite': 'Заражение «Паразит»: тот же улей (вены, узлы, плоть по пластинам, кладки, сердцебиение), но чёрный, а жизнь в нём лаймовая',
 	'style-hive': 'Заражение как в игре: красный улей',
@@ -89,25 +93,21 @@ const GROUPS: Group[] = [
 		key: 'mimic',
 		items: [
 			['Как в игре', 'now'],
+			['A Носитель', 'a'],
+			['B Личинка', 'b'],
+			['C Кладка', 'c'],
 			['Выкл', 'off']
-		],
-		after: (v) => {
-			if (v !== 'off') {
-				st.rage = 'off';
-				st.alarm = false;
-			}
-		}
+		]
 	},
 	{
 		label: 'Ярость',
 		key: 'rage',
 		items: [
-			['Как в игре', 'now'],
+			['Вкл', 'now'],
 			['Выкл', 'off']
 		],
 		after: (v) => {
 			if (v !== 'off') {
-				st.mimic = 'off';
 				st.alarm = true;
 				st.inf = 1;
 			}
@@ -375,7 +375,8 @@ function drawMimic(
 	o: PretenderOpts
 ): void {
 	if (st.mimic === 'off') return;
-	drawPretender(c, x, y, S, kind, cs, o);
+	if (st.mimic === 'now') drawPretender(c, x, y, S, kind, cs as PretenderState, o);
+	else drawParasite(c, x, y, S, kind, st.mimic, cs, o);
 }
 
 /** The sheet: the four kinds, the headings and the tell, the fright, the eyes and the mimicry. */
@@ -383,7 +384,7 @@ function sheet(c: CanvasRenderingContext2D, vw: number, t: number): void {
 	const w = 452;
 	const x0 = vw - w - 14;
 	const y0 = 150;
-	const h = 450;
+	const h = 590;
 	c.save();
 	c.fillStyle = 'rgba(8, 11, 12, 0.92)';
 	c.strokeStyle = 'rgba(160, 175, 170, 0.5)';
@@ -410,7 +411,11 @@ function sheet(c: CanvasRenderingContext2D, vw: number, t: number): void {
 		['испуг', 'BLINKY', 'fright', 1, 0, {}],
 		['конец испуга', 'PINKY', 'fright', -1, 0, { flashing: true, white: flashWhite }],
 		['съеден', 'INKY', 'eyes', -1, 0, {}],
-		['маскировка', 'CLYDE', 'mimic', 0, 1, { fold }]
+		['маскировка', 'CLYDE', 'mimic', 0, 1, { fold }],
+		['ярость →', 'BLINKY', 'rage', 1, 0, { reveal: 1 }],
+		['ярость ←', 'PINKY', 'rage', -1, 0, { reveal: 1 }],
+		['ярость ↑', 'INKY', 'rage', 0, -1, { reveal: 1 }],
+		['ярость ↓', 'CLYDE', 'rage', 0, 1, { reveal: 1 }]
 	];
 	cells.forEach(([label, kind, cs, dx, dy, extra], i) => {
 		const cx = x0 + 58 + (i % 4) * 112;
@@ -535,7 +540,8 @@ function frame(now: number): void {
 			const p = walkerAt(w, t);
 			w.gait.update(dt, p.x, p.y, p.dx, p.dy, st.rage !== 'off');
 			const o = look(w.gait, p.dx, p.dy, t);
-			if (st.mimic !== 'off') drawMimic(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, 'hunt', o);
+			if (st.mimic !== 'off')
+				drawMimic(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, st.rage !== 'off' ? 'rage' : 'hunt', o);
 			else drawRage(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, o);
 		}
 	}
