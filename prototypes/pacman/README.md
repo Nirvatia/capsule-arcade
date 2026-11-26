@@ -67,6 +67,7 @@ Most pages read the query string and/or show buttons. Common ones:
 | `season-look` | a diagnostic: the meadow world of a season exactly as the game draws it (`?season=spring|summer|autumn|winter`, `?storm=1`, `?night=1`) |
 | `station` | the station's actors from `render/station/`, large and at game scale (`?t=<s>` freezes time); the station itself: the game, dev panel → Station |
 | `station-b7` | the squad's candidates on the game's B-7 station (`station-b7/mimicLooks.ts`, the owner's mock-up STATION_MIMIC.html, the season ghosts' grammar: upright, feet, eyes): Q the mock-up's Pretender, W the Pretender for B-7, E the spore hermit, R the albino now; four walk the rails of `grid_station`. Keys 1-7 the states (hunt, tell, rage, fright, flashing, mimicry, eyes), Space a 180, Z the line-up x3 (arrows, A auto), P the mock-up's colours; `?scene` the earlier static candidates (`?cell`, `?hive`, `?inf`, `?escape`) |
+| `pretender` | the Pretender for B-7 (`station-b7/mimicLooks.ts`) alone on a clean sheet, large: the four headings, a 180 live and slowed, every state with its effects (tell, rage, fright, flashing, eyes), the mimicry frame by frame and looped into the level's spore, the four kinds, the game's scale (34 and 24 px); `?candy` the mock-up's colours |
 | `hud` | **broken** — imports a `GameHud.svelte` that no longer exists; fix or delete when next needed |
 | `collectibles` | **broken** — throws in the item row; find it when next touched |
 
