@@ -34,7 +34,7 @@ const open = (x: number, y: number) => {
 // the ring round a point two tiles ahead of where he was at the tell
 const cx = 6.5;
 const cy = 10.5;
-const r = Number(q.get('r') ?? 5.3);
+const r = Number(q.get('r') ?? 7.5);
 /** The open tile nearest the rim toward `angle`: a projector's post. */
 function post(angle: number): { x: number; y: number; a: number } {
 	let best = { x: 0, y: 0, a: angle, score: Infinity };
@@ -55,11 +55,12 @@ function post(angle: number): { x: number; y: number; a: number } {
 const posts = [post(-Math.PI / 3), post((Math.PI * 2) / 3)];
 const ring: Ring = { cx, cy, r, from: posts.map((p) => p.a) };
 const seals = ringSeals(open, COLS, ROWS, ring);
-// he stands one tile inside the seal nearest to where he was, facing it
-const near = (s: Seal) => Math.hypot(s.ax - 4, s.ay - 10);
+// one seal grows thin (the way out); he has found it and pushes into it
+const near = (s: Seal) => Math.hypot(s.x - 4, s.y - 4);
 const touched = seals.reduce((a, b) => (near(b) < near(a) ? b : a));
-const heroAt = { x: touched.ax, y: touched.ay };
-const heroDir = { x: touched.bx - touched.ax, y: touched.by - touched.ay };
+touched.weak = true;
+const heroAt = { x: touched.x - touched.dx, y: touched.y - touched.dy };
+const heroDir = { x: touched.dx, y: touched.dy };
 
 type Mode = 'auto' | 'tell' | 'lit' | 'bump' | 'fade';
 let mode: Mode = 'auto';
@@ -73,7 +74,7 @@ const NAMES: Record<Mode, string> = {
 
 /** The phase at `t`: the loop is 10 s (calm 1, the tell 1.5, lit 6 with a touch at 2.5, the fade 0.8). */
 function phaseAt(t: number): RingPhase & { fencing: boolean } {
-	const bumpOf = (age: number) => (age >= 0 && age < 0.6 ? { seal: touched, age } : null);
+	const bumpOf = (age: number) => (age >= 0 && age < 0.7 ? { seal: touched, age } : null);
 	if (mode === 'tell') return { charge: 0.6, lit: 0, bump: null, fencing: true };
 	if (mode === 'lit') return { charge: 1, lit: 1, bump: null, fencing: true };
 	if (mode === 'bump') return { charge: 1, lit: 1, bump: bumpOf(t % 1.4), fencing: true };
