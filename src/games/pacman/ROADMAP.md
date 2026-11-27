@@ -254,15 +254,23 @@ last (see Later).
    - **Nightwood dropped** (2026-11-27, built and played): "light against the dark" in an Alan
      Wake style does not work in Pac-Man. **A rule for every boss world: the maze reads in full
      light**, no dark mazes (the station's endless dark hid the walls and the enemies too). The
-     code, the prototype and the dev entry are removed (the git history keeps them). The owner's
-     pick for the next boss: **the pure Zone** (STALKER, `DESIGN.md` §7b), in **Pripyat** by
-     default. Built twice: the first version (hazard tiles to read) failed the owner's play, the
-     second follows the **drive test** (the hero never waits, only what chases him costs a life) and
-     has the hell's level of art. A playable prototype: `prototypes/pacman/zone` (rules in
-     `logic/zone`, picture in `render/zone`, tested). Left: the owner's play and tuning
-     (`config/zoneConfig.ts`); the location's final pick (Pripyat, the Red Forest or the Chernobyl
-     power plant); his own maze; the Zone's HUD, sound, the fruit heroes' look in it; then wiring
-     (`LevelSession`, `BossCatalog`, the dev panel) and the wishes carried through a run.
+     code, the prototype and the dev entry are removed (the git history keeps them).
+   - **The Zone dropped** (2026-11-27, built twice and played: "careful exploration, Pac-Man runs on
+     drive"). The code stays unwired (`logic/zone`, `render/zone`, `prototypes/pacman/zone`, `DESIGN.md`
+     §7b); delete it when the owner says. **The drive test** it left, a rule for every boss world: the
+     hero never has to wait; only what chases him costs a life; the rest helps or offers a risk for a
+     reward; few things on the maze, bold and readable.
+   - **The Net (cyberpunk, on Lady Bug) is the current candidate** (`DESIGN.md` §7c): a server maze,
+     four security drones that hunt like the four ghosts, firewall doors that slam shut behind the
+     hero (the Lady Bug idea), hack nodes that make the drones flee and edible, an alarm on the last
+     data, the core in the lair. A playable prototype: `prototypes/pacman/net` (rules in `logic/net`,
+     picture in `render/net`, tested). Left: the owner's play and tuning (`config/netConfig.ts`); his
+     own maze (`grid_zone` is the hell's turned upside down: doors go on straight corridor edges);
+     whether the hack becomes a hijack (one drone turns on the others); the doors' rule if too easy or
+     too hard; the HUD, sound, the fruit heroes' look in it; then wiring (`LevelSession`,
+     `BossCatalog`, the dev panel). The ideas weighed (2026-11-27): from modern games a hack, a
+     wanted level, a beat-locked maze, a purge wall; from retro Lady Bug's gates (taken), Thief's doors,
+     Rally-X's smoke, Pengo's blocks, Qix's territory.
 
 ## Part III. The interface
 

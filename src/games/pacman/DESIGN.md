@@ -508,6 +508,37 @@ in `config/zoneConfig.ts`), the picture in `render/zone` (`zoneBake`, `zoneSprit
   (`grid_zone` is the hell's turned upside down; shelters, burrows and the Monolith are read from any
   maze), the Zone's HUD and sound, the fruit heroes' look in it, `BOSS_ROTATION`.
 
+## 7c. The Net (boss level candidate, a playable prototype)
+
+A cyberpunk **server maze** on the **Lady Bug** idea (the owner, 2026-11-27, after the Zone failed
+the drive test). Everything is self-lit: dark blocks with a neon rim on a dark blue field, the
+corridors lit data roads, the whole maze readable at once (a dark maze is fine when it lights
+itself, like the original). Prototype `prototypes/pacman/net`; the rules are game code in
+`logic/net` (`NetService`, numbers in `config/netConfig.ts`), the picture in `render/net`.
+
+- **Goal**: eat all the data (the dots); the core (the lair, a hexagonal reactor, red while locked)
+  opens and reaching it ends the level. Three hits end it (1.4 s of grace after each).
+- **The drones** (the chase, the only thing that costs a hit): four, hunting like Pac-Man's ghosts: a
+  chaser, an ambusher (four tiles ahead of the hero), a flanker (aims past the hero from the chaser's
+  side), a shy one (retreats to its corner when near); colours as the ghosts (red, pink, cyan, orange);
+  released one by one (0, 3, 6, 9 s); a steady 5.4 tiles a second (the hero 6).
+- **Firewall doors** (Lady Bug's turnstiles): ten doors on straight corridor edges, shown as posts
+  with a dashed line. **The hero always passes them, and a door slams shut behind him for 8 s: the
+  drones cannot cross it** (they plan round it with distance maps that know the doors, or are cut
+  off). A door is never at a junction. The hero never waits and is never shut in: the doors are his
+  tool to cut a pursuit or to pen a drone.
+- **Hack nodes** (the four corner energizers): the drones flee for 7 s and can be eaten (200, 400,
+  800, 1600); an eaten drone returns after 6 s. (A hijack, one drone turning on the others, is the
+  next step if wanted.)
+- **The alarm**: with 20 data left the drones are 15% faster, with 8 left 30% (the Elroy surge), the
+  screen edge pulses red.
+- **The picture**: one baked scene, bold cached sprites, few things on the maze (no clutter): neon
+  blocks (one colour to a building), a faint tile grid on the road, the drones with a ring in their
+  colour and one big lens that looks where they head, magenta hexagon nodes, small diamond data. 60
+  fps in headless Chromium without a GPU, first frame in about half a second. **Open**: the owner's
+  play and tuning, his own maze, the hijack, the HUD and sound, the fruit heroes' look here, the
+  place in `BOSS_ROTATION`.
+
 ## 8. The arcade (secret level)
 
 Our own 80s-style arcade inside the game (not a copy of any existing game's art, rules or

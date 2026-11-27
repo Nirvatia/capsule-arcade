@@ -326,6 +326,16 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   picture: `render/zone/` (`zoneBake` the baked Pripyat, `zoneSprites` the cached actors and props,
   `ZoneView` composes them with the live anomalies, the wave and the hints; the caller draws the hero
   in between). Not wired into `LevelSession` or `BossCatalog` yet; it runs in `prototypes/pacman/zone`.
+- `logic/net/net.test.ts` — the Net: the doors on straight corridor edges away from the spawn;
+  a door slamming shut behind the hero, both ways, then opening; drones kept in the corridors and
+  off a shut door; their release; a hit with grace and three hits ending the level; the hack and the
+  eaten chain; the alarm, the core and the end.
+  The Net's code (a boss world candidate, `DESIGN.md` §7c): `logic/net/` (`NetService` composes
+  `NetDoors` and `DronePack` over the game's `GridService`/`PlayerService`/`LevelProgress`, reading
+  the artifacts, the core and the burrows with `logic/zone/ZoneMap`), `config/netConfig.ts`; the
+  picture: `render/net/` (`netBake` the baked server, `netSprites`, `NetView`; the caller draws the
+  hero in between). It plays on `grid_zone`. Not wired into `LevelSession` or `BossCatalog` yet; it
+  runs in `prototypes/pacman/net`.
 - `logic/doom/doomMechanics.test.ts` — pickups, BFG, minions, attack sets per phase,
   fairness (rift, eruption, seals), maze stays connected.
 - `logic/bonuses/bossReward.test.ts` — heart and exit.
