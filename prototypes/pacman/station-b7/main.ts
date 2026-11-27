@@ -43,18 +43,26 @@ type Lure = 'on' | 'off';
 const st = {
 	inf: 0.65,
 	alarm: false,
-	ring: 'off' as RingMode,
+	ring: 'cycle' as RingMode,
+	seal: 'now' as 'now' | 'laser' | 'shutter' | 'thread',
+	zoom: 2,
 	mimic: 'now' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
-	big: true
+	big: false
 };
+const initLook = new URLSearchParams(location.search).get('look');
+if (initLook === 'laser' || initLook === 'shutter' || initLook === 'thread') st.seal = initLook;
 
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: красный маньяк',
-	'mimic-now': 'Мимики как в игре: амёбы',
+	'mimic-now': 'Мимики как в игре: степперы',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
-	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'
+	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит',
+	'seal-now': 'Затвор как в игре: толстая плёнка с прожилками, зона с ореолом',
+	'seal-laser': 'A, лазер: натянутый белый луч, узлы на концах, бежит импульс',
+	'seal-shutter': 'B, створки: две тонкие стальные пластины, светящийся шов между ними',
+	'seal-thread': 'C, нить: тонкая провисающая нить с бусинами, якоря на стенах'
 };
 
 interface Group {
@@ -79,6 +87,24 @@ const GROUPS: Group[] = [
 		after: (v) => {
 			if (v !== 'off') st.alarm = false;
 		}
+	},
+	{
+		label: 'Затвор',
+		key: 'seal',
+		items: [
+			['Сейчас', 'now'],
+			['A лазер', 'laser'],
+			['B створки', 'shutter'],
+			['C нить', 'thread']
+		]
+	},
+	{
+		label: 'Вид',
+		key: 'zoom',
+		items: [
+			['Станция', 1],
+			['Зона', 2]
+		]
 	},
 	{
 		label: 'Мимики',
@@ -169,6 +195,7 @@ function render(): void {
 	}
 	const lines = [
 		st.ring === 'cycle' ? NOTES['ring-cycle'] : '',
+		st.ring !== 'off' ? NOTES[`seal-${st.seal}`] : '',
 		st.mimic !== 'off' ? NOTES[`mimic-${st.mimic}`] : '',
 		st.rage !== 'off' ? NOTES[`rage-${st.rage}`] : '',
 		st.lure !== 'off' ? NOTES[`lure-${st.lure}`] : ''
@@ -226,6 +253,22 @@ const [fx0, fy0] = (q.get('at') ?? '0.3,0.5').split(',').map(Number);
 const [zx, zy] = nearestOpen(W * fx0, H * fy0);
 const ring = planRing(zx, zy, Number(q.get('seed') ?? 1));
 const [lx, ly] = nearestOpen(W * 0.7, H * 0.42);
+/** The middle of the zone, in tiles, to centre the zone view on. */
+const zoneMid = (() => {
+	let x0 = Infinity;
+	let y0 = Infinity;
+	let x1 = -Infinity;
+	let y1 = -Infinity;
+	for (const k of ring.zone) {
+		const x = k % ring.width;
+		const y = Math.floor(k / ring.width);
+		x0 = Math.min(x0, x);
+		y0 = Math.min(y0, y);
+		x1 = Math.max(x1, x + 1);
+		y1 = Math.max(y1, y + 1);
+	}
+	return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
+})();
 
 // ------------------------------------------------------------------- the enraged on their runs
 
@@ -459,12 +502,19 @@ function frame(now: number): void {
 	last = t;
 	const vw = window.innerWidth;
 	const vh = window.innerHeight;
-	if (view.width !== Math.round(vw * D)) {
-		view.width = Math.round(vw * D);
-		view.height = Math.round(vh * D);
+	// the zone view draws a stage Z times larger and shifts it so the zone sits mid-screen
+	const Z = st.zoom;
+	const Dv = Z > 1 ? Math.min(D, 1.25) : D;
+	if (view.width !== Math.round(vw * Dv)) {
+		view.width = Math.round(vw * Dv);
+		view.height = Math.round(vh * Dv);
 	}
-	ctx.setTransform(D, 0, 0, D, 0, 0);
-	world.resize(vw, vh, D);
+	ctx.setTransform(Dv, 0, 0, Dv, 0, 0);
+	world.resize(vw * Z, vh * Z, Dv);
+	if (Z > 1) {
+		const zl = world.layout;
+		ctx.setTransform(Dv, 0, 0, Dv, Dv * (vw / 2 - (zl.offsetX + zoneMid.x * zl.tileSize)), Dv * (vh / 2 - (zl.offsetY + zoneMid.y * zl.tileSize)));
+	}
 	const sc = world.scene;
 	const lights = [];
 	if (st.lure !== 'off') {
@@ -492,9 +542,8 @@ function frame(now: number): void {
 		ring.broken = !!ph.broken;
 		const thin = ring.seals.find((x) => x.weak) ?? null;
 		const ringLook = { guide: ph.guide, charge: ph.charge, lit: ph.lit ? 1 : 0, pressed: ph.press ? thin : null, press: ph.press ?? 0 };
-		const sealLook = q.get('look');
-		if (sealLook === 'laser' || sealLook === 'shutter' || sealLook === 'thread') drawRingNew(ctx, L, ring, ringLook, t, sealLook);
-		else drawRing(ctx, L, ring, ringLook, t);
+		if (st.seal === 'now') drawRing(ctx, L, ring, ringLook, t);
+		else drawRingNew(ctx, L, ring, ringLook, t, st.seal);
 		for (const p of ring.posts) {
 			const g = new RailGait();
 			drawPretender(ctx, L.offsetX + (p.x + 0.5) * S, L.offsetY + (p.y + 0.5) * S, S, p.kind, ph.lit ? 'hunt' : 'tell', look(g, 0, 1, t));
@@ -528,7 +577,7 @@ function frame(now: number): void {
 	}
 	if (st.lure !== 'off') drawLureFlare(ctx, L.offsetX + (lx + 0.5) * S, L.offsetY + (ly + 0.5) * S, S, t, 1);
 	world.drawGrain(ctx, t);
-	ctx.setTransform(D, 0, 0, D, 0, 0);
+	ctx.setTransform(Dv, 0, 0, Dv, 0, 0);
 	panel(ctx, vw, t);
 	requestAnimationFrame(frame);
 }
