@@ -201,7 +201,8 @@ abstract class FruitBase extends Hero {
 	}
 
 	protected afterUpdate(dt: number): void {
-		this.wake.push(this.x, this.y, this.time, this.moving ? 1 : 0);
+		// a step longer than three radii is a tunnel jump: the ribbon does not bridge it
+		this.wake.push(this.x, this.y, this.time, this.moving ? 1 : 0, this.r * 3);
 		if (this.moving) {
 			this.fizzDist += this.r * 3.8 * dt;
 			if (this.fizzDist >= this.r * 0.98) {
