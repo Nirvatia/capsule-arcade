@@ -91,7 +91,9 @@ export class HeroView {
 	constructor(
 		private readonly hero: Hero,
 		/** The light painted over the body in the hell (the BFG charge). */
-		private readonly chargeLight: OverPainter | null = null
+		private readonly chargeLight: OverPainter | null = null,
+		/** The body's radius against the tile: the vessels' and the fruits' differ. */
+		private readonly radius: number = RADIUS
 	) {
 		hero.setFeel(GAME_FEEL);
 	}
@@ -231,12 +233,12 @@ export class HeroView {
 		this.hero.setSink(options.padSink ?? 0);
 		this.hero.setOver(options.chargeLight ? this.chargeLight : null);
 		this.hero.setCharge(options.dying ? 0 : options.charge);
-		this.hero.setRadius(S * RADIUS);
+		this.hero.setRadius(S * this.radius);
 		const hx = layout.offsetX + (pos.x + this.leanX) * S;
 		const hy = layout.offsetY + (pos.y + this.leanY) * S;
 		if (this.feel.shadow && !options.dying) {
 			// a soft contact shadow, off to the side away from the key light (upper left)
-			const r = S * RADIUS;
+			const r = S * this.radius;
 			ctx.drawImage(shadow(), hx - r * 1.05 + r * 0.32, hy - r * 0.95 + r * 0.45, r * 2.1, r * 1.9);
 		}
 		this.hero.update(dt, {

@@ -531,7 +531,24 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - Organic and alive, not metal: soft bodies, breathing; the heroes stay round (their size
   pulses on a spring, they are never stretched into an ellipse).
 - Effects stay inside the tile (no coronas spilling onto walls).
-- The heroes are glass vessels (the owner's mock-up `Heroes.html`, carried over as drawn on 2026-11-25), 0.33 of a tile (the mock-up's 0.295 grown back to the old size, the owner): body, contour and effects reach 0.48 of a tile, like the old corona (a bite's 0.26 s pulse touches the tile's edge).
+- **The heroes are fruits** (the owner, 2026-11-27; `render/actors/hero/FruitHero`): Pac-Man an
+  orange slice, Ms. Pac-Man a watermelon slice, the bite is the mouth; 0.3135 of a tile, the ice rim
+  and the bow inside the tile. Cel-shaded like the rest (bands, an ink line heavier on the shadow
+  side, the light upper left), simple rounded shapes that read at 14 px. The orange: a dimpled peel,
+  a pith ring, eight juicy segments with glints and beads, a leaf on the nape, a big glossy eye under
+  a determined brow. The watermelon: a striped rind, a pale band, ruby flesh, glossy seeds, a big eye
+  with lashes, a gold bow with a green gem on the crown (it sways). Calm, the trail is a swaying
+  ribbon of juice (a dark edge and a bright core, the owner's) with the drops and bubbles it sheds. The
+  energizer (the buff, "fresh ice"): the flesh keeps its colour, the peel or rind frosts, a dark teal
+  and white rim closes the cut with a few frost shards on the back (it blinks as the buff runs out),
+  bubbles rise in the flesh, and the trail is **the fizzy liquid ribbon**: one smooth ribbon (a dark
+  edge, a pale sheath, the warm core, a gloss line, fine bubbles inside), about a tile and a third
+  long whatever the speed, no loose particles. The tunnel's ball is a whole fruit. The owner's
+  mock-up `fresh-citrus-melon-summer-preview.html` was the start; the art here is redrawn (his was
+  too dim in the buff). **The glass vessels below stay in the code as the other look** (`heroSkin`,
+  the dev panel's «Герои»; the last commit with them as the default is `9a4564f`); their
+  description follows.
+- The heroes were glass vessels (the owner's mock-up `Heroes.html`, carried over as drawn on 2026-11-25), 0.33 of a tile (the mock-up's 0.295 grown back to the old size, the owner): body, contour and effects reach 0.48 of a tile, like the old corona (a bite's 0.26 s pulse touches the tile's edge).
 - Pac-Man, the crimson cinnabar vessel: a glossy crimson glass ball 85% full, an air bubble rolling along the top of the glass and the liquid sloshing on a bite and a turn, gold grains drifting inside, a curved window highlight, a glowing gold wedge eye that blinks, a see-through mouth (no cavity drawn), a cinnabar curl on the nape. The power (the rage) turns the contour inside out: the dark ink becomes a glowing gold rim, the body goes obsidian-ruby. The ball in a tunnel: a gold double spiral on crimson.
 - How both heroes move (the owner's brief: a circle seen from above that feels like it moves
   through the maze; the silhouette stays simple, the motion comes from acting and from the world

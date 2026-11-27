@@ -6,6 +6,7 @@
 		DebugRenderFlags,
 		DebugSnapshot
 	} from '../../core/debug/DebugController';
+	import { readHeroSkin, writeHeroSkin, type HeroSkin } from '../../render/actors/hero/heroSkin';
 	import DevWindow from './DevWindow.svelte';
 	import DevGroup from './DevGroup.svelte';
 	import DevLogWindow from './DevLogWindow.svelte';
@@ -84,6 +85,14 @@
 			(event.currentTarget as HTMLElement | null)?.blur();
 			if (dev) action(dev);
 		};
+	}
+
+	/** The heroes' look (fruits or the glass vessels): kept in storage, the page reloads to wear it. */
+	let heroSkin = $state<HeroSkin>(readHeroSkin());
+	function chooseHeroSkin(skin: HeroSkin): void {
+		writeHeroSkin(skin);
+		heroSkin = skin;
+		location.reload();
 	}
 
 	/** The first level a season is played on (boss levels are not season levels). */
@@ -252,6 +261,20 @@
 					<button type="button" class="dev-btn" tabindex={-1} onclick={run((d) => d.enterSecret())}
 						>Secret</button
 					>
+				</div>
+			</div>
+			<div class="dev-row">
+				<span class="dev-lab">Герои</span>
+				<div class="dev-ctl">
+					{#each [['fruit', 'Фрукты'], ['vessel', 'Сосуды']] as [skin, label] (skin)}
+						<button
+							type="button"
+							class="dev-btn"
+							tabindex={-1}
+							disabled={heroSkin === skin}
+							onclick={() => chooseHeroSkin(skin as HeroSkin)}>{label}</button
+						>
+					{/each}
 				</div>
 			</div>
 			<div class="dev-row">

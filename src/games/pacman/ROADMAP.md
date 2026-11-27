@@ -51,24 +51,18 @@ last (see Later).
    `MsPacmanHero` and their tests; `drawIceBow` moves to the mask) unless the icons want them. The
    menu/HUD icons are simplified vessels since 2026-11-26 (`heroIcon`), the sun and the comet
    are not needed for them.
-   **Fruit heroes** (the owner's mock-up `fresh-citrus-melon-summer-preview.html`, 2026-11-27: an
-   orange slice for Pac-Man, a watermelon slice with a bow for Ms. Pac-Man, an icy buff, the whole
-   fruit in a tunnel): liked, to replace the vessels. Reworked in the `fresh-fruit` prototype page
-   (was / now on the real summer world: the buff keeps the flesh's colour, a tight glow, a darker
-   outline, a dark line under the cut's lip, fewer frost crystals at small sizes; three trail
-   candidates, ribbon / soda / pieces). The owner's pick of the trail (2026-11-27): the **fizzy liquid ribbon**, a fixed
-   length of about a tile and a third, no loose particles (the base's embers are off in the buff).
-   Also in the page: **my own fruit heroes** drawn from scratch on the game's `Hero` (`myFruit.ts`, cel
-   bands, a dimpled orange with a leaf and a brow, a striped watermelon with a cream bow and lashes,
-   the same buff and trail) beside the owner's, with a large showcase view. Left: the owner's choice
-   between his heroes and mine; a look on the station's black hive and in the hell (red watermelon on
-   red flesh); then the port into `render/actors/hero` as proper TypeScript (the mock-up's classes
-   are plain JS in the page).
-3. **Mobile: on a real phone.** Swipes/pad/dial/tap/audio-unlock are in and checked in Chromium
-   iPhone emulation. Left on real hardware: iOS Safari audio unlock and pinch, swipe threshold
-   and pad size under a thumb, notched safe areas, the Auto graphics tier there.
-4. **Mazes**: the owner reworks the weak ones.
-5. **Music**: the support is in (`WORLD_MUSIC`; `OST.md` the format, the rules and local generation, `OST_GAME.md`, `OST_HELL.md`, `OST_STATION.md` the briefs and prompts). The owner is replacing the whole soundtrack and renaming the game (2026-11-27): the tracks carry no title.
+   **Fruit heroes: in the game** (2026-11-27; `render/actors/hero/FruitHero`, `DESIGN.md` §12): an
+   orange for Pac-Man, a watermelon with a gold bow for Ms. Pac-Man, the buff's ice rim and fizzy
+   ribbon, the calm juice ribbon; the HUD and menu icons follow. The glass vessels stay as the other
+   look (`heroSkin`, the dev panel's «Герои»; no player-facing choice yet). The prototype pages
+   `fresh-fruit` (the owner's version and mine side by side) and `fruit-final` stay until he has
+   played the fruits. Left: the owner's play (the size, the bow at game scale, the fruits on the
+   station's black hive and in the hell: the orange reads on both, the watermelon on the hell's red
+   flesh is unchecked); whether the vessels deserve a menu choice or go; the fruit's death in play;
+   the ability and the hell's overlays on the fruit (drawn by the base, unchecked); then delete
+   the vessels, the sun and the comet if the owner wants no second look.
+3. **Mazes**: the owner reworks the weak ones.
+4. **Music**: the support is in (`WORLD_MUSIC`; `OST.md` the format, the rules and local generation, `OST_GAME.md`, `OST_HELL.md`, `OST_STATION.md` the briefs and prompts). The owner is replacing the whole soundtrack and renaming the game (2026-11-27): the tracks carry no title.
    Left: the owner's real tracks (the hell's replaces the synthesised placeholder; the station
    next; the seasons optional).
 

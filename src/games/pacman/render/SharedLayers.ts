@@ -3,6 +3,9 @@ import type { GridLayout } from './maze/GridView';
 import { HeroView } from './actors/HeroView';
 import { CinnabarHero } from './actors/hero/CinnabarHero';
 import { JadeHero } from './actors/hero/JadeHero';
+import { FRUIT_BODY_RATIO, MelonHero, OrangeHero } from './actors/hero/FruitHero';
+import { readHeroSkin } from './actors/hero/heroSkin';
+import { CJ_BODY_RATIO } from './actors/hero/vesselHero';
 import type { PacmanAudioCue } from '../core/Events';
 import type { PlayerDrawOptions } from './actors/playerDrawOptions';
 import { chargePainter } from './actors/hero/heroCharge';
@@ -21,8 +24,13 @@ import type { RenderFrame } from './RenderFrame';
  * season turn. The HUD and the screens are Svelte (`ui/PacmanUi`), not canvas.
  */
 export class SharedLayers {
-	private readonly heroView = new HeroView(new CinnabarHero(), chargePainter);
-	private readonly msHeroView = new HeroView(new JadeHero(), chargePainter);
+	private readonly fruit = readHeroSkin() === 'fruit';
+	private readonly heroView = this.fruit
+		? new HeroView(new OrangeHero(), chargePainter, FRUIT_BODY_RATIO)
+		: new HeroView(new CinnabarHero(), chargePainter, CJ_BODY_RATIO);
+	private readonly msHeroView = this.fruit
+		? new HeroView(new MelonHero(), chargePainter, FRUIT_BODY_RATIO)
+		: new HeroView(new JadeHero(), chargePainter, CJ_BODY_RATIO);
 	private readonly fruitView = new FruitView();
 	private readonly easterEggView = new EasterEggView();
 	private readonly abilityView = new AbilityView();
