@@ -306,6 +306,41 @@ function slipper(c: Ctx, kind: GhostKind, g: Gel, o: MimicOpts, dx: number, dy: 
 	if (kind === 'PINKY' || kind === 'CLYDE') mouth(c, kind, dx * rx * 0.86 + dy * 0.0, dy * rx * 0.86, dx, dy, 0.06, px);
 }
 
+/** Four feet in a diagonal gait: lifted and carried forward in their turn; `dust` puffs where they land. */
+function feet(
+	c: Ctx,
+	g: Gel,
+	dx: number,
+	dy: number,
+	ph: number,
+	px: number,
+	carry: number,
+	rise: number,
+	dust: string | null
+): void {
+	const sx = -dy;
+	const sy = dx;
+	for (const [fa, ls, fwd] of [
+		[0, 1, 1],
+		[Math.PI, -1, 1],
+		[Math.PI, 1, -1],
+		[0, -1, -1]
+	] as const) {
+		const lift = Math.max(0, Math.sin(ph + fa));
+		const fx = dx * (0.17 * fwd + carry * lift) + sx * ls * 0.17;
+		const fy = dy * (0.17 * fwd + carry * lift) + sy * ls * 0.17;
+		if (dust) {
+			// a little cloud where the foot has just come down
+			const land = Math.max(0, -Math.sin(ph + fa)) * (1 - lift);
+			disc(c, fx - dx * 0.06, fy + 0.1, 0.03 + 0.035 * land, dust.replace('A', String(0.22 * land)));
+		}
+		c.beginPath();
+		c.ellipse(fx, fy + 0.07 - lift * rise, 0.085, 0.065, 0, 0, TAU);
+		fillGel(c, g, fx, fy + 0.07, 0.1);
+		outline(c, Math.max(px * 1.4, 0.035));
+	}
+}
+
 /** C: the stepper. */
 function stepper(c: Ctx, kind: GhostKind, g: Gel, o: MimicOpts, dx: number, dy: number, px: number): void {
 	const soul = SOUL[kind];
@@ -315,23 +350,7 @@ function stepper(c: Ctx, kind: GhostKind, g: Gel, o: MimicOpts, dx: number, dy: 
 	const hop = Math.abs(Math.sin(ph)) * 0.045;
 	const squash = 1 + 0.07 * Math.cos(ph * 2);
 	const sway = Math.sin(ph) * soul.sway;
-	// four feet in a diagonal gait: lifted and carried forward in their turn
-	for (const [fa, ls] of [
-		[0, 1],
-		[Math.PI, 1],
-		[Math.PI, -1],
-		[0, -1]
-	] as const) {
-		const fwd = ls === 1 ? 1 : -1;
-		const lift = Math.max(0, Math.sin(ph + fa));
-		const fx = dx * (0.17 * fwd + 0.07 * lift) + sx * ls * 0.17 * (fwd > 0 ? 1 : 1);
-		const fy = dy * (0.17 * fwd + 0.07 * lift) + sy * ls * 0.17;
-		const ox = fwd === 1 ? 0 : 0;
-		c.beginPath();
-		c.ellipse(fx + ox, fy + 0.07 - lift * 0.06, 0.085, 0.065, 0, 0, TAU);
-		fillGel(c, g, fx, fy + 0.07, 0.1);
-		outline(c, Math.max(px * 1.4, 0.035));
-	}
+	feet(c, g, dx, dy, ph, px, 0.07, 0.06, null);
 	c.save();
 	c.translate(dx * soul.lean + sway * sx, dy * soul.lean + sway * sy - hop);
 	c.scale(1 / squash, squash);
@@ -485,6 +504,259 @@ export function drawCandidates(
 					time: t,
 					step
 				});
+			c.restore();
+		}
+	});
+}
+
+/** The rage's gel: the hive's lime, boiling; the kind keeps a rim of its own colour. */
+const RAGE: Gel = {
+	edge: '#e4ff8a',
+	mid: 'rgba(120, 210, 40, 0.94)',
+	core: 'rgba(22, 48, 8, 0.95)',
+	rgb: '170, 255, 70'
+};
+export type RageLook = 'R1' | 'R2';
+
+/** A flame that sways on the crest. */
+function flame(c: Ctx, x: number, y: number, h: number, t: number, seed: number): void {
+	const sway = Math.sin(t * 7 + seed) * 0.03;
+	const g = c.createLinearGradient(x, y, x, y - h);
+	g.addColorStop(0, 'rgba(255, 247, 160, 0.95)');
+	g.addColorStop(1, 'rgba(170, 255, 70, 0)');
+	c.beginPath();
+	c.moveTo(x - h * 0.28, y);
+	c.quadraticCurveTo(x - h * 0.2 + sway, y - h * 0.6, x + sway * 2, y - h);
+	c.quadraticCurveTo(x + h * 0.2 + sway, y - h * 0.6, x + h * 0.28, y);
+	c.closePath();
+	c.fillStyle = g;
+	c.fill();
+}
+
+/** Steam rising off the head, within the tile. */
+function steam(c: Ctx, t: number): void {
+	for (let i = 0; i < 3; i++) {
+		const k = (t * 0.9 + i / 3) % 1;
+		const x = Math.sin(i * 2.1 + t * 1.3) * 0.07 + (i - 1) * 0.08;
+		const y = -0.36 - k * 0.2;
+		disc(c, x, y, 0.045 + 0.06 * k, `rgba(232, 255, 200, ${0.4 * (1 - k)})`);
+	}
+}
+
+/** A veined, bulging eye with a pinprick pupil, no lid: the rage. */
+function bulge(c: Ctx, x: number, y: number, er: number, o: MimicOpts, px: number, jitter: number): void {
+	c.save();
+	c.beginPath();
+	c.arc(x, y, er, 0, TAU);
+	c.fillStyle = '#f4ffd0';
+	c.fill();
+	c.clip();
+	c.strokeStyle = 'rgba(190, 40, 30, 0.75)';
+	c.lineWidth = Math.max(px, er * 0.12);
+	for (let k = 0; k < 4; k++) {
+		const a = k * 1.6 + 0.4;
+		c.beginPath();
+		c.moveTo(x + Math.cos(a) * er, y + Math.sin(a) * er);
+		c.lineTo(x + Math.cos(a) * er * 0.45, y + Math.sin(a) * er * 0.45 + 0.01);
+		c.stroke();
+	}
+	const jx = Math.sin(o.time * 31 + x * 9) * er * jitter;
+	const jy = Math.cos(o.time * 27 + y * 9) * er * jitter;
+	disc(c, x + o.faceX * er * 0.5 + jx, y + o.faceY * er * 0.5 + jy, er * 0.24, INK);
+	c.restore();
+	c.beginPath();
+	c.arc(x, y, er, 0, TAU);
+	outline(c, Math.max(px * 1.4, er * 0.24));
+}
+
+/** C in the rage, two ways: R1 bulging eyes and a toothy grin, R2 eyes on springs and a scream. */
+export function drawMimicRage(c: Ctx, look: RageLook, x: number, y: number, S: number, kind: GhostKind, o: MimicOpts): void {
+	const g = GEL[kind];
+	const dx = o.lookX || o.lookY ? o.lookX : 0;
+	const dy = o.lookX || o.lookY ? o.lookY : 1;
+	const px = 1 / S;
+	const soul = SOUL[kind];
+	const ph = o.step * soul.speed * 1.7;
+	const sx = -dy;
+	const sy = dx;
+	const hop = Math.abs(Math.sin(ph)) * 0.06;
+	const t = o.time;
+	c.save();
+	c.translate(x, y);
+	c.scale(S, S);
+	// the lime halo, hotter than the calm one, within the tile
+	const halo = c.createRadialGradient(0, 0, 0.05, 0, 0, 0.82);
+	halo.addColorStop(0, 'rgba(170, 255, 70, 0.34)');
+	halo.addColorStop(1, 'rgba(170, 255, 70, 0)');
+	c.fillStyle = halo;
+	c.beginPath();
+	c.arc(0, 0, 0.82, 0, TAU);
+	c.fill();
+	// a thin smoke behind, no afterimages
+	for (let i = 0; i < 3; i++) {
+		const k = (t * 1.4 + i / 3) % 1;
+		disc(c, -dx * (0.3 + 0.3 * k), -dy * (0.3 + 0.3 * k) - 0.05 * k, 0.04 + 0.05 * k, `rgba(120, 150, 90, ${0.2 * (1 - k)})`);
+	}
+	feet(c, RAGE, dx, dy, ph, px, 0.1, 0.1, 'rgba(210, 235, 160, A)');
+	const shake = 0.011;
+	c.save();
+	c.translate(
+		dx * (soul.lean + 0.03) + Math.sin(t * 43 + ph) * shake,
+		dy * (soul.lean + 0.03) + Math.cos(t * 37) * shake - hop
+	);
+	const throb = 1 + 0.05 * Math.sin(t * 13);
+	c.scale(throb, 2 - throb);
+	c.beginPath();
+	c.ellipse(0, -0.02, 0.35, 0.31, 0, 0, TAU);
+	fillGel(c, RAGE, 0, -0.02, 0.35);
+	outline(c, Math.max(px * 1.8, 0.05));
+	// the kind's colour as a rim inside the membrane, so the four stay four
+	c.beginPath();
+	c.ellipse(0, -0.02, 0.32, 0.28, 0, 0, TAU);
+	c.strokeStyle = `rgba(${g.rgb}, 0.85)`;
+	c.lineWidth = Math.max(px * 1.8, 0.035);
+	c.stroke();
+	// boils swelling on the skin
+	for (let i = 0; i < 3; i++) {
+		const k = (t * 0.8 + i / 3) % 1;
+		const a = 0.7 + i * 2.2;
+		disc(c, Math.cos(a) * 0.2, Math.sin(a) * 0.17 - 0.02, 0.015 + 0.05 * k, `rgba(228, 255, 138, ${0.5 * (1 - k * k)})`);
+	}
+	c.restore();
+	steam(c, t);
+	// the crest of its kind, ablaze
+	crest(c, kind, g, o, dx, dy, -hop, px);
+	c.save();
+	c.translate(dx * soul.lean, -0.32 - hop + dy * soul.lean);
+	flame(c, -0.07, 0.02, 0.15, t, 1);
+	flame(c, 0.02, 0, 0.2, t, 2);
+	flame(c, 0.1, 0.02, 0.13, t, 3);
+	c.restore();
+	const ex = dx * 0.1;
+	const ey = dy * 0.1 - 0.03 - hop;
+	if (look === 'R1') {
+		// bulging eyes, brows driven down, a grin of teeth that chomps
+		const er = 0.14;
+		const odd = kind === 'INKY' ? 1.25 : 1;
+		bulge(c, ex - 0.15, ey, er * (kind === 'INKY' ? 1 : 1), o, px, kind === 'INKY' ? 0.45 : 0.12);
+		bulge(c, ex + 0.15, ey, er * odd, o, px, kind === 'INKY' ? 0.45 : 0.12);
+		c.strokeStyle = INK;
+		c.lineWidth = Math.max(px * 3, 0.06);
+		c.lineCap = 'round';
+		const brow = { BLINKY: [0.1, 0.03], PINKY: [0.02, 0.1], INKY: [0.06, 0.06], CLYDE: [0.1, 0.0] }[kind];
+		for (const side of [-1, 1]) {
+			const inner = brow[side < 0 ? 0 : 1];
+			c.beginPath();
+			c.moveTo(ex + side * 0.03, ey - er - 0.01 + inner * 0.5);
+			c.lineTo(ex + side * 0.27, ey - er - 0.04 - inner * 0.1);
+			c.stroke();
+		}
+		const open = 0.05 + 0.065 * (0.5 + 0.5 * Math.sin(t * 9 + ph));
+		const my = ey + 0.2;
+		c.beginPath();
+		c.moveTo(ex - 0.2, my);
+		c.quadraticCurveTo(ex, my + open * 2.2, ex + 0.2, my);
+		c.quadraticCurveTo(ex, my - open * 0.6, ex - 0.2, my);
+		c.closePath();
+		c.fillStyle = '#1a0a0e';
+		c.fill();
+		outline(c, Math.max(px * 1.6, 0.04));
+		c.fillStyle = '#fbfff0';
+		for (let k = 0; k < 5; k++) {
+			const tx = ex - 0.16 + k * 0.08;
+			c.beginPath();
+			c.moveTo(tx - 0.032, my + 0.005);
+			c.lineTo(tx, my + 0.05 + (k % 2) * 0.015);
+			c.lineTo(tx + 0.032, my + 0.005);
+			c.closePath();
+			c.fill();
+		}
+	} else {
+		// eyes on springs that wobble, a round scream, steam jetting from both sides
+		const er = 0.115;
+		for (const side of [-1, 1]) {
+			const bob = Math.abs(Math.sin(t * 11 + side)) * 0.05;
+			const ex2 = ex + side * 0.16;
+			const ey2 = ey - 0.2 - bob;
+			c.beginPath();
+			c.moveTo(ex + side * 0.12, ey - 0.06);
+			for (let k = 1; k <= 5; k++) c.lineTo(ex2 + (k % 2 ? 0.035 : -0.035), ey - 0.06 + (ey2 - ey + 0.06) * (k / 5));
+			c.strokeStyle = INK;
+			c.lineWidth = Math.max(px * 2.4, 0.045);
+			c.stroke();
+			bulge(c, ex2, ey2, er, o, px, 0.2);
+		}
+		const my = ey + 0.12;
+		const sc = 1 + 0.18 * Math.sin(t * 12);
+		c.beginPath();
+		c.ellipse(ex, my + 0.05, 0.13 * sc, 0.12 * sc, 0, 0, TAU);
+		c.fillStyle = '#1a0a0e';
+		c.fill();
+		outline(c, Math.max(px * 1.6, 0.04));
+		c.beginPath();
+		c.ellipse(ex, my + 0.1, 0.07, 0.045, 0, 0, TAU);
+		c.fillStyle = '#ff7a8c';
+		c.fill();
+		for (const side of [-1, 1]) {
+			c.beginPath();
+			c.moveTo(ex + side * 0.07, my - 0.04);
+			c.lineTo(ex + side * 0.095, my + 0.02);
+			c.lineTo(ex + side * 0.045, my - 0.01);
+			c.fillStyle = '#fbfff0';
+			c.fill();
+		}
+		for (const side of [-1, 1]) {
+			for (let i = 0; i < 2; i++) {
+				const k = (t * 1.6 + i * 0.5) % 1;
+				disc(c, side * (0.36 + 0.14 * k), -0.06 - 0.06 * k, 0.03 + 0.04 * k, `rgba(232, 255, 200, ${0.4 * (1 - k)})`);
+			}
+		}
+	}
+	c.restore();
+}
+
+/** The sheet of the rage: the calm stepper for reference, then R1 and R2, the kinds as before. */
+export function drawRageSheet(c: Ctx, vw: number, vh: number, t: number, size: number): void {
+	const rows: Array<'calm' | RageLook> = ['calm', 'R1', 'R2'];
+	const head = 30;
+	const cols = 6;
+	const cw = vw / cols;
+	const ch = (vh - head) / rows.length;
+	const S = size || Math.min(cw, ch) * 0.82;
+	c.fillStyle = '#e8e2d4';
+	c.font = '600 14px ui-sans-serif, system-ui, sans-serif';
+	c.textBaseline = 'middle';
+	c.fillText('ШАГАТЕЛЬ: ярость (R1 выпученные глаза и оскал, R2 глаза на пружинах и крик)', 14, head / 2);
+	const names = { calm: 'C спокойный', R1: 'R1 оскал', R2: 'R2 крик' };
+	rows.forEach((row, r) => {
+		for (let i = 0; i < cols; i++) {
+			const x0 = i * cw;
+			const y0 = head + r * ch;
+			c.fillStyle = '#0d1109';
+			c.fillRect(x0 + 2, y0 + 2, cw - 4, ch - 4);
+			const kind = i < 4 ? ORDER[i] : i === 4 ? 'BLINKY' : 'PINKY';
+			const dir: readonly [number, number] = i < 4 ? [1, 0] : i === 4 ? [0, 1] : [-1, 0];
+			const o: MimicOpts = {
+				lookX: dir[0],
+				lookY: dir[1],
+				faceX: dir[0],
+				faceY: dir[1],
+				time: t,
+				step: t * 6 + ORDER.indexOf(kind) * 0.8
+			};
+			if (i === 0) {
+				c.fillStyle = '#9aa38c';
+				c.font = '600 12px ui-sans-serif, system-ui, sans-serif';
+				c.fillText(names[row], x0 + 8, y0 + 12);
+			}
+			c.save();
+			c.beginPath();
+			c.rect(x0 + 2, y0 + 2, cw - 4, ch - 4);
+			c.clip();
+			const cx = x0 + cw / 2;
+			const cy = y0 + ch / 2 + 6;
+			if (row === 'calm') drawMimic(c, 'C', cx, cy, S, kind, o);
+			else drawMimicRage(c, row, cx, cy, S, kind, o);
 			c.restore();
 		}
 	});
