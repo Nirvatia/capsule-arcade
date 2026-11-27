@@ -31,8 +31,16 @@
 		snap,
 		scale,
 		onpause,
-		onfire
-	}: { snap: HudSnapshot; scale: number; onpause: () => void; onfire: () => void } = $props();
+		onfire,
+		name
+	}: {
+		snap: HudSnapshot;
+		scale: number;
+		onpause: () => void;
+		onfire: () => void;
+		/** The world's name when it is not the season's own (the night forest wears the autumn's boards). */
+		name?: string;
+	} = $props();
 
 	const theme = $derived(SEASON_THEMES[snap.world as SeasonKey]);
 
@@ -94,7 +102,7 @@
 		{fmt(snap.score)}, {$t('high')}
 		{fmt(snap.highScore)}, {$t('level')}
 		{snap.level}
-		{$t(`world_${snap.world}`)}, {$t('lives')}
+		{name ?? $t(`world_${snap.world}`)}, {$t('lives')}
 		{lives}
 	</span>
 
@@ -132,7 +140,7 @@
 		<g class="sway hang" style:--rot="-1deg">
 			{@html art.banner}
 			<text class="lab" x="298" y="106" font-size="11" text-anchor="middle"
-				>{$t(`world_${snap.world}`).toUpperCase()}</text
+				>{(name ?? $t(`world_${snap.world}`)).toUpperCase()}</text
 			>
 		</g>
 		<g class="sway c" style:--rot=".8deg">

@@ -8,11 +8,13 @@ import { arcadeRound } from '../../config/arcadeConfig';
 import type { AbilityKind } from '../../config/abilityConfig';
 import { RUN_TUNE } from '../../logic/station/StationRun';
 import { escapeGoal } from '../../logic/station/StationEscape';
+import { NIGHT_TUNE } from '../../logic/nightwood/NightwoodRun';
 
 /** How long a lost heart flashes, s. */
 const HURT_FLASH = 0.9;
 
-export type HudWorld = 'spring' | 'summer' | 'autumn' | 'winter' | 'hell' | 'station' | 'secret';
+export type HudWorld =
+	'spring' | 'summer' | 'autumn' | 'winter' | 'hell' | 'station' | 'nightwood' | 'secret';
 
 /** A running timer the HUD shows as a draining ring. */
 export interface HudTimer<K extends string = 'power' | 'overdrive' | AbilityKind> {
@@ -56,6 +58,21 @@ export interface HudStation {
 	readonly luresMax: number;
 }
 
+/** The night forest's readings (its HUD, `DESIGN.md` §7b). */
+export interface HudNightwood {
+	/** The Presence's power left, 0..1. */
+	readonly presence: number;
+	/** The torch's battery, 0..1. */
+	readonly battery: number;
+	/** The flash's glare, 1 just fired fading to 0. */
+	readonly flash: number;
+	readonly lampsOut: number;
+	readonly lampsTotal: number;
+	readonly banished: number;
+	/** The Presence has fallen: the dawn, the heart and the exit are on the board. */
+	readonly dawn: boolean;
+}
+
 /** Everything the HUD and the screens show, read once per frame. Plain data. */
 export interface HudSnapshot {
 	readonly state: PacmanStateName;
@@ -89,6 +106,7 @@ export interface HudSnapshot {
 	readonly fruits: readonly FruitKind[];
 	readonly boss: HudBoss | null;
 	readonly station: HudStation | null;
+	readonly nightwood: HudNightwood | null;
 }
 
 const FRUIT_ROW = 7;
@@ -108,7 +126,9 @@ export function buildHudSnapshot(
 			? 'hell'
 			: level.stationMode
 				? 'station'
-				: ((season?.name ?? 'spring') as HudWorld);
+				: level.nightwoodMode
+					? 'nightwood'
+					: ((season?.name ?? 'spring') as HudWorld);
 	// the ability and the power run side by side: each has its own dial
 	let timer: HudTimer<AbilityKind> | null = null;
 	let power: HudTimer<'power' | 'overdrive'> | null = null;
@@ -159,6 +179,18 @@ export function buildHudSnapshot(
 				luresMax: RUN_TUNE.lures
 			}
 		: null;
+	const night = level.nightwoodRun;
+	const nightwood: HudNightwood | null = night
+		? {
+				presence: night.presenceRatio,
+				battery: night.battery,
+				flash: night.flash > 0 ? night.flash / NIGHT_TUNE.flash.time : 0,
+				lampsOut: night.lamps.filter((l) => !l.on).length,
+				lampsTotal: night.lamps.length,
+				banished: night.banished,
+				dawn: night.defeated
+			}
+		: null;
 	const secret = level.secretMode;
 	const fruits: FruitKind[] = [];
 	if (secret) {
@@ -196,6 +228,7 @@ export function buildHudSnapshot(
 				: null,
 		fruits,
 		boss,
-		station
+		station,
+		nightwood
 	};
 }

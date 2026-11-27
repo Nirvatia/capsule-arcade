@@ -48,6 +48,12 @@ logic/
              route laid anew off it, the doors, the pulse, the restart); the older StationService
              (the ghost version: HP and the rewind, the beam, flares, cocoons, phases, the super
              flare) and stationBeam, to be replaced
+  nightwood/ the night forest's rules (`DESIGN.md` §7b): NightwoodRun (the Taken's shrouds burning in
+             light, the stun, the banishing and the Presence's power, the lamps going out and lit
+             again, the torch's battery, the flares, the flash, the dawn; pure, over small ports,
+             tested without a session), lightRays (rays over the maze's grid: the cones, the pools, the
+             line of sight), nightwoodLamps (where the lamps stand, the clearing; shared by the rules
+             and the painter)
   doom/      the hell: DoomBossService (the boss's state machine), DoomArena (hazards,
              seals, void, pull, corruption, echo, shake), DoomMinionSwarm, DoomAttackPlanner
              (which attack, fair or not), DoomTargeting (tile picks), weapons, pickups
@@ -83,6 +89,11 @@ render/
                    map of sprite lights with the flashlight, bloom by downscale, grain on High),
                    b7Hive (the infestation, the total takeover by a black parasite with a lime life: veins, organics over the plates, the torn lair doors, the heartbeat; revealed from the lair by the infection), pretender (the squad's creature, the game side: the state to the look, RailGait, the mimicry, the eaten eyes, the lurker's eye) and stepper (its painter, the owner's pick: one `heat`, `tell` and `fright` blend the looks), stepperRage (the rage's face, the maniac, painted over the stepper's hot red body), drawLurkerEye (the lurker's gold eye tell), quarantineRing (the fence's zone: the warning hatch, dashed outline and door chevrons; the tinted tiles, the crisp outline with its inner band, the steel shutters across the corridors; the zone's tiles cached as one path), lureFlare (the escape's lure), goalMark (the goal's mark on the console, then the hatch), squadMarks (the plays'
                    and the escape's marks).
+  nightwood/       the night forest: NightwoodLevelRenderer over NightwoodWorld (the baked forest
+                   `forestBake` over the whole screen; every frame the dark with the lamps', the
+                   torch's, the flares' and the lair's holes cast over the grid, the moonlight, the fog
+                   cool in the shade and warm in the light, a vignette, a cold grade, grain), nightArt
+                   (textures, lamp heads, fireflies, flares, the Taken, the Presence's whirl), noise
   arcade/          the secret level: pixel sprites, maze bake, view, CRT pass, intermission,
                    ArcadeLevelRenderer
   fx/              LevelFx (gameplay effects on the season levels: it plays and ages the
@@ -107,7 +118,7 @@ audio/       PacmanAudioPlayer (samples; routes the arcade to ArcadeSynth; a wor
 ui/          PacmanUi (HUD + screens + fade over the canvas), hud/ (season/: the HUD of the
              four season worlds, `SeasonHud` in the side margins and `SeasonHudStack` in two bands
              on a taller screen, over `seasonArt` and `seasonThemes`; `BossHud`, the hell's, over
-             `hellArt`; `StationHud`, the station's (steel `STATION_THEME`, `StationBar`, `stationArt`); ArcadeHud; hudSnapshot, hudFrame; the coins and life icons bake the real hero via `heroPortrait`,
+             `hellArt`; `StationHud`, the station's (steel `STATION_THEME`, `StationBar`, `stationArt`); the night forest wears `SeasonHud` in the autumn's boards with its own name and `NightwoodBar` above the board; ArcadeHud; hudSnapshot, hudFrame; the coins and life icons bake the real hero via `heroPortrait`,
              with the Lives board's icon geometry shared in `livesLayout`), screens/ (`WorldScreens` over `screenArt` for the
              seasons and the hell; `GameScreens`, the older cards, for the arcade; both pause screens'
              Game Select button uses `goto(resolve('/'))`),

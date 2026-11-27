@@ -120,6 +120,45 @@ describe('level routing', () => {
 		expect(session.station).toBe(boss === 'station');
 	});
 
+	it('a forced nightwood builds the forest: its rules, no hell, no station', () => {
+		const loader = newRun();
+		loader.debugForceBoss('nightwood');
+		loader.debugGotoLevel(5);
+		const session = loader.ensure();
+		expect(loader.nightwoodMode).toBe(true);
+		expect(loader.hellMode || loader.stationMode).toBe(false);
+		expect(session.season.maze).toBe('nightwood');
+		expect(session.nightwood).toBe(true);
+		expect(session.nightwoodRun).not.toBeNull();
+		expect(session.doom).toBeNull();
+		expect(session.bossReward).not.toBeNull();
+		// the boss is the level 5 only: level 6 goes back to the seasons
+		expect(loader.peekNextLevel()).toMatchObject({ hell: false, station: false, nightwood: false });
+	});
+
+	it('in the forest the last dot does not end the level, and an energizer frightens as usual', () => {
+		const loader = newRun();
+		loader.debugForceBoss('nightwood');
+		loader.debugGotoLevel(5);
+		const session = loader.ensure();
+		let energizer: { x: number; y: number } | null = null;
+		for (let y = 0; y < session.grid.height; y += 1) {
+			for (let x = 0; x < session.grid.width; x += 1) {
+				const token = session.grid.tileAt(x, y);
+				if (token === 'DT') session.progress.collectAt(x, y);
+				if (token === 'EU' && !energizer) energizer = { x, y };
+			}
+		}
+		expect(session.progress.remainingDots).toBe(0);
+		session.combat.update(1 / 60);
+		expect(session.combat.endRequested).toBe(false);
+		session.ghosts.setGhostState('BLINKY', 'active');
+		session.progress.collectAt(energizer!.x, energizer!.y);
+		session.combat.update(1 / 60);
+		expect(session.combat.isPowerActive).toBe(true);
+		expect(session.ghosts.list.find((g) => g.kind === 'BLINKY')?.state).toBe('frightened');
+	});
+
 	it('on the station an energizer frightens nobody', () => {
 		const loader = newRun();
 		loader.debugForceBoss('station');

@@ -3,11 +3,14 @@
 	screen fade on top of both. -->
 <script lang="ts">
 	import { hudFrame, screenActions } from './hud/hudFrame';
+	import { t } from './i18n';
+	import type { HudSnapshot } from './hud/hudSnapshot';
 	import ArcadeHud from './hud/ArcadeHud.svelte';
 	import SeasonHud from './hud/season/SeasonHud.svelte';
 	import SeasonHudStack from './hud/season/SeasonHudStack.svelte';
 	import BossHud from './hud/season/BossHud.svelte';
 	import StationHud from './hud/season/StationHud.svelte';
+	import NightwoodBar from './hud/season/NightwoodBar.svelte';
 	import { isSeasonKey } from './hud/season/seasonThemes';
 	import GameScreens from './screens/GameScreens.svelte';
 	import WorldScreens from './screens/WorldScreens.svelte';
@@ -20,6 +23,9 @@
 	let innerHeight = $state(720);
 	const layout = $derived(hudLayoutFor(innerWidth, innerHeight));
 	const bossLayout = $derived(bossHudLayoutFor(innerWidth, innerHeight));
+	/** The night forest wears the autumn's dark wood boards (its own readings are `NightwoodBar`). */
+	const hudWorld = (snap: HudSnapshot): HudSnapshot =>
+		snap.world === 'nightwood' ? { ...snap, world: 'autumn' } : snap;
 </script>
 
 <svelte:window bind:innerWidth bind:innerHeight />
@@ -41,16 +47,18 @@
 	{#if $hudFrame.state !== 'menu' && $hudFrame.state !== 'world-shift'}
 		{#if $hudFrame.world === 'secret'}
 			<ArcadeHud snap={$hudFrame} />
-		{:else if isSeasonKey($hudFrame.world) && layout.mode === 'side'}
+		{:else if ($hudFrame.world === 'nightwood' || isSeasonKey($hudFrame.world)) && layout.mode === 'side'}
 			<SeasonHud
-				snap={$hudFrame}
+				snap={hudWorld($hudFrame)}
+				name={$hudFrame.world === 'nightwood' ? $t('world_nightwood') : undefined}
 				scale={layout.scale}
 				onpause={() => $screenActions?.pause()}
 				onfire={() => $screenActions?.fire()}
 			/>
-		{:else if isSeasonKey($hudFrame.world)}
+		{:else if $hudFrame.world === 'nightwood' || isSeasonKey($hudFrame.world)}
 			<SeasonHudStack
-				snap={$hudFrame}
+				snap={hudWorld($hudFrame)}
+				name={$hudFrame.world === 'nightwood' ? $t('world_nightwood') : undefined}
 				scale={layout.scale}
 				onpause={() => $screenActions?.pause()}
 				onfire={() => $screenActions?.fire()}
@@ -73,6 +81,9 @@
 				onfire={() => $screenActions?.fire()}
 			/>
 		{/if}
+	{/if}
+	{#if $hudFrame.nightwood && ($hudFrame.state === 'playing' || $hudFrame.state === 'ready')}
+		<NightwoodBar night={$hudFrame.nightwood} />
 	{/if}
 	{#if $screenActions && $touchDevice && $controls === 'pad' && ($hudFrame.state === 'playing' || $hudFrame.state === 'ready')}
 		<TouchPad steer={$screenActions.steer} mode={layout.mode} scale={layout.scale} />

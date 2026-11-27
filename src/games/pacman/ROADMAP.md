@@ -249,8 +249,27 @@ last (see Later).
       islands change. Playful; palette clear of the hell's reds.
    3. **A Bomberman world**: tried and dropped (2026-11-25, `DESIGN.md` §13): waiting on a fuse
       breaks Pac-Man's motion. Recoverable from commit `e65ce2a`.
+   4. **The night forest, light against the dark** (`DESIGN.md` §7b): in the game since 2026-11-27,
+      from the dev panel's **Nightwood** (the owner's pick of the boss ideas, then a prototype
+      `prototypes/pacman/nightwood` he liked, then built while he was away: the owner's remarks on
+      the prototype are done: the trees stand even, the creatures stay inside their tile). Classic
+      rules plus the Taken's shrouds that light burns off, the Presence in the clearing that falls
+      after five banished Taken, lamps it puts out, a torch with a battery the fireflies fill, the
+      flash on the fire key. `BOSSES` has it, `BOSS_ROTATION` not. Left, all awaiting the owner's
+      play: balance (the burn and stun times, the lamps' pace, how fast the battery drains, the
+      Presence's five hits); whether the Taken look right at game scale (small cloaked figures);
+      the cost of the lit forest on real hardware (about fifteen screen-sized passes a frame; the
+      low tier drops the fog and the grain); a maze of its own (it is the classic's layout now);
+      music and sounds of its own (the siren and the game's cues play); the HUD's own boards (the
+      autumn's wood with a strip above); the Presence's attacks beyond the lamps (lanes of dark,
+      tendrils along the corridors, rejected in the prototype because they stuck out of the clearing);
+      adding it to `BOSS_ROTATION`; then a death `style` and a season-turn style of its own (the
+      moon's pale blue is in); the heroes' look in the forest (the fruit as it is).
    - Zombies rejected (a horde with weapons is the hell again). TRON dropped for the station.
-     Bomberman dropped. Candidates: a Dig Dug-like quarry (the yard's art reused), the tide.
+     Bomberman dropped. Candidates: a Dig Dug-like quarry (the yard's art reused), the tide. Also
+     proposed (2026-11-27): the Cartridge (`prototypes/pacman/cartridge`: a bad retro port as the
+     boss, its rules glitches: tearing, pits, false walls, flicker, lag), a carnival boss in the
+     manner of Cuphead, a mansion with keys and a stalker, a swamp of two heroes at once.
 
 ## Part III. The interface
 
