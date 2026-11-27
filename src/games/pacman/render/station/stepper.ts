@@ -3,16 +3,17 @@
 // stubby feet with a face and a crest of its kind. Drawn the game's way (DESIGN.md §12): cel-shaded,
 // hard tone bands, an ink line that leans heavier to the lower right, a rim light, the key light
 // upper left, a contact shadow on the floor. One painter, a few values, so every look is a morph:
-//   heat 0..1: the overheat, comic and a little frightening: lit lime from inside, a deep rim,
-//     hairline cracks, narrow glowing sockets under a heavy brow, a grin that splits the body and
-//     chomps, embers, the floor lit; the feet and the crest keep the kind's colour so the four stay
-//     four;
+//   heat 0..1: the rage, the maniac (the owner's pick, 2026-11-27): a hot red body hunched and
+//     wide, bulging white eyes with tiny pupils under thin raised brows, a grin ear to ear with
+//     rows of pointed teeth that chomps (`./stepperRage`); the feet and the crest keep the kind's
+//     colour so the four stay four;
 //   tell 0..1: the gaze turns gold, a crouch and a shiver, the glow amber;
 //   fright 0..1: the classic blue (white in the blink), wide eyes with pinprick pupils, a wavy
 //     mouth, a sweat drop, the feet flailing, a tremble.
 // BLINKY the hunter, PINKY the sly, INKY the nervous, CLYDE the dozy: in the lids, the crest, the
-// mouth and the gait, and in the rage in how the brows and the sockets sit.
+// mouth and the gait (the rage's face is one for all four).
 import type { GhostKind } from '../../logic/actors/GhostModel';
+import { drawManicFace } from './stepperRage';
 
 export interface StepperOpts {
 	readonly lookX: number;
@@ -29,49 +30,12 @@ export interface StepperOpts {
 	/** The fright, 0..1; `white` is the blink's white half. */
 	readonly fright?: number;
 	readonly white?: boolean;
-	/** A candidate look of the overheat (prototype `pretender?rage`); the game's own when absent. */
-	readonly rage?: StepperRage;
-}
-
-/** What a look of the overheat sets: the body's colours at full heat and the face's painter. */
-export interface StepperHeat {
-	readonly shade: RGB;
-	readonly base: RGB;
-	readonly light: RGB;
-	readonly core: RGB;
-	/** The soot at the rim, the hairline cracks, the embers. */
-	readonly soot: RGB;
-	readonly crack: RGB;
-	readonly ember: RGB;
-}
-export interface StepperRage {
-	readonly hot: StepperHeat;
-	/** No glow at the heart, no soot, cracks, bubbles or embers: the cel bands and the face only. */
-	readonly clean?: boolean;
-	/** Paints the rage's face in place of the sockets and the grin; (x, y) the face's centre. */
-	readonly face?: (
-		c: CanvasRenderingContext2D,
-		f: {
-			readonly x: number;
-			readonly y: number;
-			readonly alpha: number;
-			readonly open: number;
-			readonly kind: GhostKind;
-			readonly px: number;
-			readonly faceX: number;
-			readonly faceY: number;
-			readonly time: number;
-			readonly slant: readonly [number, number];
-			readonly size: readonly [number, number];
-		}
-	) => void;
 }
 
 type Ctx = CanvasRenderingContext2D;
 type Shape = (c: Ctx, ox: number, oy: number, k: number) => void;
 const TAU = Math.PI * 2;
 const INK = '#1b0f15';
-const ORDER: readonly GhostKind[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
 
 // ----------------------------------------------------------------------------------- colour
 
@@ -120,15 +84,12 @@ const KIND: Readonly<Record<GhostKind, Kind>> = {
 		rim: rgbOf('#ffdca0')
 	}
 };
-/** The overheat: lit lime inside, a deep green rim. */
-const HOT: StepperHeat = {
-	shade: rgbOf('#1b3f0a'),
-	base: rgbOf('#72b81c'),
-	light: rgbOf('#c9fb48'),
-	core: rgbOf('#fbffd2'),
-	soot: [10, 30, 5],
-	crack: [22, 52, 8],
-	ember: [190, 255, 80]
+/** The rage: a hot red body (flat cel bands), a pale core for the crest's tips. */
+const HOT = {
+	shade: rgbOf('#7a1412'),
+	base: rgbOf('#d8341f'),
+	light: rgbOf('#ff7a3a'),
+	core: rgbOf('#ffecaa')
 };
 
 const FRIGHT = {
@@ -162,20 +123,14 @@ const lerpRGB = (a: RGB, b: RGB, t: number): RGB => [
 
 /** The kind's palette taken toward the overheat's by `heat`, or toward the fright's blue (white in
  *  the blink) by `fright`; the rim stays the kind's while it is only hot. */
-function palette(
-	kind: GhostKind,
-	heat: number,
-	fright = 0,
-	white = false,
-	hot: StepperHeat = HOT
-): Pal {
+function palette(kind: GhostKind, heat: number, fright = 0, white = false): Pal {
 	const k = KIND[kind];
 	const h = smooth(0, 1, heat);
 	const scared = white ? WHITE : FRIGHT;
 	const f = clamp(fright, 0, 1);
-	const shade = lerpRGB(lerpRGB(k.shade, hot.shade, h), scared.shade, f);
-	const base = lerpRGB(lerpRGB(k.base, hot.base, h), scared.base, f);
-	const light = lerpRGB(lerpRGB(k.light, hot.light, h), scared.light, f);
+	const shade = lerpRGB(lerpRGB(k.shade, HOT.shade, h), scared.shade, f);
+	const base = lerpRGB(lerpRGB(k.base, HOT.base, h), scared.base, f);
+	const light = lerpRGB(lerpRGB(k.light, HOT.light, h), scared.light, f);
 	return {
 		shade: rgba(shade, 1),
 		base: rgba(base, 1),
@@ -274,18 +229,6 @@ const SOUL: Readonly<
 	INKY: { cover: 0, slant: 0, speed: 1.3, lean: 0, sway: 0.02 },
 	CLYDE: { cover: 0.5, slant: -0.4, speed: 0.75, lean: 0.01, sway: 0.03 }
 };
-/** The rage's sockets per kind: the slant of the left and the right (inner end down), a size. */
-const FURY: Readonly<Record<GhostKind, { slant: [number, number]; size: [number, number] }>> = {
-	BLINKY: { slant: [0.55, 0.55], size: [1, 1] },
-	PINKY: { slant: [0.12, 0.46], size: [1, 1.04] },
-	INKY: { slant: [0.3, 0.18], size: [1, 1.3] },
-	CLYDE: { slant: [0.5, 0.1], size: [0.82, 1.06] }
-};
-const hashOf = (i: number, k: number) => {
-	const s = Math.sin(i * 127.1 + k * 311.7) * 43758.5453;
-	return s - Math.floor(s);
-};
-
 /** A calm eye: a glossy ball, a big pupil on the gaze, two glints, a lid by the kind's mood. */
 function eyeCalm(
 	c: Ctx,
@@ -363,68 +306,6 @@ function eyeCalm(
 	c.arc(x, y, er, 0, TAU);
 	c.strokeStyle = INK;
 	c.lineWidth = Math.max(px * 1.4, er * 0.2);
-	c.stroke();
-	c.restore();
-}
-
-/** A narrow socket and the heavy brow over it; the pupil glows toward the gaze. */
-function socket(
-	c: Ctx,
-	p: Pal,
-	x: number,
-	y: number,
-	size: number,
-	slant: number,
-	side: number,
-	o: StepperOpts,
-	px: number,
-	alpha: number
-): void {
-	if (alpha <= 0.01) return;
-	c.save();
-	c.globalAlpha *= alpha;
-	c.translate(x, y);
-	c.rotate(-side * slant);
-	const w = 0.1 * size;
-	const h = 0.04 * size;
-	c.beginPath();
-	c.moveTo(-w, 0.1 * h);
-	c.quadraticCurveTo(-w * 0.1, -h * 1.9, w, -h * 0.8);
-	c.quadraticCurveTo(w * 0.15, h * 1.5, -w, 0.1 * h);
-	c.closePath();
-	c.fillStyle = INK;
-	c.fill();
-	c.save();
-	c.clip();
-	const gx = o.faceX * w * 0.38;
-	const gy = o.faceY * h * 0.4;
-	const g = c.createRadialGradient(gx, gy, 0, gx, gy, w * 0.95);
-	g.addColorStop(0, 'rgba(253, 255, 214, 1)');
-	g.addColorStop(0.3, 'rgba(236, 255, 140, 0.96)');
-	g.addColorStop(0.75, 'rgba(163, 224, 44, 0.35)');
-	g.addColorStop(1, 'rgba(163, 224, 44, 0)');
-	c.fillStyle = g;
-	c.fillRect(-w * 1.2, -h * 1.4, w * 2.4, h * 2.8);
-	c.restore();
-	c.lineJoin = 'round';
-	c.strokeStyle = INK;
-	c.lineWidth = Math.max(px * 1.6, 0.034);
-	c.stroke();
-	// the brow ridge: a wedge, thick at the nose and tapering out, its lower edge lit
-	const bw = 0.128 * size;
-	c.beginPath();
-	c.moveTo(-bw, -h * 0.75);
-	c.lineTo(-bw * 1.02, -h * 1.75);
-	c.quadraticCurveTo(0, -h * 2.0, bw * 1.08, -h * 2.45);
-	c.quadraticCurveTo(bw * 0.4, -h * 1.5, bw * 0.15, -h * 1.1);
-	c.closePath();
-	c.fillStyle = INK;
-	c.fill();
-	c.beginPath();
-	c.moveTo(-bw * 0.9, -h * 0.8);
-	c.quadraticCurveTo(0, -h * 1.15, bw * 0.55, -h * 1.5);
-	c.strokeStyle = rgba(p.rim, 0.5);
-	c.lineWidth = Math.max(px, 0.011);
 	c.stroke();
 	c.restore();
 }
@@ -542,95 +423,6 @@ function sweat(c: Ctx, x: number, y: number, px: number, alpha: number): void {
 	c.lineJoin = 'round';
 	c.stroke();
 	disc(c, x - 0.012, y, 0.01, '#ffffff');
-	c.restore();
-}
-
-/** The grin that splits the hot body: teeth in cream and shade, a lit gum, the chomp. */
-function grin(
-	c: Ctx,
-	kind: GhostKind,
-	x: number,
-	y: number,
-	open: number,
-	px: number,
-	alpha: number
-): void {
-	if (alpha <= 0.01) return;
-	c.save();
-	c.globalAlpha *= alpha;
-	const W = 0.262;
-	const cy = y - 0.05;
-	const mid = y - 0.025;
-	const bot = y + 0.075 + open * 0.115;
-	const lowCtl = bot * 2 - mid;
-	const path = () => {
-		c.beginPath();
-		c.moveTo(x - W, cy);
-		c.quadraticCurveTo(x, mid - 0.02, x + W, cy);
-		c.quadraticCurveTo(x, lowCtl, x - W, cy);
-		c.closePath();
-	};
-	path();
-	const inner = c.createLinearGradient(0, mid - 0.04, 0, bot);
-	inner.addColorStop(0, '#ffffe8');
-	inner.addColorStop(0.45, '#ecff8c');
-	inner.addColorStop(1, '#9bd62a');
-	c.fillStyle = inner;
-	c.fill();
-	c.save();
-	path();
-	c.clip();
-	const idx = ORDER.indexOf(kind);
-	const N = 7;
-	for (const dir of [1, -1]) {
-		for (let k = 0; k < N; k++) {
-			const t = (k + 0.5) / N;
-			const lx = x + W * (2 * t - 1);
-			const edge =
-				dir === 1
-					? (1 - t) ** 2 * cy + 2 * t * (1 - t) * (mid - 0.02) + t * t * cy
-					: (1 - t) ** 2 * cy + 2 * t * (1 - t) * lowCtl + t * t * cy;
-			const len = (0.065 + 0.05 * hashOf(k + dir * 9, idx)) * (0.55 + 0.8 * Math.sin(Math.PI * t));
-			const tipx = lx + (hashOf(k, idx + dir) - 0.5) * 0.018;
-			const tipy = edge + dir * len;
-			c.beginPath();
-			c.moveTo(lx - 0.034, edge);
-			c.lineTo(tipx, tipy);
-			c.lineTo(lx + 0.034, edge);
-			c.closePath();
-			c.fillStyle = '#f4efd2';
-			c.fill();
-			// the shade side of the tooth
-			c.beginPath();
-			c.moveTo(lx + 0.004, edge);
-			c.lineTo(tipx, tipy);
-			c.lineTo(lx + 0.034, edge);
-			c.closePath();
-			c.fillStyle = '#c9c294';
-			c.fill();
-			c.strokeStyle = INK;
-			c.lineWidth = Math.max(px, 0.012);
-			c.lineJoin = 'round';
-			c.beginPath();
-			c.moveTo(lx - 0.034, edge);
-			c.lineTo(tipx, tipy);
-			c.lineTo(lx + 0.034, edge);
-			c.stroke();
-		}
-	}
-	c.restore();
-	path();
-	c.strokeStyle = INK;
-	c.lineWidth = Math.max(px * 1.9, 0.044);
-	c.lineJoin = 'round';
-	c.stroke();
-	// the creases at the corners of the grin
-	for (const side of [-1, 1]) {
-		c.beginPath();
-		c.moveTo(x + side * (W + 0.004), cy - 0.008);
-		c.lineTo(x + side * (W + 0.026), cy - 0.034);
-		c.stroke();
-	}
 	c.restore();
 }
 
@@ -754,10 +546,8 @@ export function drawStepper(
 	const heat = clamp(o.heat, 0, 1);
 	const tl = clamp(o.tell ?? 0, 0, 1);
 	const fr = clamp(o.fright ?? 0, 0, 1);
-	const hotL = o.rage?.hot ?? HOT;
-	const p = palette(kind, heat, fr, o.white, hotL);
+	const p = palette(kind, heat, fr, o.white);
 	const soul = SOUL[kind];
-	const fury = FURY[kind];
 	const dx = o.lookX || o.lookY ? o.lookX : 0;
 	const dy = o.lookX || o.lookY ? o.lookY : 1;
 	const sx = -dy;
@@ -803,7 +593,7 @@ export function drawStepper(
 		return { gx, gy, lift };
 	});
 	// the feet and the crest keep the kind's own colour, so the four stay four when the body goes lime
-	const kindPal = palette(kind, 0.12 * heat, fr, o.white, hotL);
+	const kindPal = palette(kind, 0.12 * heat, fr, o.white);
 	const footPal = kindPal;
 	const paintFoot = (f: { gx: number; gy: number; lift: number }) => {
 		c.save();
@@ -840,15 +630,13 @@ export function drawStepper(
 	body(c, 0, 0, 1);
 	c.clip();
 	// the gel is lit from inside: a soft glow at its heart, a bright rim at the lower right
-	if (!o.rage?.clean) {
-		const heart = c.createRadialGradient(0.01, 0.03, 0.01, 0.01, 0.03, 0.32);
-		heart.addColorStop(0, rgba(heat > 0.01 ? hotL.core : p.rim, 0.28 + 0.52 * heat));
-		heart.addColorStop(1, rgba(p.glow, 0));
-		c.globalCompositeOperation = 'lighter';
-		c.fillStyle = heart;
-		c.fillRect(-0.4, -0.4, 0.8, 0.8);
-		c.globalCompositeOperation = 'source-over';
-	}
+	const heart = c.createRadialGradient(0.01, 0.03, 0.01, 0.01, 0.03, 0.32);
+	heart.addColorStop(0, rgba(p.rim, 0.28 * (1 - heat)));
+	heart.addColorStop(1, rgba(p.glow, 0));
+	c.globalCompositeOperation = 'lighter';
+	c.fillStyle = heart;
+	c.fillRect(-0.4, -0.4, 0.8, 0.8);
+	c.globalCompositeOperation = 'source-over';
 	c.beginPath();
 	body(c, 0, 0, 1);
 	c.strokeStyle = rgba(p.edge, 0.8);
@@ -874,103 +662,29 @@ export function drawStepper(
 		c.stroke();
 		disc(c, -0.205, -0.075, 0.017, `rgba(255, 255, 255, ${0.7 * gloss})`);
 	}
-	// the heat's marks: a dark vignette at the rim, hairline cracks, bubbles climbing inside
-	if (o.rage?.clean) {
-		// the clean look draws none of the heat's marks
-	} else if (heat > 0.02) {
-		const soot = c.createRadialGradient(0, -0.02, 0.18, 0, -0.02, 0.4);
-		soot.addColorStop(0, rgba(hotL.soot, 0));
-		soot.addColorStop(1, rgba(hotL.soot, 0.5 * heat));
-		c.fillStyle = soot;
-		c.fillRect(-0.4, -0.4, 0.8, 0.8);
-		const idx = ORDER.indexOf(kind);
-		c.strokeStyle = rgba(hotL.crack, 0.75 * heat);
-		c.lineWidth = Math.max(px, 0.014);
-		c.lineCap = 'round';
-		c.lineJoin = 'round';
-		const cox = dx * 0.09;
-		const coy = -0.02 + dy * 0.07 + 0.045 * heat - 0.06;
-		for (const side of [-1, 1]) {
-			for (let k = 0; k < 3; k++) {
-				let ax = cox + side * (0.17 + 0.03 * k);
-				let ay = coy - 0.02 - 0.02 * k;
-				const a0 = -Math.PI / 2 + side * (0.55 + 0.55 * k);
-				c.beginPath();
-				c.moveTo(ax, ay);
-				for (let q = 0; q < 3; q++) {
-					ax += Math.cos(a0 + (hashOf(k + q + side * 5, idx + 3) - 0.5) * 1.1) * 0.05;
-					ay += Math.sin(a0 + (hashOf(k + q + side * 5, idx + 5) - 0.5) * 1.1) * 0.05;
-					c.lineTo(ax, ay);
-				}
-				c.stroke();
-			}
-		}
-		for (let k = 0; k < 3; k++) {
-			const kk = (t * 0.55 + k / 3) % 1;
-			const bxx = -0.15 + k * 0.15 + Math.sin(t * 2 + k) * 0.015;
-			disc(
-				c,
-				bxx,
-				0.2 - kk * 0.36,
-				0.012 + 0.014 * kk,
-				`rgba(251, 255, 210, ${0.6 * (1 - kk) * heat})`
-			);
-		}
-		// the grin's light spilling over the cheeks
-		const spill = c.createRadialGradient(0.0, 0.1, 0.02, 0.0, 0.1, 0.26);
-		spill.addColorStop(0, `rgba(251, 255, 210, ${0.5 * heat})`);
-		spill.addColorStop(1, 'rgba(251, 255, 210, 0)');
-		c.fillStyle = spill;
-		c.fillRect(-0.4, -0.2, 0.8, 0.6);
-	} else {
-		// a calm gel's bubbles
+	// a calm gel's bubbles
+	if (heat <= 0.02) {
 		disc(c, 0.12, 0.1, 0.022, 'rgba(255, 255, 255, 0.22)');
 		disc(c, 0.17, 0.045, 0.012, 'rgba(255, 255, 255, 0.2)');
 	}
 	c.restore();
-	// the face, lowered on the hunched body: calm eyes and mouth fade out as the sockets and grin come in
+	// the face, lowered on the hunched body: calm eyes and mouth fade out as the maniac's face comes in
 	const calm = 1 - smooth(0.2, 0.48, heat);
 	const fury2 = smooth(0.46, 0.74, heat);
 	const fx = dx * 0.09;
 	const fy = -0.02 + dy * 0.07 + 0.045 * heat;
-	for (const [i, side] of [-1, 1].entries()) {
+	for (const side of [-1, 1]) {
 		eyeCalm(c, p, kind, fx + side * 0.145, fy - 0.025, 0.105 + 0.012 * fr, side, o, px, calm, {
 			gold: tl,
 			scared: fr
 		});
-		if (!o.rage?.face)
-			socket(c, p, fx + side * 0.148, fy - 0.04, fury.size[i], fury.slant[i], side, o, px, fury2);
 	}
 	mouthCalm(c, p, kind, fx, fy + 0.15, px, calm * (1 - fr));
 	mouthScared(c, fx, fy + 0.155, px, calm * fr, t);
 	sweat(c, fx + 0.27, fy - 0.2 + ((t * 1.1) % 1) * 0.14, px, fr * (1 - ((t * 1.1) % 1) * 0.7));
-	if (o.rage?.face)
-		o.rage.face(c, {
-			x: fx,
-			y: fy,
-			alpha: fury2,
-			open,
-			kind,
-			px,
-			faceX: o.faceX,
-			faceY: o.faceY,
-			time: t,
-			slant: fury.slant,
-			size: fury.size
-		});
-	else grin(c, kind, fx, fy + 0.095, open, px, fury2);
+	drawManicFace(c, { x: fx, y: fy, alpha: fury2, open, px, faceX: o.faceX, faceY: o.faceY });
 	c.restore();
 	for (const f of feet) if (f.gy >= 0.2) paintFoot(f);
-	// embers off the head
-	if (heat > 0.05 && !o.rage?.clean) {
-		for (let i = 0; i < 3; i++) {
-			const k = (t * 0.7 + i * 0.36) % 1;
-			const ex = (i - 1) * 0.12 + Math.sin(t * 3 + i) * 0.03;
-			const ey = -0.36 - k * 0.2;
-			disc(c, ex, ey, 0.03, rgba(hotL.ember, 0.2 * (1 - k) * heat));
-			disc(c, ex, ey, 0.013, `rgba(251, 255, 210, ${0.95 * (1 - k) * heat})`);
-		}
-	}
 	c.restore();
 }
 

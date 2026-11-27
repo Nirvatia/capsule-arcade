@@ -1,6 +1,6 @@
 // Prototype: the station B-7 as the game draws it (`render/station/b7`: the scene, the hive's
 // takeover, the lamps under its film, the heartbeat) with the game's quarantine ring, its lure
-// (the cyan flare) and its squad, the amoebas (their rage boils lime), on the real maze, in the
+// (the cyan flare) and its squad, the steppers (their rage the red maniac), on the real maze, in the
 // black parasite's hive; the game's Cinnabar vessel walks a corridor. Everything is switched by
 // the buttons on top; a panel shows the squad large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
@@ -50,7 +50,7 @@ const st = {
 };
 
 const NOTES: Record<string, string> = {
-	'rage-now': 'Ярость как в игре: амёба вскипает лаймом',
+	'rage-now': 'Ярость как в игре: красный маньяк',
 	'mimic-now': 'Мимики как в игре: амёбы',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит'

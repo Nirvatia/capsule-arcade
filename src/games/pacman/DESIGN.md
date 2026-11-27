@@ -390,7 +390,7 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   **total takeover** (the owner, 2026-11-26; `b7Hive`) by a **black parasite**: alien organics,
   not the hell's red flesh (the owner: the red read as the hell; alien organics are black and
   parasitic). Black glossy organics with cold wet glints and a **lime life** (the nodes, the
-  cysts, the heartbeat; the squad's rage boils in the same lime): from the lair out, volumetric
+  cysts, the heartbeat): from the lair out, volumetric
   veins first (every wall by 90% infection), then the organics over the wall plates (every wall at
   100%, the escape), cysts, lips over the edges (the corridors' middles stay clean, the walls'
   amber edges keep the maze readable), a soft heartbeat out of the lair every 6 s; the corridor
@@ -409,17 +409,23 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   small worried mouth, an antenna with a lamp that points the way), CLYDE the dozy (heavy lids, the
   tongue out, a droopy lobe, slow). The tell turns the gaze gold with a crouch and a shiver; the
   fright is the classic blue (white in the blink) with wide pinprick pupils, a wavy mouth, a sweat
-  drop and the feet flailing; the **rage** is the **overheat** (one `heat` value, so it comes on as
-  a morph): comic and a little frightening: the body hunched and wide, lit lime from inside to a
-  deep green rim, hairline cracks, narrow glowing sockets under a heavy brow, a grin that splits it
-  and chomps, embers rising, the floor lit; the feet and the crest keep the kind's colour so the four
-  stay four; no afterimages. A soft glow in its state's colour round it so it reads in the dark maze,
+  drop and the feet flailing; the **rage** is **the maniac** (the owner's pick of
+  three characters, 2026-11-27; one `heat` value, so it comes on as a morph): funny and dangerous
+  at once: the body hunched and wide in a hot red (flat cel bands only: no cracks, soot, bubbles,
+  embers or glow at the heart), bulging white eyes with tiny pupils that look along the heading, a
+  thin raised brow over each (apart, never a unibrow), a grin ear to ear with two rows of pointed
+  teeth that chomps (`render/station/stepperRage`; one face for all four kinds); clean drawing: one
+  line weight, flat fills, plain geometry, mirrored; the feet and the crest keep the kind's colour
+  so the four stay four; no afterimages. A soft glow in its state's colour round it so it reads in the dark maze,
   kept inside its tile and faint in the rage (the owner, 2026-11-27: it spilled onto the walls and
   spoiled them; the hero has a warm one on the station too); eaten, its gold eyes run home; for the disguise it
   shrinks and fades as the level's spore comes up in its place. Rejected before it: the amoeba, the
   Pretender in its ivory mask, the inchworm and the slipper (two other candidates of the same
-  round), a first rage with googly eyes and steam (childish, sloppy), a cracked-shell rage (it read
-  as a dark ring at game scale), the parasites. A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
+  round), a first rage with googly eyes and steam (childish, sloppy; the maniac is the same idea
+  drawn clean), a cracked-shell rage (it read as a dark ring at game scale), the lime overheat
+  (cracks, narrow sockets, a crowded grin: sloppy, the faces unreadable at game scale), faces with
+  a unibrow or thick brows or pupils tilted apart, the maw (tiny eyes, a huge fanged mouth with a
+  tongue) and the cyclops (one lit eye, a gap-toothed grin) of the maniac's round, the parasites. A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
   its gold slit eye opening for a moment every few seconds, turned toward him, a tremble when he comes within 3 tiles, the
   breathing out of step; the run's first lurkers teach (a slow fold of 1.5 s at least 5 steps
   along his way, every tell stronger, fading over three ambushes). The tells are the logic's

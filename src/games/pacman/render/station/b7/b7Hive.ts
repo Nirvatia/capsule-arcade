@@ -20,7 +20,7 @@ type Ctx = CanvasRenderingContext2D;
 
 /** The hive's material (the owner, 2026-11-26: alien organics are black and parasitic, the red
  *  flesh read as the hell): black glossy organics, cold wet glints, a lime life in the nodes,
- *  the cysts and the pulse (the squad's rage boils in the same lime). */
+ *  the cysts and the pulse. */
 const P = {
 	ink: '#030405',
 	body: '#15181e',

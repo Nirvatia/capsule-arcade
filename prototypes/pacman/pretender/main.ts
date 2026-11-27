@@ -5,7 +5,6 @@
 // squad's four colours and the game's scale. No station, no play.
 //   `node prototypes/pacman/build.mjs pretender`, open the file. Drawn by the game's own
 //   `render/station/pretender` (in the game since 2026-11-26).
-import { drawRageSheet } from './rage';
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
 import type { GhostKind as SquadKind } from '../../../src/games/pacman/logic/actors/GhostModel';
@@ -155,7 +154,7 @@ const ROWS: readonly (readonly Cell[])[] = [
 			}
 		},
 		{ label: 'сигнал тактики', note: 'золотой взгляд, приседает', draw: (x, y, S, t) => one(x, y, S, t, 'tell', {}) },
-		{ label: 'ярость (побег)', note: 'лайм, зубы, брови вниз', draw: (x, y, S, t) => one(x, y, S, t, 'rage', {}) },
+		{ label: 'ярость (побег)', note: 'красный маньяк: глаза, брови, зубастая улыбка', draw: (x, y, S, t) => one(x, y, S, t, 'rage', {}) },
 		{ label: 'испуг', note: 'дрожь, пот, зигзаг', draw: (x, y, S, t) => one(x, y, S, t, 'fright', {}) },
 		{ label: 'мигание', note: 'конец испуга, 2.2 Гц', draw: (x, y, S, t) => one(x, y, S, t, 'flash', {}) },
 		{ label: 'глаза', note: 'съеден, бежит домой', draw: (x, y, S, t) => one(x, y, S, t, 'eyes', {}) }
@@ -253,14 +252,4 @@ function frame(now: number): void {
 	});
 	requestAnimationFrame(frame);
 }
-if (new URLSearchParams(location.search).has('rage')) {
-	// the stepper's rage, three candidates against the current one on a frozen sheet (rage.ts)
-	const vw = window.innerWidth;
-	const vh = window.innerHeight;
-	view.width = Math.round(vw * D);
-	view.height = Math.round(vh * D);
-	ctx.setTransform(D, 0, 0, D, 0, 0);
-	drawRageSheet(ctx, vw, vh);
-} else {
-	requestAnimationFrame(frame);
-}
+requestAnimationFrame(frame);

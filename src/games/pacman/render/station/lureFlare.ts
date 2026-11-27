@@ -1,7 +1,7 @@
 // The escape's lure (the owner's pick of the `station-b7` page's candidates, 2026-11-26): a cyan
 // signal flare thrown on the deck: the stick, a cyan fire flickering at its tip, sparks shooting
 // up and falling, smoke drifting off. Cyan so it reads in the alarm's red and stays clear of the
-// acid rage, the blue fright and the amber food.
+// red rage, the blue fright and the amber food.
 
 /** The flare's colours (rgb triples): its light, the fire's glow from in to out, the core, the
  *  sparks, the smoke. */
