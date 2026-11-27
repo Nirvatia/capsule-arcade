@@ -27,8 +27,8 @@ type Ctx = CanvasRenderingContext2D;
 type Shape = (c: Ctx, ox: number, oy: number, k: number) => void;
 const TAU = Math.PI * 2;
 
-/** The hero's size against the tile (+10%, the owner, 2026-11-27): a round body, the ice rim and the bow still inside the tile. */
-export const MY_BODY_RATIO = 0.33;
+/** The hero's size against the tile (+10% and then -5%, the owner, 2026-11-27): a round body, the ice rim and the bow still inside the tile. */
+export const MY_BODY_RATIO = 0.3135;
 
 const TEAL: RGB = [8, 52, 80];
 const ICE_WHITE: RGB = [240, 255, 255];
