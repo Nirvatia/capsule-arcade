@@ -265,6 +265,12 @@ last (see Later).
      unwired (`render/net`, `prototypes/pacman/net`; `logic/net`'s drones and doors live on in the
      Port); delete when the owner says. Rules it left: **a boss world must change the objective, not
      only add a tool**; and **there is always a way out: the hero is never slower than what chases him.**
+   - **The Port, played** (2026-11-27): the owner passed it twice without trying; the art was
+     unreadable (every container its own colour, everything coloured at once); "partly works", he is
+     thinking. What he sees in the other two: the hell keeps Pac-Man's tension (you flee the boss's
+     attacks all the time and look for chances), the station is pure Pac-Man, harder, with traps. So
+     **the hunted boss must still threaten the hero** (attacks to flee, not only drones), the world needs
+     **few hues** (one dominant colour, accents rare), and the first pass should be hard.
    - **The Port is the current candidate** (`DESIGN.md` §7d): the hero **hunts a boss** (the Broker,
      a smuggler AI hacking four crane terminals one by one; catch him at a terminal or on the run, three
      bites end him, if he hacks all four he gets away), the port's drones hunt the hero, the yard gates
