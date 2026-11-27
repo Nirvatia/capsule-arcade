@@ -627,6 +627,9 @@ export class MyOrange extends FruitBase {
 
 // ---------------------------------------------------------------------------- the watermelon
 
+const BOW_GOLD: Tones = { shade: [226, 140, 12], base: [255, 206, 52], light: [255, 242, 140] };
+const BOW_GEM: Tones = { shade: [8, 104, 72], base: [38, 192, 128], light: [160, 255, 212] };
+
 const MELON = {
 	rind: { shade: [8, 62, 32], base: [24, 106, 50], light: [62, 160, 80] } as Tones,
 	band: { shade: [186, 218, 164], base: [224, 244, 206], light: [246, 255, 236] } as Tones,
@@ -748,46 +751,83 @@ export class MyMelon extends FruitBase {
 
 	/** The bow on the nape (it sways), the lashes and the eye. */
 	protected drawWorn(ctx: Ctx, R: number, p: number, lx: number, ly: number): void {
-		const L = { lx, ly };
-		ctx.save();
-		ctx.translate(-R * 0.58, -R * 0.7);
-		ctx.rotate(-0.5 + this.sway.value * 0.7);
-		ctx.scale(1.35, 1.35);
-		const frost = (t: Tones): Tones => ({
-			shade: mix(t.shade, [150, 190, 220], p * 0.55) as RGB,
-			base: mix(t.base, [226, 246, 255], p * 0.55) as RGB,
-			light: t.light
+		// the bow: sunny gold ribbon in two teardrop loops and two notched tails, a green gem for a
+		// knot, worn on the nape with the loops along the rim (it sways and frosts in the buff)
+		const phi = -0.22 + this.sway.value * 0.6;
+		const L = {
+			lx: lx * Math.cos(-phi) - ly * Math.sin(-phi),
+			ly: lx * Math.sin(-phi) + ly * Math.cos(-phi)
+		};
+		const small = R < 12;
+		const ink = small ? Math.max(0.7, R * 0.045) : Math.max(1.2, R * 0.065);
+		const frostTo = (t: Tones, k: number): Tones => ({
+			shade: mix(t.shade, [96, 150, 196], k) as RGB,
+			base: mix(t.base, [206, 236, 255], k) as RGB,
+			light: mix(t.light, [255, 255, 255], k) as RGB
 		});
-		const bowTones = frost(MELON.bow);
-		// tails behind, then the loops, then the knot
-		for (const [dx, tilt] of [
-			[-1, -0.25],
-			[1, 0.3]
-		] as const) {
+		const gold = frostTo(BOW_GOLD, p * 0.3);
+		ctx.save();
+		ctx.translate(-R * 0.2, -R * 0.88);
+		ctx.rotate(phi);
+		const f = 1.32;
+		const loop = (side: number): Shape => (c, ox, oy, k) => {
+			c.save();
+			c.translate(ox, oy);
+			c.scale(side * k, k);
+			c.moveTo(0, 0);
+			c.bezierCurveTo(R * 0.08 * f, -R * 0.3 * f, R * 0.52 * f, -R * 0.36 * f, R * 0.58 * f, -R * 0.05 * f);
+			c.bezierCurveTo(R * 0.6 * f, R * 0.28 * f, R * 0.16 * f, R * 0.22 * f, 0, 0);
+			c.restore();
+		};
+		// the tails first, falling back along the rim, the V cut in their ends
+		const back = Math.PI / 2;
+		for (const fan of [-0.32, 0.32]) {
 			const tail: Shape = (c, ox, oy, k) => {
 				c.save();
 				c.translate(ox, oy);
 				c.scale(k, k);
-				c.rotate(tilt);
-				c.moveTo(0, 0);
-				c.lineTo(dx * R * 0.1 - R * 0.07, R * 0.36);
-				c.lineTo(dx * R * 0.1 + R * 0.12, R * 0.3);
-				c.lineTo(R * 0.06, 0);
+				c.rotate(back + fan);
+				c.moveTo(0, -R * 0.05);
+				c.lineTo(R * 0.4, -R * 0.09);
+				c.lineTo(R * 0.32, 0);
+				c.lineTo(R * 0.4, R * 0.09);
+				c.lineTo(0, R * 0.05);
 				c.closePath();
 				c.restore();
 			};
-			cel(ctx, tail, bowTones, L, { sh: R * 0.03, lightK: 0.6, lightOff: R * 0.02, ink: R < 12 ? 0 : Math.max(1.1, R * 0.06), px: 0.6 });
+			cel(ctx, tail, gold, L, { sh: R * 0.03, lightK: 0.6, lightOff: R * 0.02, ink, px: 0.6 });
 		}
-		for (const s of [-1, 1]) {
-			cel(ctx, ell(R * 0.24 * s, 0, R * 0.25, R * 0.16, -s * 0.3), bowTones, L, {
-				sh: R * 0.04,
-				lightK: 0.6,
-				lightOff: R * 0.03,
-				ink: Math.max(1.2, R * 0.07),
-				px: 1
-			});
+		for (const side of [-1, 1]) {
+			cel(ctx, loop(side), gold, L, { sh: R * 0.05, lightK: 0.62, lightOff: R * 0.04, ink, px: 0.6 });
+			// the fold of the ribbon inside the loop, and a glint on its crown
+			ctx.beginPath();
+			ctx.moveTo(side * R * 0.08, -R * 0.02);
+			ctx.quadraticCurveTo(side * R * 0.3 * f, -R * 0.16 * f, side * R * 0.46 * f, -R * 0.06 * f);
+			ctx.strokeStyle = css(gold.shade, 0.85);
+			ctx.lineWidth = Math.max(0.7, R * 0.035);
+			ctx.lineCap = 'round';
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.moveTo(side * R * 0.3 * f, -R * 0.27 * f);
+			ctx.quadraticCurveTo(side * R * 0.44 * f, -R * 0.28 * f, side * R * 0.5 * f, -R * 0.2 * f);
+			ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+			ctx.lineWidth = Math.max(0.8, R * 0.045);
+			ctx.stroke();
 		}
-		cel(ctx, ell(0, 0, R * 0.12, R * 0.12), MELON.knot, L, { sh: R * 0.025, lightK: 0.55, lightOff: R * 0.02, ink: R < 12 ? 0 : Math.max(1.1, R * 0.06), px: 0.6 });
+		// the gem: a cut diamond, a glint
+		const gem: Shape = (c, ox, oy, k) => {
+			c.save();
+			c.translate(ox, oy);
+			c.scale(k, k);
+			c.moveTo(0, -R * 0.19);
+			c.lineTo(R * 0.16, 0);
+			c.lineTo(0, R * 0.19);
+			c.lineTo(-R * 0.16, 0);
+			c.closePath();
+			c.restore();
+		};
+		cel(ctx, gem, BOW_GEM, L, { sh: R * 0.03, lightK: 0.55, lightOff: R * 0.025, ink, px: 0.6 });
+		disc(ctx, -R * 0.04, -R * 0.05, R * 0.03, 'rgba(255,255,255,0.9)');
 		ctx.restore();
 		const ex = R * 0.2;
 		const ey = -R * 0.37;
