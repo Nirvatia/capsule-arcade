@@ -164,7 +164,8 @@ describe('the fence: the quarantine ring', () => {
 			]) {
 				const x = t.x + dx;
 				const y = t.y + dy;
-				if (!s.world.walkable(x, y) || s.world.teleport(x, y) || squad.blocks(x, y)) continue;
+				if (!s.world.walkable(x, y) || s.world.teleport(x, y) || squad.holds(t.x, t.y, x, y))
+					continue;
 				if (seen.has(`${x},${y}`)) continue;
 				seen.add(`${x},${y}`);
 				stack.push({ x, y });
@@ -211,14 +212,70 @@ describe('the fence: the quarantine ring', () => {
 			...x,
 			weak: x === first
 		}));
-		expect(squad.blocks(first.x, first.y)).toBe(true);
 		// he stands before it, facing into it
 		const at = { x: first.x - first.dx, y: first.y - first.dy };
+		expect(squad.holds(at.x, at.y, first.x, first.y)).toBe(true);
 		const facing = first.dx > 0 ? 'RIGHT' : first.dx < 0 ? 'LEFT' : first.dy > 0 ? 'DOWN' : 'UP';
 		for (let t = 0; t < SQUAD_TUNE.breach + 0.1; t += 1 / 60)
 			squad.update(1 / 60, s.ghosts, at, facing);
 		expect(ring.broken).toBe(true);
-		expect(squad.blocks(first.x, first.y)).toBe(false);
+		expect(squad.holds(at.x, at.y, first.x, first.y)).toBe(false);
+	});
+
+	it('holds only a step across the film, the edge between the last tile inside and the seal’s tile', () => {
+		// the film is drawn on that edge: nothing else about the seal’s tile may be shut (it is often a
+		// junction, and a street across it, or the stretch before it, is open to the eye)
+		let seen = 0;
+		let junctions = 0;
+		for (let seed = 1; seed <= 60; seed += 1) {
+			const s = station();
+			release(s);
+			const squad = new StationSquad(s.world, seed);
+			s.ghosts.setSquadGuide(squad);
+			const hero = { x: 12, y: 24 };
+			force(s, squad, hero, 'fence');
+			run(s, squad, hero, SQUAD_TUNE.walk);
+			const ring = squad.ring;
+			if (!ring?.lit) continue;
+			for (const seal of ring.seals) {
+				seen += 1;
+				const inside = { x: seal.x - seal.dx, y: seal.y - seal.dy };
+				// across the film, from either side
+				expect(squad.holds(inside.x, inside.y, seal.x, seal.y)).toBe(!seal.weak || !ring.broken);
+				expect(squad.holds(seal.x, seal.y, inside.x, inside.y)).toBe(!seal.weak || !ring.broken);
+				// the seal’s tile from anywhere else, and the tile before the film, are free
+				for (const [dx, dy] of [
+					[1, 0],
+					[-1, 0],
+					[0, 1],
+					[0, -1]
+				]) {
+					const n = { x: seal.x + dx, y: seal.y + dy };
+					// the edge of the same seal, or of another door into the same tile: held on purpose
+					if (
+						ring.seals.some(
+							(o) => o.x === seal.x && o.y === seal.y && o.x - o.dx === n.x && o.y - o.dy === n.y
+						)
+					)
+						continue;
+					if (!s.world.walkable(n.x, n.y)) continue;
+					junctions += 1;
+					expect(squad.holds(n.x, n.y, seal.x, seal.y)).toBe(false);
+					expect(squad.holds(seal.x, seal.y, n.x, n.y)).toBe(false);
+				}
+				// the grid asks about a tile from the hero’s own: far from the film nothing is shut
+				squad.update(0.001, s.ghosts, { x: 1, y: 1 }, null);
+				expect(squad.blocks(seal.x, seal.y)).toBe(false);
+				expect(squad.blocks(inside.x, inside.y)).toBe(false);
+				// on the last tile inside he is held from the seal’s tile; on it, from the tile inside
+				squad.update(0.001, s.ghosts, inside, null);
+				expect(squad.blocks(seal.x, seal.y)).toBe(!seal.weak || !ring.broken);
+				squad.update(0.001, s.ghosts, { x: seal.x, y: seal.y }, null);
+				expect(squad.blocks(inside.x, inside.y)).toBe(!seal.weak || !ring.broken);
+			}
+		}
+		expect(seen).toBeGreaterThan(5);
+		expect(junctions).toBeGreaterThan(0);
 	});
 });
 

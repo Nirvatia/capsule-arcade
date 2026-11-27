@@ -316,8 +316,10 @@ Numbers are starting points, later in `config/stationConfig.ts`.
      a block's contour and turns at its end, and along the rim it is the maze's own wall. The
      hero's tile is always inside. Two fencers walk to two of its doors (the corridors that leave
      it) as projectors; a **seal**, a pair of steel shutters, stands across every door and he cannot pass (the squad
-     can); one hunts him inside; the fourth is a **phantom**. The block is the barrier to the tile:
-     he cannot enter an open tile outside it. Seen in the hive's bile lime, redrawn clean
+     can); one hunts him inside; the fourth is a **phantom**. A seal holds exactly the step across its edge (the
+     edge between the zone's last tile and the corridor tile outside it, drawn where the shutters
+     stand), from either side, and nothing else: the tile outside is often a junction, and a street
+     across it stays open (it used to be shut whole, an invisible wall; fixed 2026-11-27). Seen in the hive's bile lime, redrawn clean
      (`quarantineRing`; the owner, 2026-11-27, his pick of three candidate seals): the tiles faintly
      tinted, a soft band along the inside of the outline and one crisp pale line on a dark
      under-stroke along the tile edges through the walls (no veins, no plugs, no roots in the

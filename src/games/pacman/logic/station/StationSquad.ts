@@ -282,11 +282,29 @@ export class StationSquad implements SquadGuide {
 		if (this.tactic === 'fence' || this.next === 'fence') this.end(ghosts, 0);
 	}
 
-	/** A lit seal stands there: the hero cannot pass (the squad can); a torn one lets him. */
-	blocks(x: number, y: number): boolean {
+	/**
+	 * Does a lit seal hold a step from (fx, fy) to (tx, ty)? The film stands on the edge between a
+	 * seal's last tile inside the zone and the seal's own tile, so it holds exactly the step across that
+	 * edge, either way (the squad passes; a torn thin seal lets him through). Nothing else about those
+	 * two tiles is shut: the seal's tile is often a junction, and a street across it is open to the eye.
+	 */
+	holds(fx: number, fy: number, tx: number, ty: number): boolean {
 		const r = this.ring;
 		if (!r || !r.lit) return false;
-		return r.seals.some((s) => s.x === x && s.y === y && !(s.weak && r.broken));
+		return r.seals.some((s) => {
+			if (s.weak && r.broken) return false;
+			const ix = s.x - s.dx;
+			const iy = s.y - s.dy;
+			return (
+				(fx === ix && fy === iy && tx === s.x && ty === s.y) ||
+				(fx === s.x && fy === s.y && tx === ix && ty === iy)
+			);
+		});
+	}
+
+	/** The grid's question about a tile, asked from the hero's own: is the step he would take held? */
+	blocks(x: number, y: number): boolean {
+		return this.holds(this.hero.x, this.hero.y, x, y);
 	}
 
 	/** A revealed lurker or venter cannot hurt yet; the hidden do not touch at all. */
