@@ -11,10 +11,10 @@ export const ZONE = {
 	heat: { period: 4.5, warn: 0.7, hot: 1.0 },
 	electra: { period: 4, warn: 0.9, strike: 0.3 },
 	/** A few fields, never on the only way; each holds golden nuts (a pocket worth the risk). */
-	anomalies: { heat: 2, electra: 2, gap: 4, spawnClear: 5 },
+	anomalies: { heat: 1, electra: 1, gap: 4, spawnClear: 5 },
 	golden: { score: 100, nuts: 3 },
 	tushkan: {
-		count: 4,
+		count: 3,
 		hopSpeed: 7.5,
 		rushSpeed: 8,
 		rushT: 1.2,

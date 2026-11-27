@@ -217,20 +217,17 @@ export function hatchSprite(): Cv {
 	});
 }
 
-/** A nut (the dots) or a golden nut (inside an anomaly field). */
+/** A nut (the dots) or a golden nut (inside an anomaly field): a flat hexagon, nothing more. */
 export function nutSprite(golden: boolean): Cv {
 	return made(`nut${golden}`, 48, 48, (g) => {
 		if (golden) {
 			const halo = g.createRadialGradient(24, 24, 2, 24, 24, 24);
-			halo.addColorStop(0, 'rgba(255,214,70,.6)');
+			halo.addColorStop(0, 'rgba(255,214,70,.55)');
 			halo.addColorStop(1, 'rgba(255,214,70,0)');
 			g.fillStyle = halo;
 			g.fillRect(0, 0, 48, 48);
 		}
-		const grad = g.createLinearGradient(8, 8, 40, 40);
-		grad.addColorStop(0, golden ? '#ffe27a' : '#eeeadb');
-		grad.addColorStop(1, golden ? '#c8860f' : '#8f8a74');
-		g.fillStyle = grad;
+		g.fillStyle = golden ? '#ffcf3a' : '#efe9cf';
 		g.beginPath();
 		for (let k = 0; k < 6; k += 1) {
 			const a = (k / 6) * 6.2832 + 0.5236;
@@ -238,15 +235,7 @@ export function nutSprite(golden: boolean): Cv {
 		}
 		g.closePath();
 		g.fill();
-		outline(g, 2.4);
-		g.fillStyle = INK;
-		g.beginPath();
-		g.arc(24, 24, 6, 0, 7);
-		g.fill();
-		g.fillStyle = 'rgba(255,255,255,.75)';
-		g.beginPath();
-		g.arc(18, 17, 2.4, 0, 7);
-		g.fill();
+		outline(g, 2.6);
 	});
 }
 

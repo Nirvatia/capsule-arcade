@@ -477,9 +477,9 @@ in `config/zoneConfig.ts`), the picture in `render/zone` (`zoneBake`, `zoneSprit
   **flee** for 7 s and the hero **eats** them (200, 400, 800, 1600; they return from a burrow), and
   gives its own gift (the real STALKER names): the Medusa (anomalies calm for 8 s), the Kolobok (+25%
   speed for 8 s), the Stone Blood (+1 life), the Battery (bolts to full).
-- **Anomalies are pockets, not walls**: four fields (two heat, two electra), never on the only way
+- **Anomalies are pockets, not walls**: two fields (one heat, one electra), never on the only way
   (the maze stays whole without them), never near the spawn, marked with yellow tape at the corners
-  of every tile so the exact tiles read. Heat pulses on three tiles in a line (warn 0.7 s, hot 1.0 s
+  of the tiles while they warn and fire, so the exact tiles read (calm otherwise). Heat pulses on three tiles in a line (warn 0.7 s, hot 1.0 s
   of 4.5 s); electra strikes its tile and the corridor tiles round it (warn 0.9 s, strike 0.3 s of
   4 s). A hit is one life and always avoidable. **The nuts inside are golden**: +100 and extra
   progress to the next bolt, a risk worth taking. The tushkans walk into them and die.
@@ -488,7 +488,7 @@ in `config/zoneConfig.ts`), the picture in `render/zone` (`zoneBake`, `zoneSprit
   tushkan dies, else it lands as a noise that draws tushkans for 4 s.
 - **The emission is the one big beat**: a calm (30 s, then 40), a siren (7 s), the wave (2.4 s). At
   the wave's peak whoever is out in the open loses two lives; a **bunker hatch** (steel disc with a
-  green ring, eight spread over the corridors) is safe, and an arrow beside the hero points to the
+  green ring, five spread over the corridors) is safe, and an arrow beside the hero points to the
   nearest one. The wave kills every tushkan and the poltergeist (they come back); when it is over the
   fields move.
 - **Goal**: all four artifacts and half of the nuts, and the Monolith (at the hub of the **Ferris

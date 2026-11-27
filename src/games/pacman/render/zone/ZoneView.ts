@@ -120,7 +120,7 @@ export class ZoneView {
 				ctx.fillStyle = g;
 				ctx.fillRect(cx - S * 1.2, cy - S * 1.2, S * 2.4, S * 2.4);
 			}
-			ctx.drawImage(hatchSprite(), cx - S * 0.52, cy - S * 0.52, S * 1.04, S * 1.04);
+			ctx.drawImage(hatchSprite(), cx - S * 0.4, cy - S * 0.4, S * 0.8, S * 0.8);
 		}
 	}
 
@@ -179,7 +179,7 @@ export class ZoneView {
 					continue;
 				}
 				const gold = z.anomalies.covers(x, y);
-				const r = gold ? S * (0.62 + 0.06 * Math.sin(time * 6 + x)) : S * 0.42;
+				const r = gold ? S * (0.5 + 0.05 * Math.sin(time * 6 + x)) : S * 0.32;
 				ctx.drawImage(nutSprite(gold), px(x + 0.5) - r / 2, py(y + 0.5) - r / 2, r, r);
 			}
 		}
@@ -229,7 +229,7 @@ export class ZoneView {
 				} else {
 					this.electraTile(ctx, st, cx, cy, S, time);
 				}
-				if (st !== 'inert') {
+				if (st === 'warn' || st === 'active') {
 					this.brackets(ctx, cx, cy, S);
 				}
 			}
@@ -274,13 +274,7 @@ export class ZoneView {
 			return;
 		}
 		if (st === 'idle') {
-			ctx.strokeStyle = 'rgba(255,170,80,.28)';
-			for (let k = 0; k < 2; k += 1) {
-				const r = S * (0.22 + 0.16 * ((time * 0.7 + k * 0.5 + hash(tx, ty)) % 1));
-				ctx.beginPath();
-				ctx.arc(cx, cy, r, 0, TAU);
-				ctx.stroke();
-			}
+			return;
 		} else if (st === 'warn') {
 			ctx.strokeStyle = `rgba(255,150,40,${0.5 + 0.4 * Math.sin(time * 22)})`;
 			ctx.lineWidth = 3;
@@ -325,7 +319,7 @@ export class ZoneView {
 		ctx.stroke();
 		if (st === 'active') {
 			ctx.fillStyle = 'rgba(160,205,255,.5)';
-			ctx.fillRect(cx - S * 0.52, cy - S * 0.52, S * 1.04, S * 1.04);
+			ctx.fillRect(cx - S * 0.4, cy - S * 0.4, S * 0.8, S * 0.8);
 		}
 	}
 

@@ -13,7 +13,7 @@ export interface ZoneMap {
 	readonly burrows: readonly GridPoint[];
 }
 
-const SHELTERS = 8;
+const SHELTERS = 5;
 const BURROWS = 4;
 
 export function readZoneMap(grid: GridService): ZoneMap {
