@@ -14,7 +14,7 @@ import {
 	type PretenderOpts
 } from '../../../src/games/pacman/render/station/pretender';
 
-import { drawCandidates, drawRageSheet } from './mimicCandidates';
+import { drawArt } from './stepperArt';
 
 type MState = 'hunt' | 'tell' | 'rage' | 'fright' | 'flash' | 'mimic' | 'eyes';
 
@@ -221,15 +221,8 @@ function frame(now: number): void {
 	ctx.setTransform(D, 0, 0, D, 0, 0);
 	ctx.fillStyle = '#15191b';
 	ctx.fillRect(0, 0, vw, vh);
-	if (params.has('rage')) {
-		drawRageSheet(ctx, vw, vh, t, Number(params.get('s') ?? 0));
-		requestAnimationFrame(frame);
-		return;
-	}
-	if (params.has('cand')) {
-		drawCandidates(ctx, vw, vh, t, Number(params.get('s') ?? 0), (x, y, S, kind, dir) =>
-			one(x, y, S, t, 'hunt', { kind, dir })
-		);
+	if (params.has('art')) {
+		drawArt(ctx, vw, vh, t, Number(params.get('s') ?? 0), params.has('big'));
 		requestAnimationFrame(frame);
 		return;
 	}
