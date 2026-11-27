@@ -453,48 +453,6 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   own since 2026-11-26: the owner redraws the vents and the exit in the matrix; the scene's ducts
   and the hatch follow it, `stationLayout`).
 
-## 7b. The night forest (boss level)
-
-Light against the dark (the owner's pick of the boss ideas, 2026-11-27; the look after the manner of
-Alan Wake, the rules ours). Still Pac-Man in a maze, played by the **classic rules** (the fireflies
-are the dots, the flares the energizers, the lives, the lair's ghosts and their ways) with one layer
-on top, so it is a different game from the hell's combat and from the station's stealth.
-
-- **The world**: a night forest seen from above, `grid_nightwood` (for now the classic maze's layout in a
-  file of its own). The walls are pine hedges (four crowns to a wall tile on a regular lattice, neat
-  and even along the trails, the moon-side boughs pale), the corridors packed-earth trails soft at
-  their edges, here and there a fence; in the middle the scorched clearing of the Presence. Cold
-  blue shadows, warm sodium lamps, a white torch. Food is **fireflies**, the energizers red **flares**.
-- **The Taken**: the four ghosts, cloaked figures each under a **shroud** of the Dark Presence (black
-  smoke, cold eyes). A shrouded Taken is harmless to no one: it hunts as a ghost does. Light strips the
-  shroud: in a lamp's pool, in the hero's torch, in a flare's glare (a ray from the light over the maze's
-  grid, so the thickets cut it) it burns away in about a second; in the dark it regrows in four. A
-  Taken whose shroud is gone is **bare and stunned** (the classic fright: it flees, it can be eaten, a
-  pale blue rim) for 4.5 s, then wakes with part of its shroud. An energizer's glare strips every
-  shroud while its power lasts.
-- **The Presence**: the whirl of black arms, smoke and flying wreckage in the clearing (the boss).
-  Every Taken eaten is **banished** (it runs home as eyes and returns shrouded) and takes a fifth of
-  the Presence's power; five and it falls: the **dawn** thins the dark, the heart and the exit
-  appear (`BossRewardService`, the hell's rule). It answers by **putting out the lamps**: one by one
-  (each flickers for 2 s first, at most three out), faster as it weakens; a lamp is lit again by
-  standing on its tile for 0.8 s, shown by a pale ring. It rages (the whirl wider and quicker,
-  more wreckage) as it is hurt.
-- **The torch**: a cone along the hero's heading (7.5 tiles, ±29°) and a halo round him, with a
-  **battery** that drains (25 s) and that every firefly refills; a flare lit by an energizer gives
-  more. The fire key is a **flash**: it costs a third of the battery and strips every shroud
-  within 3.6 tiles in sight (the panic button). With a dead battery only a small halo is left.
-- **No end by the last dot**: when the fireflies are gone the forest glows again (they and the
-  flares come back), so the boss must be beaten. The Easter egg, the abilities and the fruit are off.
-- **HUD**: the autumn's wooden boards (the name "Night forest") and a strip above the board
-  (`NightwoodBar`): the Presence's power and the torch's battery, the lamps lit when some are out.
-- **Look rules** (the owner's remarks on the prototype, 2026-11-27): the trees stand even, not
-  scattered; every creature stays **inside its tile** (the Taken's smoke does not reach out, no
-  legs or wisps: they read as bugs) and the Presence inside its clearing.
-- **Sound**: the game's own cues (a lamp out and lit, the flash) and the siren; no music of its
-  own yet.
-- **In the game**: the dev panel's **Nightwood** (`DebugController.enterNightwood`); `BOSSES` has it,
-  `BOSS_ROTATION` not yet: it joins once the owner has played it.
-
 ## 8. The arcade (secret level)
 
 Our own 80s-style arcade inside the game (not a copy of any existing game's art, rules or
@@ -713,8 +671,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 Each new boss level is still Pac-Man in a maze, but with its own boss, mechanic and way to play;
 the hell is combat, so the others must not be. The order proposed (`ROADMAP.md`, part II, step 3):
 
-- **The station** (§7a): redesigned round a squad and an escape (2026-11-25).
-- **The night forest** (§7b): in the game since 2026-11-27, from the dev panel.
+- **The station** (§7a): redesigned round a squad and an escape (2026-11-25), the focus.
 - **A Bomberman world, "the demolition yard"**: tried and dropped (2026-11-25). Played, it became
   "lay a bomb, step back, wait" in a maze crammed with crates: waiting breaks Pac-Man's constant
   motion, and bombs without the wait are just a weapon, which is the hell's. Its approved look

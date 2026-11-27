@@ -148,7 +148,7 @@
 				<div class="l2">
 					<b>LV {snap.level}</b>{snap.hell ? ' · hell' : ''}{snap.station
 						? ' · station'
-						: ''}{snap.nightwood ? ' · nightwood' : ''}{snap.secret ? ' · secret' : ''} · {snap.profile}
+						: ''}{snap.secret ? ' · secret' : ''} · {snap.profile}
 					· жизни <b>{snap.lives}</b> · счёт <b>{snap.score}</b>
 				</div>
 				{#if perf}
@@ -250,12 +250,6 @@
 					>
 					<button type="button" class="dev-btn" tabindex={-1} onclick={run((d) => d.enterStation())}
 						>Station</button
-					>
-					<button
-						type="button"
-						class="dev-btn"
-						tabindex={-1}
-						onclick={run((d) => d.enterNightwood())}>Nightwood</button
 					>
 					<button
 						type="button"

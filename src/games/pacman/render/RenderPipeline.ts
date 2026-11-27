@@ -6,7 +6,6 @@ import { SharedLayers } from './SharedLayers';
 import { ArcadeLevelRenderer } from './arcade/ArcadeLevelRenderer';
 import { DoomLevelRenderer } from './doom/DoomLevelRenderer';
 import { StationLevelRenderer } from './station/StationLevelRenderer';
-import { NightwoodLevelRenderer } from './nightwood/NightwoodLevelRenderer';
 import { MeadowLevelRenderer } from './seasons/meadow/MeadowLevelRenderer';
 import { meadowThemeFor } from './seasons/meadow/meadowThemes';
 import { EMBER_PALETTE, ICE_PALETTE, LevelDecay } from './transitions/decay/LevelDecay';
@@ -42,8 +41,6 @@ const EGG_LIGHT = 0xffd6ec;
 const SEASON_LIGHT = { light: 0xffe3a0, gap: 0xfff4d6 };
 /** The station's turn: the pale green of its photoluminescent paint. */
 const STATION_LIGHT = { light: 0xbfe9c9, gap: 0xe8fff0 };
-/** The night forest's turn: the pale blue of the moon. */
-const NIGHT_LIGHT = { light: 0xb8d0ea, gap: 0xe6f0ff };
 
 /**
  * Owns the canvas (HiDPI sizing, render clock) and hands each frame to the renderer of the
@@ -63,7 +60,6 @@ export class RenderPipeline {
 	private readonly meadowRenderer: MeadowLevelRenderer;
 	private readonly doomRenderer: DoomLevelRenderer;
 	private readonly stationRenderer: StationLevelRenderer;
-	private readonly nightwoodRenderer: NightwoodLevelRenderer;
 	private readonly decay = new LevelDecay();
 	private readonly turn = new SeasonTurn();
 	private readonly shift = new ArcadeShift();
@@ -104,12 +100,7 @@ export class RenderPipeline {
 		// gameplay effects on the season levels (the hell and the arcade have their own)
 		const unsubscribeFx = events
 			? events.on('fx:event', (fx) => {
-					if (
-						!this.level.secretMode &&
-						!this.level.hellMode &&
-						!this.level.stationMode &&
-						!this.level.nightwoodMode
-					) {
+					if (!this.level.secretMode && !this.level.hellMode && !this.level.stationMode) {
 						this.meadowRenderer.spawnFx(fx);
 					}
 				})
@@ -121,7 +112,6 @@ export class RenderPipeline {
 		this.meadowRenderer = new MeadowLevelRenderer(shared, meadowThemeFor);
 		this.doomRenderer = new DoomLevelRenderer(shared);
 		this.stationRenderer = new StationLevelRenderer(shared);
-		this.nightwoodRenderer = new NightwoodLevelRenderer(shared);
 		this.canvas = document.createElement('canvas');
 		this.canvas.style.display = 'block';
 		container.appendChild(this.canvas);
@@ -324,8 +314,6 @@ export class RenderPipeline {
 		this.quality = quality;
 		this.meadowRenderer.setQuality(quality);
 		this.stationRenderer.setQuality(quality);
-		this.nightwoodRenderer.setQuality(quality);
-		this.nightwoodRenderer.setQuality(quality);
 	}
 
 	get renderQuality(): RenderQuality {
@@ -375,9 +363,6 @@ export class RenderPipeline {
 		if (next.station) {
 			return this.stationRenderer;
 		}
-		if (next.nightwood) {
-			return this.nightwoodRenderer;
-		}
 		return this.meadowRenderer.handles(next.season.name) ? this.meadowRenderer : null;
 	}
 
@@ -395,11 +380,6 @@ export class RenderPipeline {
 			// the station is entered by the cold light of its safety paint
 			const spore = glowTexture(STATION_LIGHT.light);
 			return { ...STATION_LIGHT, particle: () => spore };
-		}
-		if (next.nightwood) {
-			// the forest is entered by the cold light of the moon
-			const moth = glowTexture(NIGHT_LIGHT.light);
-			return { ...NIGHT_LIGHT, particle: () => moth };
 		}
 		const theme = meadowThemeFor(next.season.name);
 		return {
@@ -423,9 +403,6 @@ export class RenderPipeline {
 		}
 		if (this.level.stationMode) {
 			return this.stationRenderer;
-		}
-		if (this.level.nightwoodMode) {
-			return this.nightwoodRenderer;
 		}
 		if (this.level.secretMode) {
 			return this.arcadeRenderer;

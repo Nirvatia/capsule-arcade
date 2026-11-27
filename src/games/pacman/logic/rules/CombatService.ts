@@ -36,8 +36,6 @@ export class CombatService {
 	private hellModeValue = false;
 	/** The station: nothing can be killed there, an energizer frightens nobody. */
 	private stationModeValue = false;
-	/** A boss level that is not won by the last dot (the night forest: the Presence must fall). */
-	private bossRulesValue = false;
 	/** The station's rules take a touch (HP and the rewind) instead of a death. */
 	private stationHit: ((ghost: GhostModel) => void) | null = null;
 	private hellDefeatValue = false;
@@ -217,11 +215,6 @@ export class CombatService {
 		this.ghosts.setVisible(!value);
 	}
 
-	/** A boss level whose end is not the last dot (the night forest's: the dots come back). */
-	setBossRules(value: boolean): void {
-		this.bossRulesValue = value;
-	}
-
 	/** The station: an energizer gives its points but frightens nobody (nothing dies there). */
 	setStationMode(value: boolean): void {
 		this.stationModeValue = value;
@@ -278,7 +271,7 @@ export class CombatService {
 		}
 
 		// the station ends at its hatch, not with the last dot
-		if (this.progress.remainingDots <= 0 && !this.stationModeValue && !this.bossRulesValue) {
+		if (this.progress.remainingDots <= 0 && !this.stationModeValue) {
 			this.completeLevel();
 			return;
 		}

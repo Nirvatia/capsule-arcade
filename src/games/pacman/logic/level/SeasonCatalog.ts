@@ -1,10 +1,4 @@
-import {
-	GRID_CLASSIC,
-	GRID_DOOM,
-	GRID_NIGHTWOOD,
-	GRID_STATION,
-	SEASON_MAZES
-} from '../../config/mazes';
+import { GRID_CLASSIC, GRID_DOOM, GRID_STATION, SEASON_MAZES } from '../../config/mazes';
 import { HELL_LEVEL_INTERVAL } from '../../config/gridConfig';
 import type { GridMatrix } from '../../config/gridConfig';
 import { CYCLE_LENGTH, mazeIndexForSeasonLevel } from './MazeCycle';
@@ -85,11 +79,6 @@ export function hellSeason(): SeasonData {
 /** The station's world (DESIGN.md §7a): its own maze; the name only picks the season tuning. */
 export function stationSeason(): SeasonData {
 	return { name: 'winter', grid: GRID_STATION, maze: 'station' };
-}
-
-/** The night forest's world (DESIGN.md §7b): its own maze; the name only picks the season tuning. */
-export function nightwoodSeason(): SeasonData {
-	return { name: 'autumn', grid: GRID_NIGHTWOOD, maze: 'nightwood' };
 }
 
 /** Per-season gameplay tuning (durations in seconds, speeds as multipliers). */

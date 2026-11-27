@@ -6,18 +6,8 @@ import { GRID_03 } from './grid_03';
 import { GRID_04 } from './grid_04';
 import { GRID_DOOM } from './doom';
 import { GRID_STATION } from './grid_station';
-import { GRID_NIGHTWOOD } from './grid_nightwood';
 
-export {
-	GRID_CLASSIC,
-	GRID_01,
-	GRID_02,
-	GRID_03,
-	GRID_04,
-	GRID_DOOM,
-	GRID_STATION,
-	GRID_NIGHTWOOD
-};
+export { GRID_CLASSIC, GRID_01, GRID_02, GRID_03, GRID_04, GRID_DOOM, GRID_STATION };
 
 /**
  * The four season mazes. Every cycle of four season levels plays all of them, in an order

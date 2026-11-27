@@ -1,6 +1,5 @@
 import type { GridService } from '../maze/GridService';
 import type { StationRun } from '../station/StationRun';
-import type { NightwoodRun } from '../nightwood/NightwoodRun';
 import type { PlayerService } from '../actors/PlayerService';
 import type { GhostService } from '../actors/GhostService';
 import type { LevelProgress } from './LevelProgress';
@@ -25,13 +24,7 @@ import type {
 	PacmanHudPayload
 } from '../../core/Events';
 import { BOSS_HP, PLAYER_MAX_HP } from '../doom/DoomBalance';
-import {
-	seasonForLevel,
-	secretSeason,
-	hellSeason,
-	stationSeason,
-	nightwoodSeason
-} from './SeasonCatalog';
+import { seasonForLevel, secretSeason, hellSeason, stationSeason } from './SeasonCatalog';
 import { bossForLevel } from './BossCatalog';
 import type { BossId } from './BossCatalog';
 import { ARCADE } from '../../config/arcadeConfig';
@@ -45,8 +38,6 @@ export interface NextLevel {
 	readonly hell: boolean;
 	/** The station boss level (DESIGN.md §7a). */
 	readonly station: boolean;
-	/** The night forest boss level (DESIGN.md §7b). */
-	readonly nightwood: boolean;
 	readonly season: SeasonData;
 }
 
@@ -66,7 +57,6 @@ export class LevelLoader {
 	private secretModeValue = false;
 	private hellModeValue = false;
 	private stationModeValue = false;
-	private nightwoodModeValue = false;
 	/** Dev: the boss every boss level gets, or null for the run's own pick (`BossCatalog`). */
 	private forcedBossValue: BossId | null = null;
 	private fireRequestedValue = false;
@@ -131,11 +121,6 @@ export class LevelLoader {
 	/** The station boss level (DESIGN.md §7a). */
 	get stationMode(): boolean {
 		return this.stationModeValue;
-	}
-
-	/** The night forest boss level (DESIGN.md §7b). */
-	get nightwoodMode(): boolean {
-		return this.nightwoodModeValue;
 	}
 
 	/** The dev panel's boss for every boss level, or null: the run's own pick. */
@@ -212,11 +197,6 @@ export class LevelLoader {
 	/** The station's rules (the squad, the escape), on the station level only. */
 	get stationRun(): StationRun | null {
 		return this.sessionValue?.stationRun ?? null;
-	}
-
-	/** The night forest's rules (the shrouds, the light, the Presence), on that level only. */
-	get nightwoodRun(): NightwoodRun | null {
-		return this.sessionValue?.nightwoodRun ?? null;
 	}
 
 	get bossReward(): BossRewardService | null {
@@ -305,7 +285,6 @@ export class LevelLoader {
 			session.doom.boss.reset();
 			session.doom.abilities.reset();
 		}
-		session.nightwoodRun?.onDeath();
 		this.emitHud();
 	}
 
@@ -469,21 +448,18 @@ export class LevelLoader {
 	private worldOf(
 		level: number,
 		secret: boolean
-	): { hell: boolean; station: boolean; nightwood: boolean; season: SeasonData } {
+	): { hell: boolean; station: boolean; season: SeasonData } {
 		const boss = secret ? null : bossForLevel(level, this.mazeSeedValue, this.forcedBossValue);
 		const hell = boss === 'hell';
 		const station = boss === 'station';
-		const nightwood = boss === 'nightwood';
 		const season = secret
 			? secretSeason()
 			: hell
 				? hellSeason()
 				: station
 					? stationSeason()
-					: nightwood
-						? nightwoodSeason()
-						: seasonForLevel(level, this.mazeSeedValue);
-		return { hell, station, nightwood, season };
+					: seasonForLevel(level, this.mazeSeedValue);
+		return { hell, station, season };
 	}
 
 	private secretReturnLevel(): number {
@@ -532,13 +508,9 @@ export class LevelLoader {
 	}
 
 	private buildLevel(): LevelSession {
-		const { hell, station, nightwood, season } = this.worldOf(
-			this.levelNumber,
-			this.secretModeValue
-		);
+		const { hell, station, season } = this.worldOf(this.levelNumber, this.secretModeValue);
 		this.hellModeValue = hell;
 		this.stationModeValue = station;
-		this.nightwoodModeValue = nightwood;
 		const session = buildLevelSession({
 			events: this.events,
 			level: this.levelNumber,
@@ -546,7 +518,6 @@ export class LevelLoader {
 			season,
 			hell,
 			station,
-			nightwood,
 			secret: this.secretModeValue,
 			godMode: this.godModeValue,
 			arcadeRound: this.arcadeRoundValue,
