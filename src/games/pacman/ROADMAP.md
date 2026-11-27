@@ -51,6 +51,14 @@ last (see Later).
    `MsPacmanHero` and their tests; `drawIceBow` moves to the mask) unless the icons want them. The
    menu/HUD icons are simplified vessels since 2026-11-26 (`heroIcon`), the sun and the comet
    are not needed for them.
+   **Fruit heroes** (the owner's mock-up `fresh-citrus-melon-summer-preview.html`, 2026-11-27: an
+   orange slice for Pac-Man, a watermelon slice with a bow for Ms. Pac-Man, an icy buff, the whole
+   fruit in a tunnel): liked, to replace the vessels. Reworked in the `fresh-fruit` prototype page
+   (was / now on the real summer world: the buff keeps the flesh's colour, a tight glow, a darker
+   outline, a dark line under the cut's lip, fewer frost crystals at small sizes; three trail
+   candidates, ribbon / soda / pieces). Left: the owner's pick of the trail, a look on the station's
+   black hive and in the hell (red watermelon on red flesh), then the port into
+   `render/actors/hero` as proper TypeScript (the mock-up's classes are plain JS in the page).
 3. **Mobile: on a real phone.** Swipes/pad/dial/tap/audio-unlock are in and checked in Chromium
    iPhone emulation. Left on real hardware: iOS Safari audio unlock and pinch, swipe threshold
    and pad size under a thumb, notched safe areas, the Auto graphics tier there.
