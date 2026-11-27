@@ -1,10 +1,9 @@
 // Candidates for the quarantine ring's look in the hive's language (prototype, throwaway). The
 // geometry, the phases and the warning contour are the game's (`quarantineRing`); only the lit
 // rim, the zone and the seals are drawn here, three ways:
-//   A  the rope: a pale veined cord with cysts and capillaries, the hive's own flesh grown pale;
-//   B  the membrane: a thin orchid film with veins reaching into the zone, a new hue;
-//   C  the welt: a stitched scar, raised bone-pink in an inflamed halo, the quarantine as a wound
-//      sewn shut.
+//   A  the moss cord: an olive veined cord with cysts, the black hive's own veins grown thick;
+//   B  the bile film: a thin sulfur film with veins reaching into the zone;
+//   C  the ferrofluid: a glossy black ring with a sulfur rim light and spikes rising along it.
 import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
 import {
 	paintGuide,
@@ -37,9 +36,9 @@ interface Pal {
 	sb: number;
 }
 const PAL: Record<RingStyle, Pal> = {
-	A: { dark: '52,10,24', body: '226,152,140', light: '255,228,208', glow: '255,120,100', zone: '120,26,42', wo: 0.36, wb: 0.26, wl: 0.06, so: 0.5, sb: 0.37 },
-	B: { dark: '38,10,62', body: '190,108,228', light: '250,216,255', glow: '180,90,255', zone: '126,44,176', wo: 0.15, wb: 0.085, wl: 0.035, so: 0.34, sb: 0.22 },
-	C: { dark: '52,22,22', body: '228,202,180', light: '255,248,232', glow: '255,84,64', zone: '160,30,30', wo: 0.34, wb: 0.24, wl: 0.05, so: 0.46, sb: 0.34 }
+	A: { dark: '10,14,6', body: '108,126,46', light: '228,238,132', glow: '150,190,40', zone: '30,44,12', wo: 0.36, wb: 0.26, wl: 0.06, so: 0.5, sb: 0.37 },
+	B: { dark: '14,20,6', body: '206,216,112', light: '250,252,204', glow: '170,204,50', zone: '70,96,20', wo: 0.15, wb: 0.085, wl: 0.035, so: 0.34, sb: 0.22 },
+	C: { dark: '6,8,4', body: '20,24,14', light: '214,236,110', glow: '150,200,40', zone: '24,34,10', wo: 0.34, wb: 0.26, wl: 0.05, so: 0.46, sb: 0.36 }
 };
 
 interface Pt {
@@ -111,28 +110,12 @@ function cord(
 		}
 	}
 	if (style === 'C') {
-		// stitches across the welt, a thread over each
-		const h = S * wb * 0.62;
-		for (let i = 1; i < P.length - 1; i += 2) {
-			const p = P[i];
-			const tx = -p.ny;
-			const ty = p.nx;
-			const lean = (hash(i, seed) - 0.5) * 0.5;
-			const ax = p.x + p.nx * h + tx * lean * S * 0.06;
-			const ay = p.y + p.ny * h + ty * lean * S * 0.06;
-			const bx = p.x - p.nx * h - tx * lean * S * 0.06;
-			const by = p.y - p.ny * h - ty * lean * S * 0.06;
-			c.beginPath();
-			c.moveTo(ax, ay);
-			c.lineTo(bx, by);
-			c.strokeStyle = `rgba(${pal.dark}, ${0.85 * alive})`;
-			c.lineWidth = Math.max(1, S * 0.04);
+		// glossy black fluid: a sulfur rim light along both edges
+		for (const side of [-1, 1]) {
+			trace(c, P, side * S * wb * 0.5);
+			c.strokeStyle = `rgba(${pal.light}, ${0.75 * alive})`;
+			c.lineWidth = Math.max(1, S * 0.03);
 			c.stroke();
-			c.beginPath();
-			c.arc(ax, ay, S * 0.03, 0, TAU);
-			c.arc(bx, by, S * 0.03, 0, TAU);
-			c.fillStyle = `rgba(${pal.light}, ${0.9 * alive})`;
-			c.fill();
 		}
 	}
 	trace(c, P, -S * wb * 0.18);
@@ -246,15 +229,31 @@ function extras(
 			c.fill();
 		}
 	} else {
-		// the inflamed halo on the rim's outside
-		c.globalCompositeOperation = 'lighter';
+		// ferrofluid: spikes rise along the rim, taller and shorter as they breathe
 		for (const [lo, hi] of arcs) {
-			trace(c, rimPts(cx, cy, R, S, lo, hi, t), S * 0.18);
-			c.strokeStyle = `rgba(${pal.glow}, ${0.1 * alive})`;
-			c.lineWidth = S * 0.9;
-			c.stroke();
+			const P = rimPts(cx, cy, R, S, lo, hi, t);
+			for (let i = 1; i < P.length - 1; i += 1) {
+				const p = P[i];
+				const k = 0.5 + 0.5 * Math.sin(t * 1.7 + i * 2.3 + hash(i, 7) * 6);
+				for (const side of [1, -1]) {
+					const hgt = S * (side > 0 ? 0.14 + 0.3 * k : 0.08 + 0.14 * k);
+					const bx = p.x + p.nx * side * S * 0.1;
+					const by = p.y + p.ny * side * S * 0.1;
+					const tx = -p.ny * S * 0.05;
+					const ty = p.nx * S * 0.05;
+					c.beginPath();
+					c.moveTo(bx - tx, by - ty);
+					c.lineTo(bx + p.nx * side * hgt, by + p.ny * side * hgt);
+					c.lineTo(bx + tx, by + ty);
+					c.closePath();
+					c.fillStyle = `rgba(${pal.dark}, ${0.95 * alive})`;
+					c.fill();
+					c.strokeStyle = `rgba(${pal.light}, ${0.6 * alive})`;
+					c.lineWidth = Math.max(1, S * 0.02);
+					c.stroke();
+				}
+			}
 		}
-		c.globalCompositeOperation = 'source-over';
 	}
 }
 
