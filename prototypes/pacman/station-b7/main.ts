@@ -9,7 +9,6 @@ import type { QuarantineRing } from '../../../src/games/pacman/logic/station/Sta
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
 import { drawPretender, RailGait, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
 import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
-import { drawRingNew } from './ringLooks';
 import { planZone, zoneSpots, type ZoneKind } from '../../../src/games/pacman/logic/station/QuarantineZone';
 import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
 import { CJ_BODY_RATIO } from '../../../src/games/pacman/render/actors/hero/vesselHero';
@@ -44,25 +43,18 @@ const st = {
 	inf: 0.65,
 	alarm: false,
 	ring: 'cycle' as RingMode,
-	seal: 'now' as 'now' | 'laser' | 'shutter' | 'thread',
 	zoom: 2,
 	mimic: 'now' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
 	big: false
 };
-const initLook = new URLSearchParams(location.search).get('look');
-if (initLook === 'laser' || initLook === 'shutter' || initLook === 'thread') st.seal = initLook;
 
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: красный маньяк',
 	'mimic-now': 'Мимики как в игре: степперы',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит',
-	'seal-now': 'Затвор как в игре: толстая плёнка с прожилками, зона с ореолом',
-	'seal-laser': 'A, лазер: натянутый белый луч, узлы на концах, бежит импульс',
-	'seal-shutter': 'B, створки: две тонкие стальные пластины, светящийся шов между ними',
-	'seal-thread': 'C, нить: тонкая провисающая нить с бусинами, якоря на стенах'
 };
 
 interface Group {
@@ -87,16 +79,6 @@ const GROUPS: Group[] = [
 		after: (v) => {
 			if (v !== 'off') st.alarm = false;
 		}
-	},
-	{
-		label: 'Затвор',
-		key: 'seal',
-		items: [
-			['Сейчас', 'now'],
-			['A лазер', 'laser'],
-			['B створки', 'shutter'],
-			['C нить', 'thread']
-		]
 	},
 	{
 		label: 'Вид',
@@ -195,7 +177,6 @@ function render(): void {
 	}
 	const lines = [
 		st.ring === 'cycle' ? NOTES['ring-cycle'] : '',
-		st.ring !== 'off' ? NOTES[`seal-${st.seal}`] : '',
 		st.mimic !== 'off' ? NOTES[`mimic-${st.mimic}`] : '',
 		st.rage !== 'off' ? NOTES[`rage-${st.rage}`] : '',
 		st.lure !== 'off' ? NOTES[`lure-${st.lure}`] : ''
@@ -542,8 +523,7 @@ function frame(now: number): void {
 		ring.broken = !!ph.broken;
 		const thin = ring.seals.find((x) => x.weak) ?? null;
 		const ringLook = { guide: ph.guide, charge: ph.charge, lit: ph.lit ? 1 : 0, pressed: ph.press ? thin : null, press: ph.press ?? 0 };
-		if (st.seal === 'now') drawRing(ctx, L, ring, ringLook, t);
-		else drawRingNew(ctx, L, ring, ringLook, t, st.seal);
+		drawRing(ctx, L, ring, ringLook, t);
 		for (const p of ring.posts) {
 			const g = new RailGait();
 			drawPretender(ctx, L.offsetX + (p.x + 0.5) * S, L.offsetY + (p.y + 0.5) * S, S, p.kind, ph.lit ? 'hunt' : 'tell', look(g, 0, 1, t));

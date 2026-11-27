@@ -315,14 +315,21 @@ Numbers are starting points, later in `config/stationConfig.ts`.
      its ring is one such island, and the void outside the maze is never in, so the outline follows
      a block's contour and turns at its end, and along the rim it is the maze's own wall. The
      hero's tile is always inside. Two fencers walk to two of its doors (the corridors that leave
-     it) as projectors; a **seal**, a film, stands across every door and he cannot pass (the squad
+     it) as projectors; a **seal**, a pair of steel shutters, stands across every door and he cannot pass (the squad
      can); one hunts him inside; the fourth is a **phantom**. The block is the barrier to the tile:
-     he cannot enter an open tile outside it. Seen as the hive's bile (`quarantineRing`): the tiles
-     faintly tinted, a thin film along the outline through the walls with fine veins reaching in,
-     and across each corridor a brighter curtain; no plugs, no roots in the walls. Tell: the whole
-     outline shows at once as the fencers set out (a dashed amber line on the tile edges, the zone
-     faintly tinted; the owner, 2026-11-26: a ring growing in pieces did not show what it would
-     hold), then the film grows from the seals' roots while they charge (1.5 s): he may slip out.
+     he cannot enter an open tile outside it. Seen in the hive's bile lime, redrawn clean
+     (`quarantineRing`; the owner, 2026-11-27, his pick of three candidate seals): the tiles faintly
+     tinted, a soft band along the inside of the outline and one crisp pale line on a dark
+     under-stroke along the tile edges through the walls (no veins, no plugs, no roots in the
+     walls), and across each corridor the **shutters**: two thin steel leaves in flat bands with
+     amber hazard bars on their free ends and a bolt on each wall end, a lit seam between them
+     (the thin one keeps a flickering gap, shudders under his push, torn wide once it gives). Tell:
+     the whole coming zone shows at once as the fencers set out (an amber hatch on its tiles, a
+     dashed amber line on the tile edges, chevrons running out through every door where a seal
+     will stand; the owner, 2026-11-26: a ring growing in pieces did not show what it would hold),
+     then the shutters close from the walls while the projectors charge (1.5 s) and the warning
+     fades: he may slip out. Rejected on the way: the fat beaded film with its fur of veins (bulky,
+     sloppy), a taut laser beam and a beaded thread.
      It holds about 9 s; the fencers holding it do not bite. **It can be survived** (the owner):
      one zone in two has a thin seal (torn in the middle, flickering) that tears if he pushes into
      it for 0.6 s; the side tunnels lead out too.

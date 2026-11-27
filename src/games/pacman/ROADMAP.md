@@ -175,15 +175,21 @@ last (see Later).
          shape: no circle and no plugs in the walls but **a stepped block of the maze's tiles**,
          each corner cut by its own staircase, walls included, wall islands and the lair never cut
          (`logic/station/QuarantineZone`, tested; `render/station/quarantineRing`). The block holds
-         the hero to the tile; the corridors that leave it carry the film (the seals). The lure
+         the hero to the tile; the corridors that leave it carry the seals. The lure
          is a cyan signal flare (`lureFlare`); the squad's size is the stepper's (0.9 of a tile). The rage
          is the red maniac (2026-11-27, step 6; it was an acid overheat); the flare is cyan; the cells go out at
          the alarm; the rage 10% smaller; the console and the exit are tokens of the matrix (`CN`,
          `EX`; the exit shut until the escape), the breakout comes from the vents and the
          containment's door; the matrix holds one vent pair less until the owner redraws the vents
          and the exit.
-         Left: the seals'
-         curtain reads weaker than the outline (strengthen); the zone's size (9-11 tiles) and the
+         **The zone's art is redrawn** (2026-11-27, the owner: the seals were bulky, the warning and
+         the zone's highlight wanted better art; three candidate seals on the `station-b7` page,
+         his pick: the **shutters**): the seals are two thin steel leaves closing from the walls with
+         hazard bars on their free ends and a lit seam; the outline is one crisp line with a soft band
+         inside and no veins; the warning is an amber hatch, a dashed outline and chevrons on the
+         doors where the seals will stand (`DESIGN.md` §7a). The laser beam and the thread were the
+         other two; not kept. Left: the shutters' weight at station scale (a closed seal reads as a
+         small lit dot with its leaves thin; thicken if the owner wants it bolder); the zone's size (9-11 tiles) and the
          corner cuts by hand; the zone not yet seen in a live game (the logic and the painter are
          tested apart); the frame series of the tell, the charge and the tearing in the game's
          painter; how often the thin seal comes; whether the outline wants a line along the maze's
