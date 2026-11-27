@@ -65,9 +65,14 @@ export class ZoneService {
 	/** The hero was hurt this frame, for a flash: the source. */
 	hurt: ZoneSource | null = null;
 	score = 0;
+	/** Score popups for the screen: where, what, how long ago. */
+	readonly popups: Array<{ x: number; y: number; text: string; gold: boolean; age: number }> = [];
 	private clock = 0;
 	private nutCount = 0;
 	private lastDots = 0;
+	private chain = 0;
+	/** Golden nuts already paid for. */
+	private readonly paid = new Set<string>();
 	private readonly rng;
 	private readonly totalDots: number;
 
@@ -117,6 +122,12 @@ export class ZoneService {
 
 	update(dt: number, want: PlayerDirection | null): void {
 		this.hurt = null;
+		for (const p of this.popups) {
+			p.age += dt;
+		}
+		while (this.popups.length > 0 && this.popups[0].age > 1.1) {
+			this.popups.shift();
+		}
 		if (this.state === 'dead' || this.state === 'cleared') {
 			return;
 		}
@@ -272,7 +283,10 @@ export class ZoneService {
 			}
 			this.taken[i] = true;
 			const art = ARTIFACTS[i % ARTIFACTS.length];
-			this.say(`${art.title}: ${art.note}.`);
+			this.say(`${art.title}: ${art.note}. Тушканы бегут!`);
+			this.tushkans.fear = ZONE.artifacts.fear;
+			this.chain = 0;
+			this.poltergeist.hide();
 			if (art.id === 'medusa') {
 				this.medusaLeft = ZONE.artifacts.medusa;
 			} else if (art.id === 'kolobok') {
@@ -283,6 +297,28 @@ export class ZoneService {
 				this.bolts = this.boltMax;
 			}
 		});
+		// the nuts inside a field are golden: a score and extra progress towards the next bolt
+		for (const a of this.anomalies.list) {
+			for (const p of this.anomalies.zoneOf(a)) {
+				const key = `${p.x},${p.y}`;
+				if (
+					this.grid.isDot(p.x, p.y) &&
+					this.progress.isCollected(p.x, p.y) &&
+					!this.paid.has(key)
+				) {
+					this.paid.add(key);
+					this.score += ZONE.golden.score;
+					this.popups.push({
+						x: p.x + 0.5,
+						y: p.y + 0.5,
+						text: `+${ZONE.golden.score}`,
+						gold: true,
+						age: 0
+					});
+					this.nutCount += ZONE.golden.nuts;
+				}
+			}
+		}
 		if (
 			!this.monolithOpen &&
 			this.artifactsTaken === this.map.artifacts.length &&
@@ -301,21 +337,47 @@ export class ZoneService {
 		}
 		this.tushkans.update(dt, {
 			hero,
+			ahead: this.heroAhead(hero),
 			lure,
 			deadly: (x, y) => this.anomalies.hazardAt(x, y) !== null
 		});
+		const afraid = this.tushkans.fear > 0;
+		if (!afraid) {
+			this.chain = 0;
+		}
 		for (const t of this.tushkans.list) {
 			if (
-				t.state !== 'dead' &&
-				t.state !== 'tired' &&
-				Math.hypot(t.x - this.player.position.x, t.y - this.player.position.y) < ZONE.tushkan.bite
+				t.state === 'dead' ||
+				Math.hypot(t.x - this.player.position.x, t.y - this.player.position.y) >= ZONE.tushkan.bite
 			) {
-				if (!this.player.isInvulnerable) {
-					this.hit(1, 'tushkan');
-					this.tushkans.bitten(t);
-				}
+				continue;
+			}
+			if (afraid) {
+				const worth = ZONE.artifacts.eat * 2 ** this.chain;
+				this.score += worth;
+				this.popups.push({ x: t.x, y: t.y, text: `+${worth}`, gold: false, age: 0 });
+				this.chain = Math.min(3, this.chain + 1);
+				this.tushkans.kill(t);
+			} else if (t.state !== 'tired' && !this.player.isInvulnerable) {
+				this.hit(1, 'tushkan');
+				this.tushkans.bitten(t);
 			}
 		}
+	}
+
+	/** Four tiles ahead of the hero along his heading, as far as the corridor goes. */
+	private heroAhead(hero: GridPoint): GridPoint {
+		const f = this.player.facing ?? this.player.desired;
+		const [dx, dy] = f ? { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[f] : [0, 0];
+		let at = hero;
+		for (let i = 1; i <= 4; i += 1) {
+			const p = { x: hero.x + dx * i, y: hero.y + dy * i };
+			if (!this.grid.isGhostWalkable(p.x, p.y, false)) {
+				break;
+			}
+			at = p;
+		}
+		return at;
 	}
 
 	private poltergeistStep(dt: number, hero: GridPoint): void {
@@ -352,14 +414,8 @@ export class ZoneService {
 	}
 
 	private anomalyHits(hero: GridPoint): void {
-		const a = this.anomalies.hazardAt(hero.x, hero.y);
-		if (a) {
+		if (this.anomalies.hazardAt(hero.x, hero.y)) {
 			this.hit(1, 'anomaly');
-		}
-		const tr = this.anomalies.trampolineAt(hero.x, hero.y);
-		if (tr && !this.player.isDashing) {
-			tr.cooldownUntil = this.anomalies.now + ZONE.trampoline.cooldown;
-			this.player.startDash(ZONE.trampoline.tiles);
 		}
 	}
 }

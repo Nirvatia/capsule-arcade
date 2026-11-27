@@ -31,23 +31,21 @@ describe('the Zone', () => {
 		expect(clock.dangerous).toBe(false);
 	});
 
-	it('puts every anomaly on a free corridor tile, away from the spawn, and keeps the guards by the artifacts', () => {
-		const z = new ZoneService(7);
-		const spawn = z.grid.playerSpawn;
-		for (const a of z.anomalies.list) {
-			expect(z.grid.isGhostWalkable(a.x, a.y, false)).toBe(true);
-			if (!a.anchored) {
+	it('puts every anomaly on a corridor tile away from the spawn and keeps the maze whole without them', () => {
+		for (const seed of [1, 7, 21]) {
+			const z = new ZoneService(seed);
+			const spawn = z.grid.playerSpawn;
+			expect(z.anomalies.list).toHaveLength(ZONE.anomalies.heat + ZONE.anomalies.electra);
+			for (const a of z.anomalies.list) {
+				expect(z.grid.isGhostWalkable(a.x, a.y, false)).toBe(true);
 				expect(Math.abs(a.x - spawn.x) + Math.abs(a.y - spawn.y)).toBeGreaterThanOrEqual(
 					ZONE.anomalies.spawnClear
 				);
 			}
+			const before = z.anomalies.list.map((a) => `${a.x},${a.y}`);
+			z.anomalies.reshuffle();
+			expect(z.anomalies.list.map((a) => `${a.x},${a.y}`)).not.toEqual(before);
 		}
-		expect(z.anomalies.list.filter((a) => a.anchored)).toHaveLength(z.map.artifacts.length);
-		const before = z.anomalies.list.filter((a) => !a.anchored).map((a) => `${a.x},${a.y}`);
-		z.anomalies.reshuffle();
-		expect(z.anomalies.list.filter((a) => !a.anchored).map((a) => `${a.x},${a.y}`)).not.toEqual(
-			before
-		);
 	});
 
 	it('warns before an anomaly fires, and a bolt makes it inert', () => {
@@ -80,11 +78,21 @@ describe('the Zone', () => {
 		const t = z.tushkans.list[0];
 		const start = { x: t.x, y: t.y };
 		for (let i = 0; i < 300; i += 1) {
-			z.tushkans.update(0.05, { hero: { x: 12, y: 6 }, lure: null, deadly: () => false });
+			z.tushkans.update(0.05, {
+				hero: { x: 12, y: 6 },
+				ahead: { x: 12, y: 6 },
+				lure: null,
+				deadly: () => false
+			});
 			expect(z.grid.isGhostWalkable(Math.floor(t.x), Math.floor(t.y), false)).toBe(true);
 		}
 		expect(Math.hypot(t.x - start.x, t.y - start.y)).toBeGreaterThan(0);
-		z.tushkans.update(0.05, { hero: { x: 12, y: 6 }, lure: null, deadly: () => true });
+		z.tushkans.update(0.05, {
+			hero: { x: 12, y: 6 },
+			ahead: { x: 12, y: 6 },
+			lure: null,
+			deadly: () => true
+		});
 		expect(t.state).toBe('dead');
 	});
 
@@ -120,6 +128,10 @@ describe('the Zone', () => {
 		const hid = new ZoneService(4);
 		hid.player.placeAt(hid.map.shelters[0]);
 		for (const z of [open, hid]) {
+			// only the wave: no tushkans, no poltergeist, no anomalies about
+			z.tushkans.list.length = 0;
+			z.poltergeist.timer = 1e9;
+			z.anomalies.disarmAll(1e9);
 			z.emission.skipCalm();
 			for (let i = 0; i < 12 * 20; i += 1) {
 				z.update(0.05, null);
@@ -128,5 +140,52 @@ describe('the Zone', () => {
 		}
 		expect(hid.hp).toBe(ZONE.hp);
 		expect(open.hp).toBeLessThan(ZONE.hp);
+	});
+
+	it('lets the hero eat the fleeing tushkans after an artifact, and does not let them bite then', () => {
+		const z = new ZoneService(6);
+		z.tushkans.fear = 5;
+		const t = z.tushkans.list[0];
+		Object.assign(t, { x: z.player.position.x, y: z.player.position.y, state: 'sniff', timer: 5 });
+		z.update(0.016, null);
+		expect(t.state).toBe('dead');
+		expect(z.score).toBe(ZONE.artifacts.eat);
+		expect(z.hp).toBe(z.hpMax);
+	});
+
+	it('pays golden nuts inside a field', () => {
+		const z = new ZoneService(8);
+		const a = z.anomalies.list.find((f) => f.kind === 'heat');
+		if (!a) {
+			throw new Error('no field');
+		}
+		const p = z.anomalies.zoneOf(a).find((q) => z.grid.isDot(q.x, q.y));
+		if (!p) {
+			throw new Error('no nut in the field');
+		}
+		z.progress.collectAt(p.x, p.y);
+		z.update(0.016, null);
+		expect(z.score).toBeGreaterThanOrEqual(ZONE.golden.score);
+	});
+
+	it('shows the poltergeist when its pause is over, marks the line, throws, and the barrel hurts a hero on the line', () => {
+		const z = new ZoneService(9);
+		z.tushkans.list.length = 0;
+		z.anomalies.disarmAll(1e9);
+		z.emission.update(0);
+		const seen = new Set<string>();
+		let hurtByBarrel = false;
+		for (let i = 0; i < 60 * 40; i += 1) {
+			z.update(1 / 60, null);
+			seen.add(z.poltergeist.state);
+			if (z.hurt === 'barrel') {
+				hurtByBarrel = true;
+			}
+			if (z.state !== 'play') {
+				break;
+			}
+		}
+		expect([...seen]).toEqual(expect.arrayContaining(['away', 'appear', 'aim', 'throw']));
+		expect(hurtByBarrel).toBe(true);
 	});
 });

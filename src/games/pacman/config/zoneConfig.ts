@@ -7,19 +7,20 @@ export const ZONE = {
 	/** The share of nuts that must be taken, besides the artifacts, to open the Monolith. */
 	dotsNeeded: 0.5,
 	/** Seconds: the first calm, the later calm, the siren, the wave; the wave hurts at `peak` of its length. */
-	emission: { first: 22, calm: 30, siren: 6, wave: 2.4, peak: 0.4, hit: 2 },
-	heat: { period: 3.6, warn: 0.5, hot: 1.4 },
-	electra: { period: 2.8, warn: 0.7, strike: 0.3 },
-	trampoline: { tiles: 3, cooldown: 1.2 },
-	anomalies: { heat: 5, electra: 3, trampoline: 3, gap: 3, spawnClear: 4 },
+	emission: { first: 30, calm: 40, siren: 7, wave: 2.4, peak: 0.4, hit: 2 },
+	heat: { period: 4.5, warn: 0.7, hot: 1.0 },
+	electra: { period: 4, warn: 0.9, strike: 0.3 },
+	/** A few fields, never on the only way; each holds golden nuts (a pocket worth the risk). */
+	anomalies: { heat: 2, electra: 2, gap: 4, spawnClear: 5 },
+	golden: { score: 100, nuts: 3 },
 	tushkan: {
-		count: 5,
-		hopSpeed: 7,
-		rushSpeed: 7.5,
+		count: 4,
+		hopSpeed: 7.5,
+		rushSpeed: 8,
 		rushT: 1.2,
 		rushDist: 3,
-		hearDist: 8,
-		sniff: [0.4, 0.9],
+		hearDist: 99,
+		sniff: [0.2, 0.45],
 		hopTiles: [2, 3],
 		tired: 1.0,
 		bite: 0.55,
@@ -35,5 +36,6 @@ export const ZONE = {
 		range: [4, 9],
 		stun: 3
 	},
-	artifacts: { medusa: 8, speed: 8, speedFactor: 1.25 }
+	/** An artifact is also an energizer: the tushkans flee for `fear` seconds and can be eaten (200, 400, 800, 1600). */
+	artifacts: { medusa: 8, speed: 8, speedFactor: 1.25, fear: 7, eat: 200 }
 } as const;

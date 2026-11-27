@@ -21,11 +21,15 @@ export interface Tushkan {
 	/** Facing, for the drawing. */
 	dx: number;
 	dy: number;
+	/** 0 chases, 1 ambushes (where the hero is heading), 2 chases, 3 prowls and rushes when near. */
+	role: number;
 }
 
 export interface TushkanWorld {
 	/** The hero's tile. */
 	readonly hero: GridPoint;
+	/** Four tiles ahead of the hero along his heading (the ambusher's target). */
+	readonly ahead: GridPoint;
 	/** A bolt's noise, while it lasts. */
 	readonly lure: GridPoint | null;
 	/** Does an anomaly hurt on this tile now? */
@@ -42,7 +46,10 @@ export class TushkanPack {
 	readonly list: Tushkan[] = [];
 	private heard: Int16Array;
 	private lureMap: Int16Array;
+	private aheadMap: Int16Array;
 	private refresh = 0;
+	/** Seconds the pack still flees (an artifact was taken). */
+	fear = 0;
 
 	constructor(
 		private readonly grid: GridService,
@@ -53,19 +60,23 @@ export class TushkanPack {
 	) {
 		this.heard = new Int16Array(grid.width * grid.height).fill(-1);
 		this.lureMap = new Int16Array(grid.width * grid.height).fill(-1);
+		this.aheadMap = new Int16Array(grid.width * grid.height).fill(-1);
 		for (let i = 0; i < count; i += 1) {
 			const b = burrows[i % Math.max(1, burrows.length)] ?? { x: 1, y: 1 };
 			const t = this.make(b);
+			t.role = i % 4;
 			t.timer = spread(rng, 0.2, 2.5);
 			this.list.push(t);
 		}
 	}
 
 	update(dt: number, w: TushkanWorld): void {
+		this.fear = Math.max(0, this.fear - dt);
 		this.refresh -= dt;
 		if (this.refresh <= 0) {
 			this.refresh = 0.2;
 			this.fill(this.heard, w.hero);
+			this.fill(this.aheadMap, w.ahead);
 			if (w.lure) {
 				this.fill(this.lureMap, w.lure);
 			}
@@ -129,7 +140,8 @@ export class TushkanPack {
 			timer: 0.5,
 			hopLeft: 0,
 			dx: 1,
-			dy: 0
+			dy: 0,
+			role: 0
 		};
 	}
 
@@ -138,7 +150,9 @@ export class TushkanPack {
 			(b) => Math.abs(b.x - hero.x) + Math.abs(b.y - hero.y) >= ZONE.tushkan.burrowClear
 		);
 		const pool = far.length > 0 ? far : this.burrows;
+		const role = t.role;
 		Object.assign(t, this.make(pool[Math.floor(this.rng() * pool.length)] ?? { x: 1, y: 1 }));
+		t.role = role;
 	}
 
 	private step(t: Tushkan, dt: number, w: TushkanWorld): void {
@@ -149,7 +163,7 @@ export class TushkanPack {
 				return;
 			}
 			const here = this.dist(this.heard, t.fx, t.fy);
-			if (here >= 0 && here <= c.rushDist) {
+			if (this.fear <= 0 && here >= 0 && here <= (t.role === 3 ? c.rushDist + 2 : c.rushDist)) {
 				t.state = 'rush';
 				t.timer = c.rushT;
 			} else {
@@ -158,7 +172,8 @@ export class TushkanPack {
 			}
 			this.aim(t, w);
 		}
-		const speed = (t.state === 'rush' ? c.rushSpeed : c.hopSpeed) * this.speedMul;
+		const speed =
+			(t.state === 'rush' ? c.rushSpeed : c.hopSpeed) * this.speedMul * (this.fear > 0 ? 0.75 : 1);
 		t.p += speed * dt;
 		if (t.state === 'rush') {
 			t.timer -= dt;
@@ -182,17 +197,22 @@ export class TushkanPack {
 		t.y = t.fy + 0.5 + (t.ty - t.fy) * t.p;
 	}
 
-	/** Picks the next tile: down the ear's gradient (the bolt, else the hero), else a wander. */
+	/** Picks the next tile: down the ear's gradient (the bolt, the hero or where he is heading), up it when afraid, else a wander. */
 	private aim(t: Tushkan, w: TushkanWorld): void {
 		const here = { x: t.fx, y: t.fy };
-		const hear = this.dist(this.heard, here.x, here.y);
 		const lureD = w.lure ? this.dist(this.lureMap, here.x, here.y) : -1;
-		const map =
-			lureD >= 0 && lureD <= ZONE.tushkan.hearDist + 4
-				? this.lureMap
-				: hear >= 0 && hear <= ZONE.tushkan.hearDist
-					? this.heard
-					: null;
+		const own = t.role === 1 ? this.aheadMap : this.heard;
+		const hear = this.dist(own, here.x, here.y);
+		let map: Int16Array | null = null;
+		if (this.fear > 0) {
+			map = this.heard;
+		} else if (lureD >= 0 && lureD <= ZONE.tushkan.hearDist) {
+			map = this.lureMap;
+		} else if (t.role !== 3 && hear >= 0) {
+			map = own;
+		} else if (t.role === 3 && this.dist(this.heard, here.x, here.y) <= ZONE.tushkan.rushDist + 4) {
+			map = this.heard;
+		}
 		const opts = [
 			[1, 0],
 			[-1, 0],
@@ -208,10 +228,11 @@ export class TushkanPack {
 		const pick = ahead.length > 0 ? ahead : opts;
 		let best = pick[Math.floor(this.rng() * pick.length)];
 		if (map) {
+			const flee = this.fear > 0 ? -1 : 1;
 			let bd = 1e9;
-			for (const o of opts) {
-				const d = this.dist(map, o.x, o.y);
-				if (d >= 0 && d < bd + (this.rng() < 0.15 ? 1 : 0)) {
+			for (const o of pick) {
+				const d = this.dist(map, o.x, o.y) * flee;
+				if (this.dist(map, o.x, o.y) >= 0 && d < bd) {
 					bd = d;
 					best = o;
 				}

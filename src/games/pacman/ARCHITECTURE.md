@@ -322,8 +322,10 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   The Zone's code (a boss world candidate, `DESIGN.md` §7b): `logic/zone/` (`ZoneService`
   composes `ZoneAnomalies`, `EmissionClock`, `TushkanPack`, `Poltergeist`, `ZoneWishes` over the
   game's `GridService`/`PlayerService`/`LevelProgress`; `ZoneMap` reads artifacts, the Monolith,
-  shelters and burrows from any maze), `config/zoneConfig.ts`, `config/mazes/grid_zone.ts`. Not
-  wired into `LevelSession` or `BossCatalog` yet; it runs in `prototypes/pacman/zone`.
+  shelters and burrows from any maze), `config/zoneConfig.ts`, `config/mazes/grid_zone.ts`; the
+  picture: `render/zone/` (`zoneBake` the baked Pripyat, `zoneSprites` the cached actors and props,
+  `ZoneView` composes them with the live anomalies, the wave and the hints; the caller draws the hero
+  in between). Not wired into `LevelSession` or `BossCatalog` yet; it runs in `prototypes/pacman/zone`.
 - `logic/doom/doomMechanics.test.ts` — pickups, BFG, minions, attack sets per phase,
   fairness (rift, eruption, seals), maze stays connected.
 - `logic/bonuses/bossReward.test.ts` — heart and exit.

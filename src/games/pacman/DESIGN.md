@@ -456,42 +456,56 @@ Numbers are starting points, later in `config/stationConfig.ts`.
 ## 7b. The Zone (boss level candidate, a playable prototype)
 
 The owner's pick of the boss ideas (2026-11-27, after the night forest was dropped): **the pure
-Zone** (STALKER). Not a fight and not a hunt but a read of the field: the maze reads in **full
-light** (a rule for every boss world), the threat is timing. Prototype `prototypes/pacman/zone`
-(placeholder art), the rules are game code in `logic/zone` (`ZoneService`, numbers in
-`config/zoneConfig.ts`). The **location is open**: the owner's three candidates are the Red Forest,
-the Chernobyl power plant and Pripyat; the rules do not depend on it.
+Zone** (STALKER) in **Pripyat** (the location's default, the owner may still pick the Red Forest or
+the Chernobyl power plant), seen from above. First built as a field to read (hazard tiles, waiting
+for pauses); the owner played it: "too much, every step punished, Pac-Man runs on drive". Redone on
+one rule, the **drive test** (a rule for every boss world): the hero never has to wait; only what
+chases him takes a life; everything else on the map helps or offers a risk for a reward; and the
+maze reads in **full light** (no dark mazes).
 
-- **Goal**: take the four artifacts (the corner energizers) and half of the nuts (the dots) and
-  the Monolith (the lair, shut until then) opens; stepping in meets the **Wish Granter**: three
-  wishes offered, each with a price (the monkey's paw: +2 lives, but emissions twice as often; a
-  faster hero, but faster tushkans; ...). The wish changes the next level (`Modifiers`).
+Prototype `prototypes/pacman/zone`; the rules are game code in `logic/zone` (`ZoneService`, numbers
+in `config/zoneConfig.ts`), the picture in `render/zone` (`zoneBake`, `zoneSprites`, `ZoneView`).
+
+- **The chase** (the lives): the **tushkans**, a pack of four rodents, one collar colour each (the
+  role): a chaser, an ambusher (aims where the hero is heading), a chaser, a prowler that rushes when
+  near. They creep, sniff and hop two or three tiles at a time; close to the hero they rush for 1.2 s
+  (faster than he runs) and tire; a bite is one life and the biter leaps back. The **poltergeist**, a
+  fourth character: every 9-13 s it shows itself in a straight clear corridor with the hero, marks the
+  line (yellow-black stripes, 1.1 s), throws a barrel down it (14 tiles a second; it also kills
+  tushkans). Leave the line or sit in a side turn.
+- **The artifacts are the energizers**: the four corner pickups. Taking one makes the tushkans
+  **flee** for 7 s and the hero **eats** them (200, 400, 800, 1600; they return from a burrow), and
+  gives its own gift (the real STALKER names): the Medusa (anomalies calm for 8 s), the Kolobok (+25%
+  speed for 8 s), the Stone Blood (+1 life), the Battery (bolts to full).
+- **Anomalies are pockets, not walls**: four fields (two heat, two electra), never on the only way
+  (the maze stays whole without them), never near the spawn, marked with yellow tape at the corners
+  of every tile so the exact tiles read. Heat pulses on three tiles in a line (warn 0.7 s, hot 1.0 s
+  of 4.5 s); electra strikes its tile and the corridor tiles round it (warn 0.9 s, strike 0.3 s of
+  4 s). A hit is one life and always avoidable. **The nuts inside are golden**: +100 and extra
+  progress to the next bolt, a risk worth taking. The tushkans walk into them and die.
 - **Nuts feed bolts**: one bolt per ten nuts, three in the pocket (Space throws one four tiles
   ahead): the first anomaly it meets goes inert for 8 s, a showing poltergeist is scared off, a
   tushkan dies, else it lands as a noise that draws tushkans for 4 s.
-- **Anomalies** (always visible, the halo spills past the tile so the edge is not exact; every
-  one warns before it fires, so a hit is always avoidable by timing): **heat** pulses on one tile
-  (warn 0.5 s, hot 1.4 s of 3.6 s); **electra** strikes its tile and the corridor tiles round it
-  (warn 0.7 s, strike 0.3 s of 2.8 s); a **trampoline** throws the hero three tiles on. Each
-  artifact is guarded by an electra that covers it.
-- **The emission**: a calm (22 s, then 30 s), a siren (6 s), the wave (2.4 s). At the wave's peak
-  whoever is out in the open loses two lives; a **bunker hatch** in the floor (8, spread over the
-  corridors) is safe. The wave kills every tushkan and the poltergeist (they come back); when it
-  is over the free anomalies move (the guards stay).
-- **Tushkans** (5, rodents): creep, sniff, then hop two or three tiles at a time by ear; close to
-  the hero they rush for 1.2 s (faster than him) and tire; a bite is one life and the biter leaps
-  back. A bolt's noise draws them; they walk into anomalies and die, and return from a burrow.
-- **The poltergeist**: shows itself in a straight clear corridor with the hero, marks the line
-  with a red stripe (1.1 s), throws a barrel down it (14 tiles a second; it also kills tushkans).
-  Leave the line or sit in a side turn. A bolt while it shows scares it for 3 s.
-- **Artifacts** (the real STALKER names): the Medusa (anomalies calm for 8 s), the Kolobok (+25%
-  speed for 8 s), the Stone Blood (+1 life), the Battery (bolts to full).
-- **The hero**: three lives in the Zone, a hit gives 1.4 s of grace; the fruit heroes as in the
-  other worlds. **Open**: the location and its art (code only, medium detail, baked once; the
-  prototype holds 60 fps in headless Chromium without a GPU), the hero's look in the Zone, music,
-  how the level sits in `BOSS_ROTATION`, the owner's own maze (`grid_zone` is the hell's turned
-  upside down; shelters, burrows and the Monolith are read from any maze: dead ends or
-  junctions, the lair's middle, the energizers).
+- **The emission is the one big beat**: a calm (30 s, then 40), a siren (7 s), the wave (2.4 s). At
+  the wave's peak whoever is out in the open loses two lives; a **bunker hatch** (steel disc with a
+  green ring, eight spread over the corridors) is safe, and an arrow beside the hero points to the
+  nearest one. The wave kills every tushkan and the poltergeist (they come back); when it is over the
+  fields move.
+- **Goal**: all four artifacts and half of the nuts, and the Monolith (at the hub of the **Ferris
+  wheel**, the lair's plaza, shut until then) opens; stepping in meets the **Wish Granter**: three
+  wishes, each with a price (the monkey's paw: +2 lives, but emissions twice as often; a faster hero,
+  but faster tushkans; ...). The wish changes the next level (`Modifiers`).
+- **The hero**: three lives in the Zone, a hit gives 1.4 s of grace; the fruit heroes as in the other
+  worlds.
+- **The picture** (the hell's standard: one baked scene, bold cached sprites with a dark outline,
+  nothing hanging): grass and birches round a town of panel-block roofs (the walls, one colour to a
+  building, a parapet, a few hatches, vents and holes with trees), asphalt streets with a dashed
+  centre line, cracks, weeds and puddles (the corridors), a paved plaza with the wheel; the roofs sit
+  in the street (light from the top left, the shadow down and right). Bakes in about a second, then
+  60 fps in headless Chromium without a GPU; no full-screen layer except the wave and the siren's
+  vignette. **Open**: the owner's play and tuning, the location's final pick, the owner's own maze
+  (`grid_zone` is the hell's turned upside down; shelters, burrows and the Monolith are read from any
+  maze), the Zone's HUD and sound, the fruit heroes' look in it, `BOSS_ROTATION`.
 
 ## 8. The arcade (secret level)
 

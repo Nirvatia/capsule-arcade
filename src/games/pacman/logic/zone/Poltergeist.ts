@@ -57,9 +57,10 @@ export class Poltergeist {
 		} else if (this.state === 'aim') {
 			this.state = 'throw';
 			this.barrel = { x: this.at.x + 0.5, y: this.at.y + 0.5, dx: this.dx, dy: this.dy };
-		} else {
+		} else if (this.state === 'stunned') {
 			this.rest();
 		}
+		// away: the pause is over and it waits for `tryAppear` to find a straight corridor
 	}
 
 	/** Tries to show itself on a straight, clear corridor with the hero. Called when `state` is away and the timer is up. */

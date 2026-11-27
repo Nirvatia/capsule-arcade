@@ -255,13 +255,13 @@ last (see Later).
      Wake style does not work in Pac-Man. **A rule for every boss world: the maze reads in full
      light**, no dark mazes (the station's endless dark hid the walls and the enemies too). The
      code, the prototype and the dev entry are removed (the git history keeps them). The owner's
-     pick for the next boss: **the pure Zone** (STALKER, `DESIGN.md` §7b): anomalies, an
-     emission to hide from, bolts, tushkans and a poltergeist, artifacts, the Wish Granter with
-     priced wishes. **A playable prototype is built** (`prototypes/pacman/zone`, placeholder art;
-     the rules are game code in `logic/zone`, tested). Left: the owner's play and tuning
-     (`config/zoneConfig.ts`); **the location, the owner's three candidates: the Red Forest, the
-     Chernobyl power plant, Pripyat** (art in code, medium detail, baked once, no full-screen
-     live layers); his own maze; the Zone's HUD, sound, the fruit heroes' look in it; then wiring
+     pick for the next boss: **the pure Zone** (STALKER, `DESIGN.md` §7b), in **Pripyat** by
+     default. Built twice: the first version (hazard tiles to read) failed the owner's play, the
+     second follows the **drive test** (the hero never waits, only what chases him costs a life) and
+     has the hell's level of art. A playable prototype: `prototypes/pacman/zone` (rules in
+     `logic/zone`, picture in `render/zone`, tested). Left: the owner's play and tuning
+     (`config/zoneConfig.ts`); the location's final pick (Pripyat, the Red Forest or the Chernobyl
+     power plant); his own maze; the Zone's HUD, sound, the fruit heroes' look in it; then wiring
      (`LevelSession`, `BossCatalog`, the dev panel) and the wishes carried through a run.
 
 ## Part III. The interface
