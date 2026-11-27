@@ -9,12 +9,13 @@ import { MeadowWorld } from '../../../src/games/pacman/render/seasons/meadow/Mea
 import { summerTheme } from '../../../src/games/pacman/render/seasons/summer/summerTheme';
 import { FR_BODY_RATIO, OrangeFreshHero, WatermelonFreshHero } from './freshHeroes';
 import { OrangeFreshHero as Orange2, WatermelonFreshHero as Melon2 } from './freshHeroesV2';
+import { MY_BODY_RATIO, MyMelon, MyOrange } from './myFruit';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const D = Math.min(window.devicePixelRatio || 1, 3);
 const params = new URLSearchParams(location.search);
-const st = { melon: params.has('m'), buff: !params.has('calm'), night: params.has('night') ? 1 : 0, paused: false };
+const st = { melon: params.has('m'), buff: !params.has('calm'), night: params.has('night') ? 1 : 0, paused: false, stand: params.has('stand') };
 
 let vw = 0;
 let vh = 0;
@@ -51,33 +52,89 @@ interface Demo {
 	readonly hero: { [k: string]: any };
 	readonly power: boolean;
 	phase: number;
+	readonly ratio?: number;
 }
 let demos: Demo[] = [];
 let rows: Array<{ y: number; x0: number; x1: number }> = [];
 const prevAngle = new Map<Demo, number>();
+interface StandCell {
+	readonly label: string;
+	readonly hero: { [k: string]: any };
+	readonly power: boolean;
+	readonly col: number;
+	readonly row: number;
+	readonly ratio?: number;
+}
+let stand: StandCell[] = [];
+/** The showcase: the owner's reworked hero and mine, calm above and buffed below, large. */
+function rebuildStand(): void {
+	const Now = st.melon ? Melon2 : Orange2;
+	const Mine = st.melon ? MyMelon : MyOrange;
+	const mk = (col: number, row: number, label: string, hero: { [k: string]: any }, power: boolean, ratio?: number): StandCell => ({ label, hero, power, col, row, ratio });
+	const t1 = new Now();
+	t1.trailStyle = 3;
+	const t2 = new Now();
+	t2.trailStyle = 3;
+	stand = [
+		mk(0, 0, 'владельца, доработан: спокойный', t1, false),
+		mk(1, 0, 'моя версия: спокойный', new Mine(), false, MY_BODY_RATIO),
+		mk(0, 1, 'владельца, доработан: бафф', t2, true),
+		mk(1, 1, 'моя версия: бафф', new Mine(), true, MY_BODY_RATIO)
+	];
+}
+
 /** The five rows of the chosen hero: the owner's (was), the reworked (now), three trails. */
 function rebuild(): void {
 	const name = st.melon ? 'арбуз' : 'апельсин';
 	const Was = st.melon ? WatermelonFreshHero : OrangeFreshHero;
 	const Now = st.melon ? Melon2 : Orange2;
-	const now = (style: number, label: string, phase: number): Demo => {
-		const hero = new Now();
-		hero.trailStyle = style;
-		return { label: `${name}: ${label}`, hero, power: st.buff, phase };
-	};
+	const Mine = st.melon ? MyMelon : MyOrange;
+	const theirs = new Now();
+	theirs.trailStyle = 3;
 	demos = [
-		{ label: `${name}: было`, hero: new Was(), power: st.buff, phase: 0 },
-		now(0, 'стало, шлейф как был', 0.15),
-		now(1, 'шлейф 1 струя', 0.3),
-		now(2, 'шлейф 2 волна', 0.45),
-		now(3, 'шлейф 3 шипучий', 0.6)
+		{ label: `${name}: было (макет владельца)`, hero: new Was(), power: st.buff, phase: 0 },
+		{ label: `${name}: он же, доработан, шипучий шлейф`, hero: theirs, power: st.buff, phase: 0.3 },
+		{ label: `${name}: моя версия`, hero: new Mine(), power: st.buff, phase: 0.6, ratio: MY_BODY_RATIO }
 	];
 	rows = corridors(demos.length);
 	prevAngle.clear();
+	rebuildStand();
 }
 
 let simT = 0;
 let last = -1;
+
+function drawStand(step: number): void {
+	const g = ctx.createLinearGradient(0, 0, 0, vh);
+	g.addColorStop(0, '#caa66c');
+	g.addColorStop(1, '#b98f55');
+	ctx.fillStyle = g;
+	ctx.fillRect(0, 0, vw, vh);
+	const top = 54;
+	const cw = vw / 2;
+	const ch = (vh - top) / 2;
+	const Rr = Math.min(cw * 0.1, ch * 0.2);
+	for (const c of stand) {
+		const x0 = c.col * cw;
+		const y0 = top + c.row * ch;
+		ctx.fillStyle = 'rgba(20,18,12,.28)';
+		ctx.fillRect(x0 + 3, y0 + 3, cw - 6, ch - 6);
+		ctx.fillStyle = 'rgba(250,248,242,.95)';
+		ctx.font = '600 13px system-ui, sans-serif';
+		ctx.fillText(c.label, x0 + 14, y0 + 22);
+		const k = Math.sin(simT * 0.9 + c.col * 0.7);
+		const x = x0 + cw / 2 + k * cw * 0.3;
+		const y = y0 + ch / 2 + 8;
+		const angle = Math.cos(simT * 0.9 + c.col * 0.7) >= 0 ? 0 : Math.PI;
+		const prev = standAngle.get(c);
+		if (prev !== undefined && prev !== angle) c.hero.turnKick(prev);
+		standAngle.set(c, angle);
+		c.hero.setRadius(Rr * (c.ratio ? c.ratio / FR_BODY_RATIO : 1));
+		c.hero.update(step, { x, y, angle, look: angle, moving: true, power: c.power, ending: false, season: 'summer' });
+		c.hero.draw(ctx);
+	}
+}
+const standAngle = new Map<StandCell, number>();
 
 function frame(now: number): void {
 	const dt = last < 0 ? 1 / 60 : Math.min(0.05, (now - last) / 1000);
@@ -100,6 +157,11 @@ function frame(now: number): void {
 	ctx.setTransform(D, 0, 0, D, 0, 0);
 	ctx.fillStyle = '#0a0c09';
 	ctx.fillRect(0, 0, vw, vh);
+	if (st.stand) {
+		drawStand(step);
+		requestAnimationFrame(frame);
+		return;
+	}
 	world.drawWorld(ctx);
 	world.drawMood(ctx);
 	const lay = world.layout;
@@ -120,7 +182,7 @@ function frame(now: number): void {
 		const prev = prevAngle.get(d);
 		if (prev !== undefined && prev !== angle) d.hero.turnKick(prev);
 		prevAngle.set(d, angle);
-		d.hero.setRadius(S * FR_BODY_RATIO);
+		d.hero.setRadius(S * (d.ratio ?? FR_BODY_RATIO));
 		d.hero.update(step, { x, y, angle, look: angle, moving: true, power: d.power, ending: false, season: 'summer' });
 		d.hero.draw(ctx);
 		ctx.fillStyle = 'rgba(16,18,14,.78)';
@@ -164,6 +226,25 @@ const groups: Group[] = [
 		items: [
 			['День', () => { st.night = 0; settleNight(); }, () => st.night === 0],
 			['Ночь', () => { st.night = 1; settleNight(); }, () => st.night === 1]
+		]
+	},
+	{
+		label: 'Вид',
+		items: [
+			[
+				'Лабиринт',
+				() => {
+					st.stand = false;
+				},
+				() => !st.stand
+			],
+			[
+				'Витрина (крупно)',
+				() => {
+					st.stand = true;
+				},
+				() => st.stand
+			]
 		]
 	},
 	{

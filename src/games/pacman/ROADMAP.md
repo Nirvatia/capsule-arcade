@@ -56,9 +56,14 @@ last (see Later).
    fruit in a tunnel): liked, to replace the vessels. Reworked in the `fresh-fruit` prototype page
    (was / now on the real summer world: the buff keeps the flesh's colour, a tight glow, a darker
    outline, a dark line under the cut's lip, fewer frost crystals at small sizes; three trail
-   candidates, ribbon / soda / pieces). Left: the owner's pick of the trail, a look on the station's
-   black hive and in the hell (red watermelon on red flesh), then the port into
-   `render/actors/hero` as proper TypeScript (the mock-up's classes are plain JS in the page).
+   candidates, ribbon / soda / pieces). The owner's pick of the trail (2026-11-27): the **fizzy liquid ribbon**, a fixed
+   length of about a tile and a third, no loose particles (the base's embers are off in the buff).
+   Also in the page: **my own fruit heroes** drawn from scratch on the game's `Hero` (`myFruit.ts`, cel
+   bands, a dimpled orange with a leaf and a brow, a striped watermelon with a cream bow and lashes,
+   the same buff and trail) beside the owner's, with a large showcase view. Left: the owner's choice
+   between his heroes and mine; a look on the station's black hive and in the hell (red watermelon on
+   red flesh); then the port into `render/actors/hero` as proper TypeScript (the mock-up's classes
+   are plain JS in the page).
 3. **Mobile: on a real phone.** Swipes/pad/dial/tap/audio-unlock are in and checked in Chromium
    iPhone emulation. Left on real hardware: iOS Safari audio unlock and pinch, swipe threshold
    and pad size under a thumb, notched safe areas, the Auto graphics tier there.
