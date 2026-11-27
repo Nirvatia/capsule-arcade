@@ -80,12 +80,16 @@ last (see Later).
    wander an empty maze) and the BFG too strong. Done: the BFG's orb 350 to 250 and its tracers 150 to
    100 (six orb hits for the boss, was five), the tar pool keeps a margin from its tile's edge (tested).
    **Mock-ups for his approval** (`prototypes/pacman/hell-phase`, built from the game's own hell):
-   (1) **food** for the empty maze, three candidates (souls, bones, eyes); the game turns the drawn
-   maze's dots into floor and `assertDoomMap` demands a map without them, so food needs both changed;
-   its effect (score, heals, the BFG's charge) is open. (2) **the split**: the boss falls into four
-   ghosts, the weapon is shut off and it is plain Pac-Man for a while, four moments (the omen, the
-   split, the Pac-Man phase with a timer, the return with the boss weakened and the weapon back);
-   open: how long, whether the energizers stay, what surviving earns.
+   (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
+   bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a
+   small shadow, no glow): the eye reads best. The game turns the drawn maze's dots into floor and
+   `assertDoomMap` demands a map without them, so food needs both changed; its effect (score, heals, the
+   BFG's charge) is open. (2) **the split**: four still frames were rejected (unconnected, the omen read
+   as a sticker); now a **playable scripted loop** (arrow keys; fight 7 s, the omen, the burst, 22 s of
+   plain Pac-Man with the weapon shut off, the four running back into the lair, the weak boss 4.5 s that a
+   touch hits), on the real hero, maze, food and the ghosts' chase (`PlayerService`, `DronePack`);
+   open: how long, whether the energizers stay (they do in the mock), what surviving earns, the real
+   boss's pathing and attacks instead of the generic chase.
 2. **A random boss on every 5th level, for both heroes**: in (`logic/level/BossCatalog`). It
    draws from `BOSS_ROTATION`, the finished bosses: the hell and the station (since 2026-11-26).
    Left: difficulty scaled by level number, not world, now that a second boss is in.

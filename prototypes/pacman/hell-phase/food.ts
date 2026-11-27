@@ -1,140 +1,121 @@
-// Candidates for the hell's food (the dots): drawn in the hell's cel language, an ink line and two
-// tones, small and still so nothing jumps forward. (x, y) is the tile's centre, S the tile in px.
+// Candidates for the hell's food (the dots), in the hell's cel language: an ink line, two tones, still,
+// no glow (the first round: the souls' glow hurt the eyes, the bones were noisy, the eyes too faint).
+// Now every piece sits on a small dark shadow that parts it from the flesh pattern, lies along its
+// corridor and is the same on every tile. (x, y) is the tile's centre, S the tile in px.
 import { INK } from '../../../src/games/pacman/render/doom/hellGhost';
 
-export type FoodKind = 'soul' | 'bone' | 'eye';
+export type FoodKind = 'bone' | 'fang' | 'eye';
 
-const hash = (a: number, b: number): number => {
-	const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
-	return s - Math.floor(s);
-};
-
-/** A food item on tile (c, r); `look` is the way the eye turns (towards the hero). */
-export function drawFood(
-	ctx: CanvasRenderingContext2D,
-	kind: FoodKind,
-	c: number,
-	r: number,
-	x: number,
-	y: number,
-	S: number,
-	t: number,
-	look: number,
-	axis: number
-): void {
+/** A food item; `look` is the way an eye turns (towards the hero), `axis` the corridor's (0 or PI/2). */
+export function drawFood(ctx: CanvasRenderingContext2D, kind: FoodKind, x: number, y: number, S: number, look: number, axis: number): void {
 	ctx.save();
 	ctx.lineJoin = 'round';
 	ctx.lineCap = 'round';
-	if (kind === 'soul') {
-		soul(ctx, x, y, S, t + hash(c, r) * 6);
-	} else if (kind === 'bone') {
-		bone(ctx, x, y, S, axis + (hash(c, r) - 0.5) * 0.35);
+	ctx.fillStyle = 'rgba(8,1,3,.42)';
+	ctx.beginPath();
+	ctx.ellipse(x + S * 0.03, y + S * 0.06, S * 0.17, S * 0.1, 0, 0, 7);
+	ctx.fill();
+	if (kind === 'bone') {
+		bone(ctx, x, y, S, axis);
+	} else if (kind === 'fang') {
+		fang(ctx, x, y, S);
 	} else {
 		eye(ctx, x, y, S, look);
 	}
 	ctx.restore();
 }
 
-/** A soul: a pale flame with two dark pits for eyes, a faint lilac halo. */
-function soul(ctx: CanvasRenderingContext2D, x: number, y: number, S: number, t: number): void {
-	const sway = Math.sin(t * 3) * S * 0.015;
-	const h = ctx.createRadialGradient(x, y, 0, x, y, S * 0.3);
-	h.addColorStop(0, 'rgba(238,226,255,.38)');
-	h.addColorStop(1, 'rgba(238,226,255,0)');
-	ctx.fillStyle = h;
-	ctx.fillRect(x - S * 0.3, y - S * 0.3, S * 0.6, S * 0.6);
-	ctx.beginPath();
-	ctx.moveTo(x + sway * 2, y - S * 0.2);
-	ctx.bezierCurveTo(x + S * 0.04 + sway, y - S * 0.09, x + S * 0.12, y - S * 0.02, x + S * 0.1, y + S * 0.06);
-	ctx.bezierCurveTo(x + S * 0.09, y + S * 0.12, x - S * 0.09, y + S * 0.12, x - S * 0.1, y + S * 0.06);
-	ctx.bezierCurveTo(x - S * 0.12, y - S * 0.03, x - S * 0.03 + sway, y - S * 0.1, x + sway * 2, y - S * 0.2);
-	ctx.closePath();
-	const g = ctx.createLinearGradient(0, y - S * 0.2, 0, y + S * 0.12);
-	g.addColorStop(0, '#ffffff');
-	g.addColorStop(1, '#c9b6ec');
-	ctx.fillStyle = g;
-	ctx.fill();
-	ctx.lineWidth = Math.max(1.4, S * 0.034);
+const IVORY = '#ecdcbc';
+const SHADE = '#a8946f';
+
+function outline(ctx: CanvasRenderingContext2D, S: number): void {
+	ctx.lineWidth = Math.max(1.6, S * 0.042);
 	ctx.strokeStyle = INK;
 	ctx.stroke();
-	ctx.fillStyle = INK;
-	for (const dx of [-0.035, 0.035]) {
-		ctx.beginPath();
-		ctx.ellipse(x + S * dx, y + S * 0.03, S * 0.014, S * 0.022, 0, 0, 7);
-		ctx.fill();
-	}
 }
 
-/** A knuckle bone: a short shaft, a knob at each end, ivory with a shaded underside. */
+/** A short bone, lying along its corridor. */
 function bone(ctx: CanvasRenderingContext2D, x: number, y: number, S: number, a: number): void {
 	ctx.translate(x, y);
 	ctx.rotate(a);
-	const L = S * 0.2;
+	const L = S * 0.13;
+	const k = S * 0.052;
 	const path = (): void => {
 		ctx.beginPath();
-		ctx.moveTo(-L, -S * 0.03);
-		ctx.arc(-L, -S * 0.05, S * 0.05, Math.PI * 0.5, Math.PI * 1.9);
-		ctx.lineTo(-L * 0.4, -S * 0.04);
-		ctx.lineTo(L * 0.4, -S * 0.04);
-		ctx.arc(L, -S * 0.05, S * 0.05, Math.PI * 1.1, Math.PI * 0.5);
-		ctx.arc(L, S * 0.05, S * 0.05, Math.PI * 1.5, Math.PI * 0.9);
-		ctx.lineTo(L * 0.4, S * 0.04);
-		ctx.lineTo(-L * 0.4, S * 0.04);
-		ctx.arc(-L, S * 0.05, S * 0.05, Math.PI * 0.1, Math.PI * 1.5);
+		ctx.arc(-L, -k * 0.75, k, Math.PI * 0.5, Math.PI * 1.85);
+		ctx.lineTo(-L * 0.3, -k * 0.7);
+		ctx.lineTo(L * 0.3, -k * 0.7);
+		ctx.arc(L, -k * 0.75, k, Math.PI * 1.15, Math.PI * 0.5);
+		ctx.arc(L, k * 0.75, k, Math.PI * 1.5, Math.PI * 0.85);
+		ctx.lineTo(L * 0.3, k * 0.7);
+		ctx.lineTo(-L * 0.3, k * 0.7);
+		ctx.arc(-L, k * 0.75, k, Math.PI * 0.15, Math.PI * 1.5);
 		ctx.closePath();
 	};
 	path();
-	ctx.fillStyle = '#f0e2c8';
+	ctx.fillStyle = IVORY;
 	ctx.fill();
 	ctx.save();
 	path();
 	ctx.clip();
-	ctx.fillStyle = '#a8957a';
-	ctx.fillRect(-S, S * 0.012, S * 2, S);
+	ctx.fillStyle = SHADE;
+	ctx.fillRect(-S, k * 0.2, S * 2, S);
 	ctx.restore();
 	path();
-	ctx.lineWidth = Math.max(1.4, S * 0.034);
-	ctx.strokeStyle = INK;
-	ctx.stroke();
-	ctx.fillStyle = 'rgba(255,255,255,.7)';
-	ctx.fillRect(-L * 0.5, -S * 0.03, L, S * 0.012);
+	outline(ctx, S);
 }
 
-/** An eyeball: ivory, red veins, a dark red iris turned to the hero, a glint. */
-function eye(ctx: CanvasRenderingContext2D, x: number, y: number, S: number, look: number): void {
-	const R = S * 0.13;
-	const g = ctx.createRadialGradient(x - R * 0.35, y - R * 0.4, R * 0.1, x, y, R);
-	g.addColorStop(0, '#fff6e6');
-	g.addColorStop(1, '#d8c2a6');
-	ctx.beginPath();
-	ctx.arc(x, y, R, 0, 7);
+/** A fang: a small curved tooth, the point down. */
+function fang(ctx: CanvasRenderingContext2D, x: number, y: number, S: number): void {
+	const w = S * 0.085;
+	const h = S * 0.2;
+	const path = (): void => {
+		ctx.beginPath();
+		ctx.moveTo(x - w, y - h * 0.5);
+		ctx.quadraticCurveTo(x - w * 0.95, y + h * 0.1, x, y + h * 0.58);
+		ctx.quadraticCurveTo(x + w * 0.95, y + h * 0.1, x + w, y - h * 0.5);
+		ctx.quadraticCurveTo(x, y - h * 0.68, x - w, y - h * 0.5);
+		ctx.closePath();
+	};
+	path();
+	const g = ctx.createLinearGradient(x - w, 0, x + w, 0);
+	g.addColorStop(0, '#f6ead0');
+	g.addColorStop(1, SHADE);
 	ctx.fillStyle = g;
 	ctx.fill();
-	ctx.strokeStyle = 'rgba(170,30,40,.75)';
-	ctx.lineWidth = Math.max(1, S * 0.014);
-	for (const a of [0.5, 2.3, 4.0]) {
-		ctx.beginPath();
-		ctx.moveTo(x + Math.cos(a) * R * 0.95, y + Math.sin(a) * R * 0.95);
-		ctx.lineTo(x + Math.cos(a + 0.2) * R * 0.5, y + Math.sin(a + 0.2) * R * 0.5);
-		ctx.stroke();
-	}
-	ctx.lineWidth = Math.max(1.4, S * 0.034);
-	ctx.strokeStyle = INK;
+	path();
+	outline(ctx, S);
+	ctx.fillStyle = 'rgba(255,255,255,.65)';
+	ctx.fillRect(x - w * 0.55, y - h * 0.38, S * 0.014, h * 0.4);
+}
+
+/** An eyeball, bigger and plainer than before: a white ball, a red iris turned to the hero. */
+function eye(ctx: CanvasRenderingContext2D, x: number, y: number, S: number, look: number): void {
+	const R = S * 0.17;
 	ctx.beginPath();
 	ctx.arc(x, y, R, 0, 7);
-	ctx.stroke();
-	const ix = x + Math.cos(look) * R * 0.38;
-	const iy = y + Math.sin(look) * R * 0.38;
-	ctx.fillStyle = '#8a1218';
+	ctx.fillStyle = '#fff8ec';
+	ctx.fill();
+	ctx.save();
+	ctx.clip();
+	ctx.fillStyle = 'rgba(170,150,120,.5)';
+	ctx.fillRect(x - R, y + R * 0.25, R * 2, R);
+	ctx.restore();
 	ctx.beginPath();
-	ctx.arc(ix, iy, R * 0.5, 0, 7);
+	ctx.arc(x, y, R, 0, 7);
+	outline(ctx, S);
+	const ix = x + Math.cos(look) * R * 0.42;
+	const iy = y + Math.sin(look) * R * 0.42;
+	ctx.fillStyle = '#c4202a';
+	ctx.beginPath();
+	ctx.arc(ix, iy, R * 0.62, 0, 7);
 	ctx.fill();
 	ctx.fillStyle = INK;
 	ctx.beginPath();
-	ctx.arc(ix, iy, R * 0.26, 0, 7);
+	ctx.arc(ix, iy, R * 0.32, 0, 7);
 	ctx.fill();
-	ctx.fillStyle = 'rgba(255,255,255,.85)';
+	ctx.fillStyle = 'rgba(255,255,255,.9)';
 	ctx.beginPath();
-	ctx.arc(ix - R * 0.16, iy - R * 0.18, R * 0.1, 0, 7);
+	ctx.arc(ix - R * 0.18, iy - R * 0.2, R * 0.13, 0, 7);
 	ctx.fill();
 }
