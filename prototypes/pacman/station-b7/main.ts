@@ -9,6 +9,7 @@ import type { QuarantineRing } from '../../../src/games/pacman/logic/station/Sta
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
 import { drawPretender, RailGait, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
 import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
+import { drawRingNew } from './ringLooks';
 import { planZone, zoneSpots, type ZoneKind } from '../../../src/games/pacman/logic/station/QuarantineZone';
 import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
 import { CJ_BODY_RATIO } from '../../../src/games/pacman/render/actors/hero/vesselHero';
@@ -490,7 +491,10 @@ function frame(now: number): void {
 		ring.lit = ph.lit;
 		ring.broken = !!ph.broken;
 		const thin = ring.seals.find((x) => x.weak) ?? null;
-		drawRing(ctx, L, ring, { guide: ph.guide, charge: ph.charge, lit: ph.lit ? 1 : 0, pressed: ph.press ? thin : null, press: ph.press ?? 0 }, t);
+		const ringLook = { guide: ph.guide, charge: ph.charge, lit: ph.lit ? 1 : 0, pressed: ph.press ? thin : null, press: ph.press ?? 0 };
+		const sealLook = q.get('look');
+		if (sealLook === 'laser' || sealLook === 'shutter' || sealLook === 'thread') drawRingNew(ctx, L, ring, ringLook, t, sealLook);
+		else drawRing(ctx, L, ring, ringLook, t);
 		for (const p of ring.posts) {
 			const g = new RailGait();
 			drawPretender(ctx, L.offsetX + (p.x + 0.5) * S, L.offsetY + (p.y + 0.5) * S, S, p.kind, ph.lit ? 'hunt' : 'tell', look(g, 0, 1, t));
