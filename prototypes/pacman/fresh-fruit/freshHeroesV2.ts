@@ -295,22 +295,34 @@ export var FreshFruitBase = class extends Hero {
 		const p = this.power;
 		const t = this.time;
 		const style = this.trailStyle;
-		const long = 1 + .45 * p;
-		const raw = this.wake.points(t, { life: .62 * long, width: R * 1.0, capHead: R * .55, capTail: R * 2.7 })[0];
+		// the length is fixed in tiles, not in time, so a fast hero does not trail a snake: about a
+		// tile and a third (`kit.len` in body radii), tapering to nothing at its end
+		const raw = this.wake.points(t, { life: .5, width: R, capHead: R * .3, capTail: R * 1.5 })[0];
 		if (!raw || raw.length < 5) return;
+		const maxLen = R * (kit.len ?? 4.4);
+		const cut = [];
+		let acc = 0;
+		for (let i = 0; i < raw.length; i++) {
+			if (i > 0) acc += Math.hypot(raw[i].x - raw[i - 1].x, raw[i].y - raw[i - 1].y);
+			if (acc > maxLen) break;
+			cut.push({ q: raw[i], s: acc });
+		}
+		if (cut.length < 5) return;
+		const total = Math.max(1, cut[cut.length - 1].s);
 		const amp = style === 2 ? .3 : .13;
 		const wave = style === 2 ? 17 : 9;
-		const pts = raw.map((q) => {
-			const ramp = Math.min(1, q.u * 4);
-			const off = Math.sin(q.u * 6.5 - t * 7.5) * R * (style === 2 ? .13 : .09) * Math.min(1, q.u * 3) * (kit.flip ?? 1);
+		const pts = cut.map(({ q, s: sAlong }) => {
+			const u = sAlong / total;
+			const ramp = Math.min(1, u * 5);
+			const off = Math.sin(u * 6.5 - t * 7.5) * R * (style === 2 ? .13 : .09) * Math.min(1, u * 3) * (kit.flip ?? 1);
 			return {
 				x: q.x + q.nx * off,
 				y: q.y + q.ny * off,
 				nx: q.nx,
 				ny: q.ny,
-				u: q.u,
-				a: q.a,
-				w: q.w * (1 + amp * Math.sin(q.u * wave - t * 9) * ramp)
+				u,
+				a: 1,
+				w: R * .95 * ramp * Math.pow(1 - u, .85) * (1 + amp * Math.sin(u * wave - t * 9) * ramp)
 			};
 		});
 		const head = pts[0];
