@@ -1,8 +1,9 @@
 // Candidate for the quarantine zone (prototype, throwaway): the owner's pick of the ring's look,
-// the bile film, on a zone cut out of the maze like a piece of a mosaic instead of a circle.
-// The zone is the open tiles within a graph distance of a point; its outline runs along the
-// walls (they close it by themselves) and crosses a corridor wherever it leaves the zone: there
-// the film stands across the corridor and holds the hero. No plugs, no roots in the walls.
+// the bile film, on a zone of tiles instead of a circle: a stepped figure, walls and corridors
+// alike, like a piece of a mosaic (every corner cut by a staircase of its own, so it differs from
+// one part of the maze to another; the maze's rim cuts it too). Its outline is the film: thin
+// along the tile edges through the walls, a bright curtain where it crosses a corridor and holds
+// the hero. No plugs, no roots in the walls.
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 
 const TAU = Math.PI * 2;
@@ -25,8 +26,8 @@ export interface Zone {
 	readonly tiles: ReadonlySet<number>;
 	readonly W: number;
 	readonly doors: readonly Door[];
-	/** Zone tiles whose side is a wall: [x, y, dx, dy]. */
-	readonly walls: ReadonlyArray<readonly [number, number, number, number]>;
+	/** The rest of the outline, through the walls: [x, y, dx, dy] of a zone tile's side. */
+	readonly edges: ReadonlyArray<readonly [number, number, number, number]>;
 	posts: Array<{ kind: GhostKind; x: number; y: number; a: number; charge: number }>;
 	lit: boolean;
 	push: number;
@@ -55,8 +56,8 @@ const DIRS = [
 ] as const;
 
 /**
- * The zone round a tile: the open tiles within the graph distance that keeps them under `budget`
- * (whole layers), so the shape follows the maze: a piece of it, not a disc.
+ * The zone round a tile: a block of 9-11 tiles a side kept inside the maze, each corner cut by a
+ * staircase (its depth and its step, 1 or 2 tiles wide, drawn by the seed), so no two look alike.
  */
 export function planZone(
 	open: (x: number, y: number) => boolean,
@@ -64,42 +65,42 @@ export function planZone(
 	H: number,
 	tx: number,
 	ty: number,
-	budget: number
+	seed: number
 ): Zone {
-	const dist = new Map<number, number>([[ty * W + tx, 0]]);
-	const order = [ty * W + tx];
-	for (let i = 0; i < order.length; i++) {
-		const k = order[i];
-		const x = k % W;
-		const y = Math.floor(k / W);
-		for (const [dx, dy] of DIRS) {
-			const nx = x + dx;
-			const ny = y + dy;
-			if (!open(nx, ny) || dist.has(ny * W + nx)) continue;
-			dist.set(ny * W + nx, (dist.get(k) as number) + 1);
-			order.push(ny * W + nx);
+	const w = 9 + Math.floor(hash(seed, 1) * 3);
+	const h = 9 + Math.floor(hash(seed, 2) * 3);
+	const x0 = Math.max(0, Math.min(W - w, tx - Math.floor(w / 2)));
+	const y0 = Math.max(0, Math.min(H - h, ty - Math.floor(h / 2)));
+	const corner = [0, 1, 2, 3].map((i) => ({
+		depth: 1 + Math.floor(hash(seed, 10 + i) * 5),
+		kx: 1 + Math.floor(hash(seed, 20 + i) * 2),
+		ky: 1 + Math.floor(hash(seed, 30 + i) * 2)
+	}));
+	const tiles = new Set<number>();
+	for (let y = y0; y < y0 + h; y++)
+		for (let x = x0; x < x0 + w; x++) {
+			const fromL = x - x0;
+			const fromR = x0 + w - 1 - x;
+			const fromT = y - y0;
+			const fromB = y0 + h - 1 - y;
+			const cut = (c: { depth: number; kx: number; ky: number }, dx: number, dy: number) =>
+				Math.floor(dx / c.kx) + Math.floor(dy / c.ky) < c.depth;
+			if (cut(corner[0], fromL, fromT) || cut(corner[1], fromR, fromT)) continue;
+			if (cut(corner[2], fromL, fromB) || cut(corner[3], fromR, fromB)) continue;
+			tiles.add(y * W + x);
 		}
-	}
-	let reach = 0;
-	for (let d = 1; ; d++) {
-		const n = order.filter((k) => (dist.get(k) as number) <= d).length;
-		if (n > budget || n === order.length) {
-			reach = n > budget ? d - 1 : d;
-			break;
-		}
-	}
-	const tiles = new Set(order.filter((k) => (dist.get(k) as number) <= reach));
 	const doors: Door[] = [];
-	const walls: Array<[number, number, number, number]> = [];
+	const edges: Array<[number, number, number, number]> = [];
 	for (const k of tiles) {
 		const x = k % W;
 		const y = Math.floor(k / W);
 		for (const [dx, dy] of DIRS) {
 			const nx = x + dx;
 			const ny = y + dy;
-			if (nx >= 0 && ny >= 0 && nx < W && ny < H && tiles.has(ny * W + nx)) continue;
-			if (open(nx, ny)) doors.push({ x, y, dx, dy, weak: false });
-			else walls.push([x, y, dx, dy]);
+			if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; // the maze's rim closes it
+			if (tiles.has(ny * W + nx)) continue;
+			if (open(x, y) && open(nx, ny)) doors.push({ x, y, dx, dy, weak: false });
+			else edges.push([x, y, dx, dy]);
 		}
 	}
 	const thin = doors.length > 1 ? 1 : 0;
@@ -119,7 +120,7 @@ export function planZone(
 		const d = (best as [Door, Door])[i];
 		return { kind, x: d.x, y: d.y, a: 0, charge: 0 };
 	});
-	return { tiles, W, doors: marked, walls, posts, lit: false, push: 0, broken: false };
+	return { tiles, W, doors: marked, edges, posts, lit: false, push: 0, broken: false };
 }
 
 const BILE = {
@@ -215,7 +216,7 @@ function film(
 	c.restore();
 }
 
-/** The whole zone: the warning, the tint, the glow along its walls, the films across the corridors. */
+/** The whole zone: the warning, the tint, the stepped outline, the films across the corridors. */
 export function drawZone(
 	c: CanvasRenderingContext2D,
 	L: ZoneLayout,
@@ -228,24 +229,31 @@ export function drawZone(
 	const py = (y: number) => L.offsetY + y * S;
 	const grown = ph.lit > 0 ? 1 : ph.charge;
 	const alive = ph.lit > 0 ? ph.lit : 1;
+	const all = [...z.edges, ...z.doors.map((d) => [d.x, d.y, d.dx, d.dy] as const)];
+	const side = (x: number, y: number, dx: number, dy: number) => {
+		const ex = px(x + 0.5 + dx * 0.5);
+		const ey = py(y + 0.5 + dy * 0.5);
+		c.moveTo(ex - dy * S * 0.5, ey + dx * S * 0.5);
+		c.lineTo(ex + dy * S * 0.5, ey - dx * S * 0.5);
+	};
+	const fillTiles = (style: string) => {
+		c.fillStyle = style;
+		for (const k of z.tiles) c.fillRect(px(k % z.W) - 0.5, py(Math.floor(k / z.W)) - 0.5, S + 1, S + 1);
+	};
 	c.save();
+	c.lineCap = 'round';
+	c.lineJoin = 'round';
 	// the warning: the whole coming zone at once, an amber dashed outline, fading as it charges
 	if (ph.guide > 0) {
 		const pulse = 0.5 + 0.5 * Math.sin(t * TAU * 0.9);
 		const fade = ph.guide * (1 - 0.7 * (ph.lit > 0 ? 1 : ph.charge));
-		c.fillStyle = `rgba(150, 120, 40, ${(0.08 + 0.05 * pulse) * fade})`;
-		for (const k of z.tiles) c.fillRect(px(k % z.W) - 0.5, py(Math.floor(k / z.W)) - 0.5, S + 1, S + 1);
+		fillTiles(`rgba(150, 120, 40, ${(0.09 + 0.05 * pulse) * fade})`);
 		c.setLineDash([S * 0.34, S * 0.22]);
 		c.lineDashOffset = -t * S * 0.5;
 		c.strokeStyle = `rgba(255, 190, 110, ${(0.5 + 0.35 * pulse) * fade})`;
 		c.lineWidth = Math.max(1.5, S * 0.07);
 		c.beginPath();
-		for (const [x, y, dx, dy] of [...z.walls, ...z.doors.map((d) => [d.x, d.y, d.dx, d.dy] as const)]) {
-			const ex = px(x + 0.5 + dx * 0.5);
-			const ey = py(y + 0.5 + dy * 0.5);
-			c.moveTo(ex - dy * S * 0.5, ey + dx * S * 0.5);
-			c.lineTo(ex + dy * S * 0.5, ey - dx * S * 0.5);
-		}
+		for (const [x, y, dx, dy] of all) side(x, y, dx, dy);
 		c.stroke();
 		c.setLineDash([]);
 	}
@@ -253,30 +261,41 @@ export function drawZone(
 		if (ph.lit > 0) {
 			// the zone inside: a faint sick tint, the hive's slow beat sweeping through it
 			const beat = 0.5 + 0.5 * Math.sin((t / 6) * TAU);
-			c.fillStyle = `rgba(${BILE.zone}, ${(0.16 + 0.05 * beat) * ph.lit})`;
-			for (const k of z.tiles) c.fillRect(px(k % z.W) - 0.5, py(Math.floor(k / z.W)) - 0.5, S + 1, S + 1);
+			fillTiles(`rgba(${BILE.zone}, ${(0.2 + 0.06 * beat) * ph.lit})`);
 		}
-		// the glow along the walls that close the zone, from the wall inward
-		for (const [x, y, dx, dy] of z.walls) {
-			const ex = px(x + 0.5 + dx * 0.5);
-			const ey = py(y + 0.5 + dy * 0.5);
-			const g = c.createLinearGradient(ex, ey, ex - dx * S * 0.3, ey - dy * S * 0.3);
-			g.addColorStop(0, `rgba(${BILE.glow}, ${0.34 * grown * alive})`);
-			g.addColorStop(1, `rgba(${BILE.glow}, 0)`);
-			c.fillStyle = g;
-			c.fillRect(
-				Math.min(ex, ex - dx * S * 0.3) - Math.abs(dy) * S * 0.5,
-				Math.min(ey, ey - dy * S * 0.3) - Math.abs(dx) * S * 0.5,
-				Math.abs(dx) * S * 0.3 + Math.abs(dy) * S,
-				Math.abs(dy) * S * 0.3 + Math.abs(dx) * S
-			);
+		// the outline through the walls: a soft glow, a thin bright film along the tile edges
+		c.globalAlpha = alive * grown;
+		c.beginPath();
+		for (const [x, y, dx, dy] of z.edges) side(x, y, dx, dy);
+		c.globalCompositeOperation = 'lighter';
+		c.strokeStyle = `rgba(${BILE.glow}, 0.22)`;
+		c.lineWidth = S * 0.34;
+		c.stroke();
+		c.globalCompositeOperation = 'source-over';
+		c.strokeStyle = `rgba(${BILE.dark}, 0.85)`;
+		c.lineWidth = Math.max(2, S * 0.1);
+		c.stroke();
+		c.strokeStyle = `rgba(${BILE.body}, 0.9)`;
+		c.lineWidth = Math.max(1.5, S * 0.06);
+		c.stroke();
+		c.strokeStyle = `rgba(${BILE.light}, ${0.6 + 0.2 * Math.sin(t * 2.4)})`;
+		c.lineWidth = Math.max(1, S * 0.022);
+		c.stroke();
+		// fine veins reaching inward from the outline
+		c.strokeStyle = `rgba(${BILE.body}, 0.26)`;
+		c.lineWidth = Math.max(1, S * 0.025);
+		z.edges.forEach(([x, y, dx, dy], i) => {
+			if (hash(i, 5) < 0.45) return;
+			const ex = px(x + 0.5 + dx * 0.5) + (-dy) * S * (hash(i, 6) - 0.5) * 0.6;
+			const ey = py(y + 0.5 + dy * 0.5) + dx * S * (hash(i, 6) - 0.5) * 0.6;
+			const len = S * (0.35 + 0.8 * hash(i, 7));
+			const sway = Math.sin(t * 0.8 + i) * S * 0.08;
 			c.beginPath();
-			c.moveTo(ex - dy * S * 0.5, ey + dx * S * 0.5);
-			c.lineTo(ex + dy * S * 0.5, ey - dx * S * 0.5);
-			c.strokeStyle = `rgba(${BILE.body}, ${0.6 * grown * alive})`;
-			c.lineWidth = Math.max(1, S * 0.035);
+			c.moveTo(ex, ey);
+			c.quadraticCurveTo(ex - dx * len * 0.5 + dy * sway, ey - dy * len * 0.5 - dx * sway, ex - dx * len, ey - dy * len);
 			c.stroke();
-		}
+		});
+		c.globalAlpha = 1;
 		z.doors.forEach((d, i) => {
 			c.save();
 			c.translate(px(d.x + 0.5 + d.dx * 0.5), py(d.y + 0.5 + d.dy * 0.5));
