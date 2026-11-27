@@ -1,14 +1,12 @@
-// The station's squad creature (DESIGN.md §7a): since 2026-11-26 the amoeba (the owner's pick of
-// the `station-b7` page's jelly candidates, after the Pretender in its mask and the parasites:
-// at a tile's size only a silhouette, a bright patch of colour and motion read). A gel lit from
-// inside, brightest at its membrane (a jellyfish against the light, not a sweet), in its kind's
-// colour on the black hive; its eyes two dark nuclei drifting toward its heading (no face); its
-// form flows, a pseudopod shooting out ahead and drawing back (the threat); the kind told by its
-// colour and the character of its form: spiky lunges, many small lobes, long thin threads, heavy
-// lumps. No feet, no rocking: it wobbles. The tell turns the nuclei gold; the fright is the classic
-// blue and white; the rage boils it lime, the hive's life (no afterimages, the owner); eaten, its
-// eyes run home; it sinks into the level's spore for the disguise. The name stays: it pretends.
+// The station's squad creature (DESIGN.md §7a): since 2026-11-27 the stepper (`./stepper`, the
+// owner's pick of the candidates), after the amoeba (a drifting jelly with no expression) and the
+// Pretender in its mask before it. This file is its game side: the state the game's ghost is in
+// to the look (`pretenderStateFor`), how it moves on the rails (`RailGait`: drawn at its real
+// point, its heading turned at once for the eyes and eased for the body, the stride counted from
+// the distance, the rage coming on in a moment), the mimicry (it shrinks into the level's spore),
+// the lurker's eye over the spore, and the hero's glow. The name stays: it pretends.
 import type { GhostKind } from '../../logic/actors/GhostModel';
+import { drawStepper, drawStepperEyes } from './stepper';
 
 export type PretenderState = 'hunt' | 'tell' | 'rage' | 'fright' | 'eyes' | 'mimic';
 
@@ -34,72 +32,22 @@ export interface PretenderOpts {
 }
 
 type Ctx = CanvasRenderingContext2D;
-/** Edge (bright), mid, core (dark) of a gel; its glow's rgb. */
-type Gel = {
-	readonly edge: string;
-	readonly mid: string;
-	readonly core: string;
-	readonly rgb: string;
-};
-
 const TAU = Math.PI * 2;
-export const INK = '#241418';
-const GEL: Readonly<Record<GhostKind, Gel>> = {
-	BLINKY: {
-		edge: '#ff7a68',
-		mid: 'rgba(214, 54, 54, 0.9)',
-		core: 'rgba(52, 6, 10, 0.92)',
-		rgb: '255, 96, 80'
-	},
-	PINKY: {
-		edge: '#ff9ae6',
-		mid: 'rgba(196, 70, 160, 0.9)',
-		core: 'rgba(48, 10, 40, 0.92)',
-		rgb: '255, 130, 225'
-	},
-	INKY: {
-		edge: '#7df4ff',
-		mid: 'rgba(34, 156, 190, 0.9)',
-		core: 'rgba(6, 36, 48, 0.92)',
-		rgb: '90, 230, 255'
-	},
-	CLYDE: {
-		edge: '#ffbe62',
-		mid: 'rgba(206, 116, 30, 0.9)',
-		core: 'rgba(52, 26, 6, 0.92)',
-		rgb: '255, 176, 70'
-	}
-};
-const SCARED: Gel = {
-	edge: '#a9b8ff',
-	mid: 'rgba(58, 80, 214, 0.9)',
-	core: 'rgba(14, 20, 80, 0.92)',
-	rgb: '96, 120, 255'
-};
-const WHITE: Gel = {
-	edge: '#ffffff',
-	mid: 'rgba(214, 222, 246, 0.92)',
-	core: 'rgba(150, 160, 196, 0.92)',
-	rgb: '230, 236, 255'
-};
-/** The rage: boiling in the hive's lime. */
-const RAGE: Gel = {
-	edge: '#e4ff8a',
-	mid: 'rgba(120, 210, 40, 0.92)',
-	core: 'rgba(22, 48, 8, 0.94)',
-	rgb: '170, 255, 70'
-};
-export const PHASE: Readonly<Record<GhostKind, number>> = {
-	BLINKY: 0,
-	PINKY: 0.8,
-	INKY: 1.6,
-	CLYDE: 2.4
-};
-/** The body's size in the cute ghosts' frame: a little larger than theirs (the owner, twice). */
-const SCALE = 1.08 * 1.075;
-/** The glow round it; the rage's 10% smaller (the owner). */
+const INK = '#241418';
+
+/** The creature's frame, of the tile: its crest and feet stay inside the tile. */
+const SIZE = 0.9;
+/** The glow round it in its state's colour, so it reads in the dark maze. */
 const HALO_R = 0.82;
-const RAGE_HALO = 0.9;
+const KIND_RGB: Readonly<Record<GhostKind, string>> = {
+	BLINKY: '255, 96, 80',
+	PINKY: '255, 130, 225',
+	INKY: '90, 230, 255',
+	CLYDE: '255, 176, 70'
+};
+const RAGE_RGB = '170, 255, 70';
+const SCARED_RGB = '96, 120, 255';
+const TELL_RGB = '255, 200, 71';
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -107,8 +55,6 @@ const smooth = (e0: number, e1: number, x: number) => {
 	const k = clamp((x - e0) / (e1 - e0), 0, 1);
 	return k * k * (3 - 2 * k);
 };
-/** The angle between two headings, -PI..PI. */
-const diff = (a: number, b: number) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
 /** The game's ghost state to the creature's look. */
 export function pretenderStateFor(input: {
@@ -164,7 +110,7 @@ export class RailGait {
 	}
 }
 
-export function ellipse(
+function ellipse(
 	c: Ctx,
 	x: number,
 	y: number,
@@ -184,7 +130,7 @@ export function ellipse(
 	}
 }
 
-export function glow(c: Ctx, x: number, y: number, r: number, inner: string, mid: string): void {
+function glow(c: Ctx, x: number, y: number, r: number, inner: string, mid: string): void {
 	const g = c.createRadialGradient(x, y, 0.2, x, y, r);
 	g.addColorStop(0, inner);
 	g.addColorStop(0.5, mid);
@@ -193,185 +139,6 @@ export function glow(c: Ctx, x: number, y: number, r: number, inner: string, mid
 	c.beginPath();
 	c.arc(x, y, r, 0, TAU);
 	c.fill();
-}
-
-function stroke(c: Ctx, color: string, w: number): void {
-	c.strokeStyle = color;
-	c.lineWidth = w;
-	c.lineCap = 'round';
-	c.lineJoin = 'round';
-	c.stroke();
-}
-
-/** The way it goes as an angle (down when it does not say). */
-const heading = (o: PretenderOpts) =>
-	o.lookX || o.lookY ? Math.atan2(o.lookY, o.lookX) : Math.PI / 2;
-
-/** Its outline: a radius per angle; the lunge ahead, its kind's character, the rage's boil. */
-function amoebaR(
-	kind: GhostKind,
-	o: PretenderOpts,
-	st: PretenderState,
-	ph: number
-): (a: number) => number {
-	const t = o.time;
-	const rage = st === 'rage';
-	const tell = st === 'tell';
-	const h = heading(o);
-	// the lunge: a pseudopod shooting out ahead and drawing back
-	const lunge = 0.35 + 0.65 * Math.max(0, Math.sin(t * (rage ? 6 : 2.4) + ph)) ** 2;
-	const ahead = (st === 'fright' ? 0.6 : 3.2) * lunge * (tell ? 1.3 : 1);
-	const rot = t * (kind === 'CLYDE' ? 0.25 : 0.6) + ph;
-	return (a: number) => {
-		let r = 8.2;
-		if (kind === 'BLINKY') r += Math.max(0, Math.cos(5 * (a - rot))) ** 6 * 3.2;
-		else if (kind === 'PINKY') r += (0.5 + 0.5 * Math.cos(8 * (a - rot))) ** 1.5 * 1.5;
-		else if (kind === 'INKY') r += Math.max(0, Math.cos(3 * (a - rot))) ** 18 * 5.4;
-		else r += (0.5 + 0.5 * Math.cos(3 * (a - rot))) ** 2 * 2.4;
-		r += Math.exp(-((diff(a, h) / 0.38) ** 2)) * ahead;
-		if (rage)
-			r += Math.sin(a * 7 + t * 12) * 0.9 + Math.max(0, Math.cos(4 * (a + t * 2))) ** 8 * 2.5;
-		r += Math.sin(a * 3 + t * 2.2 + ph) * 0.35;
-		return r * (st === 'fright' ? 0.92 : 1);
-	};
-}
-
-function polar(c: Ctx, r: (a: number) => number, n = 72): void {
-	c.beginPath();
-	for (let i = 0; i <= n; i++) {
-		const a = (i / n) * TAU;
-		const rr = r(a);
-		if (i === 0) c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
-		else c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
-	}
-	c.closePath();
-}
-
-/** The gel: dark inside, bright at the membrane, outlined to part it from the floor; bubbles
- *  rising in it, a glint at the upper left. */
-function paintGel(
-	c: Ctx,
-	trace: () => void,
-	g: Gel,
-	o: PretenderOpts,
-	ph: number,
-	boil: boolean
-): void {
-	trace();
-	stroke(c, INK, 2.2);
-	const f = c.createRadialGradient(0, 0, 1, 0, 0, 11);
-	f.addColorStop(0, g.core);
-	f.addColorStop(0.55, g.mid);
-	f.addColorStop(0.9, g.edge);
-	f.addColorStop(1, g.edge);
-	trace();
-	c.fillStyle = f;
-	c.fill();
-	trace();
-	stroke(c, g.edge, 0.9);
-	c.save();
-	trace();
-	c.clip();
-	const n = boil ? 7 : 3;
-	for (let i = 0; i < n; i++) {
-		const u = (o.time * ((boil ? 1.4 : 0.35) + i * 0.07) + i / n + ph) % 1;
-		c.beginPath();
-		c.arc(
-			-6 + ((i * 3.7) % 12) + Math.sin(u * 6 + i) * 0.8,
-			8 - u * 16,
-			(boil ? 0.9 : 0.6) + (i % 2) * 0.4,
-			0,
-			TAU
-		);
-		stroke(c, `rgba(255, 255, 255, ${(boil ? 0.75 : 0.5) * Math.sin(u * Math.PI)})`, 0.5);
-	}
-	c.restore();
-	ellipse(c, -4.6, -5.0, 2.0, 1.1, 'rgba(255, 255, 255, 0.65)');
-	ellipse(c, -2.2, -6.6, 0.7, 0.45, 'rgba(255, 255, 255, 0.6)');
-}
-
-/** The eyes: two dark nuclei drifting toward the heading, a glint in each; gold in the tell,
- *  white rings in the fright, lime-hot in the rage. */
-function paintNuclei(c: Ctx, o: PretenderOpts, st: PretenderState): void {
-	const vertical = Math.abs(o.lookY) > Math.abs(o.lookX);
-	const cx = o.lookX * 2.6;
-	const cy = -0.4 + o.lookY * 2.2;
-	for (const side of [-1, 1]) {
-		const ex = cx + side * (vertical ? 2.5 : 2.4);
-		const ey = cy + (vertical ? 0 : side * 0.3);
-		if (st === 'fright') {
-			const tr = Math.sin(o.time * 40) * 0.25;
-			ellipse(c, ex + tr, ey, 1.9, 1.9, '#ffffff', 0.9);
-			ellipse(c, ex + tr + o.lookX * 0.6, ey + o.lookY * 0.6, 0.7, 0.7, INK);
-			continue;
-		}
-		const rage = st === 'rage';
-		if (st === 'tell' || rage) {
-			const rgb = rage ? '226, 255, 160' : '255, 200, 71';
-			glow(c, ex, ey, 4.2, `rgba(${rgb}, 0.9)`, `rgba(${rgb}, 0.35)`);
-		}
-		ellipse(
-			c,
-			ex,
-			ey,
-			rage ? 2.0 : 2.3,
-			rage ? 1.4 : 2.6,
-			rage ? '#f4ffd8' : 'rgba(8, 4, 8, 0.92)'
-		);
-		if (rage) ellipse(c, ex + o.lookX * 0.6, ey + o.lookY * 0.5, 0.5, 1.1, '#1f4a0a');
-		else {
-			const r = st === 'tell' ? 1.1 : 0.75;
-			ellipse(
-				c,
-				ex + o.lookX * 0.8,
-				ey + o.lookY * 0.8,
-				r,
-				r,
-				st === 'tell' ? '#ffc847' : 'rgba(255, 255, 255, 0.85)'
-			);
-		}
-	}
-}
-
-/** One amoeba in `unit` space (the cute ghosts' frame), `k` its fold. */
-function paintAmoeba(
-	c: Ctx,
-	kind: GhostKind,
-	st: PretenderState,
-	o: PretenderOpts,
-	unit: number,
-	k: number
-): void {
-	const ph = PHASE[kind];
-	c.scale(unit * SCALE, unit * SCALE);
-	if (st === 'eyes') {
-		// eaten: its gold eyes run home
-		c.translate(0, Math.sin(o.time * 4 + ph) * 0.6 - 1);
-		for (const side of [-1, 1]) {
-			const ex = side * 4.6;
-			const px = ex + o.lookX * 1.6;
-			const py = o.lookY * 1.7;
-			ellipse(c, ex, 0, 3.7, 4.2, '#ffffff', 1.2);
-			ellipse(c, px, py, 2.2, 2.2, '#ffc847');
-			ellipse(c, px, py, 0.7, 1.6, INK);
-			c.fillStyle = '#ffffff';
-			c.beginPath();
-			c.arc(px - 0.8, py - 0.9, 0.7, 0, TAU);
-			c.fill();
-		}
-		return;
-	}
-	const scared = st === 'fright';
-	if (scared && !o.flashing) c.translate(Math.sin(o.time * 38 + ph) * 0.4, 0);
-	if (st === 'rage') c.translate(Math.sin(o.time * 47 + ph) * 0.3, 0);
-	// jelly: it wobbles, no feet, no rocking
-	const w = Math.sin(o.time * 3.1 + ph) * (1 - k);
-	c.translate(0, Math.sin(o.time * 2.4 + ph) * 0.4 * (1 - k));
-	c.scale(1 + 0.04 * w, 1 - 0.04 * w);
-	const g = st === 'rage' ? RAGE : scared ? (o.white ? WHITE : SCARED) : GEL[kind];
-	const r = amoebaR(kind, o, st, ph);
-	paintGel(c, () => polar(c, r), g, o, ph, st === 'rage');
-	paintNuclei(c, o, st);
 }
 
 /** A soft glow round it in its state's colour, so it reads in the dark maze. */
@@ -417,11 +184,19 @@ export function drawPretender(
 	st: PretenderState,
 	o: PretenderOpts
 ): void {
-	const unit = (tile / 25) * 0.78;
+	const S = tile * SIZE;
+	const base = {
+		lookX: o.lookX,
+		lookY: o.lookY,
+		faceX: o.faceX,
+		faceY: o.faceY,
+		time: o.time,
+		step: o.step
+	};
 	if (st === 'mimic') {
 		// it shrinks and fades as the spore comes up in its place
 		const k = clamp(o.fold ?? 0, 0, 1);
-		halo(c, x, y, tile, GEL[kind].rgb, 0.36 * (1 - k));
+		halo(c, x, y, tile, KIND_RGB[kind], 0.3 * (1 - k));
 		if (k > 0.55 && o.spore) {
 			c.save();
 			c.translate(x, y);
@@ -433,20 +208,31 @@ export function drawPretender(
 		c.globalAlpha *= 1 - smooth(0.72, 0.97, k);
 		c.translate(x, y + k * tile * 0.06);
 		c.scale(lerp(1, 0.4, k), lerp(1, 0.4, k));
-		paintAmoeba(c, kind, 'hunt', o, unit, k);
+		drawStepper(c, 0, 0, S, kind, { ...base, heat: 0 });
 		c.restore();
 		return;
 	}
-	// the rage comes on in a moment: the tell's gold, then the boil
-	const shown = st === 'rage' && (o.reveal ?? 1) < 0.5 ? 'tell' : st;
-	if (shown !== 'eyes') {
-		const rgb = shown === 'rage' ? RAGE.rgb : shown === 'fright' ? SCARED.rgb : GEL[kind].rgb;
-		halo(c, x, y, tile, rgb, shown === 'rage' ? 0.44 : 0.38, shown === 'rage' ? RAGE_HALO : 1);
-	} else halo(c, x, y, tile, '255, 214, 140', 0.18);
-	c.save();
-	c.translate(x, y);
-	paintAmoeba(c, kind, shown, o, unit, 0);
-	c.restore();
+	if (st === 'eyes') {
+		// eaten: its gold eyes run home
+		halo(c, x, y, tile, TELL_RGB, 0.16);
+		drawStepperEyes(c, x, y, S, base);
+		return;
+	}
+	// the rage comes on in a moment: the tell's gold first, then the boil
+	const reveal = clamp(o.reveal ?? 1, 0, 1);
+	const heat = st === 'rage' ? reveal : 0;
+	const tell = st === 'tell' ? 1 : st === 'rage' ? clamp(1 - reveal * 2.2, 0, 1) : 0;
+	const fright = st === 'fright' ? 1 : 0;
+	const rgb =
+		st === 'rage' ? RAGE_RGB : st === 'fright' ? SCARED_RGB : tell > 0 ? TELL_RGB : KIND_RGB[kind];
+	halo(c, x, y, tile, rgb, st === 'rage' ? 0.3 : 0.28, st === 'rage' ? 0.9 : 1);
+	drawStepper(c, x, y, S, kind, {
+		...base,
+		heat,
+		tell,
+		fright,
+		white: st === 'fright' && !!o.white
+	});
 }
 
 /** A lurker's tell over its spore (stage space, a 34 px tile): its eye opens for a moment beside

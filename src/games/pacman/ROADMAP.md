@@ -169,13 +169,13 @@ last (see Later).
          each corner cut by its own staircase, walls included, wall islands and the lair never cut
          (`logic/station/QuarantineZone`, tested; `render/station/quarantineRing`). The block holds
          the hero to the tile; the corridors that leave it carry the film (the seals). The lure
-         is a cyan signal flare (`lureFlare`); the Pretenders 7.5% larger out of the rage. The rage
+         is a cyan signal flare (`lureFlare`); the squad's size is the stepper's (0.9 of a tile). The rage
          is the overheat in acid; the flare is cyan (green met the acid rage); the cells go out at
          the alarm; the rage 10% smaller; the console and the exit are tokens of the matrix (`CN`,
          `EX`; the exit shut until the escape), the breakout comes from the vents and the
          containment's door; the matrix holds one vent pair less until the owner redraws the vents
          and the exit.
-         Left: the film's lime beside the amoebas' acid rage (check in a rage frame); the seals'
+         Left: the film's lime beside the steppers' overheat (check in a rage frame); the seals'
          curtain reads weaker than the outline (strengthen); the zone's size (9-11 tiles) and the
          corner cuts by hand; the zone not yet seen in a live game (the logic and the painter are
          tested apart); the frame series of the tell, the charge and the tearing in the game's
@@ -200,12 +200,17 @@ last (see Later).
          heartbeat's cost on a weak GPU.
       6. **A new look for the infestation and the squad**: in the game (2026-11-26, after many
          candidates; `DESIGN.md` §7a lists what was dropped): the hive is a black parasite with a
-         lime life (its form kept), the squad amoebas of gel in their kinds' colours, their rage
-         boiling lime (no afterimages, a 10% smaller glow). Left: the lurker's eye tell is still
-         the Pretender's gold slit eye (an amoeba has dark nuclei; whether it changes, the owner);
-         the station's red beacons at high infection may want amber or lime beside the black hive;
-         parasites crawling the veins now and then, the cysts as clutches (the owner liked the
-         idea); his play of the amoebas' readability on a real screen.
+         lime life (its form kept). The squad were amoebas of gel; the owner found them drifting
+         jellies without expression or a sense of life on the grid and (2026-11-27) picked the
+         **stepper**, a blob on four feet with a face and a character per kind, its rage the
+         overheat (`render/station/stepper`, in the game with all its looks: calm, the tell, the
+         fright and its white blink, the rage by a heat value, the eyes running home, the fold
+         into the spore). Left: the lurker's eye tell is still the Pretender's gold slit eye
+         (whether it changes, the owner); the stepper's size and feel on a real screen (it is
+         drawn at 0.9 of a tile, its crest within the tile); the heat's size jump out of the
+         rage; the station's red beacons at high infection may want amber or lime beside the black
+         hive; parasites crawling the veins now and then, the cysts as clutches (the owner liked
+         the idea).
       7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance

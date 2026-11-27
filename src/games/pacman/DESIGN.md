@@ -398,20 +398,27 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   dim and cold, beating with the hive, the shadows of its veins on the floor); the lair's blast
   doors are torn apart from inside, the black in the breach (its grate and cocoons as before).
   Tried and dropped on the way (2026-11-26): the tanks' murk (a leak, walls engulfed), a coral, a
-  crystal, a ferrofluid. The squad are **amoebas** (the owner's pick of the `station-b7` page's
-  jelly, 2026-11-26; `render/station/pretender`, the name kept: they pretend): at a tile's size
-  only a silhouette, a bright patch of colour and motion read. A gel lit from inside, brightest
-  at its membrane, in its kind's colour on the black hive; its eyes two dark nuclei drifting
-  toward its heading (no face); its form flows, a pseudopod shooting out ahead and drawing back
-  (the threat); the kind told by its colour and its form's character (spiky lunges, many small
-  lobes, long thin threads, heavy lumps); no feet, it wobbles (feet rocked). The tell turns the
-  nuclei gold; the fright is the classic blue with the white blink at the end; the **rage** boils
-  it lime (bubbles, the outline lashing, lime-hot nuclei), no afterimages, its glow 10% smaller
-  (the owner); a soft glow in its state's colour round it so it reads in the dark maze (the hero
-  has a warm one on the station too); eaten, its gold eyes run home; for the disguise it shrinks
-  and fades as the level's spore comes up in its place. Rejected before it: the Pretender in its
-  ivory mask (too few expressive details), a cartoon face, toy colours, a single eye, a black
-  silhouette, a jar, the parasites (small details, a dark body). A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
+  crystal, a ferrofluid. The squad are **steppers** (the owner's pick of three candidates, 2026-11-27, after the
+  amoebas: gel that read as a drifting jelly with no expression and no feeling of a living thing on
+  the grid; `render/station/stepper`, `render/station/pretender` is its game side, the name kept:
+  they pretend). A gel blob lit from inside on four stubby feet that step with the distance, with a
+  face that keeps upright and looks where it goes, drawn the game's way (cel bands, an ink line
+  heavier to the lower right, a rim light, the key light upper left, a contact shadow), in its kind's
+  colour, **a personality each**: BLINKY the hunter (angry lids, three spikes, leans forward), PINKY
+  the sly (half-lidded, a smirk, a bulb on a stalk, sways), INKY the nervous (wide darting eyes, a
+  small worried mouth, an antenna with a lamp that points the way), CLYDE the dozy (heavy lids, the
+  tongue out, a droopy lobe, slow). The tell turns the gaze gold with a crouch and a shiver; the
+  fright is the classic blue (white in the blink) with wide pinprick pupils, a wavy mouth, a sweat
+  drop and the feet flailing; the **rage** is the **overheat** (one `heat` value, so it comes on as
+  a morph): comic and a little frightening: the body hunched and wide, lit lime from inside to a
+  deep green rim, hairline cracks, narrow glowing sockets under a heavy brow, a grin that splits it
+  and chomps, embers rising, the floor lit; the feet and the crest keep the kind's colour so the four
+  stay four; no afterimages. A soft glow in its state's colour round it so it reads in the dark maze
+  (the hero has a warm one on the station too); eaten, its gold eyes run home; for the disguise it
+  shrinks and fades as the level's spore comes up in its place. Rejected before it: the amoeba, the
+  Pretender in its ivory mask, the inchworm and the slipper (two other candidates of the same
+  round), a first rage with googly eyes and steam (childish, sloppy), a cracked-shell rage (it read
+  as a dark ring at game scale), the parasites. A lurker's **tells**: a soft shadow, sitting off the tile's centre towards a wall,
   its gold slit eye opening for a moment every few seconds, turned toward him, a tremble when he comes within 3 tiles, the
   breathing out of step; the run's first lurkers teach (a slow fold of 1.5 s at least 5 steps
   along his way, every tell stronger, fading over three ambushes). The tells are the logic's

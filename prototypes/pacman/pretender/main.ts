@@ -14,7 +14,6 @@ import {
 	type PretenderOpts
 } from '../../../src/games/pacman/render/station/pretender';
 
-import { drawArt } from './stepperArt';
 
 type MState = 'hunt' | 'tell' | 'rage' | 'fright' | 'flash' | 'mimic' | 'eyes';
 
@@ -131,7 +130,7 @@ const ROWS: readonly (readonly Cell[])[] = [
 	[
 		...Object.entries(DIRS).map(([name, dir]) => ({
 			label: `охота ${name}`,
-			note: 'маска отстаёт, глаз по курсу',
+			note: 'глаза по курсу',
 			draw: (x: number, y: number, S: number, t: number) => one(x, y, S, t, 'hunt', { dir })
 		})),
 		{
@@ -141,21 +140,21 @@ const ROWS: readonly (readonly Cell[])[] = [
 		},
 		{
 			label: 'разворот 180°, медленно',
-			note: 'маска переезжает через лицо',
+			note: 'лицо поворачивается через разворот',
 			draw: (x, y, S, t, dt) => one(x, y, S, t, 'hunt', slow180(t, dt))
 		}
 	],
 	[
 		{
-			label: 'срыв маски',
+			label: 'перегрев',
 			note: 'охота → ярость, цикл',
 			draw: (x, y, S, t) => {
 				const r = revealLoop(t);
 				one(x, y, S, t, r > 0 ? 'rage' : 'hunt', { reveal: r });
 			}
 		},
-		{ label: 'сигнал тактики', note: 'глаз пульсирует, улыбка шире', draw: (x, y, S, t) => one(x, y, S, t, 'tell', {}) },
-		{ label: 'ярость (побег)', note: 'маска на макушке, истинное лицо', draw: (x, y, S, t) => one(x, y, S, t, 'rage', {}) },
+		{ label: 'сигнал тактики', note: 'золотой взгляд, приседает', draw: (x, y, S, t) => one(x, y, S, t, 'tell', {}) },
+		{ label: 'ярость (побег)', note: 'лайм, зубы, брови вниз', draw: (x, y, S, t) => one(x, y, S, t, 'rage', {}) },
 		{ label: 'испуг', note: 'дрожь, пот, зигзаг', draw: (x, y, S, t) => one(x, y, S, t, 'fright', {}) },
 		{ label: 'мигание', note: 'конец испуга, 2.2 Гц', draw: (x, y, S, t) => one(x, y, S, t, 'flash', {}) },
 		{ label: 'глаза', note: 'съеден, бежит домой', draw: (x, y, S, t) => one(x, y, S, t, 'eyes', {}) }
@@ -206,7 +205,6 @@ function small(x: number, y: number, S: number, t: number): void {
 	});
 }
 
-const params = new URLSearchParams(location.search);
 let last = 0;
 function frame(now: number): void {
 	const t = now / 1000;
@@ -221,16 +219,11 @@ function frame(now: number): void {
 	ctx.setTransform(D, 0, 0, D, 0, 0);
 	ctx.fillStyle = '#15191b';
 	ctx.fillRect(0, 0, vw, vh);
-	if (params.has('art')) {
-		drawArt(ctx, vw, vh, t, Number(params.get('s') ?? 0), params.has('big'));
-		requestAnimationFrame(frame);
-		return;
-	}
 	const head = 34;
 	ctx.fillStyle = '#e8e2d4';
 	ctx.font = '600 15px ui-sans-serif, system-ui, sans-serif';
 	ctx.textBaseline = 'middle';
-	ctx.fillText('ПРИТВОРЩИК B-7', 14, head / 2);
+	ctx.fillText('ШАГАТЕЛЬ', 14, head / 2);
 	const cols = 6;
 	const cw = vw / cols;
 	const ch = (vh - head) / ROWS.length;
