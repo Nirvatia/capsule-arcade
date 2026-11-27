@@ -14,6 +14,8 @@ import {
 	type PretenderOpts
 } from '../../../src/games/pacman/render/station/pretender';
 
+import { drawCandidates } from './mimicCandidates';
+
 type MState = 'hunt' | 'tell' | 'rage' | 'fright' | 'flash' | 'mimic' | 'eyes';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
@@ -204,6 +206,7 @@ function small(x: number, y: number, S: number, t: number): void {
 	});
 }
 
+const params = new URLSearchParams(location.search);
 let last = 0;
 function frame(now: number): void {
 	const t = now / 1000;
@@ -218,6 +221,13 @@ function frame(now: number): void {
 	ctx.setTransform(D, 0, 0, D, 0, 0);
 	ctx.fillStyle = '#15191b';
 	ctx.fillRect(0, 0, vw, vh);
+	if (params.has('cand')) {
+		drawCandidates(ctx, vw, vh, t, Number(params.get('s') ?? 0), (x, y, S, kind, dir) =>
+			one(x, y, S, t, 'hunt', { kind, dir })
+		);
+		requestAnimationFrame(frame);
+		return;
+	}
 	const head = 34;
 	ctx.fillStyle = '#e8e2d4';
 	ctx.font = '600 15px ui-sans-serif, system-ui, sans-serif';
