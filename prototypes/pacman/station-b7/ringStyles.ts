@@ -48,6 +48,9 @@ export interface ZoneLayout {
 	readonly offsetY: number;
 }
 
+/** Wall blocks larger than this are the maze's long walls: cut, not kept whole. */
+const ISLE_MAX = 45;
+
 const DIRS = [
 	[0, -1],
 	[0, 1],
@@ -58,9 +61,12 @@ const DIRS = [
 /**
  * The zone round a tile: a block of 9-11 tiles a side kept inside the maze, each corner cut by a
  * staircase (its depth and its step, 1 or 2 tiles wide, drawn by the seed), so no two look alike.
+ * A wall island is never cut: it goes into the zone whole (when most of it lies inside) or stays
+ * out whole, so the outline follows its contour and turns at its end. The void outside the
+ * maze is never in.
  */
 export function planZone(
-	open: (x: number, y: number) => boolean,
+	kind: (x: number, y: number) => 'open' | 'wall' | 'void' | 'lair',
 	W: number,
 	H: number,
 	tx: number,
@@ -89,6 +95,51 @@ export function planZone(
 			if (cut(corner[2], fromL, fromB) || cut(corner[3], fromR, fromB)) continue;
 			tiles.add(y * W + x);
 		}
+	const open = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && kind(x, y) === 'open';
+	// the islands: each wall block, in or out as a whole; the lair with its ring is one block
+	const seen = new Set<number>();
+	const lair: number[] = [];
+	let [lx0, ly0, lx1, ly1] = [W, H, -1, -1];
+	for (let y = 0; y < H; y++)
+		for (let x = 0; x < W; x++)
+			if (kind(x, y) === 'lair') [lx0, ly0, lx1, ly1] = [Math.min(lx0, x), Math.min(ly0, y), Math.max(lx1, x), Math.max(ly1, y)];
+	for (let y = Math.max(0, ly0 - 1); y <= Math.min(H - 1, ly1 + 1); y++)
+		for (let x = Math.max(0, lx0 - 1); x <= Math.min(W - 1, lx1 + 1); x++) {
+			lair.push(y * W + x);
+			seen.add(y * W + x);
+		}
+	if (lair.length) {
+		const inside = lair.filter((k) => tiles.has(k)).length;
+		for (const k of lair) {
+			if (inside * 2 >= lair.length) tiles.add(k);
+			else tiles.delete(k);
+		}
+	}
+	for (let y = 0; y < H; y++)
+		for (let x = 0; x < W; x++) {
+			if (kind(x, y) !== 'wall' || seen.has(y * W + x)) continue;
+			const isle = [y * W + x];
+			seen.add(y * W + x);
+			for (let i = 0; i < isle.length; i++) {
+				const ix = isle[i] % W;
+				const iy = Math.floor(isle[i] / W);
+				for (const [dx, dy] of DIRS) {
+					const nx = ix + dx;
+					const ny = iy + dy;
+					if (nx < 0 || ny < 0 || nx >= W || ny >= H || kind(nx, ny) !== 'wall') continue;
+					if (seen.has(ny * W + nx)) continue;
+					seen.add(ny * W + nx);
+					isle.push(ny * W + nx);
+				}
+			}
+			if (isle.length > ISLE_MAX) continue; // the maze's long walls are cut like anything else
+			const inside = isle.filter((k) => tiles.has(k)).length;
+			for (const k of isle) {
+				if (inside * 2 >= isle.length) tiles.add(k);
+				else tiles.delete(k);
+			}
+		}
+	for (const k of [...tiles]) if (kind(k % W, Math.floor(k / W)) === 'void') tiles.delete(k);
 	const doors: Door[] = [];
 	const edges: Array<[number, number, number, number]> = [];
 	for (const k of tiles) {
@@ -97,7 +148,7 @@ export function planZone(
 		for (const [dx, dy] of DIRS) {
 			const nx = x + dx;
 			const ny = y + dy;
-			if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; // the maze's rim closes it
+			if (nx < 0 || ny < 0 || nx >= W || ny >= H || kind(nx, ny) === 'void') continue; // the rim closes it
 			if (tiles.has(ny * W + nx)) continue;
 			if (open(x, y) && open(nx, ny)) doors.push({ x, y, dx, dy, weak: false });
 			else edges.push([x, y, dx, dy]);

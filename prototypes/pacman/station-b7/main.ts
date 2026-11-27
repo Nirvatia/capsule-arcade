@@ -255,7 +255,17 @@ const ring = planRing(rx, ry, 7.5);
 const q = new URLSearchParams(location.search);
 const [fx0, fy0] = (q.get('at') ?? '0.3,0.5').split(',').map(Number);
 const [zx, zy] = nearestOpen(W * fx0, H * fy0);
-const zone = planZone(open, W, H, zx, zy, Number(q.get('seed') ?? 1));
+const zone = planZone(
+	(x, y) => {
+			const tk = grid[y][x];
+			if (tk === 'ES') return 'void';
+			if (['LE', 'LT', 'BY', 'IY', 'PY', 'CE'].includes(tk)) return 'lair';
+			return OPEN.has(tk) ? 'open' : 'wall';
+		},
+	W,
+	H,
+	zx,
+	zy, Number(q.get('seed') ?? 1));
 const [lx, ly] = nearestOpen(W * 0.7, H * 0.42);
 
 // ------------------------------------------------------------------- the enraged on their runs
