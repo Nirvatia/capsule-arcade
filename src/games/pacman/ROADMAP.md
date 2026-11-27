@@ -55,7 +55,7 @@ last (see Later).
    iPhone emulation. Left on real hardware: iOS Safari audio unlock and pinch, swipe threshold
    and pad size under a thumb, notched safe areas, the Auto graphics tier there.
 4. **Mazes**: the owner reworks the weak ones.
-5. **Music**: the support is in (`WORLD_MUSIC`, `OST.md`: the format, the briefs, the prompts).
+5. **Music**: the support is in (`WORLD_MUSIC`; `OST.md` the format, the rules and local generation, `OST_GAME.md`, `OST_HELL.md`, `OST_STATION.md` the briefs and prompts). The owner is replacing the whole soundtrack and renaming the game (2026-11-27): the tracks carry no title.
    Left: the owner's real tracks (the hell's replaces the synthesised placeholder; the station
    next; the seasons optional).
 
