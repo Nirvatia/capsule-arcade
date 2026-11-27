@@ -307,19 +307,25 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   fencer, phantom, lurker, venter) and runs **one of three tactics**, picked by what the
   situation offers (none twice running), with a calm beat of 3-5 s between (the classic scatter
   and chase) and a tell of 1.3 s before each (the lights dim and flicker, the eyes turn gold):
-  1. **The fence**, a **quarantine ring** (the owner's idea; since 2026-11-26 a ring, not beams
-     through walls bound to the maze's cuts): a circle of 7.5 tiles round a point two steps
-     ahead of him; two fencers walk to its rim to his sides and project it; where it crosses a
-     corridor a **seal** grows in the corridor's throat (between two walls) and he cannot pass
-     (the squad can); one hunts him inside; the fourth is a **phantom**. Seen as the hive's: a
-     ring of mycelium (a haze of spores, a filament over the walls) and seals of flesh with a
-     bright core (`quarantineRing`). Tell: the whole contour shows at once as the fencers set out (a
-     dashed amber line, the zone faintly tinted, dashed bars where the seals will grow; the owner,
-     2026-11-26: a ring growing in pieces did not show what it would hold), then the filament creeps
-     out of the projectors along it and the seals grow while they charge (1.5 s): he may slip out. It holds about 9 s; the
-     fencers holding it do not bite. **It can be survived** (the owner): one ring in two has a
-     thin seal (torn in the middle, flickering) that tears if he pushes into it for 0.6 s; the
-     side tunnels lead out too.
+  1. **The fence**, a **quarantine zone** (the owner's idea; since 2026-11-27 a stepped block of the
+     maze's tiles, not a circle): a block of 9-11 tiles a side round a point two steps ahead of
+     him, kept inside the maze, each corner cut by a staircase of its own (depth 1-5, a step of 1
+     or 2 tiles), so every zone is another piece of a mosaic; walls and corridors alike are in it.
+     A wall island is never cut: it is in whole (most of it inside) or out whole, the lair with
+     its ring is one such island, and the void outside the maze is never in, so the outline follows
+     a block's contour and turns at its end, and along the rim it is the maze's own wall. The
+     hero's tile is always inside. Two fencers walk to two of its doors (the corridors that leave
+     it) as projectors; a **seal**, a film, stands across every door and he cannot pass (the squad
+     can); one hunts him inside; the fourth is a **phantom**. The block is the barrier to the tile:
+     he cannot enter an open tile outside it. Seen as the hive's bile (`quarantineRing`): the tiles
+     faintly tinted, a thin film along the outline through the walls with fine veins reaching in,
+     and across each corridor a brighter curtain; no plugs, no roots in the walls. Tell: the whole
+     outline shows at once as the fencers set out (a dashed amber line on the tile edges, the zone
+     faintly tinted; the owner, 2026-11-26: a ring growing in pieces did not show what it would
+     hold), then the film grows from the seals' roots while they charge (1.5 s): he may slip out.
+     It holds about 9 s; the fencers holding it do not bite. **It can be survived** (the owner):
+     one zone in two has a thin seal (torn in the middle, flickering) that tears if he pushes into
+     it for 0.6 s; the side tunnels lead out too.
   2. **The ambush** (likelier as the food runs low): one fades out and lies as food on a tile he
      has already eaten, along his way; with half the food eaten a second lies among the food
      still left, with three quarters a third (always one left to hunt) (the tell for an attentive player: "there was nothing here"; it breathes out of step);

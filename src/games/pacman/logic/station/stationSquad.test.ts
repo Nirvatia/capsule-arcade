@@ -30,6 +30,7 @@ function station() {
 			(grid.tileAt(x, y) === 'DT' || grid.tileAt(x, y) === 'EU') && !eaten.has(`${x},${y}`),
 		cell: (x, y) => grid.tileAt(x, y) === 'EU',
 		vent: (x, y) => /^0[ABC]$/.test(grid.tileAt(x, y)),
+		tile: (x, y) => grid.tileAt(x, y),
 		width: grid.width,
 		height: grid.height
 	};
@@ -131,17 +132,22 @@ describe('the director', () => {
 });
 
 describe('the fence: the quarantine ring', () => {
-	it('plans a ring round a point ahead of him: seals on every crossing, two posts on the rim', () => {
+	it('plans a zone round a point ahead of him: a seal in every corridor that leaves it, two posts on its doors', () => {
 		const s = station();
 		const squad = new StationSquad(s.world, 1);
 		squad.update(0.01, s.ghosts, { x: 12, y: 24 }, 'LEFT');
 		const plan = squad.ringPlan();
 		expect(plan).not.toBeNull();
 		expect(plan!.spots).toHaveLength(2);
-		expect(plan!.ring.seals.length).toBeGreaterThanOrEqual(2);
-		const { cx, cy, r } = plan!.ring;
-		for (const p of plan!.spots)
-			expect(Math.abs(Math.hypot(p.x + 0.5 - cx, p.y + 0.5 - cy) - r)).toBeLessThan(2);
+		const { zone, width, seals } = plan!.ring;
+		expect(seals.length).toBeGreaterThanOrEqual(2);
+		expect(zone.has(24 * width + 12)).toBe(true);
+		// each seal holds the corridor tile just outside the zone, its last tile inside
+		for (const x of seals) {
+			expect(zone.has(x.y * width + x.x)).toBe(false);
+			expect(zone.has((x.y - x.dy) * width + (x.x - x.dx))).toBe(true);
+		}
+		for (const p of plan!.spots) expect(zone.has(p.y * width + p.x)).toBe(true);
 	});
 
 	/** What he reaches from `hero` with the ring lit, the tunnels left out. */
@@ -167,7 +173,7 @@ describe('the fence: the quarantine ring', () => {
 		return seen;
 	};
 
-	it('the fencers walk to the rim, charge, and the lit ring holds him inside it', () => {
+	it('the fencers walk to their doors, charge, and the lit zone holds him inside it', () => {
 		const s = station();
 		release(s);
 		const squad = new StationSquad(s.world, 1);
@@ -180,14 +186,14 @@ describe('the fence: the quarantine ring', () => {
 		run(s, squad, hero, SQUAD_TUNE.walk);
 		const ring = squad.ring!;
 		expect(ring.lit).toBe(true);
-		// a whole ring, no thin seal: he stays inside (a seal's throat may lie a step outside)
+		// a whole zone, no thin seal: he stays inside, to the tile
 		(ring as unknown as { seals: RingSeal[] }).seals = ring.seals.map((x) => ({
 			...x,
 			weak: false
 		}));
 		for (const k of reach(s, squad, hero)) {
 			const [x, y] = k.split(',').map(Number);
-			expect(Math.hypot(x + 0.5 - ring.cx, y + 0.5 - ring.cy)).toBeLessThan(ring.r + 2.6);
+			expect(ring.zone.has(y * ring.width + x)).toBe(true);
 		}
 	});
 

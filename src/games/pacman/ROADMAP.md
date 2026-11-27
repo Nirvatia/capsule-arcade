@@ -162,20 +162,26 @@ last (see Later).
          swarm and the `creatures` page are deleted (2026-11-26). Left, from his play: its
          readability at game scale; the phantom as the Pretender almost clear; then delete the
          spore hermit and the station-b7 page's candidate keys.
-      4. **The fence is the quarantine ring** in the game (2026-11-26, `DESIGN.md` §7a; the goal
-         hints done too: a beacon held on the console, then the hatch, and the HUD's goal line).
-         The ring's warning contour is in (2026-11-26: the whole ring shown as the fencers set out,
-         the filament growing along it); the lure is a green signal flare (`lureFlare`); the
-         Pretenders 7.5% larger out of the rage. The rage is the overheat in acid (the owner's pick of the page's
-         candidates; red was lost in the infected maze). The flare is cyan (green met the acid
-         rage). From the owner (2026-11-26), done the same day: the cells go out at the alarm; the
-         rage 10% smaller; the console and the exit are tokens of the matrix (`CN`, `EX`; the exit
-         shut until the escape, then the hero's alone), the breakout comes from the vents and the
-         containment's door, never the exit, and the scene's ducts follow the matrix's vents. The
-         matrix holds one vent pair less until the owner redraws the vents and the exit.
-         Left, from the owner's play: the ring's radius and hold, how often the thin seal comes;
-         the spore cloud stays in reserve (the owner likes it). Then a fourth tactic if the three
-         need company (the tripwire or the shadow).
+      4. **The fence is the quarantine zone** (`DESIGN.md` §7a; the goal hints done too: a beacon
+         held on the console, then the hatch, and the HUD's goal line). It began as a ring
+         (2026-11-26); the owner (2026-11-27) chose the bile film for its look, then redrew its
+         shape: no circle and no plugs in the walls but **a stepped block of the maze's tiles**,
+         each corner cut by its own staircase, walls included, wall islands and the lair never cut
+         (`logic/station/QuarantineZone`, tested; `render/station/quarantineRing`). The block holds
+         the hero to the tile; the corridors that leave it carry the film (the seals). The lure
+         is a cyan signal flare (`lureFlare`); the Pretenders 7.5% larger out of the rage. The rage
+         is the overheat in acid; the flare is cyan (green met the acid rage); the cells go out at
+         the alarm; the rage 10% smaller; the console and the exit are tokens of the matrix (`CN`,
+         `EX`; the exit shut until the escape), the breakout comes from the vents and the
+         containment's door; the matrix holds one vent pair less until the owner redraws the vents
+         and the exit.
+         Left: the film's lime beside the amoebas' acid rage (check in a rage frame); the seals'
+         curtain reads weaker than the outline (strengthen); the zone's size (9-11 tiles) and the
+         corner cuts by hand; the zone not yet seen in a live game (the logic and the painter are
+         tested apart); the frame series of the tell, the charge and the tearing in the game's
+         painter; how often the thin seal comes; whether the outline wants a line along the maze's
+         rim. The spore cloud stays in reserve (the owner likes it). Then a fourth tactic if the
+         three need company (the tripwire or the shadow).
       5. **The total takeover** (the owner, 2026-11-26: the veins lack the feeling of alien
          organics seizing the station; agreed: flesh over the plates by phase, volumetric veins
          with nodes, a heartbeat out of the lair, cysts on crests, lamps under film). Candidate C

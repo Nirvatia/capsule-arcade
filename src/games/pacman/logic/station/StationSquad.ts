@@ -2,9 +2,9 @@
 // hero (the way he will take: toward the nearest food he has not eaten), gives each creature a
 // role, and runs one of three tactics at a time, picked by what the situation offers, with a
 // calm beat between (the classic scatter / chase) and a tell before each:
-// - the fence, a quarantine ring (the owner, 2026-11-26: no beams through walls, nothing bound to
-//   the maze's cuts): two fencers stand on a circle round a point ahead of him as its projectors;
-//   where it crosses a corridor a seal grows in the corridor's throat and he cannot pass; one ring
+// - the fence, a quarantine zone (the owner, 2026-11-27: a stepped block of the maze's tiles, walls
+//   and all, like a piece of a mosaic, `QuarantineZone`): two fencers stand at its doors as its
+//   projectors; a film stands across every corridor that leaves it and he cannot pass; one zone
 //   in two has a thin seal he can push through; a hunter drives him; the fourth is a phantom;
 // - the ambush: one hides as food on a tile he has already eaten, on his way; the others shut
 //   every way out but the one that leads to it;
@@ -12,6 +12,7 @@
 //   as he passes; the others drive him there.
 // The squad steers the hunting ghosts through `GhostService`'s `SquadGuide`; the hidden ones it
 // hides, holds and lets out itself. Pure logic, tile based.
+import { planZone, zoneSpots, type ZoneKind } from './QuarantineZone';
 import type { GhostDirection, GhostKind, GhostModel, GhostTile } from '../actors/GhostModel';
 import type { SquadGuide } from '../actors/GhostService';
 import { shortestRoute } from '../actors/ghostRoutes';
@@ -31,9 +32,9 @@ export const SQUAD_TUNE = {
 	length: { fence: 12, ambush: 13, vent: 12 },
 	/** How far ahead the hero's way is read, steps. */
 	foresee: 14,
-	/** The fence: the ring's radius, tiles; the chance of a thin seal and the push that tears it,
+	/** The fence: the zone's side, tiles (min, max); the chance of a thin seal and the push that tears it,
 	 *  s; the projectors' charge, s; how long a lit ring holds, s; the fencers' walk, s. */
-	ring: 7.5,
+	zone: [9, 11] as readonly [number, number],
 	weak: 0.5,
 	breach: 0.6,
 	charge: 1.5,
@@ -73,6 +74,9 @@ export const SQUAD_TUNE = {
 	reach: 10
 } as const;
 
+/** The tokens of the lair and its inhabitants' tiles: one block for the zone's shape. */
+const LAIR_TILES = new Set(['LE', 'LT', 'BY', 'IY', 'PY', 'CE']);
+
 export interface SquadWorld extends RouteWorld {
 	/** Food was here and is eaten: a lurker may sit here (the attentive player's tell). */
 	eaten(x: number, y: number): boolean;
@@ -82,6 +86,8 @@ export interface SquadWorld extends RouteWorld {
 	cell(x: number, y: number): boolean;
 	/** A shaft one may hide in: a vent's mouth in the outer wall, or a side tunnel's. */
 	vent(x: number, y: number): boolean;
+	/** The tile's token (`ES` the void outside the maze; the lair's own tokens). */
+	tile(x: number, y: number): string;
 	readonly width: number;
 	readonly height: number;
 }
@@ -121,7 +127,7 @@ export interface Going {
 	time: number;
 }
 
-/** A seal of the quarantine ring: the throat tile it grows in and the way out across it. */
+/** A seal of the quarantine ring: the corridor tile it holds (just outside the zone) and the way out across it. */
 export interface RingSeal {
 	readonly x: number;
 	readonly y: number;
@@ -143,9 +149,11 @@ export interface RingPost {
 
 /** The fence: a quarantine ring round a point (tiles, cell centres at x + 0.5). */
 export interface QuarantineRing {
-	readonly cx: number;
-	readonly cy: number;
-	readonly r: number;
+	/** The zone's tiles (`y * width + x`): the hero cannot leave them while it is lit. */
+	readonly zone: ReadonlySet<number>;
+	readonly width: number;
+	/** The outline through walls: a zone tile's side, `[x, y, dx, dy]`. */
+	readonly edges: ReadonlyArray<readonly [number, number, number, number]>;
 	readonly posts: RingPost[];
 	readonly seals: readonly RingSeal[];
 	lit: boolean;
@@ -700,73 +708,44 @@ export class StationSquad implements SquadGuide {
 	}
 
 	/**
-	 * The ring round a point two steps ahead of him: its seals (every step across the rim between
-	 * two open tiles, moved into the nearest throat: a tile with walls on both sides across the
-	 * way), one of them thin in one ring of two, and the two projectors' posts (the open tiles
-	 * nearest the rim to his sides). Null when the maze gives it no seal or no post.
+	 * The zone round a point two steps ahead of him (`planZone`): its seals (one in every corridor
+	 * that leaves it), one of them thin in one ring of two, and the two projectors' posts (the
+	 * doors' last tiles to his sides). Null when the maze gives it no two seals.
 	 */
 	ringPlan(): {
-		ring: Pick<QuarantineRing, 'cx' | 'cy' | 'r' | 'seals'>;
+		ring: Pick<QuarantineRing, 'zone' | 'width' | 'edges' | 'seals'>;
 		spots: Array<{ x: number; y: number; a: number }>;
 	} | null {
 		const at = this.foreseen[Math.min(2, this.foreseen.length - 1)] ?? this.hero;
-		const cx = at.x + 0.5;
-		const cy = at.y + 0.5;
-		const r = SQUAD_TUNE.ring;
-		const W = this.world.width;
-		const H = this.world.height;
-		const inside = (x: number, y: number) => Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= r;
-		const throat = (x: number, y: number, dx: number, dy: number) =>
-			this.open(x, y) &&
-			!this.world.walkable(x + dy, y + dx) &&
-			!this.world.walkable(x - dy, y - dx);
-		const found: Array<{ x: number; y: number; dx: number; dy: number }> = [];
-		const taken = new Set<number>();
-		for (let y = 0; y < H; y += 1) {
-			for (let x = 0; x < W; x += 1) {
-				if (!this.open(x, y) || !inside(x, y)) continue;
-				for (const [dx, dy] of Object.values(DIRS)) {
-					const bx = x + dx;
-					const by = y + dy;
-					if (!this.open(bx, by) || inside(bx, by)) continue;
-					const line: Array<[number, number]> = [
-						[bx, by],
-						[x, y],
-						[bx + dx, by + dy],
-						[x - dx, y - dy],
-						[bx + 2 * dx, by + 2 * dy],
-						[x - 2 * dx, y - 2 * dy]
-					];
-					const [tx, ty] = line.find(([tx2, ty2]) => throat(tx2, ty2, dx, dy)) ?? [bx, by];
-					if (taken.has(ty * W + tx)) continue;
-					taken.add(ty * W + tx);
-					found.push({ x: tx, y: ty, dx, dy });
-				}
-			}
-		}
-		if (found.length < 2) return null;
-		const thin = this.random() < SQUAD_TUNE.weak ? Math.floor(this.random() * found.length) : -1;
-		const seals: RingSeal[] = found.map((f, i) => ({ ...f, weak: i === thin }));
-		// the posts: to his sides of the line from the centre to him
-		const toHim = Math.atan2(this.hero.y + 0.5 - cy, this.hero.x + 0.5 - cx);
-		const base =
-			Number.isFinite(toHim) && (this.hero.x !== at.x || this.hero.y !== at.y) ? toHim : 0;
-		const spots: Array<{ x: number; y: number; a: number }> = [];
-		for (const want of [base + Math.PI / 2, base - Math.PI / 2]) {
-			let best: { x: number; y: number; a: number; score: number } | null = null;
-			for (let y = 0; y < H; y += 1) {
-				for (let x = 0; x < W; x += 1) {
-					if (!this.open(x, y) || spots.some((p) => p.x === x && p.y === y)) continue;
-					const a = Math.atan2(y + 0.5 - cy, x + 0.5 - cx);
-					const da = Math.abs(Math.atan2(Math.sin(a - want), Math.cos(a - want)));
-					const score = Math.abs(Math.hypot(x + 0.5 - cx, y + 0.5 - cy) - r) * 2 + da * 3;
-					if (!best || score < best.score) best = { x, y, a, score };
-				}
-			}
-			if (best) spots.push({ x: best.x, y: best.y, a: best.a });
-		}
+		const plan = planZone(
+			(x, y) => this.zoneKind(x, y),
+			this.world.width,
+			this.world.height,
+			this.hero,
+			at,
+			SQUAD_TUNE.zone,
+			() => this.random()
+		);
+		if (!plan) return null;
+		const thin =
+			this.random() < SQUAD_TUNE.weak ? Math.floor(this.random() * plan.doors.length) : -1;
+		const seals: RingSeal[] = plan.doors.map((d, i) => ({
+			x: d.x + d.dx,
+			y: d.y + d.dy,
+			dx: d.dx,
+			dy: d.dy,
+			weak: i === thin
+		}));
+		const spots = zoneSpots(plan, this.hero, this.hero.x !== at.x || this.hero.y !== at.y);
 		if (spots.length < 2) return null;
-		return { ring: { cx, cy, r, seals }, spots };
+		return { ring: { zone: plan.tiles, width: plan.width, edges: plan.edges, seals }, spots };
+	}
+
+	private zoneKind(x: number, y: number): ZoneKind {
+		const token = this.world.tile(x, y);
+		if (token === 'ES') return 'void';
+		if (LAIR_TILES.has(token)) return 'lair';
+		return this.open(x, y) ? 'open' : 'wall';
 	}
 
 	private updateRing(dt: number, ghosts: SquadGhosts): void {

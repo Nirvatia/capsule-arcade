@@ -5,11 +5,11 @@
 // the buttons on top; a panel shows the squad large.
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
-import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
+import type { QuarantineRing } from '../../../src/games/pacman/logic/station/StationSquad';
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
 import { drawPretender, RailGait, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
 import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
-import { drawZone, planZone } from './ringStyles';
+import { planZone, zoneSpots, type ZoneKind } from '../../../src/games/pacman/logic/station/QuarantineZone';
 import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
 import { CJ_BODY_RATIO } from '../../../src/games/pacman/render/actors/hero/vesselHero';
 import { CinnabarHero } from '../../../src/games/pacman/render/actors/hero/CinnabarHero';
@@ -43,7 +43,6 @@ const st = {
 	inf: 0.65,
 	alarm: false,
 	ring: 'off' as RingMode,
-	style: 'zone' as 'now' | 'zone',
 	mimic: 'now' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
@@ -64,14 +63,6 @@ interface Group {
 	after?: (v: string | number | boolean) => void;
 }
 const GROUPS: Group[] = [
-	{
-		label: 'Стиль',
-		key: 'style',
-		items: [
-			['Круг (был)', 'now'],
-			['Зона', 'zone']
-		]
-	},
 	{
 		label: 'Круг',
 		key: 'ring',
@@ -188,55 +179,34 @@ render();
 
 // ------------------------------------------------------------------------- the ring's layout
 
-/** The game's seal finder (`StationSquad.ringPlan`) round a fixed point, its posts left and right. */
-function planRing(tx: number, ty: number, r: number): QuarantineRing {
-	const cx = tx + 0.5;
-	const cy = ty + 0.5;
-	const inside = (x: number, y: number) => Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= r;
-	const throat = (x: number, y: number, dx: number, dy: number) =>
-		open(x, y) && !open(x + dy, y + dx) && !open(x - dy, y - dx);
-	const seals: RingSeal[] = [];
-	const taken = new Set<number>();
-	for (let y = 0; y < H; y++)
-		for (let x = 0; x < W; x++) {
-			if (!open(x, y) || !inside(x, y)) continue;
-			for (const [dx, dy] of [
-				[0, -1],
-				[0, 1],
-				[-1, 0],
-				[1, 0]
-			]) {
-				const bx = x + dx;
-				const by = y + dy;
-				if (!open(bx, by) || inside(bx, by)) continue;
-				const cand: Array<[number, number]> = [
-					[bx, by],
-					[x, y],
-					[bx + dx, by + dy],
-					[x - dx, y - dy],
-					[bx + 2 * dx, by + 2 * dy],
-					[x - 2 * dx, y - 2 * dy]
-				];
-				const [sx, sy] = cand.find(([a, b]) => throat(a, b, dx, dy)) ?? [bx, by];
-				if (taken.has(sy * W + sx)) continue;
-				taken.add(sy * W + sx);
-				seals.push({ x: sx, y: sy, dx, dy, weak: seals.length === 1 });
-			}
-		}
-	const posts = (['BLINKY', 'PINKY'] as GhostKind[]).map((kind, i) => {
-		const want = i ? Math.PI : 0;
-		let best = { x: tx, y: ty, a: 0, score: Infinity };
-		for (let y = 0; y < H; y++)
-			for (let x = 0; x < W; x++) {
-				if (!open(x, y)) continue;
-				const a = Math.atan2(y + 0.5 - cy, x + 0.5 - cx);
-				const da = Math.abs(Math.atan2(Math.sin(a - want), Math.cos(a - want)));
-				const score = Math.abs(Math.hypot(x + 0.5 - cx, y + 0.5 - cy) - r) * 2 + da * 3;
-				if (score < best.score) best = { x, y, a, score };
-			}
-		return { kind, x: best.x, y: best.y, a: best.a, charge: 0 };
-	});
-	return { cx, cy, r, posts, seals, lit: false, push: 0, broken: false };
+/** The game's zone (`StationSquad.ringPlan`) round a tile: its seals and two posts on its doors. */
+function planRing(tx: number, ty: number, seed: number): QuarantineRing {
+	const kind = (x: number, y: number): ZoneKind => {
+		const tk = grid[y][x];
+		if (tk === 'ES') return 'void';
+		if (['LE', 'LT', 'BY', 'IY', 'PY', 'CE'].includes(tk)) return 'lair';
+		return OPEN.has(tk) ? 'open' : 'wall';
+	};
+	let n = seed;
+	const random = () => ((n = (Math.imul(n, 1103515245) + 12345) >>> 0) % 100000) / 100000;
+	const hero = { x: tx, y: ty };
+	const plan = planZone(kind, W, H, hero, hero, [9, 11], random);
+	if (!plan) throw new Error('no zone here');
+	const seals = plan.doors.map((d, i) => ({
+		x: d.x + d.dx,
+		y: d.y + d.dy,
+		dx: d.dx,
+		dy: d.dy,
+		weak: i === 1
+	}));
+	const posts = zoneSpots(plan, hero, false).map((p, i) => ({
+		kind: (['BLINKY', 'PINKY'] as GhostKind[])[i],
+		x: p.x,
+		y: p.y,
+		a: p.a,
+		charge: 0
+	}));
+	return { zone: plan.tiles, width: plan.width, edges: plan.edges, posts, seals, lit: false, push: 0, broken: false };
 }
 
 function nearestOpen(fx: number, fy: number): [number, number] {
@@ -250,22 +220,10 @@ function nearestOpen(fx: number, fy: number): [number, number] {
 	return best;
 }
 
-const [rx, ry] = nearestOpen(W * 0.3, H * 0.5);
-const ring = planRing(rx, ry, 7.5);
 const q = new URLSearchParams(location.search);
 const [fx0, fy0] = (q.get('at') ?? '0.3,0.5').split(',').map(Number);
 const [zx, zy] = nearestOpen(W * fx0, H * fy0);
-const zone = planZone(
-	(x, y) => {
-			const tk = grid[y][x];
-			if (tk === 'ES') return 'void';
-			if (['LE', 'LT', 'BY', 'IY', 'PY', 'CE'].includes(tk)) return 'lair';
-			return OPEN.has(tk) ? 'open' : 'wall';
-		},
-	W,
-	H,
-	zx,
-	zy, Number(q.get('seed') ?? 1));
+const ring = planRing(zx, zy, Number(q.get('seed') ?? 1));
 const [lx, ly] = nearestOpen(W * 0.7, H * 0.42);
 
 // ------------------------------------------------------------------- the enraged on their runs
@@ -529,15 +487,11 @@ function frame(now: number): void {
 	const S = L.tileSize;
 	const ph = ringPhase(t);
 	if (ph) {
-		const rl = { guide: ph.guide, charge: ph.charge, lit: ph.lit ? 1 : 0, pressed: null, press: 0 };
-		const cur = st.style === 'now' ? ring : zone;
-		cur.lit = ph.lit;
-		if (st.style === 'now') drawRing(ctx, L, ring, rl, t);
-		else {
-			zone.broken = !!ph.broken;
-			drawZone(ctx, L, zone, { ...rl, pressed: ph.press ? (zone.doors.find((d) => d.weak) ?? null) : null, press: ph.press ?? 0 }, t);
-		}
-		for (const p of cur.posts) {
+		ring.lit = ph.lit;
+		ring.broken = !!ph.broken;
+		const thin = ring.seals.find((x) => x.weak) ?? null;
+		drawRing(ctx, L, ring, { guide: ph.guide, charge: ph.charge, lit: ph.lit ? 1 : 0, pressed: ph.press ? thin : null, press: ph.press ?? 0 }, t);
+		for (const p of ring.posts) {
 			const g = new RailGait();
 			drawPretender(ctx, L.offsetX + (p.x + 0.5) * S, L.offsetY + (p.y + 0.5) * S, S, p.kind, ph.lit ? 'hunt' : 'tell', look(g, 0, 1, t));
 		}

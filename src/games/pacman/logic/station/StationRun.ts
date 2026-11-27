@@ -137,6 +137,7 @@ export class StationRun {
 				food: (x, y) => isFood(x, y) && !progress.isCollected(x, y),
 				cell: (x, y) => rows[y]?.[x] === 'EU',
 				vent: (x, y) => /^0[ABC]$/.test(rows[y]?.[x] ?? ''),
+				tile: (x, y) => rows[y]?.[x] ?? 'ES',
 				width: rows[0].length,
 				height: rows.length
 			},

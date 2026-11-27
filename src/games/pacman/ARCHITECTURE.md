@@ -37,11 +37,11 @@ logic/
              slot, the F key, the mask, the shock; it owns the EchoCloneService riot), boss reward
   station/   the station's rules: StationRun (the level in the game: the squad, the hatch's charge,
              the power cells, the lurker's hold, the three hits, the escape with the rush, the
-             pulse, the breakthrough; StationGrid puts the doors and the ring's seals in the way and keeps
+             pulse, the breakthrough; StationGrid puts the doors and the zone's seals in the way and keeps
              the exit hatch shut until the escape), stationLayout (the console CN, the exit EX and the
              breakout's doors read from the matrix),
-             MimicTells (a lurker's tells, pure), StationSquad (the squad's brain: it reads the hero's way,
-             gives roles, runs the fence (a quarantine ring round a point ahead of him: seals in the corridors' throats where it crosses them, a thin one he can tear), the
+             MimicTells (a lurker's tells, pure), QuarantineZone (the fence's zone, pure: a stepped block of tiles, walls and corridors, each corner cut by its own staircase, wall islands and the lair kept whole, the hero's tile always in; its doors and the posts' spots), StationSquad (the squad's brain: it reads the hero's way,
+             gives roles, runs the fence (a quarantine zone round a point ahead of him: a seal across every corridor that leaves it, a thin one he can tear), the
              ambush and the vent, the phantom, the escape's chase and interceptions; it steers
              the hunting ghosts through GhostService.setSquadGuide), EscapeRush (the escape's breakout: 1-4 more running at the hero
              and at his way, kept off his breakthrough lane), StationEscape (the hatch's charge, the console, the
@@ -81,7 +81,7 @@ render/
                    the hull and baked architecture as one screen layer per resize, the phase's
                    infestation one per phase change, the live props in stage space, the light
                    map of sprite lights with the flashlight, bloom by downscale, grain on High),
-                   b7Hive (the infestation, the total takeover by a black parasite with a lime life: veins, organics over the plates, the torn lair doors, the heartbeat; revealed from the lair by the infection), pretender (the squad's creature, the amoeba: the painter and its RailGait), drawLurkerEye (the lurker's gold eye tell), quarantineRing (the fence's ring, its warning contour and seals), lureFlare (the escape's lure), goalMark (the goal's mark on the console, then the hatch), squadMarks (the plays'
+                   b7Hive (the infestation, the total takeover by a black parasite with a lime life: veins, organics over the plates, the torn lair doors, the heartbeat; revealed from the lair by the infection), pretender (the squad's creature, the amoeba: the painter and its RailGait), drawLurkerEye (the lurker's gold eye tell), quarantineRing (the fence's zone: the warning outline, the tinted tiles, the film along the outline and the seals across the corridors), lureFlare (the escape's lure), goalMark (the goal's mark on the console, then the hatch), squadMarks (the plays'
                    and the escape's marks).
   arcade/          the secret level: pixel sprites, maze bake, view, CRT pass, intermission,
                    ArcadeLevelRenderer
