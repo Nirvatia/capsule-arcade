@@ -15,6 +15,8 @@ import { DoomBossService } from '../doom/DoomBossService';
 import { DoomAbilityService } from '../doom/DoomAbilityService';
 import { BossRewardService } from '../bonuses/BossRewardService';
 import { RUN_TUNE, StationGrid, StationRun } from '../station/StationRun';
+import { NightwoodRun } from '../nightwood/NightwoodRun';
+import type { NightSound } from '../nightwood/NightwoodRun';
 import type { GameProfile } from '../rules/HypnosisService';
 import type { EventBus } from '../../engine/EventBus';
 import type { PacmanEventMap } from '../../core/Events';
@@ -23,6 +25,16 @@ import type { SeasonData } from './SeasonCatalog';
 import { busSink } from '../debug/debugLog';
 import { ARCADE, arcadeRound } from '../../config/arcadeConfig';
 import { levelTuning, powerSeconds } from '../../config/difficultyConfig';
+
+/** The cues the forest's sounds borrow (null: the classic rules already play one). */
+const NIGHT_CUES: Record<NightSound, 'fruit-expire' | 'fruit-collect' | 'ability-use' | null> = {
+	'lamp-out': 'fruit-expire',
+	'lamp-lit': 'fruit-collect',
+	flash: 'ability-use',
+	banish: null,
+	dawn: null,
+	flare: null
+};
 
 /** Boss and weapons of the hell level. */
 export interface DoomSession {
@@ -57,6 +69,10 @@ export interface LevelSession {
 	readonly doom: DoomSession | null;
 	/** The station's rules (the squad, the escape), on the station level only. */
 	readonly stationRun: StationRun | null;
+	/** The night forest boss level (DESIGN.md §7b). */
+	readonly nightwood: boolean;
+	/** The night forest's rules (the shrouds, the light, the Presence), on that level only. */
+	readonly nightwoodRun: NightwoodRun | null;
 	/** Boss levels only: the bonus life and the exit offered when the boss dies. */
 	readonly bossReward: BossRewardService | null;
 }
@@ -68,6 +84,7 @@ export interface LevelSessionRequest {
 	readonly season: SeasonData;
 	readonly hell: boolean;
 	readonly station?: boolean;
+	readonly nightwood?: boolean;
 	readonly secret: boolean;
 	readonly godMode: boolean;
 	/** Secret level only: the arcade round (1..3) and the tries left. */
@@ -78,6 +95,7 @@ export interface LevelSessionRequest {
 export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 	const { events, level, profile, season, hell, secret } = request;
 	const station = Boolean(request.station);
+	const nightwood = Boolean(request.nightwood);
 	const grid = station
 		? new StationGrid(new GridModel(season.grid))
 		: new GridService(new GridModel(season.grid));
@@ -124,6 +142,21 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		stationRun.sound = (sound) => events.emit('audio:station', { sound });
 		combat.setStationHit(null);
 	}
+	let nightwoodRun: NightwoodRun | null = null;
+	if (nightwood) {
+		// the forest plays by the classic rules: the Presence must fall, the last dot does not end it
+		fruit.setEnabled(false);
+		combat.setBossRules(true);
+		nightwoodRun = new NightwoodRun(season.grid, ghosts, player, progress, level);
+		nightwoodRun.powered = () => combat.isPowerActive;
+		nightwoodRun.sound = (sound) => {
+			// the forest borrows the game's cues; the banishing and the flare already have their own
+			const cue = NIGHT_CUES[sound];
+			if (cue) {
+				events.emit('audio:cue', { cue });
+			}
+		};
+	}
 	const mods = seasonModifiers(season.name);
 	fruit.setFruitDuration(mods.fruitDuration);
 	if (secret) {
@@ -162,6 +195,7 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		season,
 		hell,
 		station,
+		nightwood,
 		secret,
 		grid,
 		score,
@@ -176,7 +210,8 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 		lairCode,
 		doom,
 		stationRun,
-		bossReward: hell || station ? new BossRewardService(grid, events) : null
+		nightwoodRun,
+		bossReward: hell || station || nightwood ? new BossRewardService(grid, events) : null
 	};
 }
 
@@ -194,6 +229,7 @@ export function resetLevelSession(session: LevelSession): void {
 	session.doom?.abilities.reset();
 	session.bossReward?.reset();
 	session.stationRun?.reset();
+	session.nightwoodRun?.reset();
 	session.lairCode.reset();
 }
 
@@ -210,5 +246,6 @@ export function resetForNextLevel(session: LevelSession): void {
 	session.doom?.abilities.reset();
 	session.bossReward?.reset();
 	session.stationRun?.reset();
+	session.nightwoodRun?.reset();
 	session.combat.nextLevel();
 }

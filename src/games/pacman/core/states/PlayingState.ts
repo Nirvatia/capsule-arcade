@@ -67,10 +67,12 @@ export class PlayingState implements GameState {
 		fruit.update(dt, player);
 		const fireRequested = ctx.level.consumeFireRequest();
 		// the arcade is plain Pac-Man: no Easter egg, no abilities; the hell fires instead
-		if (!ctx.level.secretMode) {
+		const night = session.nightwoodRun;
+		if (!ctx.level.secretMode && !night) {
 			egg.update(dt, player);
 		}
-		if (!ctx.level.secretMode && !session.doom) {
+		// the forest's own fire key is the torch's flash, not an ability
+		if (!ctx.level.secretMode && !session.doom && !night) {
 			const world = {
 				player,
 				ghosts,
@@ -115,6 +117,17 @@ export class PlayingState implements GameState {
 			}
 		} else {
 			ghosts.update(dt);
+			night?.update(dt, fireRequested);
+		}
+		// the Presence has fallen: the dawn, and the heart or the exit (the hell's rule)
+		if (night && night.defeated && session.bossReward && !combat.endRequested) {
+			const reward = session.bossReward;
+			reward.offer(player.tile);
+			reward.update(player);
+			const choice = reward.consumeChoice();
+			if (choice) {
+				combat.completeHellLevel(choice === 'life');
+			}
 		}
 		combat.update(dt);
 		this.hitStop = combat.consumeHitStop();

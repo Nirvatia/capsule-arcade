@@ -1,11 +1,17 @@
 import { HELL_LEVEL_INTERVAL } from '../../config/gridConfig';
 
-/** The boss worlds: the hell (combat) and the station (stealth, DESIGN.md §7a). */
-export type BossId = 'hell' | 'station';
+/**
+ * The boss worlds: the hell (combat), the station (stealth, DESIGN.md §7a) and the night forest
+ * (light against the dark, DESIGN.md §7b).
+ */
+export type BossId = 'hell' | 'station' | 'nightwood';
 
-export const BOSSES: readonly BossId[] = ['hell', 'station'];
+export const BOSSES: readonly BossId[] = ['hell', 'station', 'nightwood'];
 
-/** The bosses a run draws from: the finished ones (the station back in since 2026-11-26). */
+/**
+ * The bosses a run draws from: the finished ones (the station back in since 2026-11-26). The night
+ * forest (2026-11-27) is built and played from the dev panel; it joins once the owner has played it.
+ */
 export const BOSS_ROTATION: readonly BossId[] = ['hell', 'station'];
 
 /** Every HELL_LEVEL_INTERVAL-th level is a boss level, for both heroes. */
