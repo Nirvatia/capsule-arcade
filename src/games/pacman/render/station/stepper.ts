@@ -29,6 +29,40 @@ export interface StepperOpts {
 	/** The fright, 0..1; `white` is the blink's white half. */
 	readonly fright?: number;
 	readonly white?: boolean;
+	/** A candidate look of the overheat (prototype `pretender?rage`); the game's own when absent. */
+	readonly rage?: StepperRage;
+}
+
+/** What a look of the overheat sets: the body's colours at full heat and the face's painter. */
+export interface StepperHeat {
+	readonly shade: RGB;
+	readonly base: RGB;
+	readonly light: RGB;
+	readonly core: RGB;
+	/** The soot at the rim, the hairline cracks, the embers. */
+	readonly soot: RGB;
+	readonly crack: RGB;
+	readonly ember: RGB;
+}
+export interface StepperRage {
+	readonly hot: StepperHeat;
+	/** Paints the rage's face in place of the sockets and the grin; (x, y) the face's centre. */
+	readonly face?: (
+		c: CanvasRenderingContext2D,
+		f: {
+			readonly x: number;
+			readonly y: number;
+			readonly alpha: number;
+			readonly open: number;
+			readonly kind: GhostKind;
+			readonly px: number;
+			readonly faceX: number;
+			readonly faceY: number;
+			readonly time: number;
+			readonly slant: readonly [number, number];
+			readonly size: readonly [number, number];
+		}
+	) => void;
 }
 
 type Ctx = CanvasRenderingContext2D;
@@ -85,11 +119,14 @@ const KIND: Readonly<Record<GhostKind, Kind>> = {
 	}
 };
 /** The overheat: lit lime inside, a deep green rim. */
-const HOT = {
+const HOT: StepperHeat = {
 	shade: rgbOf('#1b3f0a'),
 	base: rgbOf('#72b81c'),
 	light: rgbOf('#c9fb48'),
-	core: rgbOf('#fbffd2')
+	core: rgbOf('#fbffd2'),
+	soot: [10, 30, 5],
+	crack: [22, 52, 8],
+	ember: [190, 255, 80]
 };
 
 const FRIGHT = {
@@ -123,14 +160,20 @@ const lerpRGB = (a: RGB, b: RGB, t: number): RGB => [
 
 /** The kind's palette taken toward the overheat's by `heat`, or toward the fright's blue (white in
  *  the blink) by `fright`; the rim stays the kind's while it is only hot. */
-function palette(kind: GhostKind, heat: number, fright = 0, white = false): Pal {
+function palette(
+	kind: GhostKind,
+	heat: number,
+	fright = 0,
+	white = false,
+	hot: StepperHeat = HOT
+): Pal {
 	const k = KIND[kind];
 	const h = smooth(0, 1, heat);
 	const scared = white ? WHITE : FRIGHT;
 	const f = clamp(fright, 0, 1);
-	const shade = lerpRGB(lerpRGB(k.shade, HOT.shade, h), scared.shade, f);
-	const base = lerpRGB(lerpRGB(k.base, HOT.base, h), scared.base, f);
-	const light = lerpRGB(lerpRGB(k.light, HOT.light, h), scared.light, f);
+	const shade = lerpRGB(lerpRGB(k.shade, hot.shade, h), scared.shade, f);
+	const base = lerpRGB(lerpRGB(k.base, hot.base, h), scared.base, f);
+	const light = lerpRGB(lerpRGB(k.light, hot.light, h), scared.light, f);
 	return {
 		shade: rgba(shade, 1),
 		base: rgba(base, 1),
@@ -709,7 +752,8 @@ export function drawStepper(
 	const heat = clamp(o.heat, 0, 1);
 	const tl = clamp(o.tell ?? 0, 0, 1);
 	const fr = clamp(o.fright ?? 0, 0, 1);
-	const p = palette(kind, heat, fr, o.white);
+	const hotL = o.rage?.hot ?? HOT;
+	const p = palette(kind, heat, fr, o.white, hotL);
 	const soul = SOUL[kind];
 	const fury = FURY[kind];
 	const dx = o.lookX || o.lookY ? o.lookX : 0;
@@ -757,7 +801,7 @@ export function drawStepper(
 		return { gx, gy, lift };
 	});
 	// the feet and the crest keep the kind's own colour, so the four stay four when the body goes lime
-	const kindPal = palette(kind, 0.12 * heat, fr, o.white);
+	const kindPal = palette(kind, 0.12 * heat, fr, o.white, hotL);
 	const footPal = kindPal;
 	const paintFoot = (f: { gx: number; gy: number; lift: number }) => {
 		c.save();
@@ -795,7 +839,7 @@ export function drawStepper(
 	c.clip();
 	// the gel is lit from inside: a soft glow at its heart, a bright rim at the lower right
 	const heart = c.createRadialGradient(0.01, 0.03, 0.01, 0.01, 0.03, 0.32);
-	heart.addColorStop(0, rgba(heat > 0.01 ? HOT.core : p.rim, 0.28 + 0.52 * heat));
+	heart.addColorStop(0, rgba(heat > 0.01 ? hotL.core : p.rim, 0.28 + 0.52 * heat));
 	heart.addColorStop(1, rgba(p.glow, 0));
 	c.globalCompositeOperation = 'lighter';
 	c.fillStyle = heart;
@@ -829,12 +873,12 @@ export function drawStepper(
 	// the heat's marks: a dark vignette at the rim, hairline cracks, bubbles climbing inside
 	if (heat > 0.02) {
 		const soot = c.createRadialGradient(0, -0.02, 0.18, 0, -0.02, 0.4);
-		soot.addColorStop(0, 'rgba(10, 30, 5, 0)');
-		soot.addColorStop(1, `rgba(10, 30, 5, ${0.5 * heat})`);
+		soot.addColorStop(0, rgba(hotL.soot, 0));
+		soot.addColorStop(1, rgba(hotL.soot, 0.5 * heat));
 		c.fillStyle = soot;
 		c.fillRect(-0.4, -0.4, 0.8, 0.8);
 		const idx = ORDER.indexOf(kind);
-		c.strokeStyle = `rgba(22, 52, 8, ${0.75 * heat})`;
+		c.strokeStyle = rgba(hotL.crack, 0.75 * heat);
 		c.lineWidth = Math.max(px, 0.014);
 		c.lineCap = 'round';
 		c.lineJoin = 'round';
@@ -888,12 +932,27 @@ export function drawStepper(
 			gold: tl,
 			scared: fr
 		});
-		socket(c, p, fx + side * 0.148, fy - 0.04, fury.size[i], fury.slant[i], side, o, px, fury2);
+		if (!o.rage?.face)
+			socket(c, p, fx + side * 0.148, fy - 0.04, fury.size[i], fury.slant[i], side, o, px, fury2);
 	}
 	mouthCalm(c, p, kind, fx, fy + 0.15, px, calm * (1 - fr));
 	mouthScared(c, fx, fy + 0.155, px, calm * fr, t);
 	sweat(c, fx + 0.27, fy - 0.2 + ((t * 1.1) % 1) * 0.14, px, fr * (1 - ((t * 1.1) % 1) * 0.7));
-	grin(c, kind, fx, fy + 0.095, open, px, fury2);
+	if (o.rage?.face)
+		o.rage.face(c, {
+			x: fx,
+			y: fy,
+			alpha: fury2,
+			open,
+			kind,
+			px,
+			faceX: o.faceX,
+			faceY: o.faceY,
+			time: t,
+			slant: fury.slant,
+			size: fury.size
+		});
+	else grin(c, kind, fx, fy + 0.095, open, px, fury2);
 	c.restore();
 	for (const f of feet) if (f.gy >= 0.2) paintFoot(f);
 	// embers off the head
@@ -902,7 +961,7 @@ export function drawStepper(
 			const k = (t * 0.7 + i * 0.36) % 1;
 			const ex = (i - 1) * 0.12 + Math.sin(t * 3 + i) * 0.03;
 			const ey = -0.36 - k * 0.2;
-			disc(c, ex, ey, 0.03, `rgba(190, 255, 80, ${0.2 * (1 - k) * heat})`);
+			disc(c, ex, ey, 0.03, rgba(hotL.ember, 0.2 * (1 - k) * heat));
 			disc(c, ex, ey, 0.013, `rgba(251, 255, 210, ${0.95 * (1 - k) * heat})`);
 		}
 	}

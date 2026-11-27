@@ -5,6 +5,7 @@
 // squad's four colours and the game's scale. No station, no play.
 //   `node prototypes/pacman/build.mjs pretender`, open the file. Drawn by the game's own
 //   `render/station/pretender` (in the game since 2026-11-26).
+import { drawRageSheet } from './rage';
 import { GRID_STATION } from '../../../src/games/pacman/config/mazes';
 import { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
 import type { GhostKind as SquadKind } from '../../../src/games/pacman/logic/actors/GhostModel';
@@ -252,4 +253,14 @@ function frame(now: number): void {
 	});
 	requestAnimationFrame(frame);
 }
-requestAnimationFrame(frame);
+if (new URLSearchParams(location.search).has('rage')) {
+	// the stepper's rage, three candidates against the current one on a frozen sheet (rage.ts)
+	const vw = window.innerWidth;
+	const vh = window.innerHeight;
+	view.width = Math.round(vw * D);
+	view.height = Math.round(vh * D);
+	ctx.setTransform(D, 0, 0, D, 0, 0);
+	drawRageSheet(ctx, vw, vh);
+} else {
+	requestAnimationFrame(frame);
+}
