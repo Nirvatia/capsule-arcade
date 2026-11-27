@@ -466,8 +466,8 @@ maze reads in **full light** (no dark mazes).
 Prototype `prototypes/pacman/zone`; the rules are game code in `logic/zone` (`ZoneService`, numbers
 in `config/zoneConfig.ts`), the picture in `render/zone` (`zoneBake`, `zoneSprites`, `ZoneView`).
 
-- **The chase** (the lives): the **tushkans**, a pack of four rodents, one collar colour each (the
-  role): a chaser, an ambusher (aims where the hero is heading), a chaser, a prowler that rushes when
+- **The chase** (the lives): the **tushkans**, a pack of three rodents, one collar colour each (the
+  role): a chaser, an ambusher (aims where the hero is heading), a prowler that rushes when
   near. They creep, sniff and hop two or three tiles at a time; close to the hero they rush for 1.2 s
   (faster than he runs) and tire; a bite is one life and the biter leaps back. The **poltergeist**, a
   fourth character: every 9-13 s it shows itself in a straight clear corridor with the hero, marks the
@@ -498,9 +498,10 @@ in `config/zoneConfig.ts`), the picture in `render/zone` (`zoneBake`, `zoneSprit
 - **The hero**: three lives in the Zone, a hit gives 1.4 s of grace; the fruit heroes as in the other
   worlds.
 - **The picture** (the hell's standard: one baked scene, bold cached sprites with a dark outline,
-  nothing hanging): grass and birches round a town of panel-block roofs (the walls, one colour to a
-  building, a parapet, a few hatches, vents and holes with trees), asphalt streets with a dashed
-  centre line, cracks, weeds and puddles (the corridors), a paved plaza with the wheel; the roofs sit
+  few details and nothing hanging; the owner's note on the first pass, "too much junk on the maze":
+  no cracks, lines, puddles or roof clutter, plain dots): grass and birches round a town of
+  panel-block roofs (the walls, one calm colour to a building, a parapet), plain asphalt streets (the
+  corridors), a paved plaza with the wheel; the roofs sit
   in the street (light from the top left, the shadow down and right). Bakes in about a second, then
   60 fps in headless Chromium without a GPU; no full-screen layer except the wave and the siren's
   vignette. **Open**: the owner's play and tuning, the location's final pick, the owner's own maze
