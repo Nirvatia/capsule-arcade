@@ -76,6 +76,16 @@ last (see Later).
    `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks sitting in the
    floor (light from the top left, a cast shadow), no height or extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
    heartbeat (~2.5 s); the teleport is the iron gateway; night stays `cord`.
+   **The hell, the owner's list (2026-11-27)**: he finds the fight too empty (most of the time you
+   wander an empty maze) and the BFG too strong. Done: the BFG's orb 350 to 250 and its tracers 150 to
+   100 (six orb hits for the boss, was five), the tar pool keeps a margin from its tile's edge (tested).
+   **Mock-ups for his approval** (`prototypes/pacman/hell-phase`, built from the game's own hell):
+   (1) **food** for the empty maze, three candidates (souls, bones, eyes); the game turns the drawn
+   maze's dots into floor and `assertDoomMap` demands a map without them, so food needs both changed;
+   its effect (score, heals, the BFG's charge) is open. (2) **the split**: the boss falls into four
+   ghosts, the weapon is shut off and it is plain Pac-Man for a while, four moments (the omen, the
+   split, the Pac-Man phase with a timer, the return with the boss weakened and the weapon back);
+   open: how long, whether the energizers stay, what surviving earns.
 2. **A random boss on every 5th level, for both heroes**: in (`logic/level/BossCatalog`). It
    draws from `BOSS_ROTATION`, the finished bosses: the hell and the station (since 2026-11-26).
    Left: difficulty scaled by level number, not world, now that a second boss is in.

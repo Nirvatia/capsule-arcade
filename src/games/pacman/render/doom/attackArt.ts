@@ -148,9 +148,11 @@ export function tar(
 	t: number
 ): void {
 	ctx.save();
-	// the pool never leaves its tiles
+	// the pool never leaves its tiles, and keeps a margin from their edge: the corridor's wall, its rim
+	// and its shadow lie there, and tar over them read as spilling out of the tile
+	const pad = s * 0.07;
 	ctx.beginPath();
-	for (const q of tiles) ctx.rect(ox + q.c * s, oy + q.r * s, s, s);
+	for (const q of tiles) ctx.rect(ox + q.c * s + pad, oy + q.r * s + pad, s - pad * 2, s - pad * 2);
 	ctx.clip();
 	const blob = (tile: Tile, grow: number): void => {
 		const cx = ox + (tile.c + 0.5) * s;
@@ -159,7 +161,7 @@ export function tar(
 		const n = 16;
 		for (let i = 0; i <= n; i += 1) {
 			const a = (i / n) * Math.PI * 2;
-			const r = s * (0.5 + 0.06 * (noise(tile.c * 3 + i, tile.r * 5) - 0.5)) + grow;
+			const r = s * (0.42 + 0.05 * (noise(tile.c * 3 + i, tile.r * 5) - 0.5)) + grow;
 			const x = cx + Math.cos(a) * r;
 			const y = cy + Math.sin(a) * r;
 			if (i) ctx.lineTo(x, y);
@@ -174,8 +176,8 @@ export function tar(
 		for (const q of tiles) {
 			const x = ox + (q.c + 0.5) * s;
 			const y = oy + (q.r + 0.5) * s;
-			if (has(q.c + 1, q.r)) ctx.fillRect(x, y - s * 0.34 - grow, s, s * 0.68 + grow * 2);
-			if (has(q.c, q.r + 1)) ctx.fillRect(x - s * 0.34 - grow, y, s * 0.68 + grow * 2, s);
+			if (has(q.c + 1, q.r)) ctx.fillRect(x, y - s * 0.3 - grow, s, s * 0.6 + grow * 2);
+			if (has(q.c, q.r + 1)) ctx.fillRect(x - s * 0.3 - grow, y, s * 0.6 + grow * 2, s);
 		}
 	};
 	const rim = Math.max(1, s * 0.035);
