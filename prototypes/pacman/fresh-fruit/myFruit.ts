@@ -27,8 +27,8 @@ type Ctx = CanvasRenderingContext2D;
 type Shape = (c: Ctx, ox: number, oy: number, k: number) => void;
 const TAU = Math.PI * 2;
 
-/** The hero's size against the tile: a round body, the whole ice rim inside the tile. */
-export const MY_BODY_RATIO = 0.3;
+/** The hero's size against the tile (+10%, the owner, 2026-11-27): a round body, the ice rim and the bow still inside the tile. */
+export const MY_BODY_RATIO = 0.33;
 
 const TEAL: RGB = [8, 52, 80];
 const ICE_WHITE: RGB = [240, 255, 255];
@@ -122,8 +122,15 @@ abstract class FruitBase extends Hero {
 	private nextBlink = 2.6;
 	private blinks = 0;
 	protected squint = 0;
+	/** The calm trail's loose juice drops and bubbles (the owner's calm trail, kept). */
+	protected fizz: Array<{ x: number; y: number; vx: number; vy: number; ang: number; size: number; life: number; max: number; isBubble: boolean; alt: boolean }> = [];
+	private fizzDist = 0;
+	/** The hero's ending buff, for the ice rim's blink. */
+	protected endingNow = false;
 	protected sway = new Spring(0);
 	protected abstract readonly kit: Kit;
+	/** The owner's calm ribbon: an edge and a bright juice, in two tones each. */
+	protected abstract readonly calm: { edge: [RGB, RGB]; core: [RGB, RGB]; drop: [string, string]; bubble: [string, string] };
 
 	constructor() {
 		super();
@@ -154,8 +161,55 @@ abstract class FruitBase extends Hero {
 		_alpha: number
 	): void {}
 
+	update(dt: number, s: Parameters<Hero['update']>[1]): void {
+		this.endingNow = s.ending;
+		super.update(dt, s);
+	}
+
+	/** Loose juice: drops and bubbles shaken off the fruit (calm only; the buff's trail is the ribbon). */
+	protected emitFizz(count: number, kick: boolean): void {
+		if (this.power > 0.35) return;
+		const R = this.r;
+		const bx = -Math.cos(this.angle);
+		const by = -Math.sin(this.angle);
+		for (let i = 0; i < count; i++) {
+			const lat = (this.random() - 0.5) * R * (kick ? 1.15 : 0.85);
+			const spd = R * ((kick ? 2.1 : 1.1) + this.random() * 1.55);
+			const life = 0.28 + this.random() * 0.2;
+			this.fizz.push({
+				x: this.x + bx * R * (0.5 + this.random() * 0.35) - by * lat,
+				y: this.y + by * R * (0.5 + this.random() * 0.35) + bx * lat,
+				vx: bx * spd - by * (this.random() - 0.5) * R * 0.85,
+				vy: by * spd + bx * (this.random() - 0.5) * R * 0.85,
+				ang: this.angle + Math.PI + (this.random() - 0.5) * 0.4,
+				size: R * (0.19 + this.random() * 0.11),
+				life,
+				max: life,
+				isBubble: this.random() < 0.25,
+				alt: this.random() < 0.35
+			});
+		}
+		if (this.fizz.length > 30) this.fizz.splice(0, this.fizz.length - 30);
+	}
+
 	protected afterUpdate(dt: number): void {
 		this.wake.push(this.x, this.y, this.time, this.moving ? 1 : 0);
+		if (this.moving) {
+			this.fizzDist += this.r * 3.8 * dt;
+			if (this.fizzDist >= this.r * 0.98) {
+				this.fizzDist = 0;
+				this.emitFizz(1, false);
+			}
+		}
+		const drag = Math.pow(0.89, dt * 60);
+		for (const f of this.fizz) {
+			f.life -= dt;
+			f.x += f.vx * dt;
+			f.y += f.vy * dt;
+			f.vx *= drag;
+			f.vy *= drag;
+		}
+		this.fizz = this.fizz.filter((f) => f.life > 0);
 		this.squint = Math.max(0, this.squint - dt / 0.26);
 		this.sway.step(0.05 * Math.sin(this.time * 3) - 0.04 * (this.moving ? 1 : 0), dt, 120, 8.5);
 		if (this.blink >= 0) {
@@ -169,14 +223,17 @@ abstract class FruitBase extends Hero {
 	}
 	protected resetLooks(): void {
 		this.wake.clear();
+		this.fizz = [];
 		this.sway.value = 0;
 		this.sway.velocity = 0;
 	}
 	protected onBite(): void {
+		this.emitFizz(2, true);
 		this.squint = 1;
 		this.sway.velocity += 4.5;
 	}
 	protected onTurn(): void {
+		this.emitFizz(4, true);
 		this.sway.velocity += (Math.random() < 0.5 ? 1 : -1) * 6;
 	}
 
@@ -212,6 +269,8 @@ abstract class FruitBase extends Hero {
 		ly: number
 	): void {
 		const ink: RGB = this.inkColor();
+		// the buff running out: the ice rim blinks off and on
+		if (this.endingNow && p > 0.4) p *= 0.3 + 0.7 * (0.5 + 0.5 * Math.cos(this.time * 10));
 		ctx.save();
 		ctx.lineJoin = 'round';
 		ctx.lineCap = 'round';
@@ -325,6 +384,72 @@ abstract class FruitBase extends Hero {
 	// ---------------------------------------------------------------------- the trail
 
 	/**
+	 * The owner's calm trail, kept as he drew it: a dark edge and a bright ribbon of juice swaying
+	 * behind, and the drops and bubbles it sheds.
+	 */
+	private drawCalmTrail(ctx: Ctx): void {
+		const R = this.r;
+		const sway = (u: number) => Math.sin(u * 7 - this.time * 6.6) * R * 0.09 * Math.min(1, u * 3);
+		const c = this.calm;
+		this.wake.draw(ctx, this.time, {
+			life: 0.42,
+			width: R * 0.54,
+			capHead: R * 0.4,
+			capTail: R * 2.3,
+			add: false,
+			shift: sway,
+			widen: (u) => 1 - u * 0.68,
+			color: (u, a) => css(mix(c.edge[0], c.edge[1], u) as RGB, 0.84 * a * (1 - u * 0.86))
+		});
+		this.wake.draw(ctx, this.time, {
+			life: 0.38,
+			width: R * 0.34,
+			capHead: R * 0.34,
+			capTail: R * 2.0,
+			add: false,
+			shift: sway,
+			widen: (u) => 1 - u * 0.72,
+			color: (u, a) => css(mix(c.core[0], c.core[1], u) as RGB, 0.95 * a * (1 - u * 0.82))
+		});
+		for (const f of this.fizz) {
+			const u = clamp01(f.life / f.max);
+			const a = Math.min(1, (1 - u) * 6) * u;
+			if (a <= 0.02) continue;
+			ctx.save();
+			ctx.globalAlpha = a;
+			if (f.isBubble) {
+				const br = Math.max(1.8, f.size * (0.62 + 0.58 * (1 - u)));
+				ctx.beginPath();
+				ctx.arc(f.x, f.y, br, 0, TAU);
+				ctx.fillStyle = c.bubble[1];
+				ctx.fill();
+				ctx.strokeStyle = c.bubble[0];
+				ctx.lineWidth = Math.max(0.85, br * 0.26);
+				ctx.stroke();
+				disc(ctx, f.x - br * 0.34, f.y - br * 0.34, Math.max(0.65, br * 0.28), '#ffffff');
+			} else {
+				const sz = Math.max(1.7, f.size * (0.5 + 0.5 * u));
+				ctx.translate(f.x, f.y);
+				ctx.rotate(f.ang);
+				const len = sz * 1.25;
+				const wid = sz * 0.66;
+				ctx.beginPath();
+				ctx.moveTo(len, 0);
+				ctx.quadraticCurveTo(len * 0.16, -wid, -len * 0.52, -wid * 0.56);
+				ctx.quadraticCurveTo(-len * 0.95, 0, -len * 0.52, wid * 0.56);
+				ctx.quadraticCurveTo(len * 0.16, wid, len, 0);
+				ctx.closePath();
+				ctx.fillStyle = f.alt ? c.drop[0] : c.drop[1];
+				ctx.fill();
+				ctx.strokeStyle = css(this.inkColor(), 0.72);
+				ctx.lineWidth = Math.max(0.6, sz * 0.15);
+				ctx.stroke();
+			}
+			ctx.restore();
+		}
+	}
+
+	/**
 	 * The trail, one smooth liquid ribbon (the fizzy one, the owner's pick): a dark edge, a sheath,
 	 * a warm core, a gloss line and a few fine bubbles rising inside it in the buff. Its length is fixed
 	 * in tiles, not in time (a fast hero does not trail a snake) and it tapers to nothing; calm it
@@ -337,6 +462,10 @@ abstract class FruitBase extends Hero {
 			// a stopped hero lets the ribbon shrink on its own (the wake does it)
 		}
 		const t = this.time;
+		if (p < 0.35) {
+			this.drawCalmTrail(ctx);
+			return;
+		}
 		const raw = this.wake.points(t, { life: 0.5, width: R, capHead: R * 0.3, capTail: R * 1.5 })[0];
 		if (!raw || raw.length < 5) return;
 		const maxLen = R * (2.6 + 1.8 * p);
@@ -480,6 +609,12 @@ export class MyOrange extends FruitBase {
 		core: [255, 154, 22],
 		core2: [240, 100, 10],
 		ice: [70, 214, 248]
+	};
+	protected readonly calm = {
+		edge: [[226, 76, 6], [156, 40, 4]] as [RGB, RGB],
+		core: [[255, 212, 58], [255, 132, 14]] as [RGB, RGB],
+		drop: ['#ffcf38', '#ff7c0c'] as [string, string],
+		bubble: ['#fff4cc', 'rgba(255,214,72,.28)'] as [string, string]
 	};
 	protected inkColor(): RGB {
 		return ORANGE.ink;
@@ -671,6 +806,12 @@ export class MyMelon extends FruitBase {
 		core: [244, 70, 108],
 		core2: [220, 34, 84],
 		ice: [96, 240, 214]
+	};
+	protected readonly calm = {
+		edge: [[24, 136, 56], [14, 78, 34]] as [RGB, RGB],
+		core: [[255, 76, 118], [226, 22, 68]] as [RGB, RGB],
+		drop: ['#ff9ab4', '#ff4a7c'] as [string, string],
+		bubble: ['#ffe4ec', 'rgba(255,120,150,.28)'] as [string, string]
 	};
 	protected inkColor(): RGB {
 		return MELON.ink;
