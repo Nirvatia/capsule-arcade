@@ -672,9 +672,14 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
 - **The hell's look (in the game)**: the flesh hell. One flesh for the whole
   world, no void and nothing hanging in the air; the maze is built of charred iron plates (the owner's pick, "metal doom"): one block to a tile,
   neutral and lighter than the red floor so the maze parts from the ground in grey too, each with a
-  bevel, a seam and four rivets, every island edged by a dark outline with a thin hot line that
-  pulses with the heart. No height or face (the bevel is inside the tile), so the corridors keep
-  their full width; the lair's gate (two riveted leaves of the walls' iron with glowing slots, between two iron posts) slides open only for whoever goes through it, the boss, his echo or an imp (leaving the lair, or stepping into the doorway from the corridor; never for the boss running past) and shuts behind them; the corridor floor is a dark flesh, and the ground outside the maze is not
+  bevel, a seam and four rivets, every island edged by a dark outline. The plates **sit in the
+  floor** (the owner's pick "sitting walls", 2026-11-27): the light comes from the top left; the
+  hot line that pulses with the heart no longer rings the plate but lies as a seam on the floor
+  at the foot of the lit sides (north and west) and fades into the shadow on the far sides; a
+  warm glow on the floor round the foot, a long cast shadow down and right and a tight dark
+  crease keep the iron from floating (`fleshBake`, `WALL.seam`/`cast`/`crease`/`floorGlow`). Still
+  no height or face (the bevel is inside the tile; a south face was tried and not picked), so the
+  corridors keep their full width; the lair's gate (two riveted leaves of the walls' iron with glowing slots, between two iron posts) slides open only for whoever goes through it, the boss, his echo or an imp (leaving the lair, or stepping into the doorway from the corridor; never for the boss running past) and shuts behind them; the corridor floor is a dark flesh, and the ground outside the maze is not
   dimmed further (a darker surround makes the maze hang in the air). A little rust (stains in the corners, streaks from the rivets) and blood (spatters, in patches, some with drips) sit on the plates, so they belong to the scene. Ribs half buried, veins, cysts and pools of blood around; a slow heartbeat
   light (a breathing swell, not a flash: the owner found the sharp beat tiring); few, bold details on a surface, nothing hanging; a calm background. The teleport is an
   iron gateway set in the end of the corridor (the maze's own iron with rivets and lamps), a cyan

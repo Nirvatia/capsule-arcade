@@ -149,6 +149,35 @@ export function clipTo(tex: HTMLCanvasElement, mask: HTMLCanvasElement): HTMLCan
 	return c;
 }
 
+/** `a` without the part under `b`. */
+export function without(a: HTMLCanvasElement, b: HTMLCanvasElement): HTMLCanvasElement {
+	const c = makeCanvas(a.width, a.height);
+	const x = context(c);
+	x.drawImage(a, 0, 0);
+	x.globalCompositeOperation = 'destination-out';
+	x.drawImage(b, 0, 0);
+	return c;
+}
+
+/** `src` moved by (dx, dy). */
+export function moved(src: HTMLCanvasElement, dx: number, dy: number): HTMLCanvasElement {
+	const c = makeCanvas(src.width, src.height);
+	context(c).drawImage(src, dx, dy);
+	return c;
+}
+
+/** `src` grown by `r` px (drawn eight ways round, and once as it is). */
+export function dilate(src: HTMLCanvasElement, r: number): HTMLCanvasElement {
+	const c = makeCanvas(src.width, src.height);
+	const x = context(c);
+	x.drawImage(src, 0, 0);
+	for (let k = 0; k < 8; k += 1) {
+		const an = (k / 8) * 6.2832;
+		x.drawImage(src, Math.cos(an) * r, Math.sin(an) * r);
+	}
+	return c;
+}
+
 /**
  * Muscle fibres: short curved strokes that follow the flow field (`dir` undefined) or a given
  * direction, dark and light, scattered over a rectangle.

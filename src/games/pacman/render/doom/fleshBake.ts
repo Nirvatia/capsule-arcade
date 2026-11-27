@@ -2,8 +2,10 @@
 // `prototypes/pacman/art/hell-flesh-scene.html`, ported from its canvas code). The world is one
 // flesh with no void: a ground of fibres, pores, veins, half-buried ribs and pools of blood; the
 // maze is cut into it, its corridors the same flesh a little darker and wetter; its walls are
-// charred iron plates, one block to a tile, with a dark outline, a bevel, rivets and a hot edge, no
-// height; the tunnels are iron gateways drawn live (`fleshTeleport`).
+// charred iron plates, one block to a tile, with a dark outline, a bevel and rivets, no height;
+// they sit in the floor: the light comes from the top left, a hot seam lies on the floor at the
+// foot of the lit sides, the far sides lie in a cast shadow; the tunnels are iron gateways drawn
+// live (`fleshTeleport`).
 //
 // Everything is painted in the scene's own units (a tile is 32, the maze's top-left corner is at
 // (MX, MY)) and `FleshWorld` draws the result scaled to the game's world. Only what moves is not
@@ -18,6 +20,7 @@ import {
 	blur,
 	clipTo,
 	context,
+	dilate,
 	edgeOf,
 	fbm,
 	fibres,
@@ -25,10 +28,12 @@ import {
 	makeCanvas,
 	mixHex,
 	mixN,
+	moved,
 	rgbaOf,
 	rng,
 	threshold,
-	tint
+	tint,
+	without
 } from './fleshNoise';
 
 /** One tile of the scene. */
@@ -81,7 +86,15 @@ const WALL = {
 	/** Darkening of the ground outside the maze. */
 	bgDim: 0.3,
 	/** Strength of the large-scale light and dark patches on the walls. */
-	mottle: 0.12
+	mottle: 0.12,
+	/** Width of the hot seam on the floor at the plates' foot, px. */
+	seam: 2.6,
+	/** The plates' cast shadow: the light comes from the top left, so it falls down and right. */
+	cast: { dx: 6, dy: 8, alpha: 0.78 },
+	/** The dark crease where a plate meets the floor. */
+	crease: 0.6,
+	/** The warm glow the seam throws on the floor round the foot. */
+	floorGlow: 0.34
 } as const;
 
 /** The plates: each wall tile is one block. */
@@ -696,7 +709,13 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 				return c2;
 			};
 			w.drawImage(clipTo(tint(ring(4), st.outline), wallM), LX, LY);
-			ex.drawImage(clipTo(tint(ring(1.8), `rgba(${st.cord},.9)`), wallM), LX, LY);
+			// the hot seam lies on the floor, not on the plate, and only where the light reaches: the
+			// far side (down and right) is in the plates' shadow, the seam fades out into it
+			const lit = without(
+				without(dilate(wallM, st.seam), wallM),
+				blur(dilate(moved(wallM, st.cast.dx / 2, st.cast.dy / 2), 3), 2, true)
+			);
+			ex.drawImage(tint(lit, `rgba(${st.cord},.9)`), LX, LY);
 		}
 	}
 	const glowCv = blur(emis.cv, 3, true);
@@ -764,6 +783,13 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 		m.globalAlpha = 0.8;
 		m.drawImage(bw.cv, LX, LY);
 		m.globalAlpha = 1;
+		// the plates sit in the floor: a warm glow at the foot, a long cast shadow down and right,
+		// a tight dark crease; the plates themselves stay clear of all three
+		m.globalAlpha = st.floorGlow;
+		m.drawImage(without(blur(tint(dilate(wallM, 5), '#c8401f'), 2, true), wallM), LX, LY);
+		m.globalAlpha = 1;
+		castOnFloor(m, wallM, st.cast.dx, st.cast.dy, 3, st.cast.alpha, LX, LY);
+		castOnFloor(m, wallM, 0, 0, 2, st.crease, LX, LY);
 	}
 
 	// ---- cysts: swellings in the side pockets and the margins ----
@@ -814,6 +840,22 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 }
 
 // ---- parts ----
+
+/** A soft shadow of `mask` pushed by (dx, dy), kept off the mask itself, drawn at `alpha`. */
+function castOnFloor(
+	m: CanvasRenderingContext2D,
+	mask: HTMLCanvasElement,
+	dx: number,
+	dy: number,
+	steps: number,
+	alpha: number,
+	LX: number,
+	LY: number
+): void {
+	m.globalAlpha = alpha;
+	m.drawImage(without(blur(moved(tint(mask, '#06010a'), dx, dy), steps, true), mask), LX, LY);
+	m.globalAlpha = 1;
+}
 
 /**
  * The empty pockets at the maze's sides (void tiles between the outer wall and the edge, two

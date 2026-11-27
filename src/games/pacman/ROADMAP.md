@@ -73,8 +73,8 @@ last (see Later).
    synthesised placeholder plays now, `OST.md`) and a balance/polish pass of the whole fight; whether the dash wants a warning
    stripe along its line (the turn into the ball now ends the telegraph, the line shows only by
    his eyes). Start from the `hell` and
-   `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks, no height or
-   extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
+   `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks sitting in the
+   floor (light from the top left, a cast shadow), no height or extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
    heartbeat (~2.5 s); the teleport is the iron gateway; night stays `cord`.
 2. **A random boss on every 5th level, for both heroes**: in (`logic/level/BossCatalog`). It
    draws from `BOSS_ROTATION`, the finished bosses: the hell and the station (since 2026-11-26).
