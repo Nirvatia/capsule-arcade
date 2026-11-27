@@ -508,7 +508,10 @@ in `config/zoneConfig.ts`), the picture in `render/zone` (`zoneBake`, `zoneSprit
   (`grid_zone` is the hell's turned upside down; shelters, burrows and the Monolith are read from any
   maze), the Zone's HUD and sound, the fruit heroes' look in it, `BOSS_ROTATION`.
 
-## 7c. The Net (boss level candidate, a playable prototype)
+## 7c. The Net (dropped; kept unwired)
+
+The owner played it (2026-11-27): "just Pac-Man with gates", and the drones could not be outrun in the alarm.
+The Port (§7d) took its drones and doors.
 
 A cyberpunk **server maze** on the **Lady Bug** idea (the owner, 2026-11-27, after the Zone failed
 the drive test). Everything is self-lit: dark blocks with a neon rim on a dark blue field, the
@@ -538,6 +541,46 @@ itself, like the original). Prototype `prototypes/pacman/net`; the rules are gam
   fps in headless Chromium without a GPU, first frame in about half a second. **Open**: the owner's
   play and tuning, his own maze, the hijack, the HUD and sound, the fruit heroes' look here, the
   place in `BOSS_ROTATION`.
+
+## 7d. The Port (boss level candidate, a playable prototype)
+
+**The hero hunts a boss.** The owner picked the idea (2026-11-27, after the Zone and the Net failed): a
+boss level must change the objective, and Pac-Man's own fantasy turned round (he chases, the boss is the
+prey) does. A free runner cannot be caught in a maze with loops, so the Broker has **a plan, and a plan
+needs time**. Prototype `prototypes/pacman/port`; the rules are game code in `logic/port`
+(`PortService`, `BrokerBoss`, numbers in `config/portConfig.ts`; the drones and the doors are
+`logic/net`'s), the picture in `render/port`.
+
+- **The Broker**: a smuggler AI in a loader's body (a screen for a face: a ghost's, cyan). He hacks the
+  four crane **terminals** one by one, standing at each for 4 s (3.4, 2.8 in the later phases) while a
+  ring fills; then he runs to the next one, **the farthest from the hero** (marked by rings running in
+  to it). He plans round the shut yard gates (a hero running ahead of him through one cuts his way),
+  sprints when the hero is within four tiles, is slowed by a power cell. 4.8 / 5.2 / 5.6 tiles a second
+  by phase, the hero 6.
+- **Catching him**: touch him, at a terminal or on the run (he never hurts the hero by touch). A bite
+  takes one of his three health (shown above him), **heals the hero one life**, stuns him for 1.1 s;
+  he then warps to the farthest terminal and the plan starts over (terminals and extra drones reset).
+  Three bites end him.
+- **Losing**: he hacks all four terminals and gets away; or three hits from the drones.
+- **The port's drones** (the only thing that costs the hero a life): three on the field, four colours as
+  the ghosts, a spotlight ahead, a siren; **one more wakes for every terminal he hacks** (six at most).
+  Never faster than the hero.
+- **The hero's tools**: a **dash** (Space; four tiles, safe while it lasts) charged by nuts, one charge
+  per 12, three at most; the **yard gates**, ten in the corridors (green posts, a dashed line): he
+  always passes them and each slams shut behind him for 8 s (a striped bar, a red beacon), the drones and
+  the Broker cannot cross; four **power cells** in the corners: the drones flee and can be eaten (200,
+  400, 800, 1600), the Broker is slowed 7 s.
+- **The world**: a container terminal at night, the maze is the yard (`grid_port`: long rows of
+  containers with lanes, a control building in the middle, tunnels are yard gates). Round it a whole
+  scene: the sea with two ships, two gantry cranes along the quay, rails, loose container stacks,
+  trucks on the road, warehouses, floodlight poles with their pools of light. The containers are painted
+  one by one (corrugated roofs, corner castings, a company stripe, rust, one light from the top left);
+  the control building has a helipad, a radar and lit windows; the corridors are wet concrete with a
+  faint slab grid, a few puddles and painted bay lines. The sprites (the Broker, the drones, the
+  terminals, the cells, the nuts) have the same finish. 60 fps in headless Chromium without a GPU.
+- **Open**: the owner's play and tuning, the names (the working ones: the Broker, the Port), his own
+  maze, weather and a day variant, the Broker's phase looks, sound, the HUD, the fruit heroes' look
+  here, the place in `BOSS_ROTATION`.
 
 ## 8. The arcade (secret level)
 

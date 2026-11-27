@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Порт: охота на Брокера</title>
+    <!-- Prototype: the Port (hunt the Broker), playable. The rules are the
+         game's own code (`logic/port`), the picture is `render/port`; this page only runs them.
+         `node prototypes/pacman/build.mjs port`. -->
+    <style>
+      :root{color-scheme:dark}
+      html,body{margin:0;height:100%;overflow:hidden;background:#0d141c;color:#dfe6ff;font:14px "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+      #view{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+      #hud{position:fixed;left:0;right:0;top:0;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:8px 12px;background:rgba(10,16,24,.88);font:700 15px "Arial Narrow",system-ui,sans-serif;letter-spacing:.03em}
+      #hud b{color:#ffd24a}
+      #news{position:fixed;left:12px;bottom:10px;max-width:46ch;font-size:13px;color:#aab6e8;text-shadow:0 1px 2px #000}
+      #news div{margin-top:3px}
+      #bar{position:fixed;right:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:60vw}
+      button{font:700 13px "Arial Narrow",system-ui,sans-serif;color:#dfe6ff;background:rgba(16,22,32,.92);border:1px solid #ffd24a66;border-radius:6px;padding:6px 10px;cursor:pointer}
+      button[aria-pressed="true"]{background:#ffd24a;color:#1a1204;border-color:#ffd24a}
+      #modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(4,6,16,.74)}
+      #card{max-width:min(620px,92vw);text-align:center}
+      #card h2{margin:0 0 6px;font:700 28px "Arial Narrow",system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:#ffd24a}
+      #card p{margin:0 0 14px;color:#aab6e8}
+    </style>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <div id="hud"></div>
+    <div id="news"></div>
+    <div id="bar"></div>
+    <div id="modal"><div id="card"></div></div>
+    <script>
+/*SCRIPT*/
+    </script>
+  </body>
+</html>

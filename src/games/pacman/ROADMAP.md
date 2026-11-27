@@ -260,16 +260,28 @@ last (see Later).
      §7b); delete it when the owner says. **The drive test** it left, a rule for every boss world: the
      hero never has to wait; only what chases him costs a life; the rest helps or offers a risk for a
      reward; few things on the maze, bold and readable.
-   - **The Net (cyberpunk, on Lady Bug) is the current candidate** (`DESIGN.md` §7c): a server maze,
-     four security drones that hunt like the four ghosts, firewall doors that slam shut behind the
-     hero (the Lady Bug idea), hack nodes that make the drones flee and edible, an alarm on the last
-     data, the core in the lair. A playable prototype: `prototypes/pacman/net` (rules in `logic/net`,
-     picture in `render/net`, tested). Left: the owner's play and tuning (`config/netConfig.ts`); his
-     own maze (`grid_zone` is the hell's turned upside down: doors go on straight corridor edges);
-     whether the hack becomes a hijack (one drone turns on the others); the doors' rule if too easy or
-     too hard; the HUD, sound, the fruit heroes' look in it; then wiring (`LevelSession`,
-     `BossCatalog`, the dev panel). The ideas weighed (2026-11-27): from modern games a hack, a
-     wanted level, a beat-locked maze, a purge wall; from retro Lady Bug's gates (taken), Thief's doors,
+   - **The Net dropped** (2026-11-27, played: "just Pac-Man with gates; no escape from the drones in the
+     alarm"): a tool without a goal, and my surge made the drones faster than the hero. The code stays
+     unwired (`render/net`, `prototypes/pacman/net`; `logic/net`'s drones and doors live on in the
+     Port); delete when the owner says. Rules it left: **a boss world must change the objective, not
+     only add a tool**; and **there is always a way out: the hero is never slower than what chases him.**
+   - **The Port is the current candidate** (`DESIGN.md` §7d): the hero **hunts a boss** (the Broker,
+     a smuggler AI hacking four crane terminals one by one; catch him at a terminal or on the run, three
+     bites end him, if he hacks all four he gets away), the port's drones hunt the hero, the yard gates
+     slam shut behind him (they cut the drones and the Broker's way), nuts charge a dash, power cells
+     slow the Broker and scare the drones. A container terminal at night. A playable prototype:
+     `prototypes/pacman/port` (rules in `logic/port`, picture in `render/port`, tested). Left: the
+     owner's play and tuning (`config/portConfig.ts`); the names; his own maze (`grid_port` is a first
+     one, terminals in `portConfig`); the weather and the day variant; the Broker's phases' looks, the
+     drones' catch-me moments, sound, the HUD; the fruit heroes' look here; then wiring
+     (`LevelSession`, `BossCatalog`, the dev panel).
+   - **Art standard for every boss world** (the owner, 2026-11-27, after two worlds fell short of the
+     game's level): a **maze of its own** (never another world's flipped), a **whole scene round it**
+     (the seasons' houses and parasols, the hell's ribs and cysts: here the sea, a ship, cranes,
+     warehouses), materials with **light and depth** (a bevel or rim, one light from the top left,
+     shadows down and right, wear), **detailed cached sprites** with a dark outline and a rim light; and
+     few things on the corridors. The ideas weighed (2026-11-27): from modern games a hack, a wanted
+     level, a beat-locked maze, a purge wall; from retro Lady Bug's gates (taken), Thief's doors,
      Rally-X's smoke, Pengo's blocks, Qix's territory.
 
 ## Part III. The interface

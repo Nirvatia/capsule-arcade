@@ -55,7 +55,9 @@ export class DronePack {
 		private readonly grid: GridService,
 		homes: readonly GridPoint[],
 		private readonly rng: ZoneRng,
-		count: number = NET.drone.count
+		count: number = NET.drone.count,
+		/** How many are on the field at the start; the rest sleep at home until `callExtra`. */
+		active: number = count
 	) {
 		const n = grid.width * grid.height;
 		this.heroMap = new Int16Array(n);
@@ -73,8 +75,8 @@ export class DronePack {
 				p: 0,
 				dx: 1,
 				dy: 0,
-				state: NET.drone.release[i % NET.drone.release.length] <= 0 ? 'hunt' : 'wait',
-				timer: NET.drone.release[i % NET.drone.release.length],
+				state: i < active && NET.drone.release[i % NET.drone.release.length] <= 0 ? 'hunt' : 'wait',
+				timer: i < active ? NET.drone.release[i % NET.drone.release.length] : Infinity,
 				role: i % 4,
 				home
 			});
@@ -115,6 +117,32 @@ export class DronePack {
 			}
 			this.move(d, dt, w);
 		}
+	}
+
+	/** Wakes the next sleeping extra drone, if there is one. */
+	callExtra(): boolean {
+		const d = this.list.find((q) => q.state === 'wait' && q.timer === Infinity);
+		if (d) {
+			d.timer = 0;
+		}
+		return Boolean(d);
+	}
+
+	/** Sends every drone after the first `keep` back home to sleep. */
+	dismissExtras(keep: number): void {
+		this.list.forEach((d, i) => {
+			if (i >= keep) {
+				d.state = 'wait';
+				d.timer = Infinity;
+				d.fx = d.home.x;
+				d.fy = d.home.y;
+				d.tx = d.home.x;
+				d.ty = d.home.y;
+				d.p = 0;
+				d.x = d.home.x + 0.5;
+				d.y = d.home.y + 0.5;
+			}
+		});
 	}
 
 	/** A hack: every drone on the field flees. */

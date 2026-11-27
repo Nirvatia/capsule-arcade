@@ -336,6 +336,17 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   picture: `render/net/` (`netBake` the baked server, `netSprites`, `NetView`; the caller draws the
   hero in between). It plays on `grid_zone`. Not wired into `LevelSession` or `BossCatalog` yet; it
   runs in `prototypes/pacman/net`.
+- `logic/port/port.test.ts` — the Port: its maze passes `validateMaze` and the terminals are at junctions;
+  the Broker's plan (the farthest terminal first, hacking, running on); a drone waking per terminal
+  and the escape at four; his speed against the hero's and the power cell's slow; a bite (health, heal,
+  stun, warp, reset) and the end after three; no way through shut doors; the dash's charge; the drones'
+  hits. The Port's code (a boss world candidate, `DESIGN.md` §7d): `logic/port/` (`PortService` composes
+  `BrokerBoss` with `logic/net`'s `DronePack` and `NetDoors` over `GridService`/`PlayerService`/
+  `LevelProgress`), `config/portConfig.ts`, `config/mazes/grid_port.ts`; the picture: `render/port/`
+  (`portBake` the baked terminal: sea, ships, cranes, margins, yard, containers painted one by one, the
+  control building; `portSprites` the Broker, drones, terminals, cells, nuts; `PortView` composes them
+  with the live radar, spotlights, hack rings and gates; the caller draws the hero in between). Not wired
+  into `LevelSession` or `BossCatalog` yet; it runs in `prototypes/pacman/port`.
 - `logic/doom/doomMechanics.test.ts` — pickups, BFG, minions, attack sets per phase,
   fairness (rift, eruption, seals), maze stays connected.
 - `logic/bonuses/bossReward.test.ts` — heart and exit.
