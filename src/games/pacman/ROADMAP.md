@@ -192,7 +192,15 @@ last (see Later).
          stage-sized layers into new canvases, ~+85 ms in headless Chromium, 141 times a level);
          now it repaints the front's tiles into one standing canvas (no stall). Left: the
          heartbeat's cost on a weak GPU.
-      6. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
+      6. **A new look for the infestation and the squad**: in the game (2026-11-26, after many
+         candidates; `DESIGN.md` §7a lists what was dropped): the hive is a black parasite with a
+         lime life (its form kept), the squad amoebas of gel in their kinds' colours, their rage
+         boiling lime (no afterimages, a 10% smaller glow). Left: the lurker's eye tell is still
+         the Pretender's gold slit eye (an amoeba has dark nuclei; whether it changes, the owner);
+         the station's red beacons at high infection may want amber or lime beside the black hive;
+         parasites crawling the veins now and then, the cysts as clutches (the owner liked the
+         idea); his play of the amoebas' readability on a real screen.
+      7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance
          check of the lit station.

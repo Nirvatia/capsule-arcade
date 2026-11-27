@@ -18,6 +18,34 @@ import type { createB7Scene } from './b7Scene';
 type Scene = ReturnType<typeof createB7Scene>;
 type Ctx = CanvasRenderingContext2D;
 
+/** The hive's material (the owner, 2026-11-26: alien organics are black and parasitic, the red
+ *  flesh read as the hell): black glossy organics, cold wet glints, a lime life in the nodes,
+ *  the cysts and the pulse (the squad's rage boils in the same lime). */
+const P = {
+	ink: '#030405',
+	body: '#15181e',
+	body2: '#252a33',
+	lit: '#3c4452',
+	glint: 'rgba(214, 230, 248, 0.75)',
+	glint2: 'rgba(214, 230, 248, 0.6)',
+	cystCore: '#efffb0',
+	cystMid: 'rgb(170, 240, 60)',
+	cystEdge: '#1c2a0c',
+	stain: 'rgba(3, 5, 4, 0.6)',
+	stain0: 'rgba(3, 5, 4, 0)',
+	vein: '#181b21',
+	veinLit: '#3d4552',
+	veinTop: 'rgba(210, 228, 246, 0.7)',
+	veinTop2: 'rgba(210, 228, 246, 0.6)',
+	node: '#c2ff4c',
+	nodeEdge: '#16220a',
+	nodeGlint: 'rgba(226, 255, 170, 0.85)',
+	glowLine: 'rgba(150, 255, 70, 1)',
+	glowNode: 'rgba(220, 255, 150, 1)',
+	breach: '#020303',
+	under0: 'rgba(30, 50, 10, 0)',
+	under1: 'rgba(30, 50, 10, 0.6)'
+} as const;
 const SCALE = 1.25;
 const GLOW_SCALE = 0.75;
 const FACADE = 7;
@@ -200,12 +228,12 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 				}
 				fg.fill();
 			};
-			pass('#1e080e', 1.3);
-			pass('#5e1c2a', 0);
-			pass('#7c2c36', -1.6, -0.7, -0.9, 0.08);
-			pass('#94413f', -3.0, -1.1, -1.4, 0.2);
+			pass(P.ink, 1.3);
+			pass(P.body, 0);
+			pass(P.body2, -1.6, -0.7, -0.9, 0.08);
+			pass(P.lit, -3.0, -1.1, -1.4, 0.2);
 			// wet glints
-			fg.fillStyle = 'rgba(255, 226, 192, 0.5)';
+			fg.fillStyle = P.glint;
 			for (const p of pts) {
 				if (hash(p.x, p.y, 3) < 0.12 && p.t > 0.1) {
 					fg.beginPath();
@@ -223,14 +251,14 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 					const sy = ccy + (rand() - 0.5) * 9;
 					const r = 3.2 + rand() * 2.2;
 					cysts.push({ x: sx, y: sy, r });
-					fg.fillStyle = '#1e080e';
+					fg.fillStyle = P.ink;
 					fg.beginPath();
 					fg.ellipse(sx, sy, r + 1, r * 0.86 + 1, rand() * TAU, 0, TAU);
 					fg.fill();
 					const cg = fg.createRadialGradient(sx - r * 0.35, sy - r * 0.35, 0, sx, sy, r);
-					cg.addColorStop(0, '#ffe2c0');
-					cg.addColorStop(0.45, 'rgb(255, 160, 86)');
-					cg.addColorStop(1, '#7a1e2c');
+					cg.addColorStop(0, P.cystCore);
+					cg.addColorStop(0.45, P.cystMid);
+					cg.addColorStop(1, P.cystEdge);
 					fg.fillStyle = cg;
 					fg.beginPath();
 					fg.ellipse(sx, sy, r, r * 0.86, 0, 0, TAU);
@@ -255,16 +283,16 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 				const rx = dx !== 0 ? 3.2 : 4.5 + rand() * 3;
 				const ry = dx !== 0 ? 4.5 + rand() * 3 : 3.2;
 				for (const [grow, col, ox, oy] of [
-					[1.1, '#1e080e', 0, 0],
-					[0, '#5e1c2a', 0, 0],
-					[-1.3, '#7c2c36', -0.6, -0.7]
+					[1.1, P.ink, 0, 0],
+					[0, P.body, 0, 0],
+					[-1.3, P.body2, -0.6, -0.7]
 				] as const) {
 					fg.fillStyle = col;
 					fg.beginPath();
 					fg.ellipse(lx + ox, ly + oy, rx + grow, ry + grow, 0, 0, TAU);
 					fg.fill();
 				}
-				fg.fillStyle = 'rgba(255, 226, 192, 0.5)';
+				fg.fillStyle = P.glint;
 				fg.beginPath();
 				fg.arc(lx - rx * 0.3, ly - ry * 0.35, 0.75, 0, TAU);
 				fg.fill();
@@ -282,12 +310,12 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 					fg.quadraticCurveTo(fx - w * 0.9, top + len * 0.8, fx, top + len);
 					fg.quadraticCurveTo(fx + w * 0.9, top + len * 0.8, fx + w, top);
 					fg.closePath();
-					fg.fillStyle = '#5e1c2a';
+					fg.fillStyle = P.body;
 					fg.fill();
-					fg.strokeStyle = '#1e080e';
+					fg.strokeStyle = P.ink;
 					fg.lineWidth = 1;
 					fg.stroke();
-					fg.fillStyle = 'rgba(255, 226, 192, 0.45)';
+					fg.fillStyle = P.glint2;
 					fg.beginPath();
 					fg.arc(fx - w * 0.3, top + len * 0.55, 0.7, 0, TAU);
 					fg.fill();
@@ -319,8 +347,8 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 					dx !== 0
 						? vg.createLinearGradient(ex, 0, ex + dx * 6, 0)
 						: vg.createLinearGradient(0, ey, 0, ey + dy * 6);
-				gr.addColorStop(0, 'rgba(26, 8, 12, 0.65)');
-				gr.addColorStop(1, 'rgba(26, 8, 12, 0)');
+				gr.addColorStop(0, P.stain);
+				gr.addColorStop(1, P.stain0);
 				vg.fillStyle = gr;
 				vg.fillRect(
 					dx === -1 ? ex - 6 : ex,
@@ -333,10 +361,10 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 	}
 	const tube = (list: readonly Seg[], scale: number) => {
 		for (const [w, col, ox, oy] of [
-			[5.4, '#1e080e', 0, 0],
-			[3.9, '#6a1c2a', 0, 0],
-			[2.2, '#a2383e', -0.4, -0.5],
-			[0.8, 'rgba(255, 206, 176, 0.55)', -0.8, -1.0]
+			[5.4, P.ink, 0, 0],
+			[3.9, P.vein, 0, 0],
+			[2.2, P.veinLit, -0.4, -0.5],
+			[0.8, P.veinTop, -0.8, -1.0]
 		] as const) {
 			vg.strokeStyle = col;
 			for (const s of list) {
@@ -351,18 +379,18 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 	};
 	tube(segs, 1);
 	for (const n of nodes) {
-		vg.fillStyle = '#1e080e';
+		vg.fillStyle = P.ink;
 		vg.beginPath();
 		vg.arc(n.x, n.y, n.r + 1.1, 0, TAU);
 		vg.fill();
 		const ng = vg.createRadialGradient(n.x - n.r * 0.35, n.y - n.r * 0.4, 0, n.x, n.y, n.r);
-		ng.addColorStop(0, '#c4544c');
-		ng.addColorStop(1, '#5e1826');
+		ng.addColorStop(0, P.node);
+		ng.addColorStop(1, P.nodeEdge);
 		vg.fillStyle = ng;
 		vg.beginPath();
 		vg.arc(n.x, n.y, n.r, 0, TAU);
 		vg.fill();
-		vg.fillStyle = 'rgba(255, 196, 140, 0.85)';
+		vg.fillStyle = P.nodeGlint;
 		vg.beginPath();
 		vg.arc(n.x - n.r * 0.35, n.y - n.r * 0.4, Math.max(0.6, n.r * 0.28), 0, TAU);
 		vg.fill();
@@ -405,13 +433,13 @@ function bakeHive(scene: Scene, rows: readonly (readonly string[])[]): HiveLayer
 	const gg = ctx2d(glow);
 	gg.scale(GLOW_SCALE, GLOW_SCALE);
 	gg.lineCap = 'round';
-	gg.strokeStyle = 'rgba(255, 140, 84, 1)';
+	gg.strokeStyle = P.glowLine;
 	for (const s of segs) {
 		gg.lineWidth = 3.6 * s.k;
 		path(gg, s);
 		gg.stroke();
 	}
-	gg.fillStyle = 'rgba(255, 214, 160, 1)';
+	gg.fillStyle = P.glowNode;
 	for (const n of [...nodes, ...cysts]) {
 		gg.beginPath();
 		gg.arc(n.x, n.y, n.r * 0.9, 0, TAU);
@@ -569,10 +597,10 @@ export class B7Hive {
 		const { tx, ty, TILE } = this.scene;
 		const blob = (x: number, y: number, rx: number, ry: number, rot = 0) => {
 			for (const [grow, col, ox, oy] of [
-				[1.2, '#1e080e', 0, 0],
-				[0, '#5e1c2a', 0, 0],
-				[-1.4, '#7c2c36', -0.7, -0.8],
-				[-2.8, '#94413f', -1.1, -1.3]
+				[1.2, P.ink, 0, 0],
+				[0, P.body, 0, 0],
+				[-1.4, P.body2, -0.7, -0.8],
+				[-2.8, P.lit, -1.1, -1.3]
 			] as const) {
 				if (rx + grow <= 0.4 || ry + grow <= 0.4) continue;
 				ctx.fillStyle = col;
@@ -591,10 +619,10 @@ export class B7Hive {
 			w: number
 		) => {
 			for (const [lw, col, ox, oy] of [
-				[w + 1.6, '#1e080e', 0, 0],
-				[w, '#6a1c2a', 0, 0],
-				[w * 0.5, '#a2383e', -0.4, -0.5],
-				[0.8, 'rgba(255, 206, 176, 0.5)', -0.7, -0.9]
+				[w + 1.6, P.ink, 0, 0],
+				[w, P.vein, 0, 0],
+				[w * 0.5, P.veinLit, -0.4, -0.5],
+				[0.8, P.veinTop2, -0.7, -0.9]
 			] as const) {
 				ctx.strokeStyle = col;
 				ctx.lineWidth = lw;
@@ -645,7 +673,7 @@ export class B7Hive {
 		ctx.fillRect(L0 - 1, top + 1, 8, foot - top - 1);
 		ctx.fillRect(R1 - 7, top + 1, 8, foot - top - 1);
 		// the breach: dark, flesh pushing through
-		ctx.fillStyle = '#0c0306';
+		ctx.fillStyle = P.breach;
 		ctx.fillRect(mid - 20, top - 3, 40, foot - top + 5);
 		blob(mid - 3, cy + 3, 9, 8);
 		blob(mid + 8, cy - 6, 5.5, 5);
@@ -725,8 +753,8 @@ export class B7Hive {
 				'#5d6864'
 			);
 			const sg = ctx.createLinearGradient(0, 0, d * len, 0);
-			sg.addColorStop(0, 'rgba(70, 30, 18, 0)');
-			sg.addColorStop(1, 'rgba(70, 30, 18, 0.7)');
+			sg.addColorStop(0, P.under0);
+			sg.addColorStop(1, P.under1);
 			ctx.fillStyle = sg;
 			ctx.fillRect(Math.min(0, d * len), 0, len, face - top);
 			ctx.restore();

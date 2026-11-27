@@ -3648,26 +3648,29 @@ export function createB7Scene(
 			const l = CORRIDOR_LAMPS[i];
 			let power = 0;
 			if (infection >= 0) {
-				// the game: at its own point each lamp falters while the hive's film grows over it,
+				// the game: at its own point each lamp falters while the hive's black film grows over it,
 				// then shines on through the flesh: warm, dimmer, beating with the hive, the
 				// shadows of its veins on the floor (the owner: lamps under film, not darkness)
 				const fail = lampFails(i);
 				const g = Math.max(0, Math.min(1, (infection - fail + 0.14) / 0.22));
-				const film = g * g * (3 - 2 * g);
+				const filmK = g * g * (3 - 2 * g);
 				const base = (mode === 'alert' ? 0.32 : 0.68) - 0.06 * infection;
 				const uneven = 0.28 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.15 + l.ph));
-				const growing = film > 0 && film < 1 ? uneven + (1 - uneven) * Math.abs(film - 0.5) * 2 : 1;
+				const growing =
+					filmK > 0 && filmK < 1 ? uneven + (1 - uneven) * Math.abs(filmK - 0.5) * 2 : 1;
 				const beat = heartbeat(time, infectionDistance(Math.floor(l.x), Math.floor(l.y)));
-				const power2 = base * (1 - 0.35 * film) * growing * (1 + 0.4 * film * beat);
+				const power2 = base * (1 - 0.35 * filmK) * growing * (1 + 0.4 * filmK * beat);
 				if (power2 > 0.01) {
-					const rgb = [196, 222, 216].map((c, k) => Math.round(c + ([255, 132, 92][k] - c) * film));
+					// dim and cold under the black film
+					const tint = [150, 176, 150];
+					const rgb = [196, 222, 216].map((c, k) => Math.round(c + (tint[k] - c) * filmK));
 					radialLight(lg, toX(tx(l.x)), toY(ty(l.y)), R(TILE * 4.5), rgb.join(', '), 0.56 * power2);
 				}
-				if (film > 0.3) {
+				if (filmK > 0.3) {
 					// the veins of the film, their shadows thrown on the floor
 					lg.save();
 					lg.globalCompositeOperation = 'source-over';
-					lg.strokeStyle = `rgba(52, 16, 22, ${0.32 * film})`;
+					lg.strokeStyle = `rgba(4, 6, 6, ${0.42 * filmK})`;
 					lg.lineWidth = Math.max(1, R(3.2));
 					lg.lineCap = 'round';
 					const lx = toX(tx(l.x));

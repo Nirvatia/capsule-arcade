@@ -1,17 +1,11 @@
-<!-- The secret level is our arcade, so it gets an arcade HUD: 1UP, HIGH SCORE and the round
-	on top, the tries in reserve and the rounds' fruits at the bottom, blocky white lettering. -->
+<!-- The secret level is our arcade, so it gets an arcade HUD: 1UP, HIGH SCORE, the round and the
+	tries left in one row on top, blocky lettering, no sprites and nothing at the bottom. -->
 <script lang="ts">
 	import type { HudSnapshot } from './hudSnapshot';
 	import { t } from '../i18n';
-	import FruitIcon from './FruitIcon.svelte';
-	import LifeIcon from './LifeIcon.svelte';
 
 	let { snap }: { snap: HudSnapshot } = $props();
 	const score = (n: number) => (n > 0 ? String(Math.floor(n)) : '00');
-	// the tries in reserve, not the one on the board (the arcade's own, not the game's lives)
-	const reserve = $derived(
-		Array.from({ length: Math.min(5, Math.max(0, snap.lives - 1)) }, (_, i) => i)
-	);
 </script>
 
 <div class="arcade">
@@ -28,13 +22,9 @@
 			<span class="label">{$t('round')}</span>
 			<span class="num">{snap.level}</span>
 		</div>
-	</div>
-	<div class="bottom">
-		<div class="row">
-			{#each reserve as i (i)}<LifeIcon ms={snap.profile === 'ms-pacman'} size={20} />{/each}
-		</div>
-		<div class="row">
-			{#each snap.fruits as kind, i (i)}<FruitIcon {kind} size={22} />{/each}
+		<div class="col">
+			<span class="label">{$t('lives')}</span>
+			<span class="num">{Math.max(0, snap.lives)}</span>
 		</div>
 	</div>
 </div>
@@ -56,9 +46,10 @@
 		top: 8px;
 		left: 50%;
 		transform: translateX(-50%);
-		width: min(560px, calc(100vw - 24px));
+		width: min(720px, calc(100vw - 24px));
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr;
+		grid-template-columns: repeat(4, auto);
+		justify-content: space-between;
 	}
 	.col {
 		display: grid;
@@ -66,31 +57,16 @@
 		gap: 4px;
 	}
 	.label {
-		font-size: 15px;
+		font-size: clamp(9px, 2.2vw, 15px);
 		letter-spacing: 2px;
 	}
 	.num {
-		font-size: 15px;
+		font-size: clamp(9px, 2.2vw, 15px);
 		letter-spacing: 2px;
 		justify-self: end;
-		padding-right: 20%;
 	}
 	.blink {
 		animation: blink 0.53s steps(1) infinite;
-	}
-	.bottom {
-		position: absolute;
-		bottom: 8px;
-		left: 50%;
-		transform: translateX(-50%);
-		width: min(560px, calc(100vw - 24px));
-		display: flex;
-		justify-content: space-between;
-	}
-	.row {
-		display: flex;
-		gap: 4px;
-		align-items: center;
 	}
 	@keyframes blink {
 		50% {
