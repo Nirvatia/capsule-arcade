@@ -46,6 +46,8 @@ export interface StepperHeat {
 }
 export interface StepperRage {
 	readonly hot: StepperHeat;
+	/** No glow at the heart, no soot, cracks, bubbles or embers: the cel bands and the face only. */
+	readonly clean?: boolean;
 	/** Paints the rage's face in place of the sockets and the grin; (x, y) the face's centre. */
 	readonly face?: (
 		c: CanvasRenderingContext2D,
@@ -838,13 +840,15 @@ export function drawStepper(
 	body(c, 0, 0, 1);
 	c.clip();
 	// the gel is lit from inside: a soft glow at its heart, a bright rim at the lower right
-	const heart = c.createRadialGradient(0.01, 0.03, 0.01, 0.01, 0.03, 0.32);
-	heart.addColorStop(0, rgba(heat > 0.01 ? hotL.core : p.rim, 0.28 + 0.52 * heat));
-	heart.addColorStop(1, rgba(p.glow, 0));
-	c.globalCompositeOperation = 'lighter';
-	c.fillStyle = heart;
-	c.fillRect(-0.4, -0.4, 0.8, 0.8);
-	c.globalCompositeOperation = 'source-over';
+	if (!o.rage?.clean) {
+		const heart = c.createRadialGradient(0.01, 0.03, 0.01, 0.01, 0.03, 0.32);
+		heart.addColorStop(0, rgba(heat > 0.01 ? hotL.core : p.rim, 0.28 + 0.52 * heat));
+		heart.addColorStop(1, rgba(p.glow, 0));
+		c.globalCompositeOperation = 'lighter';
+		c.fillStyle = heart;
+		c.fillRect(-0.4, -0.4, 0.8, 0.8);
+		c.globalCompositeOperation = 'source-over';
+	}
 	c.beginPath();
 	body(c, 0, 0, 1);
 	c.strokeStyle = rgba(p.edge, 0.8);
@@ -871,7 +875,9 @@ export function drawStepper(
 		disc(c, -0.205, -0.075, 0.017, `rgba(255, 255, 255, ${0.7 * gloss})`);
 	}
 	// the heat's marks: a dark vignette at the rim, hairline cracks, bubbles climbing inside
-	if (heat > 0.02) {
+	if (o.rage?.clean) {
+		// the clean look draws none of the heat's marks
+	} else if (heat > 0.02) {
 		const soot = c.createRadialGradient(0, -0.02, 0.18, 0, -0.02, 0.4);
 		soot.addColorStop(0, rgba(hotL.soot, 0));
 		soot.addColorStop(1, rgba(hotL.soot, 0.5 * heat));
@@ -956,7 +962,7 @@ export function drawStepper(
 	c.restore();
 	for (const f of feet) if (f.gy >= 0.2) paintFoot(f);
 	// embers off the head
-	if (heat > 0.05) {
+	if (heat > 0.05 && !o.rage?.clean) {
 		for (let i = 0; i < 3; i++) {
 			const k = (t * 0.7 + i * 0.36) % 1;
 			const ex = (i - 1) * 0.12 + Math.sin(t * 3 + i) * 0.03;
