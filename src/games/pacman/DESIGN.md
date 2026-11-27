@@ -413,8 +413,9 @@ Numbers are starting points, later in `config/stationConfig.ts`.
   a morph): comic and a little frightening: the body hunched and wide, lit lime from inside to a
   deep green rim, hairline cracks, narrow glowing sockets under a heavy brow, a grin that splits it
   and chomps, embers rising, the floor lit; the feet and the crest keep the kind's colour so the four
-  stay four; no afterimages. A soft glow in its state's colour round it so it reads in the dark maze
-  (the hero has a warm one on the station too); eaten, its gold eyes run home; for the disguise it
+  stay four; no afterimages. A soft glow in its state's colour round it so it reads in the dark maze,
+  kept inside its tile and faint in the rage (the owner, 2026-11-27: it spilled onto the walls and
+  spoiled them; the hero has a warm one on the station too); eaten, its gold eyes run home; for the disguise it
   shrinks and fades as the level's spore comes up in its place. Rejected before it: the amoeba, the
   Pretender in its ivory mask, the inchworm and the slipper (two other candidates of the same
   round), a first rage with googly eyes and steam (childish, sloppy), a cracked-shell rage (it read

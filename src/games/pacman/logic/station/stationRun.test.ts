@@ -156,3 +156,55 @@ describe('the station level', () => {
 		expect(s.run.end).toBe('out');
 	});
 });
+
+describe('the lure in the escape', () => {
+	/** The run in the escape, the hero at the console, the squad let out. */
+	function escaping() {
+		const s = level();
+		const { progress, player, season } = s.session;
+		const rows = season.grid;
+		for (let t = 0; t < 12; t += 1 / 60) s.session.ghosts.update(1 / 60);
+		for (let y = 0; y < rows.length; y += 1)
+			for (let x = 0; x < rows[y].length; x += 1) if (rows[y][x] === 'DT') progress.collectAt(x, y);
+		s.run.update(1 / 60, false);
+		player.placeAt(s.run.layout.console);
+		for (let t = 0; t < 8 && s.run.escape.state !== 'running'; t += 1 / 60)
+			s.run.update(1 / 60, false);
+		for (let t = 0; t < 3; t += 1 / 60) {
+			player.placeAt(s.run.layout.console);
+			s.run.update(1 / 60, false);
+		}
+		expect(s.run.escape.state).toBe('running');
+		return s;
+	}
+
+	it('does not leave one standing frozen in a corridor on his way when it glows', () => {
+		const s = escaping();
+		const rows = s.session.season.grid;
+		const walk = (x: number, y: number) =>
+			rows[y]?.[x] !== undefined && rows[y][x] !== 'WL' && rows[y][x] !== 'ES';
+		// the corridor tiles of his way: two ways on and no more
+		const corridor = s.run.escape.route.filter(
+			(t, i) =>
+				i >= 3 &&
+				[
+					[1, 0],
+					[-1, 0],
+					[0, 1],
+					[0, -1]
+				].filter(([dx, dy]) => walk(t.x + dx, t.y + dy)).length === 2
+		);
+		expect(corridor.length).toBeGreaterThan(0);
+		const spot = corridor[0];
+		const runner = { id: 99, x: spot.x, y: spot.y, nx: spot.x, ny: spot.y, t: 0, stun: 0 };
+		s.run.rush.runners.push(runner);
+		expect(s.run.throwLure()).toBe(true);
+		for (let t = 0; t < 2; t += 1 / 60) {
+			s.session.player.placeAt(s.run.layout.console);
+			s.run.update(1 / 60, false);
+		}
+		expect(
+			runner.x !== spot.x || runner.y !== spot.y || runner.nx !== spot.x || runner.ny !== spot.y
+		).toBe(true);
+	});
+});

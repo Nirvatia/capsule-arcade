@@ -63,14 +63,17 @@ export class EscapeRush {
 
 	/**
 	 * Moves them `speed` tiles a second: even ones at the hero, odd ones at his way `cut` steps
-	 * on. `lane` marks tiles none may step on.
+	 * on. `lane` marks tiles none may step on; `soft` tiles they keep off while they have another
+	 * way (the lure's closed ground: his way and round him), and cross when they have none, so one
+	 * standing in a corridor on his way when it glows goes on and does not stand in his path.
 	 */
 	update(
 		dt: number,
 		hero: GhostTile,
 		way: readonly GhostTile[],
 		speed: number,
-		lane: (x: number, y: number) => boolean
+		lane: (x: number, y: number) => boolean,
+		soft: (x: number, y: number) => boolean = () => false
 	): void {
 		for (const q of this.queue) q.in -= dt;
 		while (this.queue.length && this.queue[0].in <= 0) {
@@ -87,7 +90,9 @@ export class EscapeRush {
 				if (r.nx === r.x && r.ny === r.y) {
 					const goal =
 						r.id % 2 === 0 ? hero : (way[Math.min(way.length - 1, RUSH_TUNE.cut)] ?? hero);
-					const next = this.firstStep({ x: r.x, y: r.y }, goal, lane);
+					const next =
+						this.firstStep({ x: r.x, y: r.y }, goal, (x, y) => lane(x, y) || soft(x, y)) ??
+						this.firstStep({ x: r.x, y: r.y }, goal, lane);
 					if (!next) break;
 					r.nx = next.x;
 					r.ny = next.y;

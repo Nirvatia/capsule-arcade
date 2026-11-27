@@ -261,7 +261,8 @@ export class StationRun {
 				lure ? { x: lure.x, y: lure.y } : hero,
 				lure ? [] : this.escape.route,
 				this.ghosts.baseSpeed * SQUAD_TUNE.rage,
-				(x, y) => this.blocked(x, y)
+				(x, y) => this.blocked(x, y),
+				(x, y) => this.keepOff(x, y)
 			);
 		}
 		if (sev.grab > 0) {
@@ -288,9 +289,14 @@ export class StationRun {
 		this.folding = now;
 	}
 
-	/** Where the enraged may not step: the lit lane, and while the lure glows, his way and round him. */
+	/** Where the enraged may never step: the lit breakthrough lane. */
 	private blocked(x: number, y: number): boolean {
-		if (this.escape.laneBlocks(x, y)) return true;
+		return this.escape.laneBlocks(x, y);
+	}
+
+	/** Where they keep off while the lure glows and they have another way: round him and on his
+	 *  way (with no other way they cross it, so none stands frozen in his path). */
+	private keepOff(x: number, y: number): boolean {
 		if (!this.lure) return false;
 		const hero = under(this.player.position);
 		if (Math.abs(x - hero.x) + Math.abs(y - hero.y) <= 1) return true;
@@ -385,7 +391,8 @@ export class StationRun {
 		this.lures = RUN_TUNE.lures;
 		this.lure = null;
 		this.squad.chase(this.ghosts, null, () => this.escape.route, {
-			lane: (x, y) => this.blocked(x, y)
+			lane: (x, y) => this.blocked(x, y),
+			soft: (x, y) => this.keepOff(x, y)
 		});
 		this.rush.start(1 + Math.floor(this.random() * 4), this.layout.doors);
 	}

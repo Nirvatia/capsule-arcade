@@ -209,7 +209,10 @@ export class StationSquad implements SquadGuide {
 	private interceptIn: number = SQUAD_TUNE.interceptEvery;
 	private route: (() => readonly GhostTile[]) | null = null;
 	/** The escape in a rage (no 'from behind', no interceptions): the lit lane they may not step on. */
-	rage: { lane: (x: number, y: number) => boolean } | null = null;
+	rage: {
+		lane: (x: number, y: number) => boolean;
+		soft?: (x: number, y: number) => boolean;
+	} | null = null;
 	/** The escape's lure: while it glows, the enraged run to it instead of at him. */
 	lure: GhostTile | null = null;
 	leader: GhostKind | null = null;
@@ -254,7 +257,10 @@ export class StationSquad implements SquadGuide {
 		ghosts: SquadGhosts,
 		ahead: ((x: number, y: number) => boolean) | null = null,
 		route: (() => readonly GhostTile[]) | null = null,
-		rage: { lane: (x: number, y: number) => boolean } | null = null
+		rage: {
+			lane: (x: number, y: number) => boolean;
+			soft?: (x: number, y: number) => boolean;
+		} | null = null
 	): void {
 		this.end(ghosts, 0);
 		this.ahead = ahead;
@@ -1091,13 +1097,15 @@ export class StationSquad implements SquadGuide {
 	// ------------------------------------------------------------- ways
 
 	/** The world the squad plans in: in the chase, his way ahead is closed to it. */
-	private ways(): RouteWorld {
+	private ways(soft = true): RouteWorld {
 		const lane = this.chasing ? this.rage?.lane : null;
-		if (lane)
+		if (lane) {
+			const keepOff = soft ? this.rage?.soft : undefined;
 			return {
-				walkable: (x, y) => this.world.walkable(x, y) && !lane(x, y),
+				walkable: (x, y) => this.world.walkable(x, y) && !lane(x, y) && !(keepOff && keepOff(x, y)),
 				teleport: (x, y) => this.world.teleport(x, y)
 			};
+		}
 		const ahead = this.chasing ? this.ahead : null;
 		if (!ahead) return this.world;
 		return {
@@ -1115,10 +1123,15 @@ export class StationSquad implements SquadGuide {
 	private stepTo(ghost: GhostModel, goal: GhostTile): GhostDirection | null {
 		if (ghost.tile.x === goal.x && ghost.tile.y === goal.y) return null;
 		const isGoal = (x: number, y: number) => x === goal.x && y === goal.y;
-		const route =
-			shortestRoute(this.ways(), { tile: ghost.tile, facing: ghost.facing }, isGoal, 80) ??
-			shortestRoute(this.ways(), { tile: ghost.tile, facing: null }, isGoal, 80);
-		return route?.directions[0] ?? null;
+		// the lure's closed ground is kept off while there is another way; with none (it stands in a
+		// corridor on his way) it crosses, and does not freeze in his path
+		for (const soft of [true, false]) {
+			const route =
+				shortestRoute(this.ways(soft), { tile: ghost.tile, facing: ghost.facing }, isGoal, 80) ??
+				shortestRoute(this.ways(soft), { tile: ghost.tile, facing: null }, isGoal, 80);
+			if (route) return route.directions[0] ?? null;
+		}
+		return null;
 	}
 
 	private distance(a: GhostTile, b: GhostTile): number {

@@ -37,8 +37,9 @@ const INK = '#241418';
 
 /** The creature's frame, of the tile: its crest and feet stay inside the tile. */
 const SIZE = 0.9;
-/** The glow round it in its state's colour, so it reads in the dark maze. */
-const HALO_R = 0.82;
+/** The glow round it in its state's colour, so it reads in the dark maze: inside its tile, never
+ *  on the walls (the owner, 2026-11-27: the rage's glow spilled onto them and spoiled them). */
+const HALO_R = 0.5;
 const KIND_RGB: Readonly<Record<GhostKind, string>> = {
 	BLINKY: '255, 96, 80',
 	PINKY: '255, 130, 225',
@@ -225,7 +226,7 @@ export function drawPretender(
 	const fright = st === 'fright' ? 1 : 0;
 	const rgb =
 		st === 'rage' ? RAGE_RGB : st === 'fright' ? SCARED_RGB : tell > 0 ? TELL_RGB : KIND_RGB[kind];
-	halo(c, x, y, tile, rgb, st === 'rage' ? 0.3 : 0.28, st === 'rage' ? 0.9 : 1);
+	halo(c, x, y, tile, rgb, st === 'rage' ? 0.12 : 0.22, st === 'rage' ? 0.85 : 1);
 	drawStepper(c, x, y, S, kind, {
 		...base,
 		heat,

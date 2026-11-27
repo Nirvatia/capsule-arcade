@@ -739,13 +739,13 @@ export function drawStepper(
 	c.fill();
 	c.restore();
 	// the glow of its colour, within the tile; hotter and greener as it overheats
-	const halo = c.createRadialGradient(0, 0, 0.05, 0, 0, 0.78);
+	const halo = c.createRadialGradient(0, 0, 0.05, 0, 0, 0.52);
 	const haloRGB = lerpRGB(p.glow, GOLD, tl);
-	halo.addColorStop(0, rgba(haloRGB, 0.2 + 0.12 * heat + 0.1 * tl));
+	halo.addColorStop(0, rgba(haloRGB, 0.18 + 0.02 * heat + 0.08 * tl));
 	halo.addColorStop(1, rgba(haloRGB, 0));
 	c.fillStyle = halo;
 	c.beginPath();
-	c.arc(0, 0, 0.78, 0, TAU);
+	c.arc(0, 0, 0.52, 0, TAU);
 	c.fill();
 	// the feet, far ones before the body and near ones after
 	const feet = FEET.map((f) => {

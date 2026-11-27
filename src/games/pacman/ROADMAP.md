@@ -211,6 +211,13 @@ last (see Later).
          rage; the station's red beacons at high infection may want amber or lime beside the black
          hive; parasites crawling the veins now and then, the cysts as clutches (the owner liked
          the idea).
+         From the owner's play (2026-11-27), done: the rage's glow spilled onto the walls (now
+         inside the tile, fainter); a runner standing in a corridor on his way froze there when the
+         lure was thrown (the lure's closed ground is now crossed when there is no other way,
+         tested). Left: sometimes only 3-4 enraged are seen where 5-8 are meant (squad 4 + 1-4
+         runners; a simulation with a still hero gives 5-8 every time): stunned runners are drawn
+         pale blue as in the fright, and the pack runs nose to tail so the sprites overlap, both
+         unproven; wants the owner's repro.
       7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance
