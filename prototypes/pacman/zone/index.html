@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Зона: играбельный прототип</title>
+    <!-- Prototype: the Zone (boss world candidate) playable on placeholder art. The rules are the
+         game's own code (`logic/zone`); this page only draws them. `node prototypes/pacman/build.mjs zone`. -->
+    <style>
+      :root{color-scheme:dark}
+      html,body{margin:0;height:100%;overflow:hidden;background:#2a3122;color:#ece6cf;font:14px "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+      #view{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+      #hud{position:fixed;left:0;right:0;top:0;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:8px 12px;background:rgba(20,24,15,.82);font:700 15px "Arial Narrow",system-ui,sans-serif;letter-spacing:.03em}
+      #hud b{color:#ffd24a}
+      #news{position:fixed;left:12px;bottom:10px;max-width:46ch;font-size:13px;color:#d8d2b6;text-shadow:0 1px 2px #000}
+      #news div{margin-top:3px}
+      #bar{position:fixed;right:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:60vw}
+      button{font:700 13px "Arial Narrow",system-ui,sans-serif;color:#ece6cf;background:rgba(30,36,22,.9);border:1px solid #5a6540;border-radius:6px;padding:6px 10px;cursor:pointer}
+      button[aria-pressed="true"]{background:#c9a53a;color:#1a1608;border-color:#c9a53a}
+      #modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,12,6,.7)}
+      #card{max-width:min(760px,92vw);text-align:center}
+      #card h2{margin:0 0 6px;font:700 26px "Arial Narrow",system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em}
+      #card p{margin:0 0 14px;color:#cfc8a8}
+      .wishes{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+      .wish{width:210px;padding:12px;text-align:left;font:14px "Trebuchet MS",system-ui,sans-serif;border:1px solid #8a7a3a;background:#26291a}
+      .wish b{display:block;font:700 18px "Arial Narrow",system-ui,sans-serif;color:#ffd24a;margin-bottom:6px}
+      .wish .boon{color:#9be08a}
+      .wish .price{color:#ff9a7a;margin-top:6px}
+    </style>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <div id="hud"></div>
+    <div id="news"></div>
+    <div id="bar"></div>
+    <div id="modal"><div id="card"></div></div>
+    <script>
+/*SCRIPT*/
+    </script>
+  </body>
+</html>

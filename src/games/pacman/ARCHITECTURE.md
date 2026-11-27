@@ -316,6 +316,14 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
   jump (the mock-up's did).
 - `logic/actors/playerControl.test.ts` — reversal, late turns, held keys.
 - `logic/actors/playerCorner.test.ts` — cornering on the diagonal, the rage's dash and the energizer's hit-stop.
+- `logic/zone/zone.test.ts` — the Zone: its maze passes `validateMaze`; the emission's phases; the
+  anomalies' placement, warning and inertness; the bolt; a tushkan's walk and death; the wave's
+  hurt in the open and none in a shelter; the Monolith, the wishes and their modifiers.
+  The Zone's code (a boss world candidate, `DESIGN.md` §7b): `logic/zone/` (`ZoneService`
+  composes `ZoneAnomalies`, `EmissionClock`, `TushkanPack`, `Poltergeist`, `ZoneWishes` over the
+  game's `GridService`/`PlayerService`/`LevelProgress`; `ZoneMap` reads artifacts, the Monolith,
+  shelters and burrows from any maze), `config/zoneConfig.ts`, `config/mazes/grid_zone.ts`. Not
+  wired into `LevelSession` or `BossCatalog` yet; it runs in `prototypes/pacman/zone`.
 - `logic/doom/doomMechanics.test.ts` — pickups, BFG, minions, attack sets per phase,
   fairness (rift, eruption, seals), maze stays connected.
 - `logic/bonuses/bossReward.test.ts` — heart and exit.
