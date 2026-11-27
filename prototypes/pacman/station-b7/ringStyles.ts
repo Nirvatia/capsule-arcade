@@ -1,270 +1,142 @@
-// Candidates for the quarantine ring's look in the hive's language (prototype, throwaway). The
-// geometry, the phases and the warning contour are the game's (`quarantineRing`); only the lit
-// rim, the zone and the seals are drawn here, three ways:
-//   A  the moss cord: an olive veined cord with cysts, the black hive's own veins grown thick;
-//   B  the bile film: a thin sulfur film with veins reaching into the zone;
-//   C  the ferrofluid: a glossy black ring with a sulfur rim light and spikes rising along it.
-import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/station/StationSquad';
-import {
-	paintGuide,
-	type RingLayout,
-	type RingLook
-} from '../../../src/games/pacman/render/station/quarantineRing';
-
-export type RingStyle = 'A' | 'B' | 'C';
+// Candidate for the quarantine zone (prototype, throwaway): the owner's pick of the ring's look,
+// the bile film, on a zone cut out of the maze like a piece of a mosaic instead of a circle.
+// The zone is the open tiles within a graph distance of a point; its outline runs along the
+// walls (they close it by themselves) and crosses a corridor wherever it leaves the zone: there
+// the film stands across the corridor and holds the hero. No plugs, no roots in the walls.
+import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 
 const TAU = Math.PI * 2;
 const hash = (a: number, b: number) => {
 	const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
 	return s - Math.floor(s);
 };
-const rimAt = (R: number, S: number, a: number, t: number) =>
-	R + Math.sin(a * 9 + t * 0.8) * S * 0.07 + Math.sin(a * 23 - t * 1.3) * S * 0.035;
 
-interface Pal {
-	dark: string;
-	body: string;
-	light: string;
-	glow: string;
-	zone: string;
-	/** Cord widths in tiles: outline, body, highlight. */
-	wo: number;
-	wb: number;
-	wl: number;
-	/** The same for a seal. */
-	so: number;
-	sb: number;
+/** A corridor leaving the zone: the zone's last tile and the way out across the film. */
+export interface Door {
+	readonly x: number;
+	readonly y: number;
+	readonly dx: number;
+	readonly dy: number;
+	/** The thin one: he can push through it. */
+	readonly weak: boolean;
 }
-const PAL: Record<RingStyle, Pal> = {
-	A: { dark: '10,14,6', body: '108,126,46', light: '228,238,132', glow: '150,190,40', zone: '30,44,12', wo: 0.36, wb: 0.26, wl: 0.06, so: 0.5, sb: 0.37 },
-	B: { dark: '14,20,6', body: '206,216,112', light: '250,252,204', glow: '170,204,50', zone: '70,96,20', wo: 0.15, wb: 0.085, wl: 0.035, so: 0.34, sb: 0.22 },
-	C: { dark: '6,8,4', body: '20,24,14', light: '214,236,110', glow: '150,200,40', zone: '24,34,10', wo: 0.34, wb: 0.26, wl: 0.05, so: 0.46, sb: 0.36 }
+
+export interface Zone {
+	readonly tiles: ReadonlySet<number>;
+	readonly W: number;
+	readonly doors: readonly Door[];
+	/** Zone tiles whose side is a wall: [x, y, dx, dy]. */
+	readonly walls: ReadonlyArray<readonly [number, number, number, number]>;
+	posts: Array<{ kind: GhostKind; x: number; y: number; a: number; charge: number }>;
+	lit: boolean;
+	push: number;
+	broken: boolean;
+}
+
+export interface ZoneLook {
+	readonly guide: number;
+	readonly charge: number;
+	readonly lit: number;
+	readonly pressed: Door | null;
+	readonly press: number;
+}
+
+export interface ZoneLayout {
+	readonly tileSize: number;
+	readonly offsetX: number;
+	readonly offsetY: number;
+}
+
+const DIRS = [
+	[0, -1],
+	[0, 1],
+	[-1, 0],
+	[1, 0]
+] as const;
+
+/**
+ * The zone round a tile: the open tiles within the graph distance that keeps them under `budget`
+ * (whole layers), so the shape follows the maze: a piece of it, not a disc.
+ */
+export function planZone(
+	open: (x: number, y: number) => boolean,
+	W: number,
+	H: number,
+	tx: number,
+	ty: number,
+	budget: number
+): Zone {
+	const dist = new Map<number, number>([[ty * W + tx, 0]]);
+	const order = [ty * W + tx];
+	for (let i = 0; i < order.length; i++) {
+		const k = order[i];
+		const x = k % W;
+		const y = Math.floor(k / W);
+		for (const [dx, dy] of DIRS) {
+			const nx = x + dx;
+			const ny = y + dy;
+			if (!open(nx, ny) || dist.has(ny * W + nx)) continue;
+			dist.set(ny * W + nx, (dist.get(k) as number) + 1);
+			order.push(ny * W + nx);
+		}
+	}
+	let reach = 0;
+	for (let d = 1; ; d++) {
+		const n = order.filter((k) => (dist.get(k) as number) <= d).length;
+		if (n > budget || n === order.length) {
+			reach = n > budget ? d - 1 : d;
+			break;
+		}
+	}
+	const tiles = new Set(order.filter((k) => (dist.get(k) as number) <= reach));
+	const doors: Door[] = [];
+	const walls: Array<[number, number, number, number]> = [];
+	for (const k of tiles) {
+		const x = k % W;
+		const y = Math.floor(k / W);
+		for (const [dx, dy] of DIRS) {
+			const nx = x + dx;
+			const ny = y + dy;
+			if (nx >= 0 && ny >= 0 && nx < W && ny < H && tiles.has(ny * W + nx)) continue;
+			if (open(nx, ny)) doors.push({ x, y, dx, dy, weak: false });
+			else walls.push([x, y, dx, dy]);
+		}
+	}
+	const thin = doors.length > 1 ? 1 : 0;
+	const marked = doors.map((d, i) => (i === thin ? { ...d, weak: true } : d));
+	// two projectors at the doors farthest apart
+	let best: [Door, Door] | null = null;
+	let far = -1;
+	for (const a of marked)
+		for (const b of marked) {
+			const d = Math.hypot(a.x - b.x, a.y - b.y);
+			if (d > far) {
+				far = d;
+				best = [a, b];
+			}
+		}
+	const posts = (['BLINKY', 'PINKY'] as GhostKind[]).map((kind, i) => {
+		const d = (best as [Door, Door])[i];
+		return { kind, x: d.x, y: d.y, a: 0, charge: 0 };
+	});
+	return { tiles, W, doors: marked, walls, posts, lit: false, push: 0, broken: false };
+}
+
+const BILE = {
+	dark: '14,20,6',
+	body: '206,216,112',
+	light: '250,252,204',
+	glow: '170,204,50',
+	zone: '70,96,20'
 };
 
-interface Pt {
-	x: number;
-	y: number;
-	nx: number;
-	ny: number;
-}
-
-function rimPts(cx: number, cy: number, R: number, S: number, lo: number, hi: number, t: number): Pt[] {
-	const n = Math.max(8, Math.ceil(((hi - lo) * R) / (S * 0.2)));
-	const out: Pt[] = [];
-	for (let i = 0; i <= n; i++) {
-		const a = lo + ((hi - lo) * i) / n;
-		const r = rimAt(R, S, a, t);
-		out.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, nx: Math.cos(a), ny: Math.sin(a) });
-	}
-	return out;
-}
-
-function trace(c: CanvasRenderingContext2D, P: readonly Pt[], off = 0): void {
-	c.beginPath();
-	P.forEach((p, i) => (i ? c.lineTo(p.x + p.nx * off, p.y + p.ny * off) : c.moveTo(p.x + p.nx * off, p.y + p.ny * off)));
-}
-
-/** A cord along a path: glow, dark outline, body, highlight; strands and stitches on request. */
-function cord(
+/** A film across a corridor, in local space: u along it (wall to wall), v the way out. */
+function film(
 	c: CanvasRenderingContext2D,
-	P: readonly Pt[],
-	pal: Pal,
 	S: number,
-	wo: number,
-	wb: number,
-	alive: number,
-	t: number,
-	style: RingStyle,
-	seed: number
-): void {
-	if (P.length < 2) return;
-	const pulse = 1 + 0.07 * Math.sin(t * 2.4 + seed);
-	c.lineJoin = 'round';
-	c.lineCap = 'round';
-	c.globalCompositeOperation = 'lighter';
-	trace(c, P);
-	c.strokeStyle = `rgba(${pal.glow}, ${0.16 * alive})`;
-	c.lineWidth = S * wo * 2.3;
-	c.stroke();
-	c.globalCompositeOperation = 'source-over';
-	trace(c, P);
-	c.strokeStyle = `rgba(${pal.dark}, ${0.92 * alive})`;
-	c.lineWidth = S * wo * pulse;
-	c.stroke();
-	trace(c, P);
-	c.strokeStyle = `rgba(${pal.body}, ${(style === 'B' ? 0.8 : 0.95) * alive})`;
-	c.lineWidth = S * wb * pulse;
-	c.stroke();
-	if (style === 'A') {
-		// two strands twisting over each other
-		for (const k of [0, Math.PI]) {
-			c.beginPath();
-			P.forEach((p, i) => {
-				const o = Math.sin(i * 0.55 + k + t * 0.7) * S * wb * 0.26;
-				if (i) c.lineTo(p.x + p.nx * o, p.y + p.ny * o);
-				else c.moveTo(p.x + p.nx * o, p.y + p.ny * o);
-			});
-			c.strokeStyle = `rgba(${pal.dark}, ${0.55 * alive})`;
-			c.lineWidth = Math.max(1, S * 0.035);
-			c.stroke();
-		}
-	}
-	if (style === 'C') {
-		// glossy black fluid: a sulfur rim light along both edges
-		for (const side of [-1, 1]) {
-			trace(c, P, side * S * wb * 0.5);
-			c.strokeStyle = `rgba(${pal.light}, ${0.75 * alive})`;
-			c.lineWidth = Math.max(1, S * 0.03);
-			c.stroke();
-		}
-	}
-	trace(c, P, -S * wb * 0.18);
-	c.strokeStyle = `rgba(${pal.light}, ${(style === 'B' ? 0.85 : 0.55) * alive})`;
-	c.lineWidth = Math.max(1, S * pal.wl);
-	c.stroke();
-}
-
-function zone(c: CanvasRenderingContext2D, cx: number, cy: number, R: number, pal: Pal, lit: number, t: number): void {
-	const g = c.createRadialGradient(cx, cy, R * 0.55, cx, cy, R);
-	g.addColorStop(0, `rgba(${pal.zone}, 0)`);
-	g.addColorStop(1, `rgba(${pal.zone}, ${0.2 * lit})`);
-	c.fillStyle = g;
-	c.beginPath();
-	c.arc(cx, cy, R, 0, TAU);
-	c.fill();
-	// the hive's beat (6 s, soft): a swell sweeping in from the rim
-	const k = (t % 6) / 6;
-	const rw = R * (1 - 0.32 * k);
-	const w = c.createRadialGradient(cx, cy, Math.max(0, rw - R * 0.16), cx, cy, rw);
-	w.addColorStop(0, `rgba(${pal.zone}, 0)`);
-	w.addColorStop(1, `rgba(${pal.zone}, ${0.16 * (1 - k) * lit})`);
-	c.fillStyle = w;
-	c.beginPath();
-	c.arc(cx, cy, rw, 0, TAU);
-	c.fill();
-}
-
-function extras(
-	c: CanvasRenderingContext2D,
-	style: RingStyle,
-	cx: number,
-	cy: number,
-	R: number,
-	S: number,
-	pal: Pal,
-	arcs: ReadonlyArray<readonly [number, number]>,
-	alive: number,
-	t: number
-): void {
-	const inArcs = (a: number) =>
-		arcs.some(([lo, hi]) => {
-			const d = Math.atan2(Math.sin(a - (lo + hi) / 2), Math.cos(a - (lo + hi) / 2));
-			return Math.abs(d) <= (hi - lo) / 2;
-		});
-	if (style === 'A') {
-		// cysts along the cord, a capillary fork reaching into the zone from each
-		const n = Math.round((R * TAU) / (S * 1.5));
-		for (let i = 0; i < n; i++) {
-			const a = (i / n) * TAU + hash(i, 1) * 0.05;
-			if (!inArcs(a)) continue;
-			const r = rimAt(R, S, a, t);
-			const x = cx + Math.cos(a) * r;
-			const y = cy + Math.sin(a) * r;
-			for (const side of [-1, 1]) {
-				const len = S * (0.5 + 0.7 * hash(i, 2 + side));
-				const bend = side * S * 0.3;
-				const ex = cx + Math.cos(a + side * 0.12) * (r - len);
-				const ey = cy + Math.sin(a + side * 0.12) * (r - len);
-				c.beginPath();
-				c.moveTo(x, y);
-				c.quadraticCurveTo((x + ex) / 2 - Math.sin(a) * bend, (y + ey) / 2 + Math.cos(a) * bend, ex, ey);
-				c.strokeStyle = `rgba(${pal.dark}, ${0.7 * alive})`;
-				c.lineWidth = Math.max(1, S * 0.04);
-				c.stroke();
-				c.beginPath();
-				c.arc(ex, ey, S * 0.035, 0, TAU);
-				c.fillStyle = `rgba(${pal.light}, ${0.8 * alive})`;
-				c.fill();
-			}
-			const beat = 0.5 + 0.5 * Math.sin(t * 2.4 + i * 1.7);
-			c.beginPath();
-			c.ellipse(x, y, S * 0.2, S * 0.17, a, 0, TAU);
-			c.fillStyle = `rgba(${pal.body}, ${alive})`;
-			c.fill();
-			c.strokeStyle = `rgba(${pal.dark}, ${alive})`;
-			c.lineWidth = Math.max(1, S * 0.045);
-			c.stroke();
-			c.beginPath();
-			c.arc(x - S * 0.02, y - S * 0.03, S * (0.055 + 0.02 * beat), 0, TAU);
-			c.fillStyle = `rgba(${pal.light}, ${(0.7 + 0.3 * beat) * alive})`;
-			c.fill();
-		}
-	} else if (style === 'B') {
-		// fine veins reaching into the zone, drifting a little, a bead at each tip
-		const n = Math.round((R * TAU) / (S * 0.45));
-		for (let i = 0; i < n; i++) {
-			const a = (i / n) * TAU + hash(i, 1) * 0.06;
-			if (!inArcs(a)) continue;
-			const r = rimAt(R, S, a, t);
-			const len = S * (0.8 + 1.7 * hash(i, 2));
-			const sway = Math.sin(t * 0.7 + i) * S * 0.18;
-			const x = cx + Math.cos(a) * r;
-			const y = cy + Math.sin(a) * r;
-			const ex = cx + Math.cos(a) * (r - len) - Math.sin(a) * sway;
-			const ey = cy + Math.sin(a) * (r - len) + Math.cos(a) * sway;
-			c.beginPath();
-			c.moveTo(x, y);
-			c.quadraticCurveTo(
-				(x + ex) / 2 + Math.sin(a) * S * 0.25 * (hash(i, 3) - 0.5),
-				(y + ey) / 2 - Math.cos(a) * S * 0.25 * (hash(i, 3) - 0.5),
-				ex,
-				ey
-			);
-			c.strokeStyle = `rgba(${pal.body}, ${(0.16 + 0.12 * hash(i, 4)) * alive})`;
-			c.lineWidth = Math.max(1, S * 0.03);
-			c.stroke();
-			c.beginPath();
-			c.arc(ex, ey, S * 0.03, 0, TAU);
-			c.fillStyle = `rgba(${pal.light}, ${0.5 * alive})`;
-			c.fill();
-		}
-	} else {
-		// ferrofluid: spikes rise along the rim, taller and shorter as they breathe
-		for (const [lo, hi] of arcs) {
-			const P = rimPts(cx, cy, R, S, lo, hi, t);
-			for (let i = 1; i < P.length - 1; i += 1) {
-				const p = P[i];
-				const k = 0.5 + 0.5 * Math.sin(t * 1.7 + i * 2.3 + hash(i, 7) * 6);
-				for (const side of [1, -1]) {
-					const hgt = S * (side > 0 ? 0.14 + 0.3 * k : 0.08 + 0.14 * k);
-					const bx = p.x + p.nx * side * S * 0.1;
-					const by = p.y + p.ny * side * S * 0.1;
-					const tx = -p.ny * S * 0.05;
-					const ty = p.nx * S * 0.05;
-					c.beginPath();
-					c.moveTo(bx - tx, by - ty);
-					c.lineTo(bx + p.nx * side * hgt, by + p.ny * side * hgt);
-					c.lineTo(bx + tx, by + ty);
-					c.closePath();
-					c.fillStyle = `rgba(${pal.dark}, ${0.95 * alive})`;
-					c.fill();
-					c.strokeStyle = `rgba(${pal.light}, ${0.6 * alive})`;
-					c.lineWidth = Math.max(1, S * 0.02);
-					c.stroke();
-				}
-			}
-		}
-	}
-}
-
-function seal(
-	c: CanvasRenderingContext2D,
-	style: RingStyle,
-	pal: Pal,
-	S: number,
-	s: RingSeal,
+	d: Door,
 	broken: boolean,
-	ph: RingLook,
+	ph: ZoneLook,
 	t: number,
 	seed: number
 ): void {
@@ -272,88 +144,144 @@ function seal(
 	if (grown <= 0) return;
 	const alive = ph.lit > 0 ? ph.lit : 1;
 	const h = S * 0.5;
-	const thin = s.weak ? (broken ? 0.45 : 0.6) : 1;
-	const hit = ph.pressed === s ? ph.press : 0;
-	const bulge = S * (0.08 + 0.22 * hit);
-	const flick = s.weak ? 0.65 + 0.35 * Math.sin(t * 9 + seed * 3) * Math.sin(t * 2.3) : 1;
+	const hit = ph.pressed === d ? ph.press : 0;
+	const bulge = S * (0.06 + 0.3 * hit);
+	const flick = d.weak ? 0.7 + 0.3 * Math.sin(t * 9 + seed * 3) * Math.sin(t * 2.3) : 1;
+	const gap = d.weak ? (broken ? S * 0.34 : S * 0.1) : 0;
 	const reach = h * grown;
-	const gap = s.weak ? (broken ? S * 0.36 : S * 0.11) : 0;
 	const pieces = (
 		[
 			[-h, Math.min(-gap, -h + reach)],
 			[Math.max(gap, h - reach), h]
 		] as Array<[number, number]>
 	).filter(([a, b]) => b > a);
+	const v = (u: number) => bulge * (1 - (u / h) ** 2) + Math.sin(u * 0.35 + t * 1.6 + seed) * S * 0.02;
+	const w = (d.weak ? 0.07 : 0.1) * S * (1 + 0.1 * Math.sin(t * 2.4 + seed));
 	c.save();
 	c.globalAlpha *= alive * flick;
+	c.lineCap = 'round';
+	c.lineJoin = 'round';
 	for (const [a, b] of pieces) {
-		const P: Pt[] = [];
-		for (let i = 0; i <= 10; i++) {
-			const u = a + ((b - a) * i) / 10;
-			P.push({ x: u, y: bulge * (1 - (u / h) ** 2), nx: 0, ny: 1 });
+		const path = () => {
+			c.beginPath();
+			for (let i = 0; i <= 10; i++) {
+				const u = a + ((b - a) * i) / 10;
+				if (i) c.lineTo(u, v(u));
+				else c.moveTo(u, v(u));
+			}
+		};
+		// the curtain: a soft glow spilling both ways
+		c.globalCompositeOperation = 'lighter';
+		path();
+		c.strokeStyle = `rgba(${BILE.glow}, ${0.2 + 0.18 * hit})`;
+		c.lineWidth = w * 5;
+		c.stroke();
+		c.globalCompositeOperation = 'source-over';
+		path();
+		c.strokeStyle = `rgba(${BILE.dark}, 0.9)`;
+		c.lineWidth = w * 2.2;
+		c.stroke();
+		path();
+		c.strokeStyle = `rgba(${BILE.body}, 0.9)`;
+		c.lineWidth = w * 1.4;
+		c.stroke();
+		path();
+		c.strokeStyle = `rgba(${BILE.light}, ${0.75 + 0.25 * Math.sin(t * 3.1 + seed) + 0.3 * hit})`;
+		c.lineWidth = Math.max(1, w * 0.45);
+		c.stroke();
+		// fine veins reaching back into the zone
+		for (let k = 0; k < 4; k++) {
+			const u = a + (b - a) * (0.15 + 0.7 * hash(seed * 7 + k, 1));
+			const len = S * (0.35 + 0.55 * hash(seed * 7 + k, 2));
+			const sway = Math.sin(t * 0.8 + k + seed) * S * 0.07;
+			c.beginPath();
+			c.moveTo(u, v(u));
+			c.quadraticCurveTo(u + sway, v(u) - len * 0.5, u + sway * 1.6, v(u) - len);
+			c.strokeStyle = `rgba(${BILE.body}, 0.3)`;
+			c.lineWidth = Math.max(1, S * 0.025);
+			c.stroke();
 		}
-		cord(c, P, pal, S, pal.so * thin, pal.sb * thin, 1, t, style, seed);
-		// the bright core reads at once
-		trace(c, P);
-		c.strokeStyle = `rgba(${pal.light}, ${0.7 + 0.3 * Math.sin(t * 3.1 + seed) + 0.3 * hit})`;
-		c.lineWidth = Math.max(1, S * 0.04 * thin);
-		c.stroke();
 	}
-	for (const e of [-1, 1]) {
-		const nx = e * h * 1.02;
-		c.beginPath();
-		c.ellipse(nx, 0, S * 0.14, S * 0.2 * thin + S * 0.03, 0, 0, TAU);
-		c.fillStyle = `rgba(${pal.body}, 1)`;
-		c.fill();
-		c.strokeStyle = `rgba(${pal.dark}, 1)`;
-		c.lineWidth = Math.max(1, S * 0.04);
-		c.stroke();
-		c.beginPath();
-		c.arc(nx - e * S * 0.02, -S * 0.03, S * 0.055, 0, TAU);
-		c.fillStyle = `rgba(${pal.light}, 0.95)`;
-		c.fill();
-	}
-	if (s.weak && pieces.length === 2) {
-		c.strokeStyle = `rgba(${pal.light}, 0.55)`;
-		c.lineWidth = Math.max(1, S * 0.025);
+	if (d.weak && pieces.length === 2) {
+		c.strokeStyle = `rgba(${BILE.light}, 0.55)`;
+		c.lineWidth = Math.max(1, S * 0.022);
 		for (const e of [-1, 1]) {
 			c.beginPath();
-			c.moveTo(e * gap, -S * 0.12);
-			c.lineTo(e * gap * 0.35, S * 0.08);
+			c.moveTo(e * gap, v(0) - S * 0.1);
+			c.lineTo(e * gap * 0.35, v(0) + S * 0.06);
 			c.stroke();
 		}
 	}
 	c.restore();
 }
 
-export function drawRingStyled(
-	style: RingStyle,
+/** The whole zone: the warning, the tint, the glow along its walls, the films across the corridors. */
+export function drawZone(
 	c: CanvasRenderingContext2D,
-	L: RingLayout,
-	ring: QuarantineRing,
-	ph: RingLook,
+	L: ZoneLayout,
+	z: Zone,
+	ph: ZoneLook,
 	t: number
 ): void {
 	const S = L.tileSize;
-	const cx = L.offsetX + ring.cx * S;
-	const cy = L.offsetY + ring.cy * S;
-	const R = ring.r * S;
-	const pal = PAL[style];
-	c.save();
-	paintGuide(c, L, ring, ph, t);
+	const px = (x: number) => L.offsetX + x * S;
+	const py = (y: number) => L.offsetY + y * S;
 	const grown = ph.lit > 0 ? 1 : ph.charge;
+	const alive = ph.lit > 0 ? ph.lit : 1;
+	c.save();
+	// the warning: the whole coming zone at once, an amber dashed outline, fading as it charges
+	if (ph.guide > 0) {
+		const pulse = 0.5 + 0.5 * Math.sin(t * TAU * 0.9);
+		const fade = ph.guide * (1 - 0.7 * (ph.lit > 0 ? 1 : ph.charge));
+		c.fillStyle = `rgba(150, 120, 40, ${(0.08 + 0.05 * pulse) * fade})`;
+		for (const k of z.tiles) c.fillRect(px(k % z.W) - 0.5, py(Math.floor(k / z.W)) - 0.5, S + 1, S + 1);
+		c.setLineDash([S * 0.34, S * 0.22]);
+		c.lineDashOffset = -t * S * 0.5;
+		c.strokeStyle = `rgba(255, 190, 110, ${(0.5 + 0.35 * pulse) * fade})`;
+		c.lineWidth = Math.max(1.5, S * 0.07);
+		c.beginPath();
+		for (const [x, y, dx, dy] of [...z.walls, ...z.doors.map((d) => [d.x, d.y, d.dx, d.dy] as const)]) {
+			const ex = px(x + 0.5 + dx * 0.5);
+			const ey = py(y + 0.5 + dy * 0.5);
+			c.moveTo(ex - dy * S * 0.5, ey + dx * S * 0.5);
+			c.lineTo(ex + dy * S * 0.5, ey - dx * S * 0.5);
+		}
+		c.stroke();
+		c.setLineDash([]);
+	}
 	if (grown > 0) {
-		const alive = ph.lit > 0 ? ph.lit : 1;
-		const span = Math.PI / ring.posts.length;
-		const arcs = ring.posts.map((p) => [p.a - span * grown, p.a + span * grown] as const);
-		if (ph.lit > 0) zone(c, cx, cy, R, pal, ph.lit, t);
-		extras(c, style, cx, cy, R, S, pal, arcs, alive, t);
-		arcs.forEach(([lo, hi], i) => cord(c, rimPts(cx, cy, R, S, lo, hi, t), pal, S, pal.wo, pal.wb, alive, t, style, i));
-		ring.seals.forEach((s, i) => {
+		if (ph.lit > 0) {
+			// the zone inside: a faint sick tint, the hive's slow beat sweeping through it
+			const beat = 0.5 + 0.5 * Math.sin((t / 6) * TAU);
+			c.fillStyle = `rgba(${BILE.zone}, ${(0.16 + 0.05 * beat) * ph.lit})`;
+			for (const k of z.tiles) c.fillRect(px(k % z.W) - 0.5, py(Math.floor(k / z.W)) - 0.5, S + 1, S + 1);
+		}
+		// the glow along the walls that close the zone, from the wall inward
+		for (const [x, y, dx, dy] of z.walls) {
+			const ex = px(x + 0.5 + dx * 0.5);
+			const ey = py(y + 0.5 + dy * 0.5);
+			const g = c.createLinearGradient(ex, ey, ex - dx * S * 0.3, ey - dy * S * 0.3);
+			g.addColorStop(0, `rgba(${BILE.glow}, ${0.34 * grown * alive})`);
+			g.addColorStop(1, `rgba(${BILE.glow}, 0)`);
+			c.fillStyle = g;
+			c.fillRect(
+				Math.min(ex, ex - dx * S * 0.3) - Math.abs(dy) * S * 0.5,
+				Math.min(ey, ey - dy * S * 0.3) - Math.abs(dx) * S * 0.5,
+				Math.abs(dx) * S * 0.3 + Math.abs(dy) * S,
+				Math.abs(dy) * S * 0.3 + Math.abs(dx) * S
+			);
+			c.beginPath();
+			c.moveTo(ex - dy * S * 0.5, ey + dx * S * 0.5);
+			c.lineTo(ex + dy * S * 0.5, ey - dx * S * 0.5);
+			c.strokeStyle = `rgba(${BILE.body}, ${0.6 * grown * alive})`;
+			c.lineWidth = Math.max(1, S * 0.035);
+			c.stroke();
+		}
+		z.doors.forEach((d, i) => {
 			c.save();
-			c.translate(L.offsetX + (s.x + 0.5) * S, L.offsetY + (s.y + 0.5) * S);
-			c.rotate(Math.atan2(s.dy, s.dx) - Math.PI / 2);
-			seal(c, style, pal, S, s, ring.broken, ph, t, hash(i, 9));
+			c.translate(px(d.x + 0.5 + d.dx * 0.5), py(d.y + 0.5 + d.dy * 0.5));
+			c.rotate(Math.atan2(d.dy, d.dx) - Math.PI / 2);
+			film(c, S, d, z.broken, ph, t, hash(i, 9));
 			c.restore();
 		});
 	}

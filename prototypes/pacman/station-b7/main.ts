@@ -9,7 +9,7 @@ import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/s
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
 import { drawPretender, RailGait, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
 import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
-import { drawRingStyled, type RingStyle } from './ringStyles';
+import { drawZone, planZone } from './ringStyles';
 import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
 import { CJ_BODY_RATIO } from '../../../src/games/pacman/render/actors/hero/vesselHero';
 import { CinnabarHero } from '../../../src/games/pacman/render/actors/hero/CinnabarHero';
@@ -35,7 +35,7 @@ const open = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && OPE
 
 // ------------------------------------------------------------------------------ what is shown
 
-type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'off';
+type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'press' | 'torn' | 'off';
 type Pick = 'now' | 'off';
 type Mim = 'now' | 'off';
 type Lure = 'on' | 'off';
@@ -43,7 +43,7 @@ const st = {
 	inf: 0.65,
 	alarm: false,
 	ring: 'off' as RingMode,
-	style: 'now' as 'now' | RingStyle,
+	style: 'zone' as 'now' | 'zone',
 	mimic: 'now' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
@@ -68,10 +68,8 @@ const GROUPS: Group[] = [
 		label: 'Стиль',
 		key: 'style',
 		items: [
-			['Сейчас', 'now'],
-			['A мох', 'A'],
-			['B плёнка жёлчи', 'B'],
-			['C феррожидкость', 'C']
+			['Круг (был)', 'now'],
+			['Зона', 'zone']
 		]
 	},
 	{
@@ -82,6 +80,8 @@ const GROUPS: Group[] = [
 			['Контур', 'guide'],
 			['Зарядка', 'charge'],
 			['Горит', 'lit'],
+			['Давит', 'press'],
+			['Разрыв', 'torn'],
 			['Выкл', 'off']
 		],
 		after: (v) => {
@@ -252,6 +252,10 @@ function nearestOpen(fx: number, fy: number): [number, number] {
 
 const [rx, ry] = nearestOpen(W * 0.3, H * 0.5);
 const ring = planRing(rx, ry, 7.5);
+const q = new URLSearchParams(location.search);
+const [fx0, fy0] = (q.get('at') ?? '0.3,0.5').split(',').map(Number);
+const [zx, zy] = nearestOpen(W * fx0, H * fy0);
+const zone = planZone(open, W, H, zx, zy, Number(q.get('n') ?? 60));
 const [lx, ly] = nearestOpen(W * 0.7, H * 0.42);
 
 // ------------------------------------------------------------------- the enraged on their runs
@@ -321,11 +325,13 @@ function walkerAt(w: (typeof walkers)[number], t: number) {
 
 // ------------------------------------------------------------------------------- the frame
 
-function ringPhase(t: number): { guide: number; charge: number; lit: boolean } | null {
+function ringPhase(t: number): { guide: number; charge: number; lit: boolean; press?: number; broken?: boolean } | null {
 	if (st.ring === 'off') return null;
 	if (st.ring === 'guide') return { guide: 1, charge: 0, lit: false };
 	if (st.ring === 'charge') return { guide: 1, charge: 0.5, lit: false };
 	if (st.ring === 'lit') return { guide: 0, charge: 1, lit: true };
+	if (st.ring === 'press') return { guide: 0, charge: 1, lit: true, press: 0.85 };
+	if (st.ring === 'torn') return { guide: 0, charge: 1, lit: true, broken: true };
 	const u = t % 7.3;
 	if (u < 1.8) return { guide: Math.min(1, u / 0.25), charge: 0, lit: false };
 	if (u < 3.3) return { guide: 1, charge: (u - 1.8) / 1.5, lit: false };
@@ -513,11 +519,15 @@ function frame(now: number): void {
 	const S = L.tileSize;
 	const ph = ringPhase(t);
 	if (ph) {
-		ring.lit = ph.lit;
 		const rl = { guide: ph.guide, charge: ph.charge, lit: ph.lit ? 1 : 0, pressed: null, press: 0 };
+		const cur = st.style === 'now' ? ring : zone;
+		cur.lit = ph.lit;
 		if (st.style === 'now') drawRing(ctx, L, ring, rl, t);
-		else drawRingStyled(st.style, ctx, L, ring, rl, t);
-		for (const p of ring.posts) {
+		else {
+			zone.broken = !!ph.broken;
+			drawZone(ctx, L, zone, { ...rl, pressed: ph.press ? (zone.doors.find((d) => d.weak) ?? null) : null, press: ph.press ?? 0 }, t);
+		}
+		for (const p of cur.posts) {
 			const g = new RailGait();
 			drawPretender(ctx, L.offsetX + (p.x + 0.5) * S, L.offsetY + (p.y + 0.5) * S, S, p.kind, ph.lit ? 'hunt' : 'tell', look(g, 0, 1, t));
 		}
