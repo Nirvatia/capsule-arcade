@@ -8,6 +8,7 @@ import type { QuarantineRing, RingSeal } from '../../../src/games/pacman/logic/s
 import { B7World } from '../../../src/games/pacman/render/station/b7/B7World';
 import { drawPretender, RailGait, type PretenderOpts } from '../../../src/games/pacman/render/station/pretender';
 import { drawRing } from '../../../src/games/pacman/render/station/quarantineRing';
+import { drawRingStyled, type RingStyle } from './ringStyles';
 import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
 
 const view = document.getElementById('view') as HTMLCanvasElement;
@@ -31,6 +32,7 @@ const st = {
 	inf: 0.65,
 	alarm: false,
 	ring: 'cycle' as RingMode,
+	style: 'now' as 'now' | RingStyle,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
 	big: true
@@ -50,6 +52,16 @@ interface Group {
 	after?: (v: string | number | boolean) => void;
 }
 const GROUPS: Group[] = [
+	{
+		label: 'Стиль',
+		key: 'style',
+		items: [
+			['Сейчас', 'now'],
+			['A верёвка', 'A'],
+			['B плёнка', 'B'],
+			['C шов', 'C']
+		]
+	},
 	{
 		label: 'Круг',
 		key: 'ring',
@@ -357,7 +369,9 @@ function frame(now: number): void {
 	const ph = ringPhase(t);
 	if (ph) {
 		ring.lit = ph.lit;
-		drawRing(ctx, L, ring, { guide: ph.guide, charge: ph.charge, lit: ph.lit ? 1 : 0, pressed: null, press: 0 }, t);
+		const rl = { guide: ph.guide, charge: ph.charge, lit: ph.lit ? 1 : 0, pressed: null, press: 0 };
+		if (st.style === 'now') drawRing(ctx, L, ring, rl, t);
+		else drawRingStyled(st.style, ctx, L, ring, rl, t);
 		for (const p of ring.posts) {
 			const g = new RailGait();
 			drawPretender(ctx, L.offsetX + (p.x + 0.5) * S, L.offsetY + (p.y + 0.5) * S, S, p.kind, ph.lit ? 'hunt' : 'tell', look(g, 0, 1, t));

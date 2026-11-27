@@ -22,7 +22,7 @@ export interface RingLook {
 	readonly press: number;
 }
 
-interface Layout {
+export interface RingLayout {
 	readonly tileSize: number;
 	readonly offsetX: number;
 	readonly offsetY: number;
@@ -265,9 +265,9 @@ function paintSeal(
 }
 
 /** The warning: the whole coming ring at once, fading as the projectors charge. */
-function paintGuide(
+export function paintGuide(
 	c: CanvasRenderingContext2D,
-	L: Layout,
+	L: RingLayout,
 	ring: QuarantineRing,
 	ph: RingLook,
 	t: number
@@ -321,7 +321,7 @@ function paintGuide(
 
 export function drawRing(
 	c: CanvasRenderingContext2D,
-	L: Layout,
+	L: RingLayout,
 	ring: QuarantineRing,
 	ph: RingLook,
 	time: number
