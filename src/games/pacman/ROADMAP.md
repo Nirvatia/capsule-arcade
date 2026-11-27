@@ -82,14 +82,18 @@ last (see Later).
    **Mock-ups for his approval** (`prototypes/pacman/hell-phase`, built from the game's own hell):
    (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
    bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a
-   small shadow, no glow): the eye reads best. The game turns the drawn maze's dots into floor and
+   small shadow, no glow): the eye reads best, but **the owner picked the fang** (2026-11-27: it does
+   not clutter the maze and is easy to see). The game turns the drawn maze's dots into floor and
    `assertDoomMap` demands a map without them, so food needs both changed; its effect (score, heals, the
    BFG's charge) is open. (2) **the split**: four still frames were rejected (unconnected, the omen read
    as a sticker); now a **playable scripted loop** (arrow keys; fight 7 s, the omen, the burst, 22 s of
    plain Pac-Man with the weapon shut off, the four running back into the lair, the weak boss 4.5 s that a
    touch hits), on the real hero, maze, food and the ghosts' chase (`PlayerService`, `DronePack`);
    open: how long, whether the energizers stay (they do in the mock), what surviving earns, the real
-   boss's pathing and attacks instead of the generic chase.
+   boss's pathing and attacks instead of the generic chase. **A hole the owner found: the mock returns
+   the four into the lair and opens it, but the hero never enters the lair and the BFG's orb stops at
+   walls, so the weak boss could not be hit. The boss must re-form in a corridor the hero can reach and
+   shoot along (and why there needs a reason).**
 2. **A random boss on every 5th level, for both heroes**: in (`logic/level/BossCatalog`). It
    draws from `BOSS_ROTATION`, the finished bosses: the hell and the station (since 2026-11-26).
    Left: difficulty scaled by level number, not world, now that a second boss is in.
