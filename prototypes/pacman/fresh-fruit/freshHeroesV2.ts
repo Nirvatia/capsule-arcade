@@ -199,6 +199,7 @@ export var FreshFruitBase = class extends Hero {
 		}
 	}
 	emitFizz(count, isKick = false) {
+		if (this.power > .35 && this.trailStyle !== 0) return; // V2: a flowing trail has no loose bubbles
 		const R = this.r;
 		const backX = -Math.cos(this.angle);
 		const backY = -Math.sin(this.angle);
@@ -277,117 +278,140 @@ export var FreshFruitBase = class extends Hero {
 	}
 	liftFor() { return 0; }
 
-	/** V2: the buff's trail in three candidates (`trailStyle` 1 ribbon, 2 soda, 3 pieces); 0 keeps the old. */
+	/** V2: the buff's trail as a liquid (`trailStyle` 1 jet, 2 ripples, 3 fizzy; 0 keeps the old). */
 	trailStyle = 1;
-	/** V2: the old golden dashes of the base would only crowd a new trail in the buff. */
+	/** V2: the base's golden dashes and drops would only crowd a flowing trail in the buff. */
 	spawnStorm(ux, uy, hot) {
 		if (this.power > .35 && this.trailStyle !== 0) return;
 		super.spawnStorm(ux, uy, hot);
 	}
+	/**
+	* V2: one smooth liquid ribbon, no particles. The centreline sways and the width swells and
+	* thins as a wave that runs back along it, so it reads as a flow; layered from the outside in:
+	* a dark teal edge, the cold sheath, the warm core, a gloss line, thin streaks running down it.
+	*/
 	drawBuffTrail(ctx, kit) {
 		const R = this.r;
 		const p = this.power;
+		const t = this.time;
 		const style = this.trailStyle;
-		const long = 1 + .3 * p;
-		const sway = (u) => Math.sin(u * 7.0 - this.time * 6.4) * R * .07 * Math.min(1, u * 3) * (kit.flip ?? 1);
-		const spine = { life: .5 * long, width: R * .3, capHead: R * .3, capTail: R * 1.9, shift: sway };
-		const pts = this.wake.points(this.time, spine)[0] ?? [];
-		const at = (u) => {
-			if (pts.length < 2) return null;
-			let best = pts[0];
-			for (const q of pts) if (Math.abs(q.u - u) < Math.abs(best.u - u)) best = q;
-			return best;
+		const long = 1 + .45 * p;
+		const raw = this.wake.points(t, { life: .62 * long, width: R * 1.0, capHead: R * .55, capTail: R * 2.7 })[0];
+		if (!raw || raw.length < 5) return;
+		const amp = style === 2 ? .3 : .13;
+		const wave = style === 2 ? 17 : 9;
+		const pts = raw.map((q) => {
+			const ramp = Math.min(1, q.u * 4);
+			const off = Math.sin(q.u * 6.5 - t * 7.5) * R * (style === 2 ? .13 : .09) * Math.min(1, q.u * 3) * (kit.flip ?? 1);
+			return {
+				x: q.x + q.nx * off,
+				y: q.y + q.ny * off,
+				nx: q.nx,
+				ny: q.ny,
+				u: q.u,
+				a: q.a,
+				w: q.w * (1 + amp * Math.sin(q.u * wave - t * 9) * ramp)
+			};
+		});
+		const head = pts[0];
+		const tail = pts[pts.length - 1];
+		const edge = (f, side) => pts.map((q) => ({ x: q.x + q.nx * q.w * f * side, y: q.y + q.ny * q.w * f * side }));
+		const smooth = (list, first) => {
+			for (let i = 1; i < list.length - 1; i++) {
+				const m = { x: (list[i].x + list[i + 1].x) / 2, y: (list[i].y + list[i + 1].y) / 2 };
+				ctx.quadraticCurveTo(list[i].x, list[i].y, m.x, m.y);
+			}
+			ctx.lineTo(list[list.length - 1].x, list[list.length - 1].y);
 		};
-		if (style === 1) {
-			// a bold two-tone ribbon of fresh juice with an ice stripe, three fizz rings on it
-			this.wake.draw(ctx, this.time, { ...spine, width: R * 1.05, add: false, widen: (u) => 1 - u * .74,
-				color: (u, a) => css(kit.dark, .95 * a * (1 - u * .6)) });
-			this.wake.draw(ctx, this.time, { ...spine, width: R * .74, add: false, widen: (u) => 1 - u * .78,
-				color: (u, a) => css(mix(kit.core0, kit.core1, u), a * (1 - u * .72)) });
-			this.wake.draw(ctx, this.time, { ...spine, width: R * .2, add: false, widen: (u) => 1 - u * .8,
-				color: (u, a) => css([244, 255, 255], .96 * a * (1 - u * .85)) });
-			for (const [u, k] of [[.2, .3], [.45, .24], [.7, .18]]) {
-				const q = at(u);
-				if (!q) continue;
-				frFizzBubble(ctx, q.x + q.nx * R * (u < .3 ? .62 : -.58), q.y + q.ny * R * (u < .3 ? .62 : -.58), R * k, css(kit.ice), "rgba(255,255,255,.32)");
+		const ribbonPath = (f) => {
+			const L = edge(f, 1);
+			const Rr = edge(f, -1).reverse();
+			ctx.beginPath();
+			ctx.moveTo(L[0].x, L[0].y);
+			smooth(L);
+			ctx.lineTo(Rr[0].x, Rr[0].y);
+			smooth(Rr);
+			ctx.closePath();
+		};
+		const grad = (stops) => {
+			const g = ctx.createLinearGradient(head.x, head.y, tail.x, tail.y);
+			for (const [at, rgb, al] of stops) g.addColorStop(at, css(rgb, al * p));
+			return g;
+		};
+		ctx.save();
+		ctx.lineJoin = "round";
+		ctx.lineCap = "round";
+		// the dark edge keeps the liquid against a pale path and a green hedge
+		ribbonPath(1.14);
+		ctx.fillStyle = grad([[0, kit.dark, .0], [.1, kit.dark, .85], [.7, kit.dark, .5], [1, kit.dark, 0]]);
+		ctx.fill();
+		// the cold sheath
+		ribbonPath(1);
+		ctx.fillStyle = style === 3
+			? grad([[0, [236, 255, 255], .0], [.1, [236, 255, 255], .62], [.6, kit.ice, .4], [1, kit.ice, 0]])
+			: grad([[0, [236, 255, 255], .0], [.1, [236, 255, 255], .96], [.55, kit.ice, .8], [1, kit.ice, 0]]);
+		ctx.fill();
+		// the warm core
+		ribbonPath(style === 3 ? .46 : .64);
+		ctx.fillStyle = grad([[0, kit.core0, .0], [.1, kit.core0, 1], [.6, kit.core1, .9], [1, kit.core1, 0]]);
+		ctx.fill();
+		// the gloss, on the side that faces the light
+		const lit = pts.reduce((s2, q) => s2 + (q.nx * -.6 + q.ny * -.8), 0) >= 0 ? 1 : -1;
+		const gloss = edge(style === 2 ? .6 : .42, lit);
+		ctx.beginPath();
+		ctx.moveTo(gloss[1].x, gloss[1].y);
+		for (let i = 2; i < Math.floor(gloss.length * .72); i++) ctx.lineTo(gloss[i].x, gloss[i].y);
+		ctx.strokeStyle = css([255, 255, 255], .78 * p);
+		ctx.lineWidth = Math.max(1, R * .1);
+		ctx.stroke();
+		if (style === 2) {
+			// ripples: arcs across the flow that run back with it
+			for (let k = 0; k < 3; k++) {
+				const u = (k / 3 + t * .55) % 1;
+				const q = pts[Math.min(pts.length - 1, Math.round(u * (pts.length - 1)))];
+				if (q.w < R * .12) continue;
+				const bow = R * .16;
+				ctx.beginPath();
+				ctx.moveTo(q.x + q.nx * q.w * .92, q.y + q.ny * q.w * .92);
+				ctx.quadraticCurveTo(q.x - q.ny * bow, q.y + q.nx * bow, q.x - q.nx * q.w * .92, q.y - q.ny * q.w * .92);
+				ctx.strokeStyle = css([255, 255, 255], .6 * p * (1 - u) * q.a);
+				ctx.lineWidth = Math.max(1, R * .08);
+				ctx.stroke();
 			}
-		} else if (style === 2) {
-			// soda: no ribbon, a wavering string of bubbles that shrink away, a few juice dashes between
-			for (let i = 0; i < 9; i++) {
-				const u = .06 + i * .1;
-				const q = at(u);
-				if (!q) continue;
-				const off = Math.sin(this.time * 7 + i * 1.9) * R * .34;
-				const x = q.x + q.nx * off;
-				const y = q.y + q.ny * off;
-				const r = R * (.55 - i * .045);
-				ctx.save();
-				ctx.globalAlpha = Math.min(1, q.a * 2.2) * (1 - u * .45);
-				frFizzBubble(ctx, x, y, r, css(kit.ice), "rgba(255,255,255,.42)");
-				if (i % 3 === 1) {
-					ctx.translate(x + q.nx * R * .2, y + q.ny * R * .2);
-					ctx.rotate(Math.atan2(q.y - y, q.x - x));
-					frJuiceDrop(ctx, r * 1.6, r * .7);
-					ctx.fillStyle = css(kit.core0);
-					ctx.fill();
-					ctx.strokeStyle = css(kit.dark, .9);
-					ctx.lineWidth = Math.max(.8, r * .22);
-					ctx.stroke();
+		} else {
+			// streaks running down the flow
+			for (const [ph, f] of [[0, .3], [2.3, -.28]]) {
+				ctx.beginPath();
+				for (let i = 1; i < pts.length - 2; i++) {
+					const q = pts[i];
+					const o = q.w * f * (.6 + .4 * Math.sin(q.u * 9 - t * 10 + ph));
+					const x = q.x + q.nx * o;
+					const y = q.y + q.ny * o;
+					if (i === 1) ctx.moveTo(x, y);
+					else ctx.lineTo(x, y);
 				}
-				ctx.restore();
-			}
-		} else if (style === 3) {
-			// pieces: it sheds what it is made of, the orange its wedges, the melon its seeds
-			this.wake.draw(ctx, this.time, { ...spine, width: R * .6, add: false, widen: (u) => 1 - u * .85,
-				color: (u, a) => css(mix(kit.core0, kit.core1, u), .5 * a * (1 - u * .7)) });
-			for (let i = 0; i < 6; i++) {
-				const u = .1 + i * .14;
-				const q = at(u);
-				if (!q) continue;
-				const side = i % 2 ? 1 : -1;
-				const x = q.x + q.nx * side * R * (.46 + .08 * i);
-				const y = q.y + q.ny * side * R * (.46 + .08 * i) + Math.sin(this.time * 5 + i) * R * .05;
-				const sz = R * (.62 - i * .06);
-				ctx.save();
-				ctx.globalAlpha = Math.min(1, q.a * 2.4) * (1 - u * .4);
-				ctx.translate(x, y);
-				ctx.rotate(this.time * 3 * side + i);
-				if (kit.fruit === 'orange') {
-					ctx.beginPath();
-					ctx.moveTo(0, 0);
-					ctx.arc(0, 0, sz, -.5, .5 + .6);
-					ctx.closePath();
-					ctx.fillStyle = css([255, 160, 30]);
-					ctx.fill();
-					ctx.strokeStyle = css(FR_ORG_INK, .95);
-					ctx.lineWidth = Math.max(1, sz * .26);
-					ctx.stroke();
-					ctx.beginPath();
-					ctx.arc(0, 0, sz * .62, -.3, 1.1);
-					ctx.strokeStyle = css([255, 244, 200], .9);
-					ctx.lineWidth = Math.max(.7, sz * .14);
-					ctx.stroke();
-				} else {
-					frMelonSeed(ctx, sz * 1.3, sz * .62);
-					ctx.fillStyle = "#16120e";
-					ctx.fill();
-					ctx.strokeStyle = css([255, 214, 226], .95);
-					ctx.lineWidth = Math.max(.8, sz * .18);
-					ctx.stroke();
-				}
-				ctx.restore();
+				ctx.strokeStyle = css(style === 3 ? [255, 255, 255] : kit.core0, .5 * p);
+				ctx.lineWidth = Math.max(.8, R * .06);
+				ctx.stroke();
 			}
 		}
-		// the droplets and rings it has shaken off (the same for all three)
-		for (const f of this.fizz) {
-			const u = clamp01(f.life / f.max);
-			const a = Math.min(1, (1 - u) * 6) * u;
-			if (a <= .02 || !f.isBubble) continue;
-			ctx.save();
-			ctx.globalAlpha = a * .8;
-			frFizzBubble(ctx, f.x, f.y, Math.max(1.8, f.size * (.62 + .5 * (1 - u))), "#e4fcff", "rgba(120,240,255,.3)");
-			ctx.restore();
+		if (style === 3) {
+			// a few fine bubbles inside the liquid, rising along it: the soda
+			for (let k = 0; k < 4; k++) {
+				const u = (k * .23 + t * .35) % 1;
+				const q = pts[Math.min(pts.length - 1, Math.round(u * (pts.length - 1)))];
+				if (q.w < R * .2) continue;
+				const o = q.w * .5 * Math.sin(k * 2.1 + t * 3);
+				ctx.beginPath();
+				ctx.arc(q.x + q.nx * o, q.y + q.ny * o, Math.max(.9, R * .1), 0, FR_TAU);
+				ctx.fillStyle = css([255, 255, 255], .55 * p * (1 - u));
+				ctx.fill();
+				ctx.strokeStyle = css([255, 255, 255], .9 * p * (1 - u));
+				ctx.lineWidth = Math.max(.6, R * .035);
+				ctx.stroke();
+			}
 		}
+		ctx.restore();
 	}
 
 	/**

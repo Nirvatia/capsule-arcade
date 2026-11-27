@@ -68,9 +68,9 @@ function rebuild(): void {
 	demos = [
 		{ label: `${name}: было`, hero: new Was(), power: st.buff, phase: 0 },
 		now(0, 'стало, шлейф как был', 0.15),
-		now(1, 'шлейф 1 лента', 0.3),
-		now(2, 'шлейф 2 газировка', 0.45),
-		now(3, 'шлейф 3 ' + (st.melon ? 'семечки' : 'дольки'), 0.6)
+		now(1, 'шлейф 1 струя', 0.3),
+		now(2, 'шлейф 2 волна', 0.45),
+		now(3, 'шлейф 3 шипучий', 0.6)
 	];
 	rows = corridors(demos.length);
 	prevAngle.clear();
