@@ -1,7 +1,7 @@
 // The weapons' art pass (ROADMAP Part II.1, the hell): candidates drawn in the «Плоть» language
 // (`hell-kit/paint.ts`) as frame series, beside what the game draws now. Static frames, nothing plays.
 // (x, y) is a centre in px, S the tile in px; icons are painted in a -50..50 box.
-import { drawFleshFood, drawRushWhirl, drawStingBolt, paintSting } from '../../../src/games/pacman/render/doom/fleshKit';
+import { drawFleshFood, drawStingBolt } from '../../../src/games/pacman/render/doom/fleshKit';
 import { TAU, VEC, bloom, cel, gloss, ink, linear, part, radial, shadow } from '../hell-kit/paint';
 import type { Ctx, Dir, Tones } from '../hell-kit/paint';
 
@@ -635,4 +635,4 @@ export function foodWaiting(c: Ctx, x: number, y: number, S: number): void {
 	c.restore();
 }
 
-export { drawFleshFood, drawRushWhirl, drawStingBolt, paintSting, icon };
+export { drawFleshFood, drawStingBolt, icon };

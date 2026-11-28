@@ -16,6 +16,8 @@ import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
 import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinkyView';
 import { FLESH_KIT } from '../hell-kit/kitFlesh';
 import * as W from './weapons';
+import * as B from './bossFx';
+import { drawCore } from '../../../src/games/pacman/render/doom/doomPlaceholders';
 
 type Ctx = CanvasRenderingContext2D;
 type Look = 'normal' | 'berserk';
@@ -70,7 +72,7 @@ interface Stage {
 	X(tx: number): number;
 	Y(): number;
 	hero(tx: number, look?: Look, alpha?: number): void;
-	boss(tx: number, stunned?: boolean): void;
+	boss(tx: number, stunned?: boolean, hit?: number, dx?: number): void;
 	imp(tx: number): void;
 }
 
@@ -90,11 +92,11 @@ function stage(ctx: Ctx, S: number): Stage {
 			heroView.draw(ctx, player, lay, 0.4, { look, charge: 0, dying: false });
 			ctx.restore();
 		},
-		boss(tx, stunned = false) {
+		boss(tx, stunned = false, hit = 0, dx = 0) {
 			bossView.draw(
 				ctx,
-				{ x: 0.5, y: 0.5, phase: 3, state: stunned ? 'STUNNED' : 'CHASE', shape: stunned ? 'stunned' : 'normal', dir: 'LEFT', progress: 0, alpha: 1, intro: 1, look: 0, hit: 0, echo: false },
-				{ tileSize: S, offsetX: X(tx) - S / 2, offsetY: Y() - S / 2 },
+				{ x: 0.5, y: 0.5, phase: 3, state: stunned ? 'STUNNED' : 'CHASE', shape: stunned ? 'stunned' : 'normal', dir: 'LEFT', progress: 0, alpha: 1, intro: 1, look: 0, hit, echo: false },
+				{ tileSize: S, offsetX: X(tx) - S / 2 + dx * S, offsetY: Y() - S / 2 },
 				0.35
 			);
 		},
@@ -235,14 +237,106 @@ const mawShot = (stunned: boolean): Scene => (st, u, t) => {
 	}
 };
 
+/** A hit on the boss at u = 0.15: `strength` 0 the current white flash only, 1..3 the new reaction. */
+const hitCard = (title: string, strength: number): Card => ({
+	title,
+	period: 1.4,
+	scene: (st, u) => {
+		const f = ease(0.15, 0.6, u);
+		const on = u >= 0.15 && f < 1;
+		const hit = on ? 1 - f : 0;
+		const recoil = strength > 0 && on ? Math.sin(Math.min(1, f * 3) * Math.PI) * 0.06 * strength : 0;
+		st.boss(6, strength === 3, hit, recoil);
+		if (strength > 0 && on) B.hitChips(st.ctx, st.X(6), st.Y(), st.S, f, strength);
+	}
+});
+
+const GHOST_FROM: ReadonlyArray<readonly [number, number]> = [[-3, -1], [3, -1], [-3, 1], [3, 1]];
+
+const BOSS_SECTIONS: readonly Section[] = [
+	{
+		id: 'stun',
+		title: 'Босс: оглушение и окно удара',
+		note: 'Оглушение: над рогами кружат черепки, под ним кольцо-таймер. Окно раскола (съедены все четыре): золотые скобы «бей сейчас» и золотой таймер.',
+		cards: [
+			{ title: 'Сейчас: оглушён', period: 3, scene: (st) => st.boss(6, true) },
+			{ title: 'Оглушён: черепки и таймер', period: 3, scene: (st, u, t) => { st.boss(6, true); B.stunOverlay(st.ctx, st.X(6), st.Y(), st.S, t, 1 - u); } },
+			{ title: 'Окно раскола: бей сейчас', period: 3, scene: (st, u, t) => { st.boss(6, true); B.stunOverlay(st.ctx, st.X(6), st.Y(), st.S, t, 1 - u); B.windowMark(st.ctx, st.X(6), st.Y(), st.S, t, 1 - u); st.hero(3, 'berserk'); } }
+		]
+	},
+	{
+		id: 'hits',
+		title: 'Босс: реакция на удар по силе',
+		note: 'Сейчас — только белая вспышка. Новое: отдача назад и ошмётки, чем сильнее удар, тем больше.',
+		cards: [hitCard('Сейчас: вспышка', 0), hitCard('Слабый: Жало', 1), hitCard('Средний: рывок, Жерло вскользь', 2), hitCard('Сильный: полное Жерло', 3)]
+	},
+	{
+		id: 'split',
+		title: 'Раскол',
+		note: 'Предвестие, ядро (сейчас и новое), сбор четырёх на ядре, съеденный призрак, испуг и мигание.',
+		cards: [
+			{
+				title: 'Предвестие',
+				period: 2.5,
+				scene: (st, u, t) => {
+					const k = ease(0, 0.9, u);
+					st.boss(6, false, 0, Math.sin(t * 60) * 0.03 * k);
+					B.omen(st.ctx, st.X(6), st.Y(), st.S, t, k);
+				}
+			},
+			{ title: 'Ядро: сейчас', period: 3, scene: (st, _u, t) => drawCore(st.ctx, st.X(6), st.Y(), st.S, t) },
+			{ title: 'Ядро: сердце в рёбрах', period: 3, scene: (st, _u, t) => B.core(st.ctx, st.X(6), st.Y(), st.S, t) },
+			{
+				title: 'Сбор на ядре',
+				period: 3,
+				scene: (st, u, t) => {
+					const go = ease(0, 0.55, u);
+					if (u < 0.6) B.core(st.ctx, st.X(6), st.Y(), st.S, t);
+					if (go < 1) {
+						GHOST_FROM.forEach(([gx, gy], i) => {
+							const e = go * go * (3 - 2 * go);
+							const x = st.X(6) + gx * st.S * (1 - e);
+							const y = st.Y() + gy * st.S * (1 - e);
+							st.ctx.save();
+							st.ctx.globalAlpha *= 1 - 0.3 * e;
+							FLESH_KIT.ghost(st.ctx, i, x, y, st.S * (1 - 0.4 * e), gx < 0 ? 'RIGHT' : 'LEFT', false, t + i);
+							st.ctx.restore();
+						});
+					}
+					const form = ease(0.55, 0.8, u);
+					if (form > 0) st.boss(6, true);
+					if (form > 0 && form < 1) B.formFlash(st.ctx, st.X(6), st.Y(), st.S, form);
+					if (u > 0.8) B.stunOverlay(st.ctx, st.X(6), st.Y(), st.S, t, 1 - ease(0.8, 1, u) * 0.2);
+				}
+			},
+			{
+				title: 'Призрак съеден',
+				period: 2,
+				scene: (st, u, t) => {
+					const eat = ease(0.3, 0.95, u);
+					if (u < 0.3) FLESH_KIT.ghost(st.ctx, 1, st.X(6), st.Y(), st.S, 'LEFT', true, t);
+					st.hero(lerp(3.5, 6.3, ease(0, 0.3, u)));
+					if (eat > 0 && eat < 1) B.ghostEaten(st.ctx, st.X(6), st.Y(), st.S, eat, 400);
+				}
+			},
+			{
+				title: 'Испуг и мигание (сейчас)',
+				period: 2,
+				scene: (st, u, t) => {
+					const blink = u > 0.5 && Math.floor(t * 8) % 2 === 0;
+					FLESH_KIT.ghost(st.ctx, 2, st.X(6), st.Y(), st.S, 'LEFT', !blink, t);
+				}
+			}
+		]
+	}
+];
+
 const SECTIONS: readonly Section[] = [
 	{
 		id: 'sting',
 		title: 'Жало: иконка',
 		note: 'На полу ада рядом с Жерлом и кулаком, как их увидит игрок. Первая карточка — как сейчас.',
 		cards: [
-			iconCard('Сейчас: винтовка', (c) => W.paintSting(c)),
-			iconCard('F: пушка с барабаном', W.paintStingDrum, 'короткая толстая пушка, посередине большой стеклянный барабан яда'),
 			iconCard('G: винтовка с баком', W.paintStingTank, 'толстая винтовка, на спине стеклянный бак яда, светящиеся кольца на стволе')
 		]
 	},
@@ -261,7 +355,6 @@ const SECTIONS: readonly Section[] = [
 		title: 'Рывок: превращение в предмет',
 		note: 'Герой превращается в предмет, и рывок не зависит от его арта. Первая карточка — нынешний вихрь.',
 		cards: [
-			rushCard('Сейчас: вихрь', (st, x, t) => W.drawRushWhirl(st.ctx, x, st.Y(), st.S, 'RIGHT', 1, t), false),
 			rushCard('Выбрано: пила из клыков', (st, x, t, k) => W.rushSaw(st.ctx, x, st.Y(), st.S, t, k), false),
 			rushCard('Пила: контратака ×3', (st, x, t, k) => W.rushSaw(st.ctx, x, st.Y(), st.S, t, k), true),
 
@@ -447,7 +540,7 @@ const section = (id: string, title: string, note: string): HTMLElement => {
 	root.append(s);
 	return grid;
 };
-for (const sec of SECTIONS) {
+for (const sec of [...BOSS_SECTIONS, ...SECTIONS]) {
 	const g = section(sec.id, sec.title, sec.note);
 	sec.cards.forEach((c) => g.append(cardEl(c)));
 }
