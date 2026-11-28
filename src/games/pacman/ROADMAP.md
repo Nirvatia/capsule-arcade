@@ -141,7 +141,10 @@ last (see Later).
      heart in a white bone frame) and exit (an iron hatch open on gold light) in place of the shared
      ones, and the phase-3 slow drawn as pale hands of the damned out of a crack, reaching for the
      hero on their tile (the tar is gone; the sinews, the chains and the bog were the other three).
-     **The art pass is complete.** Left: his look at all of it in play.
+     **The art pass is complete.** Then from his play (2026-11-28): all four eaten gives his last
+     weapon back charged; the hero's trail is cut after a rush (it was left behind); a spent weapon is
+     tossed back and sinks into the floor; a refused press draws nothing on the field (the click and
+     the dial's red flash only). Left: his look at all of it in play.
      **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):
      (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
      bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a

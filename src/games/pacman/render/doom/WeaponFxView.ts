@@ -6,7 +6,6 @@ import type { Ctx, Dir } from './fleshPaint';
 import {
 	mawFull,
 	mawGlance,
-	refused,
 	rushHit,
 	spent,
 	stingHitBoss,
@@ -23,7 +22,6 @@ type Kind =
 	| 'glance'
 	| 'full'
 	| 'spent'
-	| 'refused'
 	| 'chips'
 	| 'eaten'
 	| 'form';
@@ -62,8 +60,7 @@ const DURATION: Record<Kind, number> = {
 	counter: 0.5,
 	glance: 0.45,
 	full: 0.6,
-	spent: 0.9,
-	refused: 0.4,
+	spent: 0.7,
 	chips: 0.5,
 	eaten: 0.9,
 	form: 0.45
@@ -76,8 +73,8 @@ const dirOf = (dx = 0, dy = 0): Dir =>
 
 /**
  * The hell's painted effects (`weaponArt`, `bossArt`): the Sting's hits, the rush's and the Maw's
- * hits on the boss with flesh chips by strength, a weapon spent and the refused press (these two
- * follow the hero), a split ghost eaten, his forming on the core. Each plays once.
+ * hits on the boss with flesh chips by strength, a weapon spent (tossed away behind him), a split
+ * ghost eaten, his forming on the core. Each plays once.
  */
 export class WeaponFxView {
 	private readonly list: Effect[] = [];
@@ -133,14 +130,12 @@ export class WeaponFxView {
 		this.list.length = 0;
 	}
 
-	/** `hero` (tile coordinates) is where the effects that follow him are drawn. */
-	draw(ctx: Ctx, layout: GridLayout, hero: { x: number; y: number } | null): void {
+	draw(ctx: Ctx, layout: GridLayout): void {
 		const S = layout.tileSize;
 		for (const e of this.list) {
 			const f = e.age / e.duration;
-			const follows = (e.kind === 'spent' || e.kind === 'refused') && hero;
-			const x = layout.offsetX + (follows ? hero.x : e.x) * S;
-			const y = layout.offsetY + (follows ? hero.y : e.y) * S;
+			const x = layout.offsetX + e.x * S;
+			const y = layout.offsetY + e.y * S;
 			switch (e.kind) {
 				case 'sting-boss':
 					stingHitBoss(ctx, x, y, S, f);
@@ -163,12 +158,9 @@ export class WeaponFxView {
 					break;
 				case 'spent': {
 					const icon = pickupSprite(e.item).icon;
-					spent(ctx, x, y, S, f, (c) => c.drawImage(icon, -50, -50, 100, 100));
+					spent(ctx, x, y, S, e.dir, f, (c) => c.drawImage(icon, -50, -50, 100, 100));
 					break;
 				}
-				case 'refused':
-					refused(ctx, x, y, S, e.dir, f);
-					break;
 				case 'chips':
 					hitChips(ctx, x, y, S, f, e.value);
 					break;
@@ -196,8 +188,6 @@ export class WeaponFxView {
 				return event.detail === 'full' ? 'full' : 'glance';
 			case 'spent':
 				return 'spent';
-			case 'refused':
-				return 'refused';
 			case 'ghost-eaten':
 				return 'eaten';
 			case 'split-form':

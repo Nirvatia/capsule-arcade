@@ -29,7 +29,7 @@ export interface DoomFxEvent {
 		| 'pickup'
 		| 'boss-hit'
 		| 'player-hit'
-		/** The weapon in hand is spent and leaves it (`detail`: the weapon). */
+		/** The weapon in hand is spent and tossed away behind him (`detail`: the weapon; dx, dy: his heading). */
 		| 'spent'
 		/** A Sting bolt landed (`detail`: 'boss', 'wall' or 'imp'). */
 		| 'sting-hit'
@@ -37,8 +37,6 @@ export interface DoomFxEvent {
 		| 'rush-hit'
 		/** The Maw's orb struck the boss (`detail`: 'full' when he was stunned, else 'glance'). */
 		| 'maw-hit'
-		/** The press was refused: nothing charged (dx, dy: the hero's heading). */
-		| 'refused'
 		/** A ghost of the split eaten (`detail`: its points). */
 		| 'ghost-eaten'
 		/** The split is over: he forms on the core. */

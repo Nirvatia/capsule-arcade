@@ -176,7 +176,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			if (doom) {
 				this.drawBolts(ctx, doom, layout);
 				this.fxView.draw(ctx, layout, doom.shots, doom.tracerList);
-				this.weaponFx.draw(ctx, layout, player ? player.position : null);
+				this.weaponFx.draw(ctx, layout);
 			}
 		}
 		this.trackTeleport(frame, world);

@@ -334,7 +334,8 @@ export class DoomAbilityService {
 		const spent = this.weapons.consumeSpent();
 		if (spent) {
 			const p = player.position;
-			this.weapons.pushFx({ kind: 'spent', x: p.x, y: p.y, detail: spent });
+			const [dx, dy] = headingVector(player.facing);
+			this.weapons.pushFx({ kind: 'spent', x: p.x, y: p.y, dx, dy, detail: spent });
 		}
 		const collected = this.pickups.update(dt, player, this.needs());
 		if (collected) {
@@ -369,11 +370,8 @@ export class DoomAbilityService {
 		}
 		const slot = this.weapons.slot;
 		if (slot && this.weapons.starved) {
-			// the meter cannot pay it: a dull click, a jolt at his front, the dial flashes red
+			// the meter cannot pay it: a dull click and the dial flashes red, nothing on the field
 			this.events.emit('audio:cue', { cue: 'ability-fizzle' });
-			const p = player.position;
-			const [dx, dy] = headingVector(player.facing);
-			this.weapons.pushFx({ kind: 'refused', x: p.x, y: p.y, dx, dy });
 			this.refusedValue = 1;
 			return null;
 		}

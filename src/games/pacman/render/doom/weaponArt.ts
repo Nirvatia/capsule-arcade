@@ -1,7 +1,7 @@
 // The hell's weapons' art (the owner's picks of the `hell-weapons` prototype, 2026-11-28): the
 // Sting's icon, its muzzle and hits, the berserk's rush as the fang saw with its trail, hit and the
 // counter's gold, the Maw's charge and its two hits (a burst on a boss not stunned, the full hit on a
-// stunned one), a weapon spent and arriving, the refused press, the medkit. In the «Плоть» language
+// stunned one), a weapon spent (tossed away) and arriving, the medkit. In the «Плоть» language
 // (`fleshPaint`). (x, y) is a centre in px, S the tile in px; icons are painted in a -50..50 box.
 import { TAU, VEC, bloom, cel, gloss, ink, linear, part, radial, shadow } from './fleshPaint';
 import type { Ctx, Dir, Tones } from './fleshPaint';
@@ -584,56 +584,51 @@ export function mawFull(c: Ctx, x: number, y: number, S: number, f: number): voi
 // ── spent, arriving, refused ─────────────────────────────────────────────────────────────────────
 
 /**
- * The weapon in hand spent, bold enough for the game's scale: its icon pops up over the hero at full
- * tile size with a flash, cracks white, and bursts into grey shards flung out, `f` 0..1.
+ * A weapon spent (the owner's pick, tossed away): the weapon leaves his hand backward in a short arc, tumbling, lands a tile
+ * behind him and sinks into the floor with a small dust puff. `f` 0..1 over 0.7 s.
  */
 export function spent(
 	c: Ctx,
 	x: number,
 	y: number,
 	S: number,
+	dir: Dir,
 	f: number,
 	paint: (c: Ctx) => void
 ): void {
-	const size = S * 1.1;
-	const cy = y - S * 0.85;
-	if (f < 0.4) {
-		const k = f / 0.4;
-		bloom(c, x, cy, S * 0.9, '255,240,220', 0.5 * (1 - k));
+	const [dx, dy] = VEC[dir];
+	const fly = Math.min(1, f / 0.55);
+	const bx = x - dx * S * 1.0 * fly;
+	const by = y - dy * S * 1.0 * fly - S * 0.55 * Math.sin(fly * Math.PI);
+	if (f < 0.55) {
 		c.save();
-		c.filter = `grayscale(${k}) brightness(${1 + 0.5 * (1 - k)})`;
-		icon(c, x, cy - k * S * 0.12, size * (0.8 + 0.2 * Math.min(1, k * 3)), paint);
-		c.restore();
-		c.save();
-		c.strokeStyle = `rgba(255,255,255,${Math.min(1, k * 2)})`;
-		c.lineWidth = Math.max(1.5, S * 0.05);
-		c.lineJoin = 'round';
-		c.beginPath();
-		c.moveTo(x - size * 0.3, cy - size * 0.35);
-		c.lineTo(x - size * 0.02, cy - size * 0.02);
-		c.lineTo(x - size * 0.12, cy + size * 0.06);
-		c.lineTo(x + size * 0.25, cy + size * 0.35);
-		c.stroke();
+		c.translate(bx, by);
+		c.rotate(-fly * Math.PI * 1.5 * (dx || 1));
+		icon(c, 0, 0, S * 0.62, paint);
 		c.restore();
 		return;
 	}
-	const k = (f - 0.4) / 0.6;
-	bloom(c, x, cy, S * 0.7, '200,190,180', 0.4 * (1 - k));
-	for (let i = 0; i < 10; i += 1) {
-		const ang = (i * TAU) / 10 + 0.2;
-		const d = S * (0.1 + 0.75 * k);
-		c.save();
-		c.translate(x + Math.cos(ang) * d, cy + Math.sin(ang) * d + S * 0.5 * k * k);
-		c.rotate(ang + k * 6);
-		c.fillStyle = `rgba(${150 + (i % 3) * 25},${140 + (i % 3) * 20},132,${1 - k})`;
+	const k = (f - 0.55) / 0.45;
+	// it sinks: the icon shrinks into a dark slot, a puff round it
+	c.save();
+	c.globalAlpha *= 1 - k;
+	c.beginPath();
+	c.rect(bx - S * 0.4, by - S * 0.4, S * 0.8, S * 0.4 + S * 0.25 * (1 - k));
+	c.clip();
+	icon(c, bx, by + S * 0.2 * k, S * 0.62, paint);
+	c.restore();
+	for (let i = 0; i < 4; i += 1) {
+		const a = Math.PI + (i - 1.5) * 0.5;
+		c.fillStyle = `rgba(150,130,124,${0.5 * (1 - k)})`;
 		c.beginPath();
-		c.moveTo(-S * 0.09, -S * 0.05);
-		c.lineTo(S * 0.1, -S * 0.02);
-		c.lineTo(-S * 0.02, S * 0.08);
-		c.closePath();
+		c.arc(
+			bx + Math.cos(a) * S * (0.12 + 0.2 * k),
+			by + S * 0.2 - Math.abs(Math.sin(a)) * S * 0.1 * k,
+			S * (0.06 + 0.04 * k),
+			0,
+			TAU
+		);
 		c.fill();
-		ink(c, S, 0.4);
-		c.restore();
 	}
 }
 
@@ -699,42 +694,6 @@ export function arrive(
 		);
 		c.fill();
 	}
-}
-
-/**
- * The refused press, readable at game scale: the hero jolts back and a dull grey burst with a broken
- * ring shows at his front (the dial flashes red in the HUD at the same time).
- */
-export function refused(c: Ctx, x: number, y: number, S: number, dir: Dir, f: number): void {
-	const [dx, dy] = VEC[dir];
-	const mx = x + dx * S * 0.6;
-	const my = y + dy * S * 0.6;
-	const a = 1 - f;
-	c.fillStyle = `rgba(150,140,134,${0.7 * a})`;
-	for (let k = 0; k < 5; k += 1) {
-		const ang = (k * TAU) / 5;
-		c.beginPath();
-		c.arc(
-			mx + Math.cos(ang) * S * 0.14 * (0.6 + f),
-			my + Math.sin(ang) * S * 0.14 * (0.6 + f),
-			S * 0.11,
-			0,
-			TAU
-		);
-		c.fill();
-	}
-	c.save();
-	c.strokeStyle = `rgba(255,90,70,${a})`;
-	c.lineWidth = Math.max(1.5, S * 0.06);
-	c.lineCap = 'round';
-	const r = S * (0.28 + 0.15 * f);
-	for (let k = 0; k < 4; k += 1) {
-		const a0 = (k * TAU) / 4 + 0.3;
-		c.beginPath();
-		c.arc(mx, my, r, a0, a0 + 0.9);
-		c.stroke();
-	}
-	c.restore();
 }
 
 /**
