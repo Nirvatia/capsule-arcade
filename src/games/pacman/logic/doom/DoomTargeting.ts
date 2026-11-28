@@ -211,8 +211,7 @@ export function chaseTargetTile(
 export function findBlinkTarget(
 	grid: GridService,
 	bossTile: GridPoint,
-	playerTile: GridPoint,
-	snare: GridPoint | null
+	playerTile: GridPoint
 ): GridPoint | null {
 	const candidates: GridPoint[] = [];
 	for (let y = 0; y < grid.height; y += 1) {
@@ -222,9 +221,6 @@ export function findBlinkTarget(
 			}
 			const dist = tileDistance({ x, y }, playerTile);
 			if (dist < BLINK_DEST_MIN_DIST || dist > BLINK_DEST_MAX_DIST) {
-				continue;
-			}
-			if (snare && snare.x === x && snare.y === y) {
 				continue;
 			}
 			if (seesAlongLine(grid, { x, y }, playerTile)) {

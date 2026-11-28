@@ -63,9 +63,8 @@ const BFG_HALO = 0x40ff50;
 const ORB_CORE = 0xa8ffb0;
 
 const PICKUP_TINT: Record<string, number> = {
-	snare: 0xffe0a0,
+	bfg: 0x40ff50,
 	plasma: 0x50b4ff,
-	armour: 0x3a7ad8,
 	medkit: 0xff3a2a,
 	berserk: 0xff7a1a
 };
@@ -73,7 +72,7 @@ const PICKUP_TINT: Record<string, number> = {
 /**
  * Weapon and impact effects of the hell level, in tile coordinates: the plasma orb fired by
  * Pac-Man and its lightning, the boss's burst into the split (shockwave, debris, smoke, scorch),
- * the snare, the berserk's rush, pickups and hits.
+ * the berserk's rush, pickups and hits.
  */
 export class DoomFxView {
 	private readonly particles: Particle[] = [];
@@ -158,15 +157,10 @@ export class DoomFxView {
 				this.decal(x, y, 1.1);
 				this.shakeValue = Math.max(this.shakeValue, 0.6);
 				break;
-			case 'snare-fizzle':
-				this.radial(x, y, 5, 0.3, 1, 0x3a3532, 'smoke', 0.8, 1.4);
-				this.radial(x, y, 8, 1, 3, 0xffa040, 'spark', 0.2, 0.5);
+			case 'rush':
+				// the berserk's rush starts: a ring, gold when it is a counter in the boss's attack
+				this.ring(x, y, 1.1, event.detail === 'counter' ? 0xffe08a : 0xff8228, 0.35, 0.1);
 				break;
-			case 'snare-place':
-				this.ring(x, y, 0.8, 0xc8b090, 0.3, 0.12);
-				this.radial(x, y, 6, 0.6, 1.6, 0x5a4a3a, 'smoke', 0.4, 0.7);
-				break;
-			case 'snare-snap':
 			case 'bite':
 				this.flash(x, y, 1.4, 0xffffff, 0.2);
 				for (let i = 0; i < 3; i += 1) {

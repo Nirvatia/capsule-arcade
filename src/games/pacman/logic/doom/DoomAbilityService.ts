@@ -10,7 +10,7 @@ import { DoomPickupService } from './DoomPickupService';
 import type { DoomPickupNeeds } from './DoomPickupService';
 import type { DoomPickupKind, DoomPickupModel } from './DoomPickupModel';
 import { DoomWeaponService } from './DoomWeaponService';
-import type { DoomBfgShot, DoomBfgTracer, DoomFxEvent, DoomSnare } from './DoomWeaponService';
+import type { DoomBfgShot, DoomBfgTracer, DoomFxEvent } from './DoomWeaponService';
 import type { DoomSlotItem } from './DoomWeaponModel';
 import type { DoomBossService } from './DoomBossService';
 import { DoomSplitService } from './DoomSplitService';
@@ -23,13 +23,14 @@ import {
 	BFG_ORB_STUN,
 	BFG_TRACER_DAMAGE,
 	BERSERK_SPEED_MUL,
-	FOOD_PER_SHOT,
-	PLASMA_DAMAGE,
+	FOOD_PER_SEGMENT,
+	FOOD_SEGMENTS,
+	MAW_COST,
+	RUSH_COUNTER_MUL,
 	RUSH_DAMAGE,
 	RUSH_STUN,
 	RUSH_TILES,
-	SNARE_DAMAGE,
-	SNARE_HOLD
+	STING_DAMAGE
 } from './DoomBalance';
 import type { DebugSink } from '../debug/debugLog';
 import { NO_DEBUG } from '../debug/debugLog';
@@ -39,16 +40,20 @@ const MINION_SHOT_HIT_RADIUS_SQ = 0.25;
 const BOLT_HIT_RADIUS_SQ = 0.3;
 const RUSH_REACH_SQ = 0.9;
 const RECOIL_LOCK = 0.3;
-/** The rush's own cover: `PlayerService`'s dash runs 10 tiles a second. */
+/** The counter rush's cover: `PlayerService`'s dash runs 10 tiles a second. */
 const RUSH_COVER = RUSH_TILES / 10 + 0.15;
+/** A plain rush that strikes the boss is not hurt by touching him in the same moment. */
+const RUSH_HIT_GRACE = 0.6;
+const FOOD_MAX = FOOD_SEGMENTS * FOOD_PER_SEGMENT;
 
-/** What the HUD shows in the hand: the item, or the BFG when it is charged. */
-export type DoomArmed = Exclude<DoomSlotItem, null> | 'bfg' | '';
+/** What the HUD shows in the hand. */
+export type DoomArmed = Exclude<DoomSlotItem, null> | '';
 
 /**
- * The hell's hero side of the fight (DESIGN §7 "The fight, redesigned"): health and armour, the food
- * that charges the BFG, the hand (the berserk's rush, the snare, the plasma), the pickups, and the
- * split (`DoomSplitService`), during which the boss is not updated and the weapons are off.
+ * The hell's hero side of the fight (DESIGN §7 "The fight, redesigned"): health, the food meter
+ * that feeds the guns, the weapon in hand (the berserk's rush, the Sting held down, the Maw charged
+ * standing still), the pickups, and the split (`DoomSplitService`), during which the boss is not
+ * updated and the weapons are off.
  */
 export class DoomAbilityService {
 	private readonly grid: GridService;
@@ -59,12 +64,12 @@ export class DoomAbilityService {
 	private readonly splitValue: DoomSplitService;
 	private debug: DebugSink = NO_DEBUG;
 	private playerHpValue = PLAYER_MAX_HP;
-	private armourValue = false;
 	private playerDeadValue = false;
 	private godModeValue = false;
 	private moveLockTimer = 0;
 	private ballHitBossValue = false;
 	private rushing = false;
+	private rushCounter = false;
 	private rushHit = false;
 	private foodSeen = 0;
 	private splitWasActive = false;
@@ -94,22 +99,17 @@ export class DoomAbilityService {
 		this.pickups = new DoomPickupService(pickupTiles, this.needs());
 		this.splitValue = new DoomSplitService(grid, progress, score, events);
 		this.boss.setProtectedTiles(this.buildProtectedTiles());
-		this.boss.setSnareLocator(() => this.locateSnare());
 		// the energizers light only during the split
 		this.progress.clearEnergizers();
 		this.foodSeen = progress.collectedDots;
 	}
 
 	get armed(): DoomArmed {
-		return this.weapons.slot ?? (this.weapons.bfgReady ? 'bfg' : '');
+		return this.weapons.slot ?? '';
 	}
 
 	get playerHp(): number {
 		return this.playerHpValue;
-	}
-
-	get armour(): boolean {
-		return this.armourValue;
 	}
 
 	get split(): DoomSplitService {
@@ -134,11 +134,12 @@ export class DoomAbilityService {
 		return this.pickups.isCollectible(kind, this.needs());
 	}
 
-	/** Food eaten toward the BFG's shot, 0..1. */
-	get bfgCharge(): number {
-		return this.weapons.food / FOOD_PER_SHOT;
+	/** The food meter, 0..1 (`FOOD_SEGMENTS` segments). */
+	get food(): number {
+		return this.weapons.food / FOOD_MAX;
 	}
 
+	/** The Maw has its whole meter. */
 	get bfgReady(): boolean {
 		return this.weapons.bfgReady;
 	}
@@ -147,12 +148,8 @@ export class DoomAbilityService {
 		return this.weapons.bfgChargeProgress;
 	}
 
-	get berserkTimer(): number {
-		return this.weapons.berserkTimer;
-	}
-
-	get plasmaLeft(): number {
-		return this.weapons.plasmaLeft;
+	get rushCooldown(): number {
+		return this.weapons.rushCooldown;
 	}
 
 	get shots(): readonly DoomBfgShot[] {
@@ -161,10 +158,6 @@ export class DoomAbilityService {
 
 	get bolts(): readonly DoomBfgShot[] {
 		return this.weapons.bolts;
-	}
-
-	get snare(): Readonly<DoomSnare> | null {
-		return this.weapons.snare;
 	}
 
 	get tracerList(): readonly DoomBfgTracer[] {
@@ -183,11 +176,22 @@ export class DoomAbilityService {
 		return this.rushing;
 	}
 
+	/** The boss's attack is live now: a rush made in it is a counter (more damage, unhurt). */
+	get counterWindow(): boolean {
+		if (this.boss.defeated || this.splitValue.active) {
+			return false;
+		}
+		return (
+			this.boss.state === 'ACTIVE' ||
+			this.boss.hazardList.some((hazard) => hazard.warn <= 0 && hazard.active > 0)
+		);
+	}
+
 	consumeFx(): DoomFxEvent[] {
 		return this.weapons.consumeFx();
 	}
 
-	/** `fireHeld`: the button is down (the plasma fires while it is). */
+	/** `fireHeld`: the button is down (the Sting fires while it is). */
 	update(dt: number, player: PlayerService, fireHeld = false): void {
 		if (!Number.isFinite(dt) || dt < 0) {
 			console.error('DoomAbilityService.update', 'invalid delta time', dt);
@@ -226,22 +230,22 @@ export class DoomAbilityService {
 			this.pickups.fillEmpty(this.needs());
 		}
 		this.ballHitBossValue = false;
-		this.weapons.update(dt, this.rushing);
+		this.weapons.update(dt);
 		if (this.weapons.consumeChargeCompleted()) {
 			this.weapons.fireBfg(player);
 			this.moveLockTimer = RECOIL_LOCK;
 		}
+		let struck = false;
 		if (this.rushing) {
-			this.rushStrike(player);
+			struck = this.rushStrike(player);
 			if (!player.isDashing) {
 				this.rushing = false;
-				this.weapons.endBerserk();
 			}
 		}
 		if (fireHeld && this.weapons.slot === 'plasma' && player.facing) {
-			this.weapons.firePlasma(player, dt);
+			this.weapons.fireSting(player, dt);
 		} else {
-			this.weapons.releasePlasma();
+			this.weapons.releaseSting();
 		}
 		const collected = this.pickups.update(dt, player, this.needs());
 		if (collected) {
@@ -250,7 +254,7 @@ export class DoomAbilityService {
 			const p = player.position;
 			this.weapons.pushFx({ kind: 'pickup', x: p.x, y: p.y, detail: collected });
 		}
-		if (this.boss.consumeBossContactHit()) {
+		if (this.boss.consumeBossContactHit() && !struck) {
 			this.damagePlayer(1, player, 'boss contact');
 		}
 		if (this.boss.consumeMinionContactHit()) {
@@ -262,35 +266,42 @@ export class DoomAbilityService {
 		this.resolveShotCollisions();
 		this.resolveBoltCollisions();
 		this.resolveTracerDamage();
-		this.resolveSnare();
 		this.moveLockTimer = Math.max(0, this.moveLockTimer - dt);
 		player.setMovementLocked(this.weapons.bfgCharging || this.moveLockTimer > 0);
 	}
 
-	/** The button pressed: spend what is in hand; with empty hands, the charged BFG. */
-	fire(player: PlayerService): 'rush' | 'snare' | 'plasma' | 'bfg' | null {
+	/**
+	 * The button pressed: the berserk rushes (unhurt and stronger in the boss's live attack), the
+	 * Maw starts its charge once the meter is full; the Sting fires while the button is held.
+	 */
+	fire(player: PlayerService): 'rush' | 'plasma' | 'bfg' | null {
 		if (this.playerDeadValue || this.splitValue.active || this.rushing) {
 			return null;
 		}
 		const slot = this.weapons.slot;
 		if (slot === 'berserk') {
-			if (!player.facing) {
+			if (!player.facing || !this.weapons.rushReady) {
 				return null;
 			}
 			this.rushing = true;
 			this.rushHit = false;
-			player.startDash(RUSH_TILES);
-			player.grantInvulnerability(RUSH_COVER);
+			this.rushCounter = this.counterWindow;
+			player.startDash(RUSH_TILES, this.rushCounter ? RUSH_COVER : 0);
+			this.weapons.startRushCooldown();
+			const p = player.position;
+			this.weapons.pushFx({
+				kind: 'rush',
+				x: p.x,
+				y: p.y,
+				detail: this.rushCounter ? 'counter' : ''
+			});
 			this.rushStrike(player);
 			return 'rush';
-		}
-		if (slot === 'snare') {
-			return this.weapons.placeSnare(player) ? 'snare' : null;
 		}
 		if (slot === 'plasma') {
 			return 'plasma';
 		}
-		if (player.facing && this.weapons.startBfgCharge()) {
+		if (slot === 'bfg' && player.facing && this.weapons.startBfgCharge()) {
 			return 'bfg';
 		}
 		return null;
@@ -323,12 +334,6 @@ export class DoomAbilityService {
 		}
 		this.weapons.pushFx({ kind: 'player-hit', x: player.position.x, y: player.position.y });
 		this.weapons.cancelBfgCharge();
-		if (this.armourValue) {
-			this.armourValue = false;
-			this.debug('damage', `armour takes the hit (${source})`, this.playerHpValue);
-			player.grantInvulnerability(PLAYER_IFRAMES);
-			return;
-		}
 		this.playerHpValue = Math.max(0, this.playerHpValue - amount);
 		this.debug('damage', `player −${amount} (${source})`, this.playerHpValue);
 		if (this.playerHpValue <= 0) {
@@ -348,7 +353,6 @@ export class DoomAbilityService {
 		this.weapons.reset();
 		this.splitValue.reset();
 		this.playerHpValue = PLAYER_MAX_HP;
-		this.armourValue = false;
 		this.playerDeadValue = false;
 		this.moveLockTimer = 0;
 		this.ballHitBossValue = false;
@@ -360,10 +364,10 @@ export class DoomAbilityService {
 		this.pickups.reset(this.needs());
 	}
 
-	/** Dev: as if the player had walked over a pickup of `kind` (`bfg`: a full charge). */
-	debugGiveWeapon(kind: DoomPickupKind | 'bfg'): void {
-		if (kind === 'bfg') {
-			this.weapons.addFood(FOOD_PER_SHOT);
+	/** Dev: as if the player had walked over a pickup of `kind`; `food` fills the meter. */
+	debugGiveWeapon(kind: DoomPickupKind | 'food'): void {
+		if (kind === 'food') {
+			this.weapons.addFood(MAW_COST);
 			return;
 		}
 		this.applyPickup(kind);
@@ -374,16 +378,14 @@ export class DoomAbilityService {
 	}
 
 	private needs(): DoomPickupNeeds {
-		const slot = this.weapons.slot;
 		return {
 			hp: this.playerHpValue,
-			armour: this.armourValue,
-			held: slot,
-			handFree: slot === null && !this.weapons.bfgCharging
+			held: this.weapons.slot,
+			handFree: !this.weapons.bfgCharging
 		};
 	}
 
-	/** The food eaten since the last look charges the BFG (the split's refill starts the count again). */
+	/** The food eaten since the last look fills the meter (the split's refill starts the count again). */
 	private countFood(): void {
 		const now = this.progress.collectedDots;
 		if (now > this.foodSeen) {
@@ -411,32 +413,30 @@ export class DoomAbilityService {
 		return tiles;
 	}
 
-	/** The open snare's tile: the boss's void and blink keep off it. */
-	private locateSnare(): GridPoint | null {
-		const snare = this.weapons.snare;
-		return snare && snare.snapped < 0 ? { x: snare.x, y: snare.y } : null;
-	}
-
 	private applyPickup(kind: DoomPickupKind): void {
 		if (kind === 'medkit') {
 			this.playerHpValue = Math.min(PLAYER_MAX_HP, this.playerHpValue + 1);
-		} else if (kind === 'armour') {
-			this.armourValue = true;
 		} else {
 			this.weapons.take(kind);
 		}
 	}
 
-	/** The rush: the boss within reach takes it once; the imps on the way die. */
-	private rushStrike(player: PlayerService): void {
+	/** The rush: the boss within reach takes it once (more in a counter); the imps on the way die. */
+	private rushStrike(player: PlayerService): boolean {
 		const p = player.position;
 		const b = this.boss.position;
 		const dx = b.x - p.x;
 		const dy = b.y - p.y;
+		let struck = false;
 		if (!this.rushHit && dx * dx + dy * dy < RUSH_REACH_SQ && !this.boss.defeated) {
 			this.rushHit = true;
-			this.boss.takeDamage(RUSH_DAMAGE, 'rush');
+			struck = true;
+			const mul = this.rushCounter ? RUSH_COUNTER_MUL : 1;
+			this.boss.takeDamage(RUSH_DAMAGE * mul, this.rushCounter ? 'counter rush' : 'rush');
 			this.boss.applyStun(RUSH_STUN);
+			if (!player.isInvulnerable) {
+				player.grantInvulnerability(RUSH_HIT_GRACE);
+			}
 			this.weapons.pushFx({ kind: 'bite', x: b.x, y: b.y });
 			this.weapons.pushFx({ kind: 'boss-hit', x: b.x, y: b.y });
 		}
@@ -446,29 +446,7 @@ export class DoomAbilityService {
 			const my = pos.y - p.y;
 			return mx * mx + my * my < RUSH_REACH_SQ;
 		});
-	}
-
-	private resolveSnare(): void {
-		const snare = this.weapons.snare;
-		if (!snare || snare.snapped >= 0) {
-			return;
-		}
-		const tile = this.boss.tile;
-		const state = this.boss.state;
-		if (
-			tile.x !== snare.x ||
-			tile.y !== snare.y ||
-			this.boss.isStunned ||
-			this.boss.isStunImmune ||
-			state === 'INTRO' ||
-			state === 'TRANSITION' ||
-			state === 'DEAD'
-		) {
-			return;
-		}
-		this.weapons.snapSnare();
-		this.boss.takeDamage(SNARE_DAMAGE, 'snare');
-		this.boss.applyStun(SNARE_HOLD);
+		return struck;
 	}
 
 	private resolveShotCollisions(): void {
@@ -479,7 +457,7 @@ export class DoomAbilityService {
 			const bdx = shot.x - bossPos.x;
 			const bdy = shot.y - bossPos.y;
 			if (bdx * bdx + bdy * bdy < BOSS_SHOT_HIT_RADIUS_SQ) {
-				this.boss.takeDamage(BFG_ORB_DAMAGE, 'BFG orb');
+				this.boss.takeDamage(BFG_ORB_DAMAGE, 'Maw orb');
 				this.boss.applyStun(BFG_ORB_STUN);
 				this.weapons.pushFx({ kind: 'boss-hit', x: bossPos.x, y: bossPos.y });
 				this.weapons.detonateShot(i);
@@ -503,7 +481,7 @@ export class DoomAbilityService {
 			const bdx = bolt.x - bossPos.x;
 			const bdy = bolt.y - bossPos.y;
 			if (bdx * bdx + bdy * bdy < BOLT_HIT_RADIUS_SQ && !this.boss.defeated) {
-				this.boss.takeDamage(PLASMA_DAMAGE, 'plasma');
+				this.boss.takeDamage(STING_DAMAGE, 'Sting');
 				this.weapons.removeBolt(i);
 				continue;
 			}
@@ -527,7 +505,7 @@ export class DoomAbilityService {
 			}
 			this.processedTracers.add(tracer);
 			if (!this.ballHitBossValue && this.tileInTracer(this.boss.tile.x, this.boss.tile.y, tracer)) {
-				this.boss.takeDamage(BFG_TRACER_DAMAGE, 'BFG tracer');
+				this.boss.takeDamage(BFG_TRACER_DAMAGE, 'Maw tracer');
 			}
 			this.boss.killMinionsWhere((minion) => {
 				const pos = minionPosition(minion);

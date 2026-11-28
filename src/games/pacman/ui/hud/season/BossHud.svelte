@@ -3,8 +3,8 @@
 	riveted iron plate, `BossBar`) with three phase compartments that drain from the right; once he falls, the reward hint
 	hangs there instead. Beside the maze, or in two bands on a tall screen: the score board and the
 	record tag, the level board with its banner, the lives counter, the hero's hearts on a bone rail
-	(the health on this level, apart from the lives, and the armour) and a dial with the weapon in
-	hand, its ring always the BFG's charge from the food; in the split the bar shows its time. The pause knob stands in the corner. -->
+	(the health on this level, apart from the lives) and a dial with the weapon in hand, its ring
+	always the food meter in segments; in the split the bar shows its time. The pause knob stands in the corner. -->
 <script lang="ts">
 	import type { HudSnapshot } from '../hudSnapshot';
 	import { t } from '../../i18n';
@@ -29,7 +29,7 @@
 	import { LIVES_ICON } from './livesLayout';
 	import type { Dial } from './seasonArt';
 	import { HELL_THEME } from './seasonThemes';
-	import { ARMOUR_ART, WEAPON_ART, heartArt, railArt } from './hellArt';
+	import { WEAPON_ART, heartArt, railArt } from './hellArt';
 	import BossBar from './BossBar.svelte';
 
 	let {
@@ -51,24 +51,31 @@
 	const ms = $derived(snap.profile === 'ms-pacman');
 	const lives = $derived(Math.max(0, snap.lives));
 
-	/** The ring is the BFG's charge from the food, whatever is in hand (bright once it is full). */
+	/** The ring is the food meter that feeds the guns, whatever is in hand (bright once it is full). */
 	const ring = $derived.by(() => {
 		if (!boss) return { ratio: 0, color: '#4f9a3c' };
 		const food = clamp01(boss.food);
 		return { ratio: food, color: food >= 1 ? '#7dff5a' : '#4f9a3c' };
 	});
+	/** Where the meter's segments part, as angles round the dial (from the top, clockwise). */
+	const segmentTicks = $derived(
+		boss
+			? Array.from(
+					{ length: Math.max(0, boss.segments - 1) },
+					(_, i) => ((i + 1) / boss.segments) * 360
+				)
+			: []
+	);
 	const weaponKey = $derived(boss && boss.weapon ? boss.weapon : null);
 	const weaponLabel = $derived(weaponKey ? $t(weaponKey) : $t('none'));
 	const weaponValue = $derived(
 		!boss
 			? ''
-			: boss.weapon === 'berserk'
-				? `${boss.berserk.toFixed(1)}s`
-				: boss.weapon === 'plasma'
-					? `${boss.plasma.toFixed(1)}s`
-					: boss.charge > 0
-						? `${Math.round(boss.charge * 100)}%`
-						: ''
+			: boss.weapon === 'berserk' && boss.rush > 0
+				? `${boss.rush.toFixed(1)}s`
+				: boss.charge > 0
+					? `${Math.round(boss.charge * 100)}%`
+					: ''
 	);
 	const hearts = $derived(
 		boss ? Array.from({ length: boss.playerHpMax }, (_, i) => i < boss.playerHp) : []
@@ -208,6 +215,17 @@
 		stroke-dashoffset={ringLen * (1 - ring.ratio)}
 		transform="rotate(-90 {dial.cx} {dial.cy})"
 	/>
+	{#each segmentTicks as angle (angle)}
+		<line
+			x1={dial.cx}
+			y1={dial.cy - dial.r + 1}
+			x2={dial.cx}
+			y2={dial.cy - dial.r + 10}
+			stroke="#1a0406"
+			stroke-width="3"
+			transform="rotate({angle} {dial.cx} {dial.cy})"
+		/>
+	{/each}
 	<g
 		class:idle={!weaponKey}
 		transform="translate({dial.cx} {dial.cy - 2}) scale({weaponKey === 'berserk' ? k * 1.22 : k})"
@@ -311,9 +329,6 @@
 							<g class:beat={full}>{@html heartArt(full)}</g>
 						</g>
 					{/each}
-					{#if boss?.armour}
-						<g transform="translate({92 + hearts.length * 46} 238)">{@html ARMOUR_ART}</g>
-					{/if}
 				</g>
 			</g>
 		</svg>
@@ -420,9 +435,6 @@
 					<g class:beat={full}>{@html heartArt(full)}</g>
 				</g>
 			{/each}
-			{#if boss?.armour}
-				<g transform="translate({152 + hearts.length * 48} 44) scale(.9)">{@html ARMOUR_ART}</g>
-			{/if}
 			{@render weaponDial(9, 0.44)}
 			{@render pauseKnob(352, 132, 0.9)}
 		</svg>

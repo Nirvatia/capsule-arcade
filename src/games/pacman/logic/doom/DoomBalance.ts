@@ -104,26 +104,30 @@ export const TRANSITION_DURATION = 2.5;
 export const ATTACK_RETRY_INTERVAL = 0.25;
 export const BOSS_HP = 1500;
 export const PHASE_THRESHOLDS = [1000, 500] as const;
-export const BFG_ORB_DAMAGE = 250;
-export const BFG_ORB_STUN = 0.5;
+export const BFG_ORB_DAMAGE = 400;
+export const BFG_ORB_STUN = 1.0;
 export const BFG_TRACER_DAMAGE = 100;
-/** Food eaten for one BFG shot (one shot is stored; DESIGN §7 "The fight, redesigned"). */
-export const FOOD_PER_SHOT = 30;
-/** The berserk: the energizer state for this long, the button makes one rush. */
-export const BERSERK_DURATION = 8;
+/**
+ * The weapons' one resource, the food (DESIGN §7 "The fight, redesigned"): a meter of
+ * `FOOD_SEGMENTS` segments of `FOOD_PER_SEGMENT` pieces each.
+ */
+export const FOOD_PER_SEGMENT = 10;
+export const FOOD_SEGMENTS = 3;
+/** The Maw (Жерло, the heavy gun): the whole meter for one charged shot, fired standing still. */
+export const MAW_COST = FOOD_SEGMENTS * FOOD_PER_SEGMENT;
+/** The Sting (Жало, the middle gun): fires while held, burns a segment a second. */
+export const STING_FOOD_PER_SECOND = FOOD_PER_SEGMENT;
+export const STING_RATE = 0.1;
+export const STING_SPEED = 16;
+export const STING_DAMAGE = 10;
+/** The berserk (the light one, free): faster, the button is a rush with a cooldown. */
 export const BERSERK_SPEED_MUL = 1.15;
 export const RUSH_TILES = 5;
-export const RUSH_DAMAGE = 250;
-export const RUSH_STUN = 1.2;
-/** The snare: lies this long, holds the boss stepping in, bites once. */
-export const SNARE_LIFETIME = 25;
-export const SNARE_HOLD = 2.5;
-export const SNARE_DAMAGE = 100;
-/** The plasma: seconds of fire held down, a bolt per `PLASMA_RATE`, each bolt's damage. */
-export const PLASMA_AMMO = 3;
-export const PLASMA_RATE = 0.1;
-export const PLASMA_SPEED = 16;
-export const PLASMA_DAMAGE = 10;
+export const RUSH_COOLDOWN = 2.5;
+export const RUSH_DAMAGE = 50;
+export const RUSH_STUN = 0.5;
+/** A rush made while the boss's attack is live: this many times the damage, and unhurt. */
+export const RUSH_COUNTER_MUL = 3;
 /** The split (at each phase threshold): the burst, the Pac-Man part, the return to the core. */
 export const SPLIT_BURST = 0.6;
 export const SPLIT_PACMAN = 18;

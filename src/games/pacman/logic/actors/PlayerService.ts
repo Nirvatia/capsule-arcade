@@ -173,7 +173,8 @@ export class PlayerService {
 		this.player.setDesired(this.recoilDirectionValue);
 	}
 
-	startDash(tiles: number): void {
+	/** `cover`: seconds unhurt from the start (the hell's plain rush has none). */
+	startDash(tiles: number, cover = DASH_INVULNERABILITY): void {
 		if (this.isDashing || this.isRecoiling) {
 			return;
 		}
@@ -188,7 +189,9 @@ export class PlayerService {
 		this.dashDirectionValue = facing;
 		this.dashRemainingValue = Math.floor(tiles);
 		this.player.setDesired(facing);
-		this.player.grantInvulnerability(DASH_INVULNERABILITY);
+		if (cover > 0) {
+			this.player.grantInvulnerability(cover);
+		}
 	}
 
 	reset(): void {

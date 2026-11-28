@@ -9,7 +9,7 @@ import {
 } from '../common/textures';
 
 import { paintBfg, paintFist, paintMedkit } from './doomItems';
-import { paintArmourIcon, paintPlasmaIcon, paintSnareIcon } from './doomPlaceholders';
+import { paintPlasmaIcon } from './doomPlaceholders';
 
 export { glowTexture } from '../common/textures';
 
@@ -78,12 +78,10 @@ const bfgTexture = iconTexture(paintBfg);
 const medkitTexture = iconTexture(paintMedkit);
 const fistTexture = iconTexture(paintFist);
 // placeholders until the redesign's art (ROADMAP Part II step c)
-const snareTexture = iconTexture(paintSnareIcon);
 const plasmaTexture = iconTexture(paintPlasmaIcon);
-const armourTexture = iconTexture(paintArmourIcon);
 
 /** Icon and glow tint per pickup kind (and the BFG's, for the hand); berserk is the fist. */
-export function pickupSprite(kind: DoomPickupKind | 'bfg'): {
+export function pickupSprite(kind: DoomPickupKind): {
 	icon: HTMLCanvasElement;
 	glow: number;
 } {
@@ -92,12 +90,8 @@ export function pickupSprite(kind: DoomPickupKind | 'bfg'): {
 			return { icon: bfgTexture(), glow: 0x40ff50 };
 		case 'medkit':
 			return { icon: medkitTexture(), glow: 0xff3a2a };
-		case 'snare':
-			return { icon: snareTexture(), glow: 0xffe0a0 };
 		case 'plasma':
 			return { icon: plasmaTexture(), glow: 0x50b4ff };
-		case 'armour':
-			return { icon: armourTexture(), glow: 0x3a7ad8 };
 		default:
 			return { icon: fistTexture(), glow: 0xff7a1a };
 	}

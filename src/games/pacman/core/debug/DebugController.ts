@@ -157,8 +157,9 @@ export class DebugController {
 		const boss = this.loader.doomBoss;
 		if (doom) {
 			add('player', 'hell HP', doom.playerHp, '');
-			add('player', 'berserk', doom.berserkTimer);
-			add('player', 'BFG charge', doom.bfgChargeProgress * 100, '%');
+			add('player', 'rush cooldown', doom.rushCooldown);
+			add('player', 'food meter', doom.food * 100, '%');
+			add('player', 'Maw charge', doom.bfgChargeProgress * 100, '%');
 		}
 		if (boss && !boss.defeated) {
 			add('boss', 'pull on player', boss.pullRemaining);
@@ -247,7 +248,7 @@ export class DebugController {
 		this.loader.combat?.debugPower();
 	}
 
-	giveWeapon(kind: DoomPickupKind | 'bfg'): void {
+	giveWeapon(kind: DoomPickupKind | 'food'): void {
 		this.loader.doom?.debugGiveWeapon(kind);
 		this.loader.emitHud();
 	}

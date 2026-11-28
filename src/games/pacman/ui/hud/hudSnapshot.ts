@@ -4,7 +4,12 @@ import type { PacmanStateName, PacmanProfile } from '../../core/Events';
 import type { LevelLoader } from '../../logic/level/LevelLoader';
 import type { FruitKind } from '../../logic/bonuses/fruitCatalog';
 import { fruitForLevel } from '../../logic/bonuses/fruitCatalog';
-import { BOSS_HP, PHASE_THRESHOLDS, PLAYER_MAX_HP } from '../../logic/doom/DoomBalance';
+import {
+	BOSS_HP,
+	PHASE_THRESHOLDS,
+	PLAYER_MAX_HP,
+	FOOD_SEGMENTS
+} from '../../logic/doom/DoomBalance';
 import { arcadeRound } from '../../config/arcadeConfig';
 import type { AbilityKind } from '../../config/abilityConfig';
 import { RUN_TUNE } from '../../logic/station/StationRun';
@@ -32,14 +37,13 @@ export interface HudBoss {
 	readonly playerHp: number;
 	readonly playerHpMax: number;
 	readonly weapon: PacmanHellWeapon;
-	readonly berserk: number;
-	/** Seconds of plasma left in hand. */
-	readonly plasma: number;
-	/** 0..1 while the BFG charges. */
+	/** Seconds until the berserk can rush again. */
+	readonly rush: number;
+	/** 0..1 while the Maw charges. */
 	readonly charge: number;
-	/** The food eaten toward the BFG's shot, 0..1 (the dial's ring, whatever is in hand). */
+	/** The food meter that feeds the guns, 0..1 in `segments` segments (the dial's ring, always). */
 	readonly food: number;
-	readonly armour: boolean;
+	readonly segments: number;
 	/** The split: seconds of Pac-Man left and the ghosts eaten (of four), or null. */
 	readonly split: { readonly left: number; readonly eaten: number } | null;
 	readonly defeated: boolean;
@@ -147,11 +151,10 @@ export function buildHudSnapshot(
 					playerHp: doom.playerHp,
 					playerHpMax: PLAYER_MAX_HP,
 					weapon: doom.armed,
-					berserk: doom.berserkTimer,
-					plasma: doom.plasmaLeft,
+					rush: doom.rushCooldown,
 					charge: doom.bfgCharging ? doom.bfgChargeProgress : 0,
-					food: doom.bfgCharge,
-					armour: doom.armour,
+					food: doom.food,
+					segments: FOOD_SEGMENTS,
 					split: doom.split.active ? { left: doom.split.timeLeft, eaten: doom.split.eaten } : null,
 					defeated: bossService.defeated,
 					rewardOffered: Boolean(level.bossReward?.offered)

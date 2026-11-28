@@ -2,14 +2,14 @@ import type { GridService } from '../maze/GridService';
 import type { PlayerService } from '../actors/PlayerService';
 import { DoomWeaponModel } from './DoomWeaponModel';
 import type { DoomSlotItem } from './DoomWeaponModel';
-import { PLASMA_RATE, PLASMA_SPEED, SNARE_HOLD, SNARE_LIFETIME } from './DoomBalance';
+import { STING_RATE, STING_SPEED } from './DoomBalance';
 
 const BFG_BALL_SPEED = 14;
 const BFG_SHOT_LIFETIME = 2.0;
 const BFG_TRACER_VISIBLE = 0.25;
 const BOLT_LIFETIME = 2.0;
 
-/** A projectile along a corridor: the BFG's orb or a plasma bolt (tile units). */
+/** A projectile along a corridor: the Maw's orb or a Sting bolt (tile units). */
 export interface DoomBfgShot {
 	x: number;
 	y: number;
@@ -18,23 +18,13 @@ export interface DoomBfgShot {
 	life: number;
 }
 
-/** The snare on its tile: open while `snapped` is -1, then the seconds since it shut. */
-export interface DoomSnare {
-	readonly x: number;
-	readonly y: number;
-	timer: number;
-	snapped: number;
-}
-
 /** Something the renderer should show an effect for (tile-center coordinates). */
 export interface DoomFxEvent {
 	readonly kind:
 		| 'bfg-fire'
 		| 'bfg-impact'
-		| 'snare-place'
-		| 'snare-snap'
-		| 'snare-fizzle'
 		| 'split-burst'
+		| 'rush'
 		| 'bite'
 		| 'pickup'
 		| 'boss-hit'
@@ -62,16 +52,15 @@ const STEP: Record<string, readonly [number, number]> = {
 	RIGHT: [1, 0]
 };
 
-/** The hell's weapons in the world: the BFG's orbs and tracers, the plasma's bolts, the snare. */
+/** The hell's weapons in the world: the Maw's orbs and tracers, the Sting's bolts, the meter. */
 export class DoomWeaponService {
 	private readonly model: DoomWeaponModel;
 	private readonly grid: GridService;
 	private readonly bfgShots: DoomBfgShot[] = [];
-	private readonly plasmaBolts: DoomBfgShot[] = [];
+	private readonly stingBolts: DoomBfgShot[] = [];
 	private readonly tracers: DoomBfgTracer[] = [];
 	private readonly fxQueue: DoomFxEvent[] = [];
-	private snareValue: DoomSnare | null = null;
-	private plasmaClock = 0;
+	private stingClock = 0;
 
 	constructor(grid: GridService) {
 		if (!grid) {
@@ -90,12 +79,12 @@ export class DoomWeaponService {
 		return this.model.berserkActive;
 	}
 
-	get berserkTimer(): number {
-		return this.model.berserkTimer;
+	get rushCooldown(): number {
+		return this.model.rushCooldown;
 	}
 
-	get plasmaLeft(): number {
-		return this.model.plasmaLeft;
+	get rushReady(): boolean {
+		return this.model.rushReady;
 	}
 
 	get food(): number {
@@ -119,11 +108,7 @@ export class DoomWeaponService {
 	}
 
 	get bolts(): readonly DoomBfgShot[] {
-		return this.plasmaBolts;
-	}
-
-	get snare(): Readonly<DoomSnare> | null {
-		return this.snareValue;
+		return this.stingBolts;
 	}
 
 	get tracerList(): readonly DoomBfgTracer[] {
@@ -148,8 +133,8 @@ export class DoomWeaponService {
 		this.model.addFood(count);
 	}
 
-	endBerserk(): void {
-		this.model.endBerserk();
+	startRushCooldown(): void {
+		this.model.startRushCooldown();
 	}
 
 	startBfgCharge(): boolean {
@@ -164,47 +149,25 @@ export class DoomWeaponService {
 		return this.model.consumeChargeCompleted();
 	}
 
-	/** Sets the snare on the hero's tile (one at a time). */
-	placeSnare(player: PlayerService): boolean {
-		if (this.snareValue || !this.model.consumeSnare()) {
-			return false;
-		}
-		const tile = player.tile;
-		this.snareValue = { x: tile.x, y: tile.y, timer: SNARE_LIFETIME, snapped: -1 };
-		this.pushFx({ kind: 'snare-place', x: tile.x + 0.5, y: tile.y + 0.5 });
-		return true;
-	}
-
-	/** The snare shuts on the boss: it holds for `SNARE_HOLD`, then it is gone. */
-	snapSnare(): void {
-		const snare = this.snareValue;
-		if (!snare || snare.snapped >= 0) {
-			return;
-		}
-		snare.snapped = 0;
-		this.pushFx({ kind: 'snare-snap', x: snare.x + 0.5, y: snare.y + 0.5 });
-	}
-
 	fireBfg(player: PlayerService): void {
 		this.launch(player, this.bfgShots, BFG_BALL_SPEED, BFG_SHOT_LIFETIME, true);
 	}
 
-	/** The plasma, held down: burns its ammo and lets a bolt go every `PLASMA_RATE`. */
-	firePlasma(player: PlayerService, dt: number): void {
-		if (this.model.slot !== 'plasma') {
+	/** The Sting, held down: burns the meter and lets a bolt go every `STING_RATE`. */
+	fireSting(player: PlayerService, dt: number): void {
+		if (!this.model.spendSting(dt)) {
 			return;
 		}
-		this.model.spendPlasma(dt);
-		this.plasmaClock -= dt;
-		if (this.plasmaClock <= 0) {
-			this.plasmaClock += PLASMA_RATE;
-			this.launch(player, this.plasmaBolts, PLASMA_SPEED, BOLT_LIFETIME, false);
+		this.stingClock -= dt;
+		if (this.stingClock <= 0) {
+			this.stingClock += STING_RATE;
+			this.launch(player, this.stingBolts, STING_SPEED, BOLT_LIFETIME, false);
 		}
 	}
 
-	/** The plasma's trigger is let go: the next press fires at once. */
-	releasePlasma(): void {
-		this.plasmaClock = 0;
+	/** The Sting's trigger is let go: the next press fires at once. */
+	releaseSting(): void {
+		this.stingClock = 0;
 	}
 
 	detonateShot(index: number): void {
@@ -217,40 +180,25 @@ export class DoomWeaponService {
 	}
 
 	removeBolt(index: number): void {
-		if (index >= 0 && index < this.plasmaBolts.length) {
-			this.plasmaBolts.splice(index, 1);
+		if (index >= 0 && index < this.stingBolts.length) {
+			this.stingBolts.splice(index, 1);
 		}
 	}
 
-	update(dt: number, rushing = false): void {
+	update(dt: number): void {
 		if (!Number.isFinite(dt) || dt < 0) {
 			console.error('DoomWeaponService.update', 'invalid delta time', dt);
 			return;
 		}
-		this.model.update(dt, rushing);
+		this.model.update(dt);
 		for (let i = this.bfgShots.length - 1; i >= 0; i -= 1) {
 			if (!this.advance(this.bfgShots[i], dt)) {
 				this.detonateShot(i);
 			}
 		}
-		for (let i = this.plasmaBolts.length - 1; i >= 0; i -= 1) {
-			if (!this.advance(this.plasmaBolts[i], dt)) {
-				this.plasmaBolts.splice(i, 1);
-			}
-		}
-		const snare = this.snareValue;
-		if (snare) {
-			if (snare.snapped >= 0) {
-				snare.snapped += dt;
-				if (snare.snapped >= SNARE_HOLD) {
-					this.snareValue = null;
-				}
-			} else {
-				snare.timer -= dt;
-				if (snare.timer <= 0) {
-					this.pushFx({ kind: 'snare-fizzle', x: snare.x + 0.5, y: snare.y + 0.5 });
-					this.snareValue = null;
-				}
+		for (let i = this.stingBolts.length - 1; i >= 0; i -= 1) {
+			if (!this.advance(this.stingBolts[i], dt)) {
+				this.stingBolts.splice(i, 1);
 			}
 		}
 		for (let i = this.tracers.length - 1; i >= 0; i -= 1) {
@@ -261,22 +209,21 @@ export class DoomWeaponService {
 		}
 	}
 
-	/** The split: what flies is gone, the charge and the hand are kept. */
+	/** The split: what flies is gone, the meter and the hand are kept. */
 	clearShots(): void {
 		this.model.cancelBfgCharge();
 		this.bfgShots.length = 0;
-		this.plasmaBolts.length = 0;
+		this.stingBolts.length = 0;
 		this.tracers.length = 0;
 	}
 
 	reset(): void {
 		this.model.reset();
 		this.bfgShots.length = 0;
-		this.plasmaBolts.length = 0;
+		this.stingBolts.length = 0;
 		this.tracers.length = 0;
 		this.fxQueue.length = 0;
-		this.snareValue = null;
-		this.plasmaClock = 0;
+		this.stingClock = 0;
 	}
 
 	private launch(

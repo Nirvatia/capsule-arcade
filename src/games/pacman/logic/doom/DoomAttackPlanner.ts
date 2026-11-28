@@ -44,7 +44,6 @@ export interface AttackPlanInput {
 	readonly cooldowns: Readonly<Record<DoomAttackKind, number>>;
 	readonly broodHasRoom: boolean;
 	readonly protectedTileKeys: ReadonlySet<string>;
-	readonly snare: () => GridPoint | null;
 	/** Dev: only this attack may be chosen. */
 	readonly forced: DoomAttackKind | null;
 	readonly lastAttack: DoomAttackKind | null;
@@ -110,7 +109,7 @@ export function planAttack(input: AttackPlanInput): AttackPlan {
 		available.add('voidTrail');
 	}
 	if (phase >= 3 && cooldowns.blink <= 0) {
-		blinkTarget = findBlinkTarget(grid, bossTile, playerTile, input.snare());
+		blinkTarget = findBlinkTarget(grid, bossTile, playerTile);
 		if (blinkTarget) {
 			available.add('blink');
 		}

@@ -1,5 +1,8 @@
-/** The hell's pickups: three for the hand, two that act at once (DESIGN §7). */
-export type DoomPickupKind = 'berserk' | 'snare' | 'plasma' | 'medkit' | 'armour';
+/**
+ * The hell's pickups (DESIGN §7): three weapons for the hand, light to heavy (the berserk, the Sting
+ * `plasma`, the Maw `bfg`), and the medkit.
+ */
+export type DoomPickupKind = 'berserk' | 'plasma' | 'bfg' | 'medkit';
 
 export interface DoomPickupTile {
 	readonly x: number;
@@ -8,7 +11,7 @@ export interface DoomPickupTile {
 
 /**
  * One pickup spot: what lies on it, or how long until something comes. The kind is chosen when it
- * comes (`DoomPickupService`), so the medkit and the armour fit the hero's health at that moment.
+ * comes (`DoomPickupService`), so the medkit comes only to a hurt hero.
  */
 export class DoomPickupModel {
 	private kindValue: DoomPickupKind | null = null;

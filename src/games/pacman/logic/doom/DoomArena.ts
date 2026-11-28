@@ -78,7 +78,6 @@ export class DoomArena {
 	private readonly pendingSeals: PendingSeal[] = [];
 	private readonly voidCells: VoidCell[] = [];
 	private readonly protectedTileKeys = new Set<string>();
-	private snareLocator: (() => GridPoint | null) | null = null;
 	private pullTimer = 0;
 	private corruptionValue = 0;
 	private echoValue: DoomEcho | null = null;
@@ -152,15 +151,6 @@ export class DoomArena {
 			}
 			this.protectedTileKeys.add(`${tile.x},${tile.y}`);
 		}
-	}
-
-	setSnareLocator(locator: () => GridPoint | null): void {
-		this.snareLocator = locator;
-	}
-
-	/** Where the open snare lies, if there is one. */
-	snare(): GridPoint | null {
-		return this.snareLocator ? this.snareLocator() : null;
 	}
 
 	echoPosition(): { x: number; y: number } | null {
@@ -288,10 +278,6 @@ export class DoomArena {
 			return;
 		}
 		if (this.protectedTileKeys.has(`${tile.x},${tile.y}`)) {
-			return;
-		}
-		const snare = this.snare();
-		if (snare && snare.x === tile.x && snare.y === tile.y) {
 			return;
 		}
 		if (!keepsPlayerGraphConnected(this.grid, tile, playerTile)) {

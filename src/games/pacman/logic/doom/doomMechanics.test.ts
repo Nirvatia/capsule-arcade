@@ -547,7 +547,7 @@ describe('the boss and the board', () => {
 					if (!grid.isPlayerWalkable(x, y)) {
 						continue;
 					}
-					const target = findBlinkTarget(grid, { x: 1, y: 1 }, { x, y }, null);
+					const target = findBlinkTarget(grid, { x: 1, y: 1 }, { x, y });
 					if (target) {
 						picked += 1;
 						expect(isLairSpace(grid, target.x, target.y)).toBe(false);

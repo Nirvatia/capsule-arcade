@@ -19,9 +19,7 @@ export function heartArt(full: boolean): string {
 /** The weapons, drawn at the origin, roughly 60 units across. */
 export const WEAPON_ART = {
 	bfg: '<rect x="-34" y="-12" width="52" height="24" rx="6" fill="#3a4a3a" stroke="#0a140a" stroke-width="4"/><rect x="-28" y="-6" width="30" height="5" rx="2" fill="#6a8a6a"/><circle cx="26" cy="0" r="16" fill="#7dff5a" stroke="#0a140a" stroke-width="4"/><circle cx="26" cy="0" r="8" fill="#e8ffd9"/><path d="M-20 12 L-26 28 H-12 L-8 12Z" fill="#3a4a3a" stroke="#0a140a" stroke-width="3" stroke-linejoin="round"/>',
-	// placeholders until the redesign's art (ROADMAP Part II step c)
-	snare:
-		'<path d="M-30 -2 A30 22 0 0 1 30 -2 Z" fill="#e8dcc0" stroke="#2a0c06" stroke-width="4" stroke-linejoin="round"/><path d="M-30 4 A30 22 0 0 0 30 4 Z" fill="#e8dcc0" stroke="#2a0c06" stroke-width="4" stroke-linejoin="round"/><path d="M-22 -2 L-17 -12 L-12 -2 M-6 -2 L0 -12 L6 -2 M12 -2 L17 -12 L22 -2 M-22 4 L-17 14 L-12 4 M-6 4 L0 14 L6 4 M12 4 L17 14 L22 4" fill="#fff6e0" stroke="#2a0c06" stroke-width="3" stroke-linejoin="round"/>',
+	// a placeholder until the redesign's art (ROADMAP Part II step c)
 	plasma:
 		'<rect x="-34" y="-13" width="52" height="26" rx="7" fill="#26324a" stroke="#0a1020" stroke-width="4"/><rect x="-28" y="-4" width="34" height="8" rx="3" fill="#bff0ff"/><circle cx="24" cy="0" r="14" fill="#7fd8ff" stroke="#0a1020" stroke-width="4"/><circle cx="24" cy="0" r="6" fill="#e8fbff"/>',
 	berserk: `<path d="M-26 22 C-34 4 -22 -6 -20 -22 C-14 -12 -10 -16 -8 -30 C-2 -20 2 -22 4 -34 C8 -22 14 -18 14 -8 C20 -14 22 -6 24 -2 C34 8 30 20 26 24 C16 32 -16 32 -26 22Z" fill="#ff5a1a" stroke="#2a0c06" stroke-width="3.6" stroke-linejoin="round"/>
@@ -33,10 +31,6 @@ export const WEAPON_ART = {
 <path d="M-18 11 Q-6 7 7 13 Q11 17 5 21 Q-8 25 -18 21Z" fill="#f0cf9c" stroke="#2a0c06" stroke-width="3" stroke-linejoin="round"/>
 <path d="M-14 -9 q6 -4 11 -2" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".8"/>`
 } as const;
-
-/** The armour beside the hearts (a placeholder): a blue shield, the size of a heart. */
-export const ARMOUR_ART =
-	'<path d="M0 -17 L15 -11 Q14 8 0 18 Q-14 8 -15 -11 Z" fill="#3a7ad8" stroke="#0a1a30" stroke-width="3.4" stroke-linejoin="round"/><path d="M-8 -9 V3" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".6"/>';
 
 export type WeaponArtKey = keyof typeof WEAPON_ART;
 

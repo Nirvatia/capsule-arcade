@@ -39,7 +39,7 @@ export interface PacmanStateChangedPayload {
 }
 
 /** What the hell's dial holds: the item in hand, or the BFG once the food has charged it. */
-export type PacmanHellWeapon = 'bfg' | 'snare' | 'plasma' | 'berserk' | '';
+export type PacmanHellWeapon = 'bfg' | 'plasma' | 'berserk' | '';
 
 export interface PacmanHellHud {
 	hp: number;
@@ -48,7 +48,7 @@ export interface PacmanHellHud {
 	bossHpMax: number;
 	bossPhase: number;
 	weapon: PacmanHellWeapon;
-	/** Seconds of berserk left, rounded to 0.1. */
+	/** Seconds until the berserk can rush again, rounded to 0.1. */
 	berserk: number;
 }
 

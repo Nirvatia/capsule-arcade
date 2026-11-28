@@ -512,7 +512,7 @@ export class LevelLoader {
 			bossHpMax: BOSS_HP,
 			bossPhase: doom.boss.phase,
 			weapon,
-			berserk: weapon === 'berserk' ? Math.ceil(doom.abilities.berserkTimer * 10) / 10 : 0
+			berserk: weapon === 'berserk' ? Math.ceil(doom.abilities.rushCooldown * 10) / 10 : 0
 		};
 	}
 

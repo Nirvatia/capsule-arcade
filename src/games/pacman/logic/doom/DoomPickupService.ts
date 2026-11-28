@@ -7,22 +7,21 @@ const RESPAWN_MIN = 15;
 const RESPAWN_MAX = 20;
 /** Nothing could come (all kinds lie or are held): look again after this. */
 const RETRY = 3;
-const HAND_KINDS: readonly DoomPickupKind[] = ['berserk', 'snare', 'plasma'];
+const HAND_KINDS: readonly DoomPickupKind[] = ['berserk', 'plasma', 'bfg'];
 const PICKUP_CONTACT_RADIUS_SQ = 0.49;
 
 /** What the pickups need to know of the hero. */
 export interface DoomPickupNeeds {
 	readonly hp: number;
-	readonly armour: boolean;
-	/** The kind in his hand (it does not lie on the map at the same time). */
+	/** The weapon in his hand (it does not lie on the map at the same time). */
 	readonly held: DoomPickupKind | null;
-	/** His hand is free for a hand kind. */
+	/** He can take a weapon now (not while the Maw charges); a new one replaces the old. */
 	readonly handFree: boolean;
 }
 
 /**
  * The four pickup spots. One of each kind at most on the map (and none of the kind in the hero's
- * hand); the medkit comes only for a hurt hero, the armour only for a whole one without armour.
+ * hand); the medkit comes only for a hurt hero.
  */
 export class DoomPickupService {
 	private readonly pickups: DoomPickupModel[] = [];
@@ -85,10 +84,7 @@ export class DoomPickupService {
 		if (kind === 'medkit') {
 			return needs.hp < PLAYER_MAX_HP;
 		}
-		if (kind === 'armour') {
-			return !needs.armour;
-		}
-		return needs.handFree;
+		return needs.handFree && needs.held !== kind;
 	}
 
 	/** The kinds that may come now, for these needs. */
@@ -97,14 +93,6 @@ export class DoomPickupService {
 		const out = HAND_KINDS.filter((k) => !lying.has(k) && needs.held !== k);
 		if (needs.hp < PLAYER_MAX_HP && !lying.has('medkit')) {
 			out.push('medkit');
-		}
-		if (
-			needs.hp >= PLAYER_MAX_HP &&
-			!needs.armour &&
-			!lying.has('armour') &&
-			!lying.has('medkit')
-		) {
-			out.push('armour');
 		}
 		return out;
 	}

@@ -11,17 +11,18 @@ import { GridService } from '../maze/GridService';
 import type { DronePack } from '../net/DronePack';
 import { DoomAbilityService } from './DoomAbilityService';
 import {
+	BFG_ORB_DAMAGE,
 	BOSS_HP,
-	FOOD_PER_SHOT,
 	INTRO_DURATION,
+	MAW_COST,
 	PHASE_THRESHOLDS,
-	PLASMA_AMMO,
-	PLASMA_DAMAGE,
 	PLAYER_MAX_HP,
+	RUSH_COOLDOWN,
+	RUSH_COUNTER_MUL,
 	RUSH_DAMAGE,
-	SNARE_DAMAGE,
 	SPLIT_GHOST_DAMAGE,
-	SPLIT_PACMAN
+	SPLIT_PACMAN,
+	STING_DAMAGE
 } from './DoomBalance';
 import { DoomBossService } from './DoomBossService';
 import { assertDoomMap } from './DoomMapValidation';
@@ -142,37 +143,36 @@ describe('the hell map with food', () => {
 	});
 });
 
-describe('the food charges the BFG', () => {
-	it('readies one shot after FOOD_PER_SHOT pieces and fires it with empty hands', () => {
-		const f = fight();
-		let eaten = 0;
-		for (let y = 0; y < f.grid.height && eaten < FOOD_PER_SHOT; y += 1) {
-			for (let x = 0; x < f.grid.width && eaten < FOOD_PER_SHOT; x += 1) {
-				if (f.grid.isDot(x, y)) {
-					f.progress.collectAt(x, y);
-					eaten += 1;
-				}
+/** Eats `count` pieces of food (the meter counts what was eaten). */
+function eat(f: Fight, count: number): void {
+	let eaten = 0;
+	for (let y = 0; y < f.grid.height && eaten < count; y += 1) {
+		for (let x = 0; x < f.grid.width && eaten < count; x += 1) {
+			if (f.grid.isDot(x, y) && !f.progress.isCollected(x, y)) {
+				f.progress.collectAt(x, y);
+				eaten += 1;
 			}
 		}
-		f.tick();
-		expect(f.doom.bfgReady).toBe(true);
-		expect(f.doom.armed).toBe('bfg');
-		f.player.setDesiredDirection('UP');
-		f.run(0.2);
-		expect(f.doom.fire(f.player)).toBe('bfg');
-		f.run(1);
-		expect(f.doom.bfgReady).toBe(false);
-		expect(f.doom.bfgCharge).toBeLessThan(1);
-	});
+	}
+	// the meter takes it in on the next update; the hero stays where he is
+	f.doom.update(STEP, f.player);
+}
 
-	it('an item in hand is spent first; the charge waits', () => {
+describe('the food meter feeds the guns', () => {
+	it('the Maw fires only on a full meter and empties it', () => {
 		const f = fight();
 		f.doom.debugGiveWeapon('bfg');
-		f.doom.debugGiveWeapon('snare');
-		f.tick();
-		expect(f.doom.armed).toBe('snare');
-		expect(f.doom.fire(f.player)).toBe('snare');
-		expect(f.doom.bfgReady).toBe(true);
+		f.player.setDesiredDirection('UP');
+		f.run(0.2);
+		eat(f, MAW_COST - 1 - Math.round(f.doom.food * MAW_COST));
+		expect(f.doom.bfgReady).toBe(false);
+		expect(f.doom.fire(f.player)).toBeNull();
+		eat(f, 1);
+		expect(f.doom.food).toBe(1);
+		expect(f.doom.fire(f.player)).toBe('bfg');
+		f.run(1);
+		expect(f.doom.food).toBe(0);
+		expect(f.doom.armed).toBe('bfg');
 	});
 });
 
@@ -228,10 +228,10 @@ describe('the split', () => {
 
 	it('the weapons are off while it runs', () => {
 		const f = fight();
-		f.doom.debugGiveWeapon('snare');
+		f.doom.debugGiveWeapon('berserk');
 		toSplit(f);
 		expect(f.doom.fire(f.player)).toBeNull();
-		expect(f.doom.armed).toBe('snare');
+		expect(f.doom.armed).toBe('berserk');
 	});
 });
 
@@ -255,87 +255,122 @@ describe('the hand', () => {
 		f.run(0.05);
 	}
 
-	it('the berserk rushes once into the boss and ends', () => {
+	it('the berserk rushes for free, then waits its cooldown', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('berserk');
 		f.tick();
 		const hp = f.boss.hp;
+		expect(f.doom.counterWindow).toBe(false);
 		expect(f.doom.fire(f.player)).toBe('rush');
-		f.run(1);
+		f.run(0.6);
 		expect(f.boss.hp).toBe(hp - RUSH_DAMAGE);
-		expect(f.doom.berserkActive).toBe(false);
+		expect(f.doom.fire(f.player)).toBeNull();
+		f.run(RUSH_COOLDOWN);
+		expect(f.doom.fire(f.player)).toBe('rush');
+		expect(f.doom.armed).toBe('berserk');
 	});
 
-	it('the plasma fires while held and empties the hand', () => {
+	it("a rush in the boss's live attack is a counter: more damage, unhurt", () => {
+		const f = fight();
+		lineUp(f);
+		f.doom.debugGiveWeapon('berserk');
+		f.tick();
+		Object.defineProperty(f.doom, 'counterWindow', { get: () => true });
+		const hp = f.boss.hp;
+		expect(f.doom.fire(f.player)).toBe('rush');
+		expect(f.player.isInvulnerable).toBe(true);
+		f.run(0.6);
+		expect(f.boss.hp).toBe(hp - RUSH_DAMAGE * RUSH_COUNTER_MUL);
+	});
+
+	it('a plain rush starts without cover', () => {
+		const f = fight();
+		lineUp(f);
+		f.run(2);
+		f.doom.debugGiveWeapon('berserk');
+		f.tick();
+		expect(f.doom.fire(f.player)).toBe('rush');
+		expect(f.player.isInvulnerable).toBe(false);
+	});
+
+	it('the counter window opens while a rift burns', () => {
+		const f = fight();
+		f.run(INTRO_DURATION + 0.1);
+		f.boss.debugForceAttack('rift');
+		let seen = false;
+		for (let i = 0; i < 60 * 10 && !seen; i += 1) {
+			f.tick();
+			seen = f.doom.counterWindow;
+		}
+		expect(seen).toBe(true);
+	});
+
+	it('the Sting fires while held, a segment a second, and stops on an empty meter', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('plasma');
+		eat(f, 10);
 		const hp = f.boss.hp;
-		f.run(PLASMA_AMMO + 1, true);
-		expect(f.doom.armed).not.toBe('plasma');
+		f.run(2, true);
+		expect(f.doom.food).toBe(0);
 		expect(f.boss.hp).toBeLessThan(hp);
-		expect((hp - f.boss.hp) % PLASMA_DAMAGE).toBe(0);
+		expect((hp - f.boss.hp) % STING_DAMAGE).toBe(0);
+		const after = f.boss.hp;
+		f.run(1, true);
+		expect(f.boss.hp).toBe(after);
+		expect(f.doom.armed).toBe('plasma');
 	});
 
-	it('the snare shuts on the boss stepping in', () => {
+	it('the Maw orb hits for its full damage', () => {
 		const f = fight();
-		f.run(INTRO_DURATION + 0.1);
-		f.doom.debugGiveWeapon('snare');
-		// set it on the boss's next tiles: under him as soon as his stun ends
-		f.player.placeAt(f.boss.tile);
+		lineUp(f);
+		f.doom.debugGiveWeapon('bfg');
+		f.doom.debugGiveWeapon('food');
 		f.tick();
-		expect(f.doom.fire(f.player)).toBe('snare');
-		f.player.placeAt({ x: 2, y: 2 });
 		const hp = f.boss.hp;
-		f.run(0.5);
-		expect(f.doom.snare?.snapped).toBeGreaterThanOrEqual(0);
-		expect(f.boss.hp).toBe(hp - SNARE_DAMAGE);
-		expect(f.boss.isStunned).toBe(true);
-	});
-
-	it('the armour takes one hit instead of health', () => {
-		const f = fight();
-		f.run(2);
-		f.doom.setGodMode(false);
-		f.doom.debugGiveWeapon('armour');
-		f.doom.damagePlayer(1, f.player, 'test');
-		expect(f.doom.playerHp).toBe(PLAYER_MAX_HP);
-		expect(f.doom.armour).toBe(false);
-		f.run(2);
-		f.doom.damagePlayer(1, f.player, 'test');
-		expect(f.doom.playerHp).toBe(PLAYER_MAX_HP - 1);
+		expect(f.doom.fire(f.player)).toBe('bfg');
+		f.run(1.5);
+		expect(f.boss.hp).toBeLessThanOrEqual(hp - BFG_ORB_DAMAGE);
 	});
 });
 
 describe('the pickups', () => {
-	it('bring the medkit only to a hurt hero and the armour only to a whole one', () => {
+	it('a new weapon replaces the one in hand; the same one is not taken', () => {
 		const pickups = new DoomPickupService(DOOM_PICKUP_TILES, {
 			hp: PLAYER_MAX_HP,
-			armour: false,
-			held: null,
+			held: 'plasma',
 			handFree: true
 		});
-		const lying = pickups.list.map((p) => p.kind);
-		expect(lying).not.toContain('medkit');
-		const hurt = pickups.choices({ hp: 1, armour: false, held: null, handFree: true });
-		expect(hurt).not.toContain('armour');
-		const armoured = pickups.choices({
-			hp: PLAYER_MAX_HP,
-			armour: true,
-			held: null,
-			handFree: true
-		});
-		expect(armoured).not.toContain('armour');
-		expect(armoured).not.toContain('medkit');
+		expect(
+			pickups.isCollectible('berserk', { hp: PLAYER_MAX_HP, held: 'plasma', handFree: true })
+		).toBe(true);
+		expect(
+			pickups.isCollectible('plasma', { hp: PLAYER_MAX_HP, held: 'plasma', handFree: true })
+		).toBe(false);
+		expect(
+			pickups.isCollectible('bfg', { hp: PLAYER_MAX_HP, held: 'plasma', handFree: false })
+		).toBe(false);
 	});
 
-	it('never lay the kind in hand, nor two of a kind', () => {
+	it('bring the medkit only to a hurt hero', () => {
+		const whole = new DoomPickupService(DOOM_PICKUP_TILES, {
+			hp: PLAYER_MAX_HP,
+			held: null,
+			handFree: true
+		});
+		expect(whole.list.map((p) => p.kind)).not.toContain('medkit');
+		expect(whole.choices({ hp: 1, held: null, handFree: true })).toContain('medkit');
+		expect(whole.isCollectible('medkit', { hp: PLAYER_MAX_HP, held: null, handFree: true })).toBe(
+			false
+		);
+	});
+
+	it('never lay the weapon in hand, nor two of a kind', () => {
 		const pickups = new DoomPickupService(DOOM_PICKUP_TILES, {
 			hp: 1,
-			armour: false,
 			held: 'plasma',
-			handFree: false
+			handFree: true
 		});
 		const lying = pickups.list.map((p) => p.kind).filter((k) => k !== null);
 		expect(lying).not.toContain('plasma');

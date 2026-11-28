@@ -1,6 +1,6 @@
 // Placeholder art for the hell fight's redesign (DESIGN §7 "The fight, redesigned"), as the
-// `hell-phase` prototype drew it: the food (the fang, the owner's lead), the snare, the plasma, the
-// armour, the split's core and its four ghosts. ROADMAP Part II step (c) replaces it with approved
+// `hell-phase` prototype drew it: the food (the fang, the owner's lead), the Sting, the split's core
+// and its four ghosts. ROADMAP Part II step (c) replaces it with approved
 // art; keep it plain until then. (x, y) is a tile's centre in px, S the tile in px.
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
 import { drawImp } from './HellImpView';
@@ -73,54 +73,7 @@ export function drawEnergizer(
 	ctx.stroke();
 }
 
-/** The snare's jaws: two rows of bone teeth; `open` 1 is wide, 0 is shut. */
-export function drawJaws(
-	ctx: CanvasRenderingContext2D,
-	x: number,
-	y: number,
-	r: number,
-	open: number
-): void {
-	ctx.save();
-	ctx.lineWidth = Math.max(1.4, r * 0.12);
-	ctx.strokeStyle = INK;
-	ctx.lineJoin = 'round';
-	for (const side of [-1, 1]) {
-		const yy = y + side * r * 0.25 * open;
-		ctx.fillStyle = '#e8dcc0';
-		ctx.beginPath();
-		ctx.ellipse(
-			x,
-			yy,
-			r,
-			r * (0.35 + 0.3 * open),
-			0,
-			side < 0 ? Math.PI : 0,
-			side < 0 ? Math.PI * 2 : Math.PI
-		);
-		ctx.closePath();
-		ctx.fill();
-		ctx.stroke();
-		ctx.fillStyle = '#fff6e0';
-		for (let k = -2; k <= 2; k += 1) {
-			const tx = x + k * r * 0.36;
-			ctx.beginPath();
-			ctx.moveTo(tx - r * 0.12, yy);
-			ctx.lineTo(tx, yy - side * r * 0.32);
-			ctx.lineTo(tx + r * 0.12, yy);
-			ctx.closePath();
-			ctx.fill();
-			ctx.stroke();
-		}
-	}
-	ctx.restore();
-}
-
-/** Pickup icons in the -50..50 box of `doomItems`. */
-export function paintSnareIcon(ctx: CanvasRenderingContext2D): void {
-	drawJaws(ctx, 0, 0, 40, 0.6);
-}
-
+/** The Sting's pickup icon (placeholder) in the -50..50 box of `doomItems`. */
 export function paintPlasmaIcon(ctx: CanvasRenderingContext2D): void {
 	ctx.lineWidth = 6;
 	ctx.strokeStyle = INK;
@@ -136,22 +89,6 @@ export function paintPlasmaIcon(ctx: CanvasRenderingContext2D): void {
 	ctx.stroke();
 	ctx.fillStyle = '#bff0ff';
 	ctx.fillRect(-30, -5, 42, 10);
-}
-
-export function paintArmourIcon(ctx: CanvasRenderingContext2D): void {
-	ctx.lineWidth = 6;
-	ctx.strokeStyle = INK;
-	ctx.fillStyle = '#3a7ad8';
-	ctx.beginPath();
-	ctx.moveTo(0, -42);
-	ctx.lineTo(36, -28);
-	ctx.quadraticCurveTo(34, 20, 0, 44);
-	ctx.quadraticCurveTo(-34, 20, -36, -28);
-	ctx.closePath();
-	ctx.fill();
-	ctx.stroke();
-	ctx.fillStyle = 'rgba(255,255,255,.55)';
-	ctx.fillRect(-22, -26, 8, 32);
 }
 
 /** The plasma's bolt: a blue spark (additive). */
