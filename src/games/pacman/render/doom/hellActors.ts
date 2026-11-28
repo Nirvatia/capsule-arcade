@@ -261,8 +261,9 @@ export interface BossState {
 
 const BOSS_SKIN: Record<1 | 2 | 3, Tones> = {
 	1: { light: '#ff7a5a', mid: '#d8241e', shade: '#6a0810' },
-	2: { light: '#e8503a', mid: '#a81418', shade: '#48040c' },
-	3: { light: '#a8302a', mid: '#5a0a10', shade: '#200206' }
+	2: { light: '#ec5a40', mid: '#ae161a', shade: '#4a040c' },
+	// charred but not black, so the outline still parts him from the floor
+	3: { light: '#c8402e', mid: '#7c1418', shade: '#2c0408' }
 };
 const HORN_TIP: Tones = { light: '#6a5a50', mid: '#2a2020', shade: '#0a0606' };
 
@@ -344,43 +345,109 @@ function bossHorn(
 	c.restore();
 }
 
-/** Phase 3's second, smaller pair of horns, jutting forward over his brow. */
-function browHorn(c: Ctx, side: -1 | 1, S: number): void {
-	cel(
-		c,
-		() => {
-			c.beginPath();
-			c.moveTo(side * S * 0.06, -S * 0.26);
-			c.lineTo(side * S * 0.12, -S * 0.42);
-			c.lineTo(side * S * 0.17, -S * 0.24);
-			c.closePath();
-		},
-		BONE,
-		side * S * 0.12,
-		-S * 0.3,
-		S * 0.06,
-		S,
-		0.6
-	);
+/**
+ * The lit mask the face sits on (the owner's pick, 2026-11-28: the face reads in every phase): a
+ * paler muzzle in phase 1, a warm glow in 2, in 3 his inner fire lighting the face from below.
+ */
+function faceMask(c: Ctx, S: number, fx: number, fy: number, phase: number, t: number): void {
+	c.save();
+	bossBody(c, S, t, 0, 7);
+	c.clip();
+	const r = S * 0.3;
+	const g = c.createRadialGradient(fx, fy + S * 0.06, 0, fx, fy + S * 0.02, r);
+	if (phase === 1) {
+		g.addColorStop(0, 'rgba(255,170,140,.42)');
+		g.addColorStop(1, 'rgba(255,170,140,0)');
+	} else if (phase === 2) {
+		g.addColorStop(0, 'rgba(255,150,90,.42)');
+		g.addColorStop(1, 'rgba(255,150,90,0)');
+	} else {
+		const beat = 0.85 + 0.15 * Math.sin(t * 3);
+		g.addColorStop(0, `rgba(255,190,90,${0.85 * beat})`);
+		g.addColorStop(0.55, `rgba(240,90,40,${0.55 * beat})`);
+		g.addColorStop(1, 'rgba(200,40,20,0)');
+	}
+	c.fillStyle = g;
+	c.beginPath();
+	c.ellipse(fx, fy + S * 0.02, r, r * 0.8, 0, 0, TAU);
+	c.fill();
+	c.restore();
 }
 
-/** Two tusks over his lower lip (phase 2 on), bone, curving up. */
-function tusks(c: Ctx, x: number, y: number, S: number, phase: number): void {
-	const h = S * (phase === 3 ? 0.11 : 0.08);
+/** Phase 2 on: glowing cracks down his sides and over the skirt, never across the face. */
+function bossCracks(c: Ctx, S: number, t: number, phase: number, glow: number): void {
+	const lava = phase === 3;
+	c.strokeStyle = lava
+		? `rgba(255,${160 + 50 * Math.sin(t * 3)},70,${Math.min(1, glow + 0.3)})`
+		: `rgba(255,170,70,${glow})`;
+	c.lineWidth = Math.max(1, S * (lava ? 0.032 : 0.024));
+	c.lineCap = 'round';
+	c.lineJoin = 'round';
+	c.beginPath();
+	for (const side of [-1, 1]) {
+		c.moveTo(side * S * 0.33, S * 0.04);
+		c.lineTo(side * S * 0.27, S * 0.14);
+		c.lineTo(side * S * 0.31, S * 0.26);
+		if (lava) {
+			c.moveTo(side * S * 0.34, -S * 0.18);
+			c.lineTo(side * S * 0.3, -S * 0.08);
+			c.moveTo(side * S * 0.14, S * 0.32);
+			c.lineTo(side * S * 0.19, S * 0.38);
+		}
+	}
+	c.stroke();
+}
+
+/** Phase 3's brows: ridges of bone low over the eyes, a short spike at the outer end. */
+function boneBrows(c: Ctx, eyes: readonly EyeSpec[], S: number, mood: Mood): void {
+	const angles: Partial<Record<Mood, number>> = {
+		hunt: 0.35,
+		wind: 0.6,
+		roar: 0.75,
+		gloat: 0.25,
+		hurt: 0.5,
+		dazed: -0.45,
+		tired: -0.2
+	};
+	const angle = angles[mood] ?? 0.3;
+	eyes.forEach((e, i) => {
+		const side = i === 0 ? -1 : 1;
+		c.save();
+		c.translate(e.x, e.y - e.ry * 0.82);
+		c.rotate(angle * -side);
+		const w = S * 0.085;
+		const path = (): void => {
+			c.beginPath();
+			c.moveTo(-side * e.rx * 1.1, w * 0.4);
+			c.quadraticCurveTo(0, -w * 1.1, side * e.rx * 1.05, -w * 0.5);
+			c.lineTo(side * e.rx * 1.55, -w * 1.9);
+			c.lineTo(side * e.rx * 1.2, w * 0.45);
+			c.quadraticCurveTo(0, -w * 0.1, -side * e.rx * 1.1, w * 0.4);
+			c.closePath();
+		};
+		cel(c, path, BONE, 0, -w * 0.3, e.rx, S, 0.55);
+		c.restore();
+	});
+}
+
+/** Two tusks at the mouth's corners (phase 2 on), bone, curving up and out. */
+function cornerTusks(c: Ctx, x: number, y: number, w: number, S: number, phase: number): void {
+	const h = S * (phase === 3 ? 0.1 : 0.075);
 	for (const side of [-1, 1] as const) {
+		const bx = x + side * (w + S * 0.01);
 		cel(
 			c,
 			() => {
 				c.beginPath();
-				c.moveTo(x + side * S * 0.08, y + S * 0.02);
-				c.quadraticCurveTo(x + side * S * 0.13, y - h * 0.4, x + side * S * 0.11, y - h);
-				c.lineTo(x + side * S * 0.05, y + S * 0.02);
+				c.moveTo(bx - side * S * 0.03, y + S * 0.03);
+				c.quadraticCurveTo(bx + side * S * 0.04, y - h * 0.3, bx + side * S * 0.05, y - h);
+				c.lineTo(bx + side * S * 0.025, y + S * 0.035);
 				c.closePath();
 			},
 			BONE,
-			x + side * S * 0.09,
+			bx,
 			y - h * 0.4,
-			S * 0.05,
+			S * 0.04,
 			S,
 			0.5
 		);
@@ -478,57 +545,50 @@ export function drawBoss(c: Ctx, x: number, y: number, S: number, t: number, st:
 	const hornLen = S * (st.phase === 1 ? 0.26 : st.phase === 2 ? 0.31 : 0.36);
 	bossHorn(c, -1, S, hornLen, st.phase, t, m === 'hit' ? 1 : 0);
 	bossHorn(c, 1, S, hornLen, st.phase, t, m === 'hit' ? 1 : 0);
-	cel(c, () => bossBody(c, S, t, drag, wave), skin, 0, 0, S * 0.36, S, 1.1);
-	// phase 2 on: glowing cracks across him
+	cel(c, () => bossBody(c, S, t, drag, wave), skin, 0, 0, S * 0.36, S, 1.15);
+	const fx = dx * S * 0.04;
+	const fy = dy * S * 0.03;
+	faceMask(c, S, fx, fy - S * 0.02, st.phase, t);
 	if (st.phase >= 2) {
 		c.save();
 		bossBody(c, S, t, drag, wave);
 		c.clip();
-		const glow = 0.55 + 0.25 * Math.sin(t * 2.5) + (m === 'omen' ? 0.4 * k : 0);
-		const lava = st.phase === 3;
-		c.strokeStyle = lava
-			? `rgba(255,${150 + 50 * Math.sin(t * 3)},60,${Math.min(1, glow + 0.3)})`
-			: `rgba(255,170,70,${glow})`;
-		c.lineWidth = Math.max(1, S * (lava ? 0.035 : 0.025));
-		c.lineCap = 'round';
-		c.lineJoin = 'round';
-		c.beginPath();
-		c.moveTo(-S * 0.3, S * 0.1);
-		c.lineTo(-S * 0.18, S * 0.16);
-		c.lineTo(-S * 0.22, S * 0.28);
-		c.moveTo(S * 0.28, S * 0.06);
-		c.lineTo(S * 0.2, S * 0.18);
-		c.lineTo(S * 0.27, S * 0.26);
-		if (lava) {
-			// phase 3: the cracks run all over him, up to the crown
-			c.moveTo(-S * 0.05, -S * 0.34);
-			c.lineTo(-S * 0.02, -S * 0.24);
-			c.moveTo(-S * 0.32, -S * 0.12);
-			c.lineTo(-S * 0.24, -S * 0.02);
-			c.lineTo(-S * 0.3, S * 0.04);
-			c.moveTo(S * 0.33, -S * 0.1);
-			c.lineTo(S * 0.25, -S * 0.04);
-			c.moveTo(S * 0.0, S * 0.3);
-			c.lineTo(S * 0.06, S * 0.22);
-			c.lineTo(S * 0.02, S * 0.36);
-		}
-		c.stroke();
+		bossCracks(c, S, t, st.phase, 0.55 + 0.25 * Math.sin(t * 2.5) + (m === 'omen' ? 0.4 * k : 0));
 		c.restore();
 	}
 	// the face: big eyes looking at the hero, brows, the mouth
 	const eyes: EyeSpec[] = [
-		{ x: -S * 0.13 + dx * S * 0.04, y: -S * 0.08 + dy * S * 0.03, rx: S * 0.1, ry: S * 0.115 },
-		{ x: S * 0.13 + dx * S * 0.04, y: -S * 0.08 + dy * S * 0.03, rx: S * 0.1, ry: S * 0.115 }
+		{ x: -S * 0.13 + fx, y: -S * 0.08 + fy, rx: S * 0.1, ry: S * 0.115 },
+		{ x: S * 0.13 + fx, y: -S * 0.08 + fy, rx: S * 0.1, ry: S * 0.115 }
 	];
-	if (st.phase === 3) eyes.forEach((e) => bloom(c, e.x, e.y, S * 0.16, '255,170,60', 0.5));
-	eyes.forEach((e, i) => eye(c, e, S, i === 0 ? -1 : 1, mood, st.look, t, 0.45, st.phase === 3));
-	brows(c, eyes, S, mood, 0.05);
-	mouth(c, dx * S * 0.04, S * 0.14 + dy * S * 0.02, S * 0.13, S, mood, open, true);
-	if (st.phase >= 2) tusks(c, dx * S * 0.04, S * 0.15 + dy * S * 0.02, S, st.phase);
-	if (st.phase === 3) {
-		browHorn(c, -1, S);
-		browHorn(c, 1, S);
+	if (st.phase === 3 && mood !== 'hurt') {
+		// dark sockets round the blazing eyes: the shape reads at any size
+		for (const e of eyes) {
+			c.fillStyle = '#1c0306';
+			c.beginPath();
+			c.ellipse(e.x, e.y + S * 0.005, e.rx * 1.28, e.ry * 1.22, 0, 0, TAU);
+			c.fill();
+		}
 	}
+	eyes.forEach((e, i) => eye(c, e, S, i === 0 ? -1 : 1, mood, st.look, t, 0.45, st.phase === 3));
+	if (st.phase === 3) boneBrows(c, eyes, S, mood);
+	else brows(c, eyes, S, mood, st.phase === 2 ? 0.06 : 0.05);
+	const mx = fx;
+	const my = S * 0.14 + dy * S * 0.02;
+	const mw = S * 0.13;
+	mouth(c, mx, my, mw, S, mood, open, true);
+	if (st.phase === 3 && open > 0.15) {
+		// the fire inside him shows through the open mouth
+		const h = S * 0.16 * open;
+		c.save();
+		c.beginPath();
+		c.ellipse(mx, my + h * 0.3, mw * 0.92, h * 0.6, 0, 0, TAU);
+		c.clip();
+		c.globalCompositeOperation = 'lighter';
+		bloom(c, mx, my + h * 0.55, mw * 1.1, '255,150,50', 0.75);
+		c.restore();
+	}
+	if (st.phase >= 2) cornerTusks(c, mx, my, mw, S, st.phase);
 	gloss(c, -S * 0.2, -S * 0.26, S * 0.06, S * 0.025, 0.5, -0.6);
 	c.restore();
 	// phase 3: smoke rising off his horns

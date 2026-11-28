@@ -87,8 +87,12 @@ const WALL = {
 	bgDim: 0.3,
 	/** Strength of the large-scale light and dark patches on the walls. */
 	mottle: 0.12,
-	/** Width of the hot seam on the floor at the plates' foot, px. */
-	seam: 2.6,
+	/** Width of the hot seam on the floor at the plates' foot, px (2.6 was too heavy, the owner's pick B, 2026-11-28). */
+	seam: 1.2,
+	/** The blur of the seam's own glow, px. */
+	seamGlow: 1.5,
+	/** How far the seam's warm glow spreads over the floor, px. */
+	seamSpread: 3,
 	/** The plates' cast shadow: the light comes from the top left, so it falls down and right. */
 	cast: { dx: 6, dy: 8, alpha: 0.78 },
 	/** The dark crease where a plate meets the floor. */
@@ -174,8 +178,8 @@ export interface CordLook {
 export function bakeFlesh(S: GridMatrix, look: Partial<CordLook> = {}): FleshBake {
 	const st = WALL;
 	const seam = look.seam ?? st.seam;
-	const glowBlur = look.glow ?? 3;
-	const spread = look.spread ?? 5;
+	const glowBlur = look.glow ?? st.seamGlow;
+	const spread = look.spread ?? st.seamSpread;
 	const rows = S.length;
 	const cols = S[0].length;
 	const isWall = (c: number, r: number): boolean => kindOf(S, c, r) === 'wall';

@@ -258,7 +258,7 @@ hypnosis have no ghosts to work on here, and her berserk shows as her powered lo
 Level 5 (and every 5th): a burnt version of the meadow with lava, pentagrams and teleporter
 pads, and no ghosts but their lord.
 
-- **Boss: Blinky, lord of hell** — a red demon ghost, one tile in size (drawn anew 2026-11-28, `hell-actors`: he breathes, leans, tracks the hero with his eyes, crouches before the lava-ball dash, swells before a cast, squeezes on a hit, slumps stunned, gloats after hitting the hero; bull horns growing each phase, tusks and glowing cracks from phase 2, a second pair of horns, lava cracks and burning eyes in phase 3), 1500 HP, three
+- **Boss: Blinky, lord of hell** — a red demon ghost, one tile in size (drawn anew 2026-11-28, `hell-actors`: he breathes, leans, tracks the hero with his eyes, crouches before the lava-ball dash, swells before a cast, squeezes on a hit, slumps stunned, gloats after hitting the hero; bull horns growing each phase, tusks at the mouth's corners and glowing cracks from phase 2, in phase 3 lava cracks, bone brow ridges with a spike and burning eyes in dark sockets; the face sits on a lit mask, lit from inside in phase 3, and the cracks keep off it so it reads in every phase, the owner's pick 2026-11-28), 1500 HP, three
   phases (at 1000 and 500 HP), each with its look and attack set
   (`logic/doom/DoomBalance.ts`):
   - phase 1: ambush chase, dash, rift (the corridor burns end to end);
@@ -793,7 +793,7 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   neutral and lighter than the red floor so the maze parts from the ground in grey too, each with a
   bevel, a seam and four rivets, every island edged by a dark outline. The plates **sit in the
   floor** (the owner's pick "sitting walls", 2026-11-27): the light comes from the top left; the
-  hot line that pulses with the heart no longer rings the plate but lies as a seam on the floor
+  hot line that pulses with the heart (1.2 px, its glow 1.5 px: the owner's pick B, 2026-11-28) no longer rings the plate but lies as a seam on the floor
   at the foot of the lit sides (north and west) and fades into the shadow on the far sides; a
   warm glow on the floor round the foot, a long cast shadow down and right and a tight dark
   crease keep the iron from floating (`fleshBake`, `WALL.seam`/`cast`/`crease`/`floorGlow`). Still

@@ -1,7 +1,7 @@
 // The hell's actors drawn anew, every state on a loop: each card at game scale and enlarged, on a
 // plain strip of hell floor. Nothing plays; the states are scripted.
 import * as A from './actors';
-import { drawBossNext } from './bossNext';
+import { drawBoss as drawBossGame } from '../../../src/games/pacman/render/doom/hellActors';
 import type { Dir } from '../hell-kit/paint';
 import { LavaDash } from '../../../src/games/pacman/render/doom/doomDashFx';
 
@@ -169,14 +169,14 @@ const trio = (draw: BossDraw, mode: A.BossMode, k: (u: number) => number, dir: D
 	};
 
 const NEXT: readonly Card[] = [
-	{ title: 'Сейчас: погоня, фазы 1 · 2 · 3', period: 4, scene: trio(A.drawBoss, 'chase', () => 0) },
-	{ title: 'Новый: погоня, фазы 1 · 2 · 3', note: 'лицо на светлой маске, в третьей — подсвечено изнутри', period: 4, scene: trio(drawBossNext, 'chase', () => 0) },
-	{ title: 'Сейчас: рёв перед атакой', period: 2.4, scene: trio(A.drawBoss, 'cast', (u) => u) },
-	{ title: 'Новый: рёв перед атакой', note: 'в третьей фазе пасть горит изнутри', period: 2.4, scene: trio(drawBossNext, 'cast', (u) => u) },
-	{ title: 'Сейчас: злорадство', period: 2, scene: trio(A.drawBoss, 'gloat', () => 0, 'LEFT') },
-	{ title: 'Новый: злорадство', period: 2, scene: trio(drawBossNext, 'gloat', () => 0, 'LEFT') },
-	{ title: 'Сейчас: оглушён', period: 3, scene: trio(A.drawBoss, 'stunned', () => 0) },
-	{ title: 'Новый: оглушён', period: 3, scene: trio(drawBossNext, 'stunned', () => 0) }
+	{ title: 'Было: погоня, фазы 1 · 2 · 3', period: 4, scene: trio(A.drawBoss, 'chase', () => 0) },
+	{ title: 'В игре: погоня, фазы 1 · 2 · 3', note: 'лицо на светлой маске, в третьей — подсвечено изнутри', period: 4, scene: trio(drawBossGame, 'chase', () => 0) },
+	{ title: 'Было: рёв перед атакой', period: 2.4, scene: trio(A.drawBoss, 'cast', (u) => u) },
+	{ title: 'В игре: рёв перед атакой', note: 'в третьей фазе пасть горит изнутри', period: 2.4, scene: trio(drawBossGame, 'cast', (u) => u) },
+	{ title: 'Было: злорадство', period: 2, scene: trio(A.drawBoss, 'gloat', () => 0, 'LEFT') },
+	{ title: 'В игре: злорадство', period: 2, scene: trio(drawBossGame, 'gloat', () => 0, 'LEFT') },
+	{ title: 'Было: оглушён', period: 3, scene: trio(A.drawBoss, 'stunned', () => 0) },
+	{ title: 'В игре: оглушён', period: 3, scene: trio(drawBossGame, 'stunned', () => 0) }
 ];
 
 const imp = (kind: 0 | 1 | 2, mode: A.ImpMode, dir: Dir, k: number, seed: number): A.ImpState => ({ kind, mode, dir, k, seed });
@@ -283,7 +283,7 @@ function cardEl(card: Card): HTMLElement {
 
 const root = document.getElementById('sections') as HTMLElement;
 for (const [id, title, note, cards] of [
-	['next', 'Босс: новое лицо', 'Рога, тело и движения те же. Слева сейчас, справа новый макет; в каждой карточке фазы 1, 2, 3.', NEXT],
+	['next', 'Босс: новое лицо', 'Рога, тело и движения те же. Слева прежний босс, справа перенесённый в игру; в каждой карточке фазы 1, 2, 3.', NEXT],
 	['boss', 'Босс: Блинки, повелитель ада', 'Каждое состояние — своё тело и лицо: подготовка к атаке видна по телу раньше, чем по полу.', BOSS],
 	['imps', 'Импы', 'Маленькие пакостники: прыгают, хлещут хвостом, ухмыляются; боятся героя с оружием.', IMPS],
 	['ghosts', 'Призраки раскола', 'Освежёванные четверо: характер у каждого в глазах, как в аркаде.', GHOSTS]

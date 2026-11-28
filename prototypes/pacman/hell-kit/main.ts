@@ -231,9 +231,9 @@ const root = document.getElementById('kits') as HTMLElement;
 
 /** The hot line round the walls at three widths (seam, glow blur, warm spread on the floor, px). */
 const CORDS: ReadonlyArray<{ name: string; note: string; look: Partial<CordLook> }> = [
-	{ name: 'Сейчас', note: 'шов 2.6 · свечение 3 · ореол 5', look: {} },
+	{ name: 'Было', note: 'шов 2.6 · свечение 3 · ореол 5', look: { seam: 2.6, glow: 3, spread: 5 } },
 	{ name: 'А', note: 'шов 1.8 · свечение 2 · ореол 4', look: { seam: 1.8, glow: 2, spread: 4 } },
-	{ name: 'Б', note: 'шов 1.2 · свечение 1.5 · ореол 3', look: { seam: 1.2, glow: 1.5, spread: 3 } }
+	{ name: 'Б, в игре', note: 'шов 1.2 · свечение 1.5 · ореол 3', look: {} }
 ];
 {
 	const section = document.createElement('section');

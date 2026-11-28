@@ -19,6 +19,9 @@ import { drawExit } from './items/ExitView';
 import { drawHellExit, drawHellHeart } from './doom/finaleArt';
 import type { RenderFrame } from './RenderFrame';
 
+/** The hell's exit hatch and heart after the boss: their size against a tile. */
+const HELL_REWARD_SCALE = 0.85;
+
 /**
  * Layers drawn the same way on every level: Pac-Man and the bonuses. Level renderers place
  * the bonuses in their draw order; the pipeline draws Pac-Man over the level decay and the
@@ -57,18 +60,20 @@ export class SharedLayers {
 		const heart = reward?.offered ? reward.heart : null;
 		const exit = reward?.offered ? reward.exit : null;
 		const S = layout.tileSize;
-		// the hell's own: an iron hatch open on gold light, a red heart in a bone frame
+		// the hell's own: an iron hatch open on gold light, a red heart in a bone frame, both 15 %
+		// smaller than a tile (the owner, 2026-11-28), drawn about the tile's centre
 		const hell = level.hellMode;
+		const hellS = S * HELL_REWARD_SCALE;
 		if (exit) {
 			const ex = layout.offsetX + exit.x * S;
 			const ey = layout.offsetY + exit.y * S;
-			if (hell) drawHellExit(ctx, ex, ey, S, frame.time, 1);
+			if (hell) drawHellExit(ctx, ex, ey, hellS, frame.time, 1);
 			else drawExit(ctx, ex, ey, S, frame.time);
 		}
 		if (heart) {
 			const hx = layout.offsetX + heart.x * S;
 			const hy = layout.offsetY + heart.y * S;
-			if (hell) drawHellHeart(ctx, hx, hy, S, frame.time);
+			if (hell) drawHellHeart(ctx, hx, hy, hellS, frame.time);
 			else drawBonusLife(ctx, hx, hy, S, frame.time);
 		}
 	}
