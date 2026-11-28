@@ -9,6 +9,8 @@ export interface InputHandlers {
 	direction?: (direction: InputDirection) => void;
 	confirm?: () => void;
 	fire?: () => void;
+	/** The fire key let go (the hell's plasma fires while it is held). */
+	fireRelease?: () => void;
 	pause?: () => void;
 	menu?: () => void;
 	profile?: () => void;
@@ -118,6 +120,10 @@ export class InputController {
 		this.handlers.fire?.();
 	}
 
+	releaseFire(): void {
+		this.handlers.fireRelease?.();
+	}
+
 	pressPause(): void {
 		this.handlers.pause?.();
 	}
@@ -204,6 +210,10 @@ export class InputController {
 	};
 
 	private handleKeyUp = (event: KeyboardEvent): void => {
+		if (event.code === 'ShiftLeft' || event.code === 'ShiftRight' || event.code === 'KeyF') {
+			this.releaseFire();
+			return;
+		}
 		const direction = DIRECTION_KEYS[event.code];
 		if (!direction) {
 			return;

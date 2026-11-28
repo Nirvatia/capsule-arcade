@@ -247,7 +247,7 @@ export class DebugController {
 		this.loader.combat?.debugPower();
 	}
 
-	giveWeapon(kind: DoomPickupKind): void {
+	giveWeapon(kind: DoomPickupKind | 'bfg'): void {
 		this.loader.doom?.debugGiveWeapon(kind);
 		this.loader.emitHud();
 	}

@@ -88,8 +88,11 @@ export class PlayingState implements GameState {
 		}
 		if (session.doom) {
 			const { boss: doomBoss, abilities: doom } = session.doom;
-			doomBoss.update(dt, player);
-			doom.update(dt, player);
+			// during the split the boss is four ghosts (`DoomSplitService`): he waits, frozen
+			if (!doom.bossFrozen) {
+				doomBoss.update(dt, player);
+			}
+			doom.update(dt, player, ctx.level.fireHeld);
 			if (!combat.endRequested && doom.consumePlayerDeath()) {
 				combat.killPlayerInHell();
 				if (combat.deathActive) {

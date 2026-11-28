@@ -134,6 +134,9 @@ export class GameMain implements GameModule {
 					level.requestFire();
 				}
 			},
+			fireRelease: () => {
+				level.releaseFire();
+			},
 			pause: () => {
 				director.togglePause();
 			},
@@ -188,6 +191,7 @@ export class GameMain implements GameModule {
 			menu: () => input.pressMenu(),
 			profile: () => input.pressProfile(),
 			fire: () => input.pressFire(),
+			fireRelease: () => input.releaseFire(),
 			steer: (direction) => input.steer(direction)
 		});
 		if (import.meta.env.DEV) {

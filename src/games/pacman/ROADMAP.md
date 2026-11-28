@@ -84,10 +84,10 @@ last (see Later).
    the BFG, the split is the phase change (at 1000 and 500 HP, the core in a corridor, 18 s of plain
    Pac-Man, eaten ghosts are damage and stun), the berserk is one rush, the snare replaces the
    barrel, the plasma and the armour are new pickups, the pickups leave the corners. Steps, one per
-   chat: (a) the playable prototype `hell-phase` on the real boss (`DoomBossService`) with the new
-   rules in its own `rules.ts`, placeholder art for what is new: built, awaits the owner's play;
-   (b) the rules into `logic/doom` (food in the map and `assertDoomMap`, the split in the boss's
-   state machine, the arsenal) with tests; (c) the art: the food's sprite, the four ghosts (equal,
+   chat: (a) the playable prototype `hell-phase` (done, the owner played it); (b) the rules in the
+   game (done 2026-11-28: `DoomSplitService`, the new `DoomWeapon*`/`DoomPickup*`, the food on the
+   map, the fire held down, placeholder art in `render/doom/doomPlaceholders`, tests in
+   `doomRedesign.test.ts`; awaits the owner's play in the game); (c) the art: the food's sprite, the four ghosts (equal,
    the boss's armour darker than the imps now), the rush, the snare, the plasma, the armour, the
    core; prototype first; (d) the HUD (the charge ring, the split's timer; the BFG's charge must
    show while another item is in hand, the prototype hides it under the snare).

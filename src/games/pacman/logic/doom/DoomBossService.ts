@@ -243,12 +243,12 @@ export class DoomBossService {
 		this.arena.setProtectedTiles(tiles);
 	}
 
-	setBarrelLocator(locator: () => GridPoint | null): void {
+	setSnareLocator(locator: () => GridPoint | null): void {
 		if (typeof locator !== 'function') {
-			console.error('DoomBossService.setBarrelLocator', 'missing locator');
+			console.error('DoomBossService.setSnareLocator', 'missing locator');
 			return;
 		}
-		this.arena.setBarrelLocator(locator);
+		this.arena.setSnareLocator(locator);
 	}
 
 	killMinionsWhere(shouldKill: (minion: DoomMinion) => boolean): number {
@@ -606,7 +606,7 @@ export class DoomBossService {
 			cooldowns: this.personalCooldowns,
 			broodHasRoom: this.swarm.hasRoom,
 			protectedTileKeys: this.arena.protectedKeys,
-			barrel: () => this.arena.barrel(),
+			snare: () => this.arena.snare(),
 			forced: this.forcedAttack,
 			lastAttack: this.lastAttackKind
 		});

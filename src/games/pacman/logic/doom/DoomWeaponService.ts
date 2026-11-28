@@ -1,14 +1,15 @@
 import type { GridService } from '../maze/GridService';
 import type { PlayerService } from '../actors/PlayerService';
-import type { DoomPickupKind } from './DoomPickupModel';
 import { DoomWeaponModel } from './DoomWeaponModel';
 import type { DoomSlotItem } from './DoomWeaponModel';
+import { PLASMA_RATE, PLASMA_SPEED, SNARE_HOLD, SNARE_LIFETIME } from './DoomBalance';
 
-const BARREL_LIFETIME = 12;
 const BFG_BALL_SPEED = 14;
 const BFG_SHOT_LIFETIME = 2.0;
 const BFG_TRACER_VISIBLE = 0.25;
+const BOLT_LIFETIME = 2.0;
 
+/** A projectile along a corridor: the BFG's orb or a plasma bolt (tile units). */
 export interface DoomBfgShot {
 	x: number;
 	y: number;
@@ -17,10 +18,12 @@ export interface DoomBfgShot {
 	life: number;
 }
 
-export interface DoomBarrel {
-	x: number;
-	y: number;
+/** The snare on its tile: open while `snapped` is -1, then the seconds since it shut. */
+export interface DoomSnare {
+	readonly x: number;
+	readonly y: number;
 	timer: number;
+	snapped: number;
 }
 
 /** Something the renderer should show an effect for (tile-center coordinates). */
@@ -28,9 +31,10 @@ export interface DoomFxEvent {
 	readonly kind:
 		| 'bfg-fire'
 		| 'bfg-impact'
-		| 'barrel-place'
-		| 'barrel-blast'
-		| 'barrel-fizzle'
+		| 'snare-place'
+		| 'snare-snap'
+		| 'snare-fizzle'
+		| 'split-burst'
 		| 'bite'
 		| 'pickup'
 		| 'boss-hit'
@@ -51,13 +55,23 @@ export interface DoomBfgTracer {
 	timer: number;
 }
 
+const STEP: Record<string, readonly [number, number]> = {
+	UP: [0, -1],
+	DOWN: [0, 1],
+	LEFT: [-1, 0],
+	RIGHT: [1, 0]
+};
+
+/** The hell's weapons in the world: the BFG's orbs and tracers, the plasma's bolts, the snare. */
 export class DoomWeaponService {
 	private readonly model: DoomWeaponModel;
 	private readonly grid: GridService;
 	private readonly bfgShots: DoomBfgShot[] = [];
-	private readonly barrels: DoomBarrel[] = [];
+	private readonly plasmaBolts: DoomBfgShot[] = [];
 	private readonly tracers: DoomBfgTracer[] = [];
 	private readonly fxQueue: DoomFxEvent[] = [];
+	private snareValue: DoomSnare | null = null;
+	private plasmaClock = 0;
 
 	constructor(grid: GridService) {
 		if (!grid) {
@@ -80,6 +94,18 @@ export class DoomWeaponService {
 		return this.model.berserkTimer;
 	}
 
+	get plasmaLeft(): number {
+		return this.model.plasmaLeft;
+	}
+
+	get food(): number {
+		return this.model.food;
+	}
+
+	get bfgReady(): boolean {
+		return this.model.bfgReady;
+	}
+
 	get bfgCharging(): boolean {
 		return this.model.bfgCharging;
 	}
@@ -92,8 +118,12 @@ export class DoomWeaponService {
 		return this.bfgShots;
 	}
 
-	get barrelList(): readonly DoomBarrel[] {
-		return this.barrels;
+	get bolts(): readonly DoomBfgShot[] {
+		return this.plasmaBolts;
+	}
+
+	get snare(): Readonly<DoomSnare> | null {
+		return this.snareValue;
 	}
 
 	get tracerList(): readonly DoomBfgTracer[] {
@@ -101,31 +131,25 @@ export class DoomWeaponService {
 	}
 
 	pushFx(event: DoomFxEvent): void {
-		if (this.fxQueue.length < 64) {
-			this.fxQueue.push(event);
-		}
+		this.fxQueue.push(event);
 	}
 
 	consumeFx(): DoomFxEvent[] {
-		return this.fxQueue.splice(0, this.fxQueue.length);
+		const events = this.fxQueue.slice();
+		this.fxQueue.length = 0;
+		return events;
 	}
 
-	handlePickup(kind: DoomPickupKind): void {
-		if (kind === 'berserk') {
-			this.model.activateBerserk();
-		} else if (kind === 'bfg') {
-			if (this.model.slot === null) {
-				this.model.slot = 'bfg';
-			}
-		} else if (kind === 'barrel') {
-			if (this.model.slot === null) {
-				this.model.slot = 'barrel';
-			}
-		}
+	take(item: Exclude<DoomSlotItem, null>): boolean {
+		return this.model.take(item);
 	}
 
-	extendBerserk(seconds: number): void {
-		this.model.extendBerserk(seconds);
+	addFood(count: number): void {
+		this.model.addFood(count);
+	}
+
+	endBerserk(): void {
+		this.model.endBerserk();
 	}
 
 	startBfgCharge(): boolean {
@@ -140,53 +164,47 @@ export class DoomWeaponService {
 		return this.model.consumeChargeCompleted();
 	}
 
-	placeBarrel(player: PlayerService): boolean {
-		if (!this.model.consumeBarrel()) {
+	/** Sets the snare on the hero's tile (one at a time). */
+	placeSnare(player: PlayerService): boolean {
+		if (this.snareValue || !this.model.consumeSnare()) {
 			return false;
 		}
-		const pos = player.position;
-		const facing = player.facing;
-		let barrelX = Math.floor(pos.x);
-		let barrelY = Math.floor(pos.y);
-		if (facing === 'UP') {
-			barrelY -= 1;
-		} else if (facing === 'DOWN') {
-			barrelY += 1;
-		} else if (facing === 'LEFT') {
-			barrelX -= 1;
-		} else if (facing === 'RIGHT') {
-			barrelX += 1;
-		}
-		if (!this.grid.isInside(barrelX, barrelY) || !this.grid.isWalkable(barrelX, barrelY)) {
-			barrelX = Math.floor(pos.x);
-			barrelY = Math.floor(pos.y);
-		}
-		this.barrels.length = 0;
-		this.barrels.push({ x: barrelX, y: barrelY, timer: BARREL_LIFETIME });
-		this.pushFx({ kind: 'barrel-place', x: barrelX + 0.5, y: barrelY + 0.5 });
+		const tile = player.tile;
+		this.snareValue = { x: tile.x, y: tile.y, timer: SNARE_LIFETIME, snapped: -1 };
+		this.pushFx({ kind: 'snare-place', x: tile.x + 0.5, y: tile.y + 0.5 });
 		return true;
 	}
 
-	fireBfg(player: PlayerService): void {
-		const facing = player.facing;
-		if (!facing) {
-			console.error('DoomWeaponService.fireBfg', 'player has no facing direction');
+	/** The snare shuts on the boss: it holds for `SNARE_HOLD`, then it is gone. */
+	snapSnare(): void {
+		const snare = this.snareValue;
+		if (!snare || snare.snapped >= 0) {
 			return;
 		}
-		const pos = player.position;
-		let vx = 0;
-		let vy = 0;
-		if (facing === 'UP') {
-			vy = -BFG_BALL_SPEED;
-		} else if (facing === 'DOWN') {
-			vy = BFG_BALL_SPEED;
-		} else if (facing === 'LEFT') {
-			vx = -BFG_BALL_SPEED;
-		} else if (facing === 'RIGHT') {
-			vx = BFG_BALL_SPEED;
+		snare.snapped = 0;
+		this.pushFx({ kind: 'snare-snap', x: snare.x + 0.5, y: snare.y + 0.5 });
+	}
+
+	fireBfg(player: PlayerService): void {
+		this.launch(player, this.bfgShots, BFG_BALL_SPEED, BFG_SHOT_LIFETIME, true);
+	}
+
+	/** The plasma, held down: burns its ammo and lets a bolt go every `PLASMA_RATE`. */
+	firePlasma(player: PlayerService, dt: number): void {
+		if (this.model.slot !== 'plasma') {
+			return;
 		}
-		this.bfgShots.push({ x: pos.x, y: pos.y, vx, vy, life: BFG_SHOT_LIFETIME });
-		this.pushFx({ kind: 'bfg-fire', x: pos.x, y: pos.y, dx: Math.sign(vx), dy: Math.sign(vy) });
+		this.model.spendPlasma(dt);
+		this.plasmaClock -= dt;
+		if (this.plasmaClock <= 0) {
+			this.plasmaClock += PLASMA_RATE;
+			this.launch(player, this.plasmaBolts, PLASMA_SPEED, BOLT_LIFETIME, false);
+		}
+	}
+
+	/** The plasma's trigger is let go: the next press fires at once. */
+	releasePlasma(): void {
+		this.plasmaClock = 0;
 	}
 
 	detonateShot(index: number): void {
@@ -198,46 +216,41 @@ export class DoomWeaponService {
 		this.bfgShots.splice(index, 1);
 	}
 
-	removeBarrel(index: number): void {
-		if (index < 0 || index >= this.barrels.length) {
-			return;
+	removeBolt(index: number): void {
+		if (index >= 0 && index < this.plasmaBolts.length) {
+			this.plasmaBolts.splice(index, 1);
 		}
-		this.barrels.splice(index, 1);
 	}
 
-	update(dt: number): void {
+	update(dt: number, rushing = false): void {
 		if (!Number.isFinite(dt) || dt < 0) {
 			console.error('DoomWeaponService.update', 'invalid delta time', dt);
 			return;
 		}
-		this.model.update(dt);
+		this.model.update(dt, rushing);
 		for (let i = this.bfgShots.length - 1; i >= 0; i -= 1) {
-			const shot = this.bfgShots[i];
-			shot.life -= dt;
-			if (shot.life <= 0) {
-				this.spawnTracers(shot.x, shot.y);
-				this.bfgShots.splice(i, 1);
-				continue;
+			if (!this.advance(this.bfgShots[i], dt)) {
+				this.detonateShot(i);
 			}
-			const nextX = shot.x + shot.vx * dt;
-			const nextY = shot.y + shot.vy * dt;
-			if (this.hitWall(nextX, nextY)) {
-				this.spawnTracers(shot.x, shot.y);
-				this.bfgShots.splice(i, 1);
-				continue;
-			}
-			shot.x = nextX;
-			shot.y = nextY;
 		}
-		for (let i = this.barrels.length - 1; i >= 0; i -= 1) {
-			this.barrels[i].timer -= dt;
-			if (this.barrels[i].timer <= 0) {
-				this.pushFx({
-					kind: 'barrel-fizzle',
-					x: this.barrels[i].x + 0.5,
-					y: this.barrels[i].y + 0.5
-				});
-				this.barrels.splice(i, 1);
+		for (let i = this.plasmaBolts.length - 1; i >= 0; i -= 1) {
+			if (!this.advance(this.plasmaBolts[i], dt)) {
+				this.plasmaBolts.splice(i, 1);
+			}
+		}
+		const snare = this.snareValue;
+		if (snare) {
+			if (snare.snapped >= 0) {
+				snare.snapped += dt;
+				if (snare.snapped >= SNARE_HOLD) {
+					this.snareValue = null;
+				}
+			} else {
+				snare.timer -= dt;
+				if (snare.timer <= 0) {
+					this.pushFx({ kind: 'snare-fizzle', x: snare.x + 0.5, y: snare.y + 0.5 });
+					this.snareValue = null;
+				}
 			}
 		}
 		for (let i = this.tracers.length - 1; i >= 0; i -= 1) {
@@ -248,16 +261,58 @@ export class DoomWeaponService {
 		}
 	}
 
-	clearBarrels(): void {
-		this.barrels.length = 0;
+	/** The split: what flies is gone, the charge and the hand are kept. */
+	clearShots(): void {
+		this.model.cancelBfgCharge();
+		this.bfgShots.length = 0;
+		this.plasmaBolts.length = 0;
+		this.tracers.length = 0;
 	}
 
 	reset(): void {
 		this.model.reset();
 		this.bfgShots.length = 0;
-		this.barrels.length = 0;
+		this.plasmaBolts.length = 0;
 		this.tracers.length = 0;
 		this.fxQueue.length = 0;
+		this.snareValue = null;
+		this.plasmaClock = 0;
+	}
+
+	private launch(
+		player: PlayerService,
+		into: DoomBfgShot[],
+		speed: number,
+		life: number,
+		orb: boolean
+	): void {
+		const facing = player.facing;
+		if (!facing) {
+			console.error('DoomWeaponService.launch', 'player has no facing direction');
+			return;
+		}
+		const [dx, dy] = STEP[facing];
+		const pos = player.position;
+		into.push({ x: pos.x, y: pos.y, vx: dx * speed, vy: dy * speed, life });
+		if (orb) {
+			this.pushFx({ kind: 'bfg-fire', x: pos.x, y: pos.y, dx, dy });
+		}
+	}
+
+	/** Moves a projectile; false when it is spent or would enter a wall. */
+	private advance(shot: DoomBfgShot, dt: number): boolean {
+		shot.life -= dt;
+		if (shot.life <= 0) {
+			return false;
+		}
+		const nextX = shot.x + shot.vx * dt;
+		const nextY = shot.y + shot.vy * dt;
+		if (this.hitWall(nextX, nextY)) {
+			return false;
+		}
+		shot.x = nextX;
+		shot.y = nextY;
+		return true;
 	}
 
 	private hitWall(x: number, y: number): boolean {

@@ -8,7 +8,8 @@ import {
 	radialTexture
 } from '../common/textures';
 
-import { paintBarrel, paintBfg, paintFist, paintMedkit } from './doomItems';
+import { paintBfg, paintFist, paintMedkit } from './doomItems';
+import { paintArmourIcon, paintPlasmaIcon, paintSnareIcon } from './doomPlaceholders';
 
 export { glowTexture } from '../common/textures';
 
@@ -74,22 +75,30 @@ const iconTexture = (paint: (ctx: CanvasRenderingContext2D) => void) =>
 		})
 	);
 const bfgTexture = iconTexture(paintBfg);
-const barrelTexture = iconTexture(paintBarrel);
 const medkitTexture = iconTexture(paintMedkit);
 const fistTexture = iconTexture(paintFist);
+// placeholders until the redesign's art (ROADMAP Part II step c)
+const snareTexture = iconTexture(paintSnareIcon);
+const plasmaTexture = iconTexture(paintPlasmaIcon);
+const armourTexture = iconTexture(paintArmourIcon);
 
-/** Icon and glow tint per pickup kind; berserk is the fist. */
-export function pickupSprite(kind: DoomPickupKind): { icon: HTMLCanvasElement; glow: number } {
-	if (kind === 'bfg') {
-		return { icon: bfgTexture(), glow: 0x40ff50 };
+/** Icon and glow tint per pickup kind (and the BFG's, for the hand); berserk is the fist. */
+export function pickupSprite(kind: DoomPickupKind | 'bfg'): {
+	icon: HTMLCanvasElement;
+	glow: number;
+} {
+	switch (kind) {
+		case 'bfg':
+			return { icon: bfgTexture(), glow: 0x40ff50 };
+		case 'medkit':
+			return { icon: medkitTexture(), glow: 0xff3a2a };
+		case 'snare':
+			return { icon: snareTexture(), glow: 0xffe0a0 };
+		case 'plasma':
+			return { icon: plasmaTexture(), glow: 0x50b4ff };
+		case 'armour':
+			return { icon: armourTexture(), glow: 0x3a7ad8 };
+		default:
+			return { icon: fistTexture(), glow: 0xff7a1a };
 	}
-	if (kind === 'barrel') {
-		return { icon: barrelTexture(), glow: 0xb8ff30 };
-	}
-	if (kind === 'medkit') {
-		return { icon: medkitTexture(), glow: 0xff3a2a };
-	}
-	return { icon: fistTexture(), glow: 0xff7a1a };
 }
-
-export const barrelSprite = barrelTexture;

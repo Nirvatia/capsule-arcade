@@ -60,6 +60,7 @@ export class LevelLoader {
 	/** Dev: the boss every boss level gets, or null for the run's own pick (`BossCatalog`). */
 	private forcedBossValue: BossId | null = null;
 	private fireRequestedValue = false;
+	private fireHeldValue = false;
 	private secretReturnLevelValue = 1;
 	/** The arcade on the secret level: the round (1..3) and the tries carried between rounds. */
 	private arcadeRoundValue = 1;
@@ -227,7 +228,17 @@ export class LevelLoader {
 		this.mazeScaleValue = Math.min(MAZE_SCALE_MAX, Math.max(MAZE_SCALE_MIN, value));
 	}
 
+	/** The fire button is down (pressed and not yet let go): the hell's plasma fires while it is. */
+	get fireHeld(): boolean {
+		return this.fireHeldValue;
+	}
+
+	releaseFire(): void {
+		this.fireHeldValue = false;
+	}
+
 	requestFire(): void {
+		this.fireHeldValue = true;
 		this.fireRequestedValue = true;
 	}
 
@@ -493,9 +504,7 @@ export class LevelLoader {
 		if (!this.hellModeValue || !doom) {
 			return null;
 		}
-		const armed = doom.abilities.armed;
-		const weapon: PacmanHellWeapon =
-			armed === 'bfg' || armed === 'barrel' || armed === 'berserk' ? armed : '';
+		const weapon: PacmanHellWeapon = doom.abilities.armed;
 		return {
 			hp: doom.abilities.playerHp,
 			hpMax: PLAYER_MAX_HP,

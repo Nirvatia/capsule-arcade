@@ -1,176 +1,121 @@
-import type { GridService } from '../maze/GridService';
 import type { PlayerService } from '../actors/PlayerService';
 import { DoomPickupModel } from './DoomPickupModel';
 import type { DoomPickupKind, DoomPickupTile } from './DoomPickupModel';
-import { findDoomCorners } from './DoomMapValidation';
+import { PLAYER_MAX_HP } from './DoomBalance';
 
 const RESPAWN_MIN = 15;
 const RESPAWN_MAX = 20;
-const PICKUP_KINDS: readonly DoomPickupKind[] = ['berserk', 'bfg', 'barrel', 'medkit'];
-const BASE_WEIGHTS: Record<DoomPickupKind, number> = {
-	berserk: 3,
-	bfg: 3,
-	barrel: 3,
-	medkit: 2
-};
-const MEDKIT_WEIGHT_HURT = 4;
+/** Nothing could come (all kinds lie or are held): look again after this. */
+const RETRY = 3;
+const HAND_KINDS: readonly DoomPickupKind[] = ['berserk', 'snare', 'plasma'];
 const PICKUP_CONTACT_RADIUS_SQ = 0.49;
 
+/** What the pickups need to know of the hero. */
+export interface DoomPickupNeeds {
+	readonly hp: number;
+	readonly armour: boolean;
+	/** The kind in his hand (it does not lie on the map at the same time). */
+	readonly held: DoomPickupKind | null;
+	/** His hand is free for a hand kind. */
+	readonly handFree: boolean;
+}
+
+/**
+ * The four pickup spots. One of each kind at most on the map (and none of the kind in the hero's
+ * hand); the medkit comes only for a hurt hero, the armour only for a whole one without armour.
+ */
 export class DoomPickupService {
 	private readonly pickups: DoomPickupModel[] = [];
-	private readonly grid: GridService;
 
-	constructor(grid: GridService) {
-		if (!grid) {
-			console.error('DoomPickupService.constructor', 'missing grid service');
-			throw new Error('DoomPickupService.constructor: missing grid service');
+	constructor(tiles: ReadonlyArray<DoomPickupTile>, needs: DoomPickupNeeds) {
+		if (!tiles || tiles.length === 0) {
+			console.error('DoomPickupService.constructor', 'no pickup tiles');
+			throw new Error('DoomPickupService.constructor: no pickup tiles');
 		}
-		this.grid = grid;
-		const corners = this.findCorners();
-		if (corners.length < 4) {
-			console.error('DoomPickupService.constructor', 'not enough corner tiles for pickups', {
-				found: corners.length
-			});
-			throw new Error('DoomPickupService.constructor: not enough corner tiles for pickups');
+		for (const tile of tiles) {
+			this.pickups.push(new DoomPickupModel(tile));
 		}
-		for (const corner of corners) {
-			this.pickups.push(new DoomPickupModel(corner));
-		}
-		this.initialSpawn();
+		this.fillEmpty(needs);
 	}
 
 	get list(): readonly DoomPickupModel[] {
 		return this.pickups;
 	}
 
-	update(
-		dt: number,
-		player: PlayerService,
-		playerHp: number,
-		slotOccupied: boolean
-	): DoomPickupKind | null {
+	/** Moves the waits on, brings what is due and returns the kind the hero walked over. */
+	update(dt: number, player: PlayerService, needs: DoomPickupNeeds): DoomPickupKind | null {
 		if (!Number.isFinite(dt) || dt < 0) {
 			console.error('DoomPickupService.update', 'invalid delta time', dt);
 			return null;
 		}
 		for (const pickup of this.pickups) {
 			pickup.update(dt);
+			if (pickup.due) {
+				this.bring(pickup, needs);
+			}
 		}
-		let collected: DoomPickupKind | null = null;
+		for (const pickup of this.pickups) {
+			const kind = pickup.kind;
+			if (!kind || !this.touchesPlayer(pickup.tile, player) || !this.isCollectible(kind, needs)) {
+				continue;
+			}
+			pickup.startRespawn(RESPAWN_MIN + Math.random() * (RESPAWN_MAX - RESPAWN_MIN));
+			return kind;
+		}
+		return null;
+	}
+
+	/** Every empty spot gets something now (the start, and after a split). */
+	fillEmpty(needs: DoomPickupNeeds): void {
 		for (const pickup of this.pickups) {
 			if (!pickup.visible) {
-				continue;
-			}
-			if (!this.touchesPlayer(pickup.tile, player)) {
-				continue;
-			}
-			const kind = pickup.kind;
-			if (!kind) {
-				continue;
-			}
-			if (!this.isCollectible(kind, playerHp, slotOccupied)) {
-				continue;
-			}
-			collected = kind;
-			pickup.consume();
-			const delay = RESPAWN_MIN + Math.random() * (RESPAWN_MAX - RESPAWN_MIN);
-			const respawnKind = this.chooseKind(playerHp);
-			if (respawnKind) {
-				pickup.startRespawn(delay, respawnKind);
-			}
-			break;
-		}
-		return collected;
-	}
-
-	fillEmpty(playerHp: number): void {
-		for (const pickup of this.pickups) {
-			if (pickup.visible) {
-				continue;
-			}
-			const kind = this.chooseKind(playerHp);
-			if (kind) {
-				pickup.spawn(kind);
+				this.bring(pickup, needs);
 			}
 		}
 	}
 
-	reset(): void {
+	reset(needs: DoomPickupNeeds): void {
 		for (const pickup of this.pickups) {
 			pickup.reset();
 		}
-		this.initialSpawn();
+		this.fillEmpty(needs);
 	}
 
-	isCollectible(kind: DoomPickupKind, playerHp: number, slotOccupied: boolean): boolean {
+	isCollectible(kind: DoomPickupKind, needs: DoomPickupNeeds): boolean {
 		if (kind === 'medkit') {
-			return playerHp < 3;
+			return needs.hp < PLAYER_MAX_HP;
 		}
-		if (kind === 'bfg' || kind === 'barrel') {
-			return !slotOccupied;
+		if (kind === 'armour') {
+			return !needs.armour;
 		}
-		return true;
+		return needs.handFree;
 	}
 
-	private findCorners(): DoomPickupTile[] {
-		return findDoomCorners(this.grid);
+	/** The kinds that may come now, for these needs. */
+	choices(needs: DoomPickupNeeds): DoomPickupKind[] {
+		const lying = new Set(this.pickups.map((p) => p.kind));
+		const out = HAND_KINDS.filter((k) => !lying.has(k) && needs.held !== k);
+		if (needs.hp < PLAYER_MAX_HP && !lying.has('medkit')) {
+			out.push('medkit');
+		}
+		if (
+			needs.hp >= PLAYER_MAX_HP &&
+			!needs.armour &&
+			!lying.has('armour') &&
+			!lying.has('medkit')
+		) {
+			out.push('armour');
+		}
+		return out;
 	}
 
-	private initialSpawn(): void {
-		const kinds: DoomPickupKind[] = ['berserk', 'bfg', 'barrel', 'medkit'];
-		for (let i = kinds.length - 1; i > 0; i -= 1) {
-			const j = Math.floor(Math.random() * (i + 1));
-			const tmp = kinds[i];
-			kinds[i] = kinds[j];
-			kinds[j] = tmp;
+	private bring(pickup: DoomPickupModel, needs: DoomPickupNeeds): void {
+		const choices = this.choices(needs);
+		if (choices.length === 0) {
+			pickup.startRespawn(RETRY);
+			return;
 		}
-		const count = Math.min(kinds.length, this.pickups.length);
-		for (let i = 0; i < count; i += 1) {
-			this.pickups[i].spawn(kinds[i]);
-		}
-	}
-
-	private chooseKind(playerHp: number): DoomPickupKind | null {
-		const available: Array<{ kind: DoomPickupKind; weight: number }> = [];
-		for (const kind of PICKUP_KINDS) {
-			if (this.isKindOnMap(kind)) {
-				continue;
-			}
-			let weight = BASE_WEIGHTS[kind];
-			if (kind === 'medkit') {
-				weight = playerHp < 3 ? MEDKIT_WEIGHT_HURT : 0;
-			}
-			if (weight > 0) {
-				available.push({ kind, weight });
-			}
-		}
-		if (available.length === 0) {
-			return null;
-		}
-		let total = 0;
-		for (const item of available) {
-			total += item.weight;
-		}
-		let roll = Math.random() * total;
-		for (const item of available) {
-			roll -= item.weight;
-			if (roll <= 0) {
-				return item.kind;
-			}
-		}
-		return available[available.length - 1].kind;
-	}
-
-	private isKindOnMap(kind: DoomPickupKind): boolean {
-		for (const pickup of this.pickups) {
-			if (pickup.kind === kind) {
-				return true;
-			}
-			if (pickup.pendingKind === kind) {
-				return true;
-			}
-		}
-		return false;
+		pickup.spawn(choices[Math.floor(Math.random() * choices.length)]);
 	}
 
 	private touchesPlayer(tile: DoomPickupTile, player: PlayerService): boolean {

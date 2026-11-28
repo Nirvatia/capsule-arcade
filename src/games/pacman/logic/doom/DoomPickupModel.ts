@@ -1,15 +1,19 @@
-export type DoomPickupKind = 'berserk' | 'bfg' | 'barrel' | 'medkit';
+/** The hell's pickups: three for the hand, two that act at once (DESIGN §7). */
+export type DoomPickupKind = 'berserk' | 'snare' | 'plasma' | 'medkit' | 'armour';
 
 export interface DoomPickupTile {
 	readonly x: number;
 	readonly y: number;
 }
 
+/**
+ * One pickup spot: what lies on it, or how long until something comes. The kind is chosen when it
+ * comes (`DoomPickupService`), so the medkit and the armour fit the hero's health at that moment.
+ */
 export class DoomPickupModel {
 	private kindValue: DoomPickupKind | null = null;
 	private respawnTimerValue = 0;
 	private respawnDelayValue = 0;
-	private pendingKindValue: DoomPickupKind | null = null;
 	private readonly tileValue: DoomPickupTile;
 
 	constructor(tile: DoomPickupTile) {
@@ -32,16 +36,9 @@ export class DoomPickupModel {
 		return this.kindValue !== null;
 	}
 
-	get respawnTimer(): number {
-		return this.respawnTimerValue;
-	}
-
-	get respawnDelay(): number {
-		return this.respawnDelayValue;
-	}
-
-	get pendingKind(): DoomPickupKind | null {
-		return this.pendingKindValue;
+	/** Empty and its wait is over: something should come now. */
+	get due(): boolean {
+		return this.kindValue === null && this.respawnTimerValue <= 0;
 	}
 
 	get respawnProgress(): number {
@@ -55,37 +52,25 @@ export class DoomPickupModel {
 		this.kindValue = kind;
 		this.respawnTimerValue = 0;
 		this.respawnDelayValue = 0;
-		this.pendingKindValue = null;
 	}
 
-	consume(): void {
-		this.kindValue = null;
-	}
-
-	startRespawn(delay: number, kind: DoomPickupKind): void {
+	/** Taken (or nothing could come): empty for `delay` seconds. */
+	startRespawn(delay: number): void {
 		this.kindValue = null;
 		this.respawnTimerValue = Math.max(0, delay);
 		this.respawnDelayValue = Math.max(0, delay);
-		this.pendingKindValue = kind;
 	}
 
 	update(dt: number): void {
 		if (!Number.isFinite(dt) || dt < 0) {
 			return;
 		}
-		if (this.respawnTimerValue <= 0) {
-			return;
-		}
 		this.respawnTimerValue = Math.max(0, this.respawnTimerValue - dt);
-		if (this.respawnTimerValue <= 0 && this.pendingKindValue) {
-			this.spawn(this.pendingKindValue);
-		}
 	}
 
 	reset(): void {
 		this.kindValue = null;
 		this.respawnTimerValue = 0;
 		this.respawnDelayValue = 0;
-		this.pendingKindValue = null;
 	}
 }

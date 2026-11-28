@@ -9,6 +9,11 @@ import type { BossSnapshot } from './HellBlinkyView';
 import { DoomWorld } from './DoomWorld';
 import type { DoomLight } from './DoomWorld';
 import { pickupSprite } from './DoomSprites';
+import { SPLIT_MERGE } from '../../logic/doom/DoomBalance';
+import { drawBolt, drawCore, drawEnergizer, drawSplitGhost, foodSprite } from './doomPlaceholders';
+import type { DoomAbilityService } from '../../logic/doom/DoomAbilityService';
+import type { DoomDirection } from '../../logic/doom/DoomGraph';
+import type { LevelProgress } from '../../logic/level/LevelProgress';
 import { easeGate, gateTiles, gateWanted, lairSide } from './doomGate';
 import type { Point } from './doomGate';
 import type { SharedLayers } from '../SharedLayers';
@@ -65,7 +70,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 					this.shared.fireBurst();
 				}
 			}
-			this.fxView.update(dt, doom.shots, doom.barrelList);
+			this.fxView.update(dt, doom.shots);
 			this.bossHitFlash = Math.max(0, this.bossHitFlash - dt * 5);
 		}
 
@@ -81,7 +86,14 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		if (state !== 'level-clear') {
 			this.fxView.drawGround(ctx, layout);
 			this.shared.drawCollectibles(frame, layout);
-			if (boss && doom && fighting) {
+			if (doom && level.progress) {
+				this.drawFood(ctx, grid, level.progress, doom.split.active, layout, time);
+			}
+			const split = doom?.split.active ?? false;
+			if (doom && split) {
+				this.drawSplit(ctx, doom, layout, time);
+			}
+			if (boss && doom && fighting && !split) {
 				this.combatView.drawGround(ctx, boss, doom, grid, layout, time);
 				const echo = boss.echo;
 				const echoPos = boss.echoPosition();
@@ -104,12 +116,13 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			const player = level.player;
 			if (state !== 'death') {
 				// while dying, the pipeline draws Pac-Man over the level decay
-				if (player && boss && fighting) {
+				if (player && boss && fighting && !split) {
 					this.combatView.drawPull(ctx, boss, player.position, layout, time);
 				}
 				this.shared.drawPlayer(frame, layout);
 			}
 			if (doom) {
+				this.drawBolts(ctx, doom, layout);
 				this.fxView.draw(ctx, layout, doom.shots, doom.tracerList);
 			}
 		}
@@ -119,6 +132,95 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		world.drawOverlay(ctx);
 		this.fxView.drawHurt(ctx, frame.width, frame.height);
 		return layout;
+	}
+
+	/** The food (placeholder fang sprites, one cached image) and, in the split, the energizers. */
+	private drawFood(
+		ctx: CanvasRenderingContext2D,
+		grid: GridService | null,
+		progress: LevelProgress,
+		split: boolean,
+		layout: GridLayout,
+		time: number
+	): void {
+		if (!grid) {
+			return;
+		}
+		const S = layout.tileSize;
+		const sprite = foodSprite(S);
+		for (let y = 0; y < grid.height; y += 1) {
+			for (let x = 0; x < grid.width; x += 1) {
+				if (progress.isCollected(x, y)) {
+					continue;
+				}
+				const px = layout.offsetX + x * S;
+				const py = layout.offsetY + y * S;
+				if (grid.isDot(x, y)) {
+					ctx.drawImage(sprite, px, py, S, S);
+				} else if (split && grid.isEnergizer(x, y)) {
+					drawEnergizer(ctx, px + S / 2, py + S / 2, S, time);
+				}
+			}
+		}
+	}
+
+	/** The split: the core where he burst and the four ghosts (or their way back to it). */
+	private drawSplit(
+		ctx: CanvasRenderingContext2D,
+		doom: DoomAbilityService,
+		layout: GridLayout,
+		time: number
+	): void {
+		const split = doom.split;
+		const core = split.core;
+		const S = layout.tileSize;
+		const X = (x: number) => layout.offsetX + x * S;
+		const Y = (y: number) => layout.offsetY + y * S;
+		if (core) {
+			drawCore(ctx, X(core.x + 0.5), Y(core.y + 0.5), S, time);
+		}
+		if (split.stage === 'merge' && core) {
+			const u = Math.min(1, split.stageElapsed / SPLIT_MERGE);
+			const e = u * u * (3 - 2 * u);
+			for (const m of split.mergeFrom) {
+				const x = m.x + (core.x + 0.5 - m.x) * e;
+				const y = m.y + (core.y + 0.5 - m.y) * e;
+				const facing = headingOf(core.x + 0.5 - m.x, core.y + 0.5 - m.y);
+				drawSplitGhost(ctx, m.ghost, X(x), Y(y), S, facing, time, 0, 1 - 0.3 * u);
+			}
+			return;
+		}
+		for (const { drone, index } of split.ghosts) {
+			const fright = drone.state === 'fright' ? split.fear : 0;
+			drawSplitGhost(
+				ctx,
+				index,
+				X(drone.x),
+				Y(drone.y),
+				S,
+				headingOf(drone.dx, drone.dy),
+				time,
+				fright
+			);
+		}
+	}
+
+	/** The plasma's bolts, additive. */
+	private drawBolts(
+		ctx: CanvasRenderingContext2D,
+		doom: DoomAbilityService,
+		layout: GridLayout
+	): void {
+		if (doom.bolts.length === 0) {
+			return;
+		}
+		const S = layout.tileSize;
+		ctx.save();
+		ctx.globalCompositeOperation = 'lighter';
+		for (const bolt of doom.bolts) {
+			drawBolt(ctx, layout.offsetX + bolt.x * S, layout.offsetY + bolt.y * S, S);
+		}
+		ctx.restore();
 	}
 
 	/** The baked world is rebuilt only when a new hell level (a new grid) starts. */
@@ -230,6 +332,11 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		if (!boss || !doom || boss.defeated) {
 			return lights;
 		}
+		const core = doom.split.active ? doom.split.core : null;
+		if (core) {
+			lights.push({ x: core.x + 0.5, y: core.y + 0.5, r: 2.6, tint: 0xff3a2a, a: 0.8 });
+			return lights;
+		}
 		lights.push({ x: boss.position.x, y: boss.position.y, r: 3.2, tint: 0xff3a2a, a: 0.85 });
 		const echo = boss.echoPosition();
 		if (echo) {
@@ -285,4 +392,8 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			echo
 		};
 	}
+}
+
+function headingOf(dx: number, dy: number): DoomDirection {
+	return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'RIGHT' : 'LEFT') : dy > 0 ? 'DOWN' : 'UP';
 }

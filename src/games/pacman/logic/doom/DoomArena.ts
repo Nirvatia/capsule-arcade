@@ -78,7 +78,7 @@ export class DoomArena {
 	private readonly pendingSeals: PendingSeal[] = [];
 	private readonly voidCells: VoidCell[] = [];
 	private readonly protectedTileKeys = new Set<string>();
-	private barrelLocator: (() => GridPoint | null) | null = null;
+	private snareLocator: (() => GridPoint | null) | null = null;
 	private pullTimer = 0;
 	private corruptionValue = 0;
 	private echoValue: DoomEcho | null = null;
@@ -154,13 +154,13 @@ export class DoomArena {
 		}
 	}
 
-	setBarrelLocator(locator: () => GridPoint | null): void {
-		this.barrelLocator = locator;
+	setSnareLocator(locator: () => GridPoint | null): void {
+		this.snareLocator = locator;
 	}
 
-	/** Where the barrel stands now, if there is one. */
-	barrel(): GridPoint | null {
-		return this.barrelLocator ? this.barrelLocator() : null;
+	/** Where the open snare lies, if there is one. */
+	snare(): GridPoint | null {
+		return this.snareLocator ? this.snareLocator() : null;
 	}
 
 	echoPosition(): { x: number; y: number } | null {
@@ -290,8 +290,8 @@ export class DoomArena {
 		if (this.protectedTileKeys.has(`${tile.x},${tile.y}`)) {
 			return;
 		}
-		const barrel = this.barrel();
-		if (barrel && barrel.x === tile.x && barrel.y === tile.y) {
+		const snare = this.snare();
+		if (snare && snare.x === tile.x && snare.y === tile.y) {
 			return;
 		}
 		if (!keepsPlayerGraphConnected(this.grid, tile, playerTile)) {

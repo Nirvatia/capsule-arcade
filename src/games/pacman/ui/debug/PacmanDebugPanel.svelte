@@ -20,7 +20,14 @@
 	import { firstLevelOfSeason } from '../../logic/level/SeasonCatalog';
 	import type { SeasonName } from '../../logic/level/SeasonCatalog';
 
-	const WEAPONS: DoomPickupKind[] = ['bfg', 'barrel', 'berserk', 'medkit'];
+	const WEAPONS: Array<DoomPickupKind | 'bfg'> = [
+		'bfg',
+		'berserk',
+		'snare',
+		'plasma',
+		'medkit',
+		'armour'
+	];
 	const SCALES = [0.1, 0.25, 0.5, 1, 2];
 	const SEASONS = ['spring', 'summer', 'autumn', 'winter'] as const;
 	const RENDER_FLAGS: Array<[keyof DebugRenderFlags, string]> = [

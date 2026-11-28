@@ -50,7 +50,12 @@ logic/
              flare) and stationBeam, to be replaced
   doom/      the hell: DoomBossService (the boss's state machine), DoomArena (hazards,
              seals, void, pull, corruption, echo, shake), DoomMinionSwarm, DoomAttackPlanner
-             (which attack, fair or not), DoomTargeting (tile picks), weapons, pickups
+             (which attack, fair or not), DoomTargeting (tile picks); DoomAbilityService (the
+             hero's side: health and armour, the food's BFG charge, the hand: rush, snare,
+             plasma held down, the pickups on `DOOM_PICKUP_TILES`), DoomSplitService (the split
+             at each threshold: the boss frozen, four ghosts on `net/DronePack`, the core, the
+             all-four stun rule). `PlayingState` skips the boss's update while `bossFrozen`
+             and passes `LevelLoader.fireHeld` (the fire key and the dial report their release)
   debug/     debugLog (dev log lines; no-op in production)
 render/
   RenderPipeline   canvas, HiDPI, render clock → a RenderFrame per frame, picks the level
@@ -75,7 +80,10 @@ render/
                    baked once (fleshBake, with fleshNoise) and moved by the heartbeat
                    (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX;
                    the boss's dash (doomDashFx: LavaDash, the body turned into a rolling lava
-                   ball that lays a cooling track, its timing read from the telegraph's run)
+                   ball that lays a cooling track, its timing read from the telegraph's run);
+                   doomPlaceholders: the redesign's art until it is approved (the food as one
+                   cached fang sprite, the snare, the plasma, the armour, the core, the split's
+                   four ghosts)
   station/         the station in the game: StationLevelRenderer over b7/ (b7Scene: the owner's
                    mock-up Station_Level_v2 carried over as drawn on the game's maze; B7World:
                    the hull and baked architecture as one screen layer per resize, the phase's
@@ -304,6 +312,11 @@ to read the difficulty ramp (`config/difficultyConfig.ts`, applied in `buildLeve
 - `render/common/trailRibbon.test.ts` — the trail never ends in a cut: width and alpha 0 at both
   ends in every frame of a dash of 3/6/12 tiles, no step along it, gone a life after the stop,
   motes that fade in and out.
+- `logic/doom/doomRedesign.test.ts` — the hell's redesign: the map keeps its food off the pickup
+  spots; the energizers light only in the split; the food readies one BFG shot, an item in hand
+  goes first; the split freezes the boss and refills the food; none eaten: neither hurt nor
+  stunned, some: 75 HP each, all four: stunned and unhurt; the weapons are off in it; the rush,
+  the plasma held down, the snare, the armour; the medkit and the armour fit the hero's health.
 - `render/doom/doomDashFx.test.ts` — the boss turns into the lava ball only over the telegraph's
   last 0.25 s (whatever its length), smoothly, and back into the body over 0.28 s after the stop.
 - `render/actors/hero/heroWake.test.ts` — the comet's tails: both ends 0 through a turn and

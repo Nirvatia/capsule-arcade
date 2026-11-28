@@ -188,7 +188,11 @@ export function findDoomCorners(grid: GridService): GridPoint[] {
 	return corners;
 }
 
-export function assertDoomMap(grid: GridService): void {
+/**
+ * The hell's map rules. `pickups` are the pickup spots: walkable arena tiles with no food on them
+ * (the rest of the arena keeps its food).
+ */
+export function assertDoomMap(grid: GridService, pickups: ReadonlyArray<GridPoint>): void {
 	const excluded = buildExcludedTiles(grid);
 	assertNoWideBlocks(grid, excluded);
 	assertNoDeadEnds(grid, excluded);
@@ -196,7 +200,7 @@ export function assertDoomMap(grid: GridService): void {
 	assertCorners(grid, excluded);
 	assertCycles(grid, excluded);
 	assertStraightSegments(grid, excluded);
-	assertNoDots(grid, excluded);
+	assertPickupSpots(grid, excluded, pickups);
 }
 
 function assertNoWideBlocks(grid: GridService, excluded: ReadonlySet<string>): void {
@@ -330,12 +334,17 @@ function assertStraightSegments(grid: GridService, excluded: ReadonlySet<string>
 	}
 }
 
-function assertNoDots(grid: GridService, excluded: ReadonlySet<string>): void {
-	for (let y = 0; y < grid.height; y += 1) {
-		for (let x = 0; x < grid.width; x += 1) {
-			if (isArenaTile(grid, excluded, x, y) && grid.isDot(x, y)) {
-				throw new Error(`[${MODULE_NAME}] assertNoDots: dot at (${x}, ${y})`);
-			}
+function assertPickupSpots(
+	grid: GridService,
+	excluded: ReadonlySet<string>,
+	pickups: ReadonlyArray<GridPoint>
+): void {
+	for (const p of pickups) {
+		if (!isArenaTile(grid, excluded, p.x, p.y)) {
+			throw new Error(`[${MODULE_NAME}] assertPickupSpots: (${p.x}, ${p.y}) is not an arena tile`);
+		}
+		if (grid.isDot(p.x, p.y) || grid.isEnergizer(p.x, p.y)) {
+			throw new Error(`[${MODULE_NAME}] assertPickupSpots: food at (${p.x}, ${p.y})`);
 		}
 	}
 }

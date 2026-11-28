@@ -107,11 +107,33 @@ export const PHASE_THRESHOLDS = [1000, 500] as const;
 export const BFG_ORB_DAMAGE = 250;
 export const BFG_ORB_STUN = 0.5;
 export const BFG_TRACER_DAMAGE = 100;
-export const BARREL_DAMAGE = 200;
-export const BARREL_STUN = 0.6;
-export const BERSERK_BITE_DAMAGE = 80;
-export const BERSERK_BITE_STUN = 1.0;
+/** Food eaten for one BFG shot (one shot is stored; DESIGN §7 "The fight, redesigned"). */
+export const FOOD_PER_SHOT = 30;
+/** The berserk: the energizer state for this long, the button makes one rush. */
+export const BERSERK_DURATION = 8;
 export const BERSERK_SPEED_MUL = 1.15;
+export const RUSH_TILES = 5;
+export const RUSH_DAMAGE = 250;
+export const RUSH_STUN = 1.2;
+/** The snare: lies this long, holds the boss stepping in, bites once. */
+export const SNARE_LIFETIME = 25;
+export const SNARE_HOLD = 2.5;
+export const SNARE_DAMAGE = 100;
+/** The plasma: seconds of fire held down, a bolt per `PLASMA_RATE`, each bolt's damage. */
+export const PLASMA_AMMO = 3;
+export const PLASMA_RATE = 0.1;
+export const PLASMA_SPEED = 16;
+export const PLASMA_DAMAGE = 10;
+/** The split (at each phase threshold): the burst, the Pac-Man part, the return to the core. */
+export const SPLIT_BURST = 0.6;
+export const SPLIT_PACMAN = 18;
+export const SPLIT_MERGE = 1.6;
+export const SPLIT_FEAR = 7;
+/** All four ghosts eaten: the boss forms stunned this long and loses nothing more. */
+export const SPLIT_FORM_STUN = 5;
+/** Fewer eaten: no stun, this much HP per eaten ghost. */
+export const SPLIT_GHOST_DAMAGE = 75;
+export const SPLIT_GHOST_SCORE = 200;
 
 export function tuningForPhase(phase: number): DoomPhaseTuning {
 	const index = Math.min(2, Math.max(0, Math.floor(phase) - 1));

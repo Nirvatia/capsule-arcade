@@ -38,7 +38,8 @@ export interface PacmanStateChangedPayload {
 	state: PacmanStateName;
 }
 
-export type PacmanHellWeapon = 'bfg' | 'barrel' | 'berserk' | '';
+/** What the hell's dial holds: the item in hand, or the BFG once the food has charged it. */
+export type PacmanHellWeapon = 'bfg' | 'snare' | 'plasma' | 'berserk' | '';
 
 export interface PacmanHellHud {
 	hp: number;

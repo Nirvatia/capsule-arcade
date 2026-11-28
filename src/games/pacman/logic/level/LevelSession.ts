@@ -105,7 +105,9 @@ export function buildLevelSession(request: LevelSessionRequest): LevelSession {
 			throw new Error('buildLevelSession: boss spawn tile DB is not found');
 		}
 		const boss = new DoomBossService(grid, bossSpawn);
-		const abilities = new DoomAbilityService(grid, boss);
+		const abilities = new DoomAbilityService(grid, boss, progress, score, events);
+		// the hell's food charges the BFG: no fruit comes out of it
+		fruit.setEnabled(false);
 		abilities.setGodMode(request.godMode);
 		if (import.meta.env.DEV) {
 			boss.setDebugSink(busSink(events));

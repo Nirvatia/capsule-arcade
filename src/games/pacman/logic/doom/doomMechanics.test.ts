@@ -38,7 +38,7 @@ import type { DoomMinionSwarm } from './DoomMinionSwarm';
 import { findBlinkTarget, pickSeals } from './DoomTargeting';
 import type { SealPickContext } from './DoomTargeting';
 import { DoomPickupService } from './DoomPickupService';
-import { findDoomCorners } from './DoomMapValidation';
+import { DOOM_PICKUP_TILES } from '../../config/mazes/doom';
 
 const STEP = 1 / 60;
 
@@ -141,16 +141,17 @@ function walk(player: PlayerService, dirs: PlayerDirection[], onStep?: () => voi
 }
 
 describe('doom pickups', () => {
-	it('every corner pickup can be collected from every side', () => {
+	it('every pickup spot can be collected from every side', () => {
 		const { grid } = makeWorld();
-		for (const corner of findDoomCorners(grid)) {
+		const needs = { hp: 2, armour: false, held: null, handFree: true };
+		for (const corner of DOOM_PICKUP_TILES) {
 			const sides = grid
 				.walkableNeighbors(corner.x, corner.y)
 				.filter((n) => grid.isPlayerWalkable(n.x, n.y));
 			expect(sides.length).toBeGreaterThan(0);
 			for (const side of sides) {
 				const world = makeWorld();
-				const pickups = new DoomPickupService(world.grid);
+				const pickups = new DoomPickupService(DOOM_PICKUP_TILES, needs);
 				const pickup = pickups.list.find((p) => p.tile.x === corner.x && p.tile.y === corner.y)!;
 				const route = [
 					...pathTo(world.grid, world.player.tile, side, corner),
@@ -158,7 +159,7 @@ describe('doom pickups', () => {
 				];
 				let collected = false;
 				walk(world.player, route, () => {
-					pickups.update(STEP, world.player, 2, false);
+					pickups.update(STEP, world.player, needs);
 					collected = collected || !pickup.visible;
 				});
 				expect(collected, `corner ${corner.x},${corner.y} from ${side.x},${side.y}`).toBe(true);
@@ -169,8 +170,8 @@ describe('doom pickups', () => {
 
 describe('doom boss', () => {
 	it('a BFG orb fired along the boss row hits the boss', () => {
-		const { grid, player, boss } = makeWorld();
-		const ability = new DoomAbilityService(grid, boss);
+		const { grid, player, boss, progress, events } = makeWorld();
+		const ability = new DoomAbilityService(grid, boss, progress, new ScoreModel(), events);
 		// same tile-center convention as the player, whose position is where shots start
 		expect(boss.position).toEqual({ x: boss.tile.x + 0.5, y: boss.tile.y + 0.5 });
 		expect(player.position).toEqual({ x: player.tile.x + 0.5, y: player.tile.y + 0.5 });
@@ -469,7 +470,7 @@ describe('doom boss attacks', () => {
 	});
 
 	it('pull slows only running away, corruption spares pickups', () => {
-		const { grid, player, boss } = makeWorld();
+		const { grid, player, boss, progress, events } = makeWorld();
 		const { arena } = boss as unknown as { arena: DoomArena };
 		arena.startPull(3);
 		// player spawn is below the boss: running DOWN is running away
@@ -482,7 +483,7 @@ describe('doom boss attacks', () => {
 		player.update(0.2);
 		arena.startPull(0);
 		(arena as unknown as { corruptionValue: number }).corruptionValue = 1;
-		const ability = new DoomAbilityService(grid, boss);
+		const ability = new DoomAbilityService(grid, boss, progress, new ScoreModel(), events);
 		for (const pickup of ability.pickupList) {
 			expect(boss.isCorrupted(pickup.tile.x, pickup.tile.y)).toBe(false);
 		}

@@ -1,3 +1,4 @@
+import type { PacmanHellWeapon } from '../../core/Events';
 import type { Director } from '../../core/Director';
 import type { PacmanStateName, PacmanProfile } from '../../core/Events';
 import type { LevelLoader } from '../../logic/level/LevelLoader';
@@ -30,10 +31,17 @@ export interface HudBoss {
 	readonly marks: readonly number[];
 	readonly playerHp: number;
 	readonly playerHpMax: number;
-	readonly weapon: 'bfg' | 'barrel' | 'berserk' | '';
+	readonly weapon: PacmanHellWeapon;
 	readonly berserk: number;
+	/** Seconds of plasma left in hand. */
+	readonly plasma: number;
 	/** 0..1 while the BFG charges. */
 	readonly charge: number;
+	/** The food eaten toward the BFG's shot, 0..1 (the dial's ring, whatever is in hand). */
+	readonly food: number;
+	readonly armour: boolean;
+	/** The split: seconds of Pac-Man left and the ghosts eaten (of four), or null. */
+	readonly split: { readonly left: number; readonly eaten: number } | null;
 	readonly defeated: boolean;
 	/** The heart and the exit are on the board. */
 	readonly rewardOffered: boolean;
@@ -138,9 +146,13 @@ export function buildHudSnapshot(
 					marks: PHASE_THRESHOLDS.map((t) => t / BOSS_HP),
 					playerHp: doom.playerHp,
 					playerHpMax: PLAYER_MAX_HP,
-					weapon: (doom.armed as HudBoss['weapon']) || '',
+					weapon: doom.armed,
 					berserk: doom.berserkTimer,
+					plasma: doom.plasmaLeft,
 					charge: doom.bfgCharging ? doom.bfgChargeProgress : 0,
+					food: doom.bfgCharge,
+					armour: doom.armour,
+					split: doom.split.active ? { left: doom.split.timeLeft, eaten: doom.split.eaten } : null,
 					defeated: bossService.defeated,
 					rewardOffered: Boolean(level.bossReward?.offered)
 				}

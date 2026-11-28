@@ -5,7 +5,8 @@ import type { DoomAbilityService } from '../../logic/doom/DoomAbilityService';
 import { minionPosition } from '../../logic/doom/DoomMinions';
 import { VOID_FLICKER } from '../../logic/doom/DoomBalance';
 import { DOOM_TILE } from './DoomBake';
-import { barrelSprite, glowTexture, pickupSprite } from './DoomSprites';
+import { glowTexture, pickupSprite } from './DoomSprites';
+import { drawJaws } from './doomPlaceholders';
 import { drawImp } from './HellImpView';
 import {
 	drawLaneBeam,
@@ -41,7 +42,7 @@ export class DoomCombatView {
 		this.drawHazardWarnings(ctx, boss, layout, time);
 		this.drawCrossTelegraph(ctx, boss, grid, layout, time);
 		this.drawPickups(ctx, doom, layout, time);
-		this.drawBarrels(ctx, doom, layout, time);
+		this.drawSnare(ctx, doom, layout, time);
 	}
 
 	/** Hazard blasts and minions, drawn over the boss (projectiles live in DoomFxView). */
@@ -323,6 +324,9 @@ export class DoomCombatView {
 		layout: GridLayout,
 		time: number
 	): void {
+		if (!doom.pickupsShown) {
+			return;
+		}
 		const s = layout.tileSize;
 		const u = s / DOOM_TILE;
 		for (const pickup of doom.pickupList) {
@@ -354,41 +358,36 @@ export class DoomCombatView {
 				ctx.beginPath();
 				ctx.arc(px, py, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pickup.respawnProgress);
 				ctx.stroke();
-				if (pickup.pendingKind) {
-					const sprite = pickupSprite(pickup.pendingKind);
-					ctx.globalAlpha = 0.18;
-					ctx.drawImage(sprite.icon, px - 8 * u, py - 8 * u, 16 * u, 16 * u);
-				}
 				ctx.restore();
 			}
 		}
 	}
 
-	private drawBarrels(
+	/** The snare (a placeholder): open jaws breathing on its tile, shut while it holds the boss. */
+	private drawSnare(
 		ctx: CanvasRenderingContext2D,
 		doom: DoomAbilityService,
 		layout: GridLayout,
 		time: number
 	): void {
-		const s = layout.tileSize;
-		const u = s / DOOM_TILE;
-		for (const barrel of doom.barrelList) {
-			const px = layout.offsetX + (barrel.x + 0.5) * s;
-			const py = layout.offsetY + (barrel.y + 0.5) * s;
-			const flash = barrel.timer < 2 ? Math.abs(Math.sin(time * 8)) : 0;
-			ctx.save();
-			ctx.translate(px, py);
-			if (flash > 0) {
-				const glow = 22 * u;
-				ctx.globalCompositeOperation = 'lighter';
-				ctx.globalAlpha = flash * 0.8;
-				ctx.drawImage(glowTexture(0xff6a1a), -glow / 2, -glow / 2, glow, glow);
-				ctx.globalCompositeOperation = 'source-over';
-				ctx.globalAlpha = 1;
-			}
-			ctx.drawImage(barrelSprite(), -12 * u, -12 * u, 24 * u, 24 * u);
-			ctx.restore();
+		const snare = doom.snare;
+		if (!snare) {
+			return;
 		}
+		const s = layout.tileSize;
+		const open = snare.snapped < 0 ? 0.55 + 0.05 * Math.sin(time * 4) : 0;
+		const fading =
+			snare.snapped < 0 && snare.timer < 2 ? 0.5 + 0.5 * Math.abs(Math.sin(time * 6)) : 1;
+		ctx.save();
+		ctx.globalAlpha = fading;
+		drawJaws(
+			ctx,
+			layout.offsetX + (snare.x + 0.5) * s,
+			layout.offsetY + (snare.y + 0.5) * s,
+			s * 0.4,
+			open
+		);
+		ctx.restore();
 	}
 
 	/** Blinky's imps: small horned ghosts, eyes and chevron pointing where they run. */

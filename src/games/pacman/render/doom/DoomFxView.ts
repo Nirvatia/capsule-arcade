@@ -1,9 +1,4 @@
-import type {
-	DoomFxEvent,
-	DoomBfgShot,
-	DoomBfgTracer,
-	DoomBarrel
-} from '../../logic/doom/DoomWeaponService';
+import type { DoomFxEvent, DoomBfgShot, DoomBfgTracer } from '../../logic/doom/DoomWeaponService';
 import type { GridLayout } from '../maze/GridView';
 import { glowTexture } from './DoomSprites';
 import { rgba } from '../common/color';
@@ -68,16 +63,17 @@ const BFG_HALO = 0x40ff50;
 const ORB_CORE = 0xa8ffb0;
 
 const PICKUP_TINT: Record<string, number> = {
-	bfg: 0x40ff50,
-	barrel: 0xb8ff30,
+	snare: 0xffe0a0,
+	plasma: 0x50b4ff,
+	armour: 0x3a7ad8,
 	medkit: 0xff3a2a,
 	berserk: 0xff7a1a
 };
 
 /**
  * Weapon and impact effects of the hell level, in tile coordinates: the plasma orb fired by
- * Pac-Man and its lightning, barrel blasts with shockwave, debris, smoke and scorch marks,
- * berserk bites, pickups and hits.
+ * Pac-Man and its lightning, the boss's burst into the split (shockwave, debris, smoke, scorch),
+ * the snare, the berserk's rush, pickups and hits.
  */
 export class DoomFxView {
 	private readonly particles: Particle[] = [];
@@ -152,7 +148,7 @@ export class DoomFxView {
 				this.decal(x, y, 0.75);
 				this.shakeValue = Math.max(this.shakeValue, 0.45);
 				break;
-			case 'barrel-blast':
+			case 'split-burst':
 				this.flash(x, y, 2.4, 0xffd27a, 0.3);
 				this.flash(x, y, 1.6, 0xff5a1a, 0.6);
 				this.ring(x, y, 2.9, 0xfff0d0, 0.4, 0.3);
@@ -162,14 +158,15 @@ export class DoomFxView {
 				this.decal(x, y, 1.1);
 				this.shakeValue = Math.max(this.shakeValue, 0.6);
 				break;
-			case 'barrel-fizzle':
+			case 'snare-fizzle':
 				this.radial(x, y, 5, 0.3, 1, 0x3a3532, 'smoke', 0.8, 1.4);
 				this.radial(x, y, 8, 1, 3, 0xffa040, 'spark', 0.2, 0.5);
 				break;
-			case 'barrel-place':
+			case 'snare-place':
 				this.ring(x, y, 0.8, 0xc8b090, 0.3, 0.12);
 				this.radial(x, y, 6, 0.6, 1.6, 0x5a4a3a, 'smoke', 0.4, 0.7);
 				break;
+			case 'snare-snap':
 			case 'bite':
 				this.flash(x, y, 1.4, 0xffffff, 0.2);
 				for (let i = 0; i < 3; i += 1) {
@@ -216,7 +213,7 @@ export class DoomFxView {
 		}
 	}
 
-	update(dt: number, shots: readonly DoomBfgShot[], barrels: readonly DoomBarrel[]): void {
+	update(dt: number, shots: readonly DoomBfgShot[]): void {
 		this.time += dt;
 		for (const p of this.particles) {
 			if (!p.active) {
@@ -259,24 +256,6 @@ export class DoomFxView {
 					0.05 + Math.random() * 0.06,
 					i ? PLASMA_HOT : PLASMA,
 					0.9,
-					'spark'
-				);
-			}
-		}
-		// burning fuses
-		for (const barrel of barrels) {
-			if (Math.random() < 0.6) {
-				const fx = barrel.x + 0.5;
-				const fy = barrel.y + 0.15;
-				this.emit(
-					fx,
-					fy,
-					(Math.random() - 0.5) * 1.2,
-					-0.6 - Math.random() * 1.4,
-					0.2 + Math.random() * 0.25,
-					0.04 + Math.random() * 0.04,
-					Math.random() < 0.5 ? 0xffd27a : 0xff6a1a,
-					0.92,
 					'spark'
 				);
 			}

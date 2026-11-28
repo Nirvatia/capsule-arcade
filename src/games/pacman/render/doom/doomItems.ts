@@ -1,8 +1,9 @@
 // The hell's pickup icons (the owner's mock-up `prototypes/pacman/art/hell-flesh-items.html`):
-// BFG, barrel, berserk fist and medkit in the heroes' style, a wide dark outline, a light
+// BFG, berserk fist and medkit (the redesign's snare, plasma and armour are placeholders in
+// `doomPlaceholders` for now) in the heroes' style, a wide dark outline, a light
 // top, a gloss. Each is painted in a box of -50..50 round the origin, light from the upper
 // left, and baked once by `DoomSprites`; the animated bits of the mock-up (the pulsing lens,
-// the flickering fuse, the burning cracks) are the pickup's glow in `DoomCombatView`.
+// the burning cracks) are the pickup's glow in `DoomCombatView`.
 
 const INK = '#140608';
 
@@ -115,68 +116,6 @@ export const paintBfg: Painter = (ctx) => {
 	ctx.ellipse(-26, -11, 12, 3.5, -0.1, 0, Math.PI * 2);
 	ctx.fill();
 	bloom(ctx, 38, 1, 30, '64,255,80', 0.6);
-};
-
-/** An acid-green barrel with a flame mark and a lit fuse. */
-export const paintBarrel: Painter = (ctx) => {
-	const body = () => {
-		ctx.beginPath();
-		ctx.roundRect(-27, -34, 54, 76, 11);
-	};
-	part(
-		ctx,
-		body,
-		linear(ctx, -27, 0, 27, 0, ['#4f7a1a', '#b8ee3e', '#d6ff74', '#7fb020', '#33570d'])
-	);
-	ctx.save();
-	body();
-	ctx.clip();
-	ctx.strokeStyle = INK;
-	ctx.lineWidth = 5;
-	for (const y of [-14, 22]) {
-		ctx.beginPath();
-		ctx.moveTo(-30, y);
-		ctx.quadraticCurveTo(0, y + 7, 30, y);
-		ctx.stroke();
-	}
-	ctx.restore();
-	part(
-		ctx,
-		() => {
-			ctx.beginPath();
-			ctx.ellipse(0, -34, 27, 9, 0, 0, Math.PI * 2);
-		},
-		'#cbf26a',
-		5
-	);
-	part(
-		ctx,
-		() => {
-			ctx.beginPath();
-			ctx.arc(0, 4, 15, 0, Math.PI * 2);
-		},
-		'#ffd23f',
-		4
-	);
-	ctx.fillStyle = INK;
-	ctx.beginPath();
-	ctx.moveTo(0, -8);
-	ctx.quadraticCurveTo(10, 4, 3, 14);
-	ctx.quadraticCurveTo(-1, 8, -5, 14);
-	ctx.quadraticCurveTo(-10, 2, 0, -8);
-	ctx.fill();
-	ctx.strokeStyle = INK;
-	ctx.lineWidth = 4;
-	ctx.lineCap = 'round';
-	ctx.beginPath();
-	ctx.moveTo(4, -36);
-	ctx.quadraticCurveTo(16, -48, 24, -40);
-	ctx.stroke();
-	bloom(ctx, 24, -40, 12, '255,170,60', 0.9);
-	ctx.fillStyle = 'rgba(255,255,230,.5)';
-	ctx.beginPath();
-	ctx.ellipse(-16, -14, 3.5, 12, 0, 0, Math.PI * 2);
-	ctx.fill();
 };
 
 const FLAME =

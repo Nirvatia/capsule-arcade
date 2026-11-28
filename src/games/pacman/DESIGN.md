@@ -270,15 +270,15 @@ pads, and no ghosts but their lord.
   - Every attack is telegraphed and checked for fairness: there is always a way out.
 - **Player**: 3 HP in the fight (separate from lives). Losing them drops Pac-Man into the
   abyss: the run goes on to the next level without losing a life.
-- **Weapons** (corner pickups, one slot): BFG (charge, then a green orb), barrel (placed,
-  explodes), berserk (a fist: faster, bites the boss, minions extend it), medkit.
+- **Weapons**: the BFG charged by the food; berserk (one rush), snare, plasma, medkit, armour
+  on four spots off the corners (see "The fight, redesigned" below).
 - **Reward**: when the boss dies a heart appears at the far end of the maze from the player
   (it has to be run for) and an exit far from both;
   taking either ends the level as a win, the heart also gives +1 life.
 - Direction rule: every actor shows where it heads (eyes; the imps add a small chevron; the boss's eyes are enough
   on the tile's leading edge; Pac-Man has his mouth).
 
-### The fight, redesigned (the owner's approval, 2026-11-28; in the `hell-phase` prototype, the game still plays the rules above)
+### The fight, redesigned (the owner's approval, 2026-11-28; in the game since 2026-11-28 with placeholder art, the lines above on the weapons and the transition are replaced by this)
 
 The fight was too empty (most of the time you wandered an empty maze) and Pac-Man is about eating
 dots under a chase. Each part keeps one job: **food** is the constant thing to do and charges the
