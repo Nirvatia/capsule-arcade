@@ -370,7 +370,7 @@ describe('doom boss attacks', () => {
 
 	it('eruption: running straight out of the disc dodges both waves', () => {
 		const { grid, player } = makeWorld();
-		walk(player, pathTo(grid, player.tile, { x: 6, y: 8 }));
+		walk(player, pathTo(grid, player.tile, { x: 5, y: 8 }));
 		expect(player.tile.y).toBe(8);
 		const waves = eruptionWaves(grid, player.tile, ERUPTION_INNER, ERUPTION_RADIUS);
 		const field = new DoomHazardField();

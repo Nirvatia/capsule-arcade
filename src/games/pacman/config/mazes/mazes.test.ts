@@ -5,7 +5,7 @@ import { GRID_01, GRID_02, GRID_03, GRID_04, GRID_CLASSIC, SEASON_MAZES } from '
 import { GRID_DOOM as GRID_DOOM_NEXT } from './grid_doom';
 import { GRID_STATION } from './grid_station';
 
-const TUNNELS: Record<string, number> = { grid_01: 2, grid_02: 2, grid_03: 2, grid_04: 2 };
+const TUNNELS: Record<string, number> = { grid_01: 2, grid_02: 4, grid_03: 2, grid_04: 4 };
 
 describe('the season mazes', () => {
 	it('are the four grids, all of one size', () => {

@@ -6,10 +6,10 @@ import { GRID_DOOM as GRID_DOOM_DRAWN } from './grid_doom';
  * corners' energizers are the split's) and the lair (DESIGN §7 "The fight, redesigned").
  */
 export const DOOM_PICKUP_TILES: ReadonlyArray<{ readonly x: number; readonly y: number }> = [
-	{ x: 12, y: 2 },
-	{ x: 19, y: 12 },
-	{ x: 12, y: 24 },
-	{ x: 5, y: 12 }
+	{ x: 12, y: 4 },
+	{ x: 20, y: 12 },
+	{ x: 12, y: 22 },
+	{ x: 4, y: 12 }
 ];
 
 /**
