@@ -294,12 +294,13 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
   (always a corridor, shown all the time, not touchable). Then **18 s of plain Pac-Man**: four
   equal ghosts (Blinky, Pinky, Inky, Clyde, the classic chase, all slower than the hero), the
   weapons off (what is in hand is kept), a ghost's touch costs 1 HP, and four **energizers** in the
-  corners (they exist only here). An eaten ghost does not return: 200/400/800/1600 points, −75 HP
-  to the boss and +1 s to his stun when he forms. At the end the rest run back to **their core**
-  (that is the reason he forms there, not in the lair); eating all four ends it early. The boss
-  forms on the core **stunned for 2 s + 1 s per eaten ghost**: the hero knew where all along, so he
-  can stand on a straight line with the charge he ate during the split. The split's damage never
-  crosses the next phase's threshold.
+  corners (they exist only here). An eaten ghost does not return (200/400/800/1600 points). At the
+  end the rest run back to **their core** (that is the reason he forms there, not in the lair);
+  eating all four ends it early. **All four eaten**: he forms on the core **stunned for 5 s** and
+  loses nothing more: the hero knew where all along, so he stands on a straight line with the charge
+  he ate during the split, the window for the real hit. **Fewer**: no stun, he only loses 75 HP per
+  eaten ghost, far less than a hit on him stunned (the owner's rule, 2026-11-28). The split's damage
+  never crosses the next phase's threshold.
 - **The button** spends what is in hand; with empty hands it fires the BFG if it is charged.
 - **Pickups** (four spots in the middle of the outer sides, away from the corners, which are the
   split's energizers'; hidden during the split; one of each kind at most, 15–20 s to come):

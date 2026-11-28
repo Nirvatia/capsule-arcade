@@ -34,8 +34,8 @@ export const TUNE = {
 	merge: 1.6,
 	fear: 7,
 	ghostDamage: 75,
-	formStun: 2,
-	formStunPerGhost: 1,
+	/** All four eaten: he forms stunned (and loses nothing). */
+	formStun: 5,
 	berserk: 8,
 	berserkSpeed: 1.15,
 	rushTiles: 5,
@@ -495,7 +495,7 @@ export class HellRules {
 				this.bonus += worth;
 				this.chain = Math.min(3, this.chain + 1);
 				this.eaten += 1;
-				this.popups.push({ x: d.x, y: d.y, text: `+${worth}  −${TUNE.ghostDamage} HP`, age: 0 });
+				this.popups.push({ x: d.x, y: d.y, text: `+${worth} · ${this.eaten}/4`, age: 0 });
 				this.pack.eat(d);
 				this.sleep(d);
 			} else {
@@ -510,16 +510,24 @@ export class HellRules {
 		}
 	}
 
-	/** The rest are back in the core: the boss forms on it, stunned, short of what was eaten. */
+	/**
+	 * The boss forms on the core. All four eaten: he is stunned, the window for a real hit, and loses
+	 * nothing more. Fewer: no stun, only what was eaten comes off him (far less than a hit would).
+	 */
 	private form(): void {
 		for (const d of this.pack.list) this.sleep(d);
 		this.merging = [];
 		this.progress.clearEnergizers();
 		const n = this.eaten;
-		this.boss.applyStun(TUNE.formStun + TUNE.formStunPerGhost * n);
-		const floor = this.boss.phase <= 2 ? PHASE_THRESHOLDS[1] + 1 : 1;
-		const damage = Math.min(TUNE.ghostDamage * n, Math.max(0, this.boss.hp - floor));
-		if (damage > 0) this.boss.takeDamage(damage, `split, ${n} eaten`);
+		const c = this.boss.position;
+		if (n >= 4) {
+			this.boss.applyStun(TUNE.formStun);
+		} else if (n > 0) {
+			const floor = this.boss.phase <= 2 ? PHASE_THRESHOLDS[1] + 1 : 1;
+			const damage = Math.min(TUNE.ghostDamage * n, Math.max(0, this.boss.hp - floor));
+			if (damage > 0) this.boss.takeDamage(damage, `split, ${n} eaten`);
+			this.popups.push({ x: c.x, y: c.y, text: `−${Math.round(damage)} HP`, age: 0 });
+		}
 		this.core = null;
 		this.enter('fight');
 	}

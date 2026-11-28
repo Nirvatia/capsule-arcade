@@ -88,7 +88,10 @@ last (see Later).
    (b) the rules into `logic/doom` (food in the map and `assertDoomMap`, the split in the boss's
    state machine, the arsenal) with tests; (c) the art: the food's sprite, the four ghosts (equal,
    the boss's armour darker than the imps now), the rush, the snare, the plasma, the armour, the
-   core; prototype first; (d) the HUD (the charge ring, the split's timer).
+   core; prototype first; (d) the HUD (the charge ring, the split's timer; the BFG's charge must
+   show while another item is in hand, the prototype hides it under the snare).
+   The owner played it (2026-11-28): "plays briskly"; his rule, in the prototype: the stun only for
+   all four eaten (no HP then), fewer give 75 HP each and no stun.
    **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):
    (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
    bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a
