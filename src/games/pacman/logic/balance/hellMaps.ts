@@ -1,13 +1,19 @@
 import type { GridMatrix } from '../../config/gridConfig';
 import { parseMaze } from '../../config/mazes/parseMaze';
-import { GRID_DOOM as GRID_DOOM_DRAWN } from '../../config/mazes/grid_doom';
-import { DOOM_PICKUP_TILES } from '../../config/mazes/doom';
 
 /**
  * The hell's maze candidates for the bots' report (`hellReport.test.ts`), not used by the game:
- * the old maze (before 2026-11-28), the owner's current one and three drafts drawn in the owner's
+ * the old maze (the game's), the owner's one of 2026-11-28 and three drafts drawn in the owner's
  * style (`hellMaps.test.ts`). Each carries its own four pickup spots.
  */
+/** The pickup spots of the owner's 2026-11-28 maze, kept for the drafts drawn on its middle band. */
+const NEW_PICKUPS = [
+	{ x: 12, y: 4 },
+	{ x: 20, y: 12 },
+	{ x: 12, y: 22 },
+	{ x: 4, y: 12 }
+];
+
 export interface HellMapCandidate {
 	readonly id: string;
 	readonly label: string;
@@ -57,9 +63,37 @@ export const HELL_MAP_CANDIDATES: readonly HellMapCandidate[] = [
 	},
 	{
 		id: 'current',
-		label: 'Текущая (твоя)',
-		drawn: GRID_DOOM_DRAWN,
-		pickups: DOOM_PICKUP_TILES
+		label: 'Твоя от 28.11',
+		drawn: parseMaze('hell_owner_1128', [
+			'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES',
+			'ES WL WL WL WL WL WL WL WL WL WL WL ES WL WL WL WL WL WL WL WL WL WL WL ES',
+			'ES WL EU DT DT DT DT DT DT DT DT WL ES WL DT DT DT DT DT DT DT DT EU WL ES',
+			'ES WL DT WL WL WL WL WL DT WL DT WL WL WL DT WL DT WL WL WL WL WL DT WL ES',
+			'ES WL DT DT DT WL DT DT DT WL DT DT DT DT DT WL DT DT DT WL DT DT DT WL ES',
+			'ES WL DT WL DT WL DT WL WL WL WL WL DT WL WL WL WL WL DT WL DT WL DT WL ES',
+			'ES WL DT WL DT DT DT DT DT WL DT DT DT DT DT WL DT DT DT DT DT WL DT WL ES',
+			'ES WL DT WL WL WL WL WL DT WL DT WL WL WL DT WL DT WL WL WL WL WL DT WL ES',
+			'ES WL DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT DT WL ES',
+			'ES WL WL WL DT WL DT WL WL WL DT WL WL WL DT WL WL WL DT WL DT WL WL WL ES',
+			'ES ES ES WL DT WL DT WL DT DT DT DT DT DT DT DT DT WL DT WL DT WL ES ES ES',
+			'ES ES ES WL DT WL DT WL DT WL WL LE LE LE WL WL DT WL DT WL DT WL ES ES ES',
+			'ES WL WL WL DT WL DT WL DT WL LT LT LT LT LT WL DT WL DT WL DT WL WL WL ES',
+			'ES 0A DT DT DT DT DT DT DT WL BY IY LT PY CE WL DT DT DT DT DT DT DT 0A ES',
+			'ES WL WL WL DT WL DT WL DT WL LT LT LT LT LT WL DT WL DT WL DT WL WL WL ES',
+			'ES ES ES WL DT WL DT WL DT WL WL WL WL WL WL WL DT WL DT WL DT WL ES ES ES',
+			'ES ES ES WL DT WL DT WL DT DT DT DT FT DT DT DT DT WL DT WL DT WL ES ES ES',
+			'ES WL WL WL DT WL DT WL WL WL DT WL DT WL DT WL WL WL DT WL DT WL WL WL ES',
+			'ES WL DT DT DT DT DT DT DT DT DT WL DT WL DT DT DT DT DT DT DT DT DT WL ES',
+			'ES WL DT WL WL WL DT WL WL WL WL WL DT WL WL WL WL WL DT WL WL WL DT WL ES',
+			'ES WL DT DT DT WL DT DT DT DT DT DT PM DT DT DT DT DT DT WL DT DT DT WL ES',
+			'ES WL DT WL DT WL DT WL DT WL WL WL WL WL WL WL DT WL DT WL DT WL DT WL ES',
+			'ES WL DT WL DT DT DT WL DT DT DT DT DT DT DT DT DT WL DT DT DT WL DT WL ES',
+			'ES WL DT WL WL WL DT WL WL WL DT WL WL WL DT WL WL WL DT WL WL WL DT WL ES',
+			'ES WL EU DT DT DT DT DT DT DT DT WL ES WL DT DT DT DT DT DT DT DT EU WL ES',
+			'ES WL WL WL WL WL WL WL WL WL WL WL ES WL WL WL WL WL WL WL WL WL WL WL ES',
+			'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES'
+		]),
+		pickups: NEW_PICKUPS
 	},
 	{
 		id: 'lines',
@@ -93,7 +127,7 @@ export const HELL_MAP_CANDIDATES: readonly HellMapCandidate[] = [
 			'ES WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
 			'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES'
 		]),
-		pickups: DOOM_PICKUP_TILES
+		pickups: NEW_PICKUPS
 	},
 	{
 		id: 'loops',
@@ -127,7 +161,7 @@ export const HELL_MAP_CANDIDATES: readonly HellMapCandidate[] = [
 			'ES WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
 			'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES'
 		]),
-		pickups: DOOM_PICKUP_TILES
+		pickups: NEW_PICKUPS
 	},
 	{
 		id: 'longcur',
@@ -161,6 +195,6 @@ export const HELL_MAP_CANDIDATES: readonly HellMapCandidate[] = [
 			'ES WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL WL ES',
 			'ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES ES'
 		]),
-		pickups: DOOM_PICKUP_TILES
+		pickups: NEW_PICKUPS
 	}
 ];
