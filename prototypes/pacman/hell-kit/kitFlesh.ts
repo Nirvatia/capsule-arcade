@@ -16,6 +16,7 @@ import {
 	gloss,
 	ink,
 	lightGlow,
+	linear,
 	radial,
 	rim,
 	shadow,
@@ -300,131 +301,224 @@ const EMBER: readonly string[] = ['#fff6d0', '#ffb040', '#c84010'];
 /** The Sting's venom. */
 const VENOM: Tones = { light: '#e8fdff', mid: '#4ed0f4', shade: '#14628e' };
 
+/** Gunmetal, the hell's iron the way the pickups' guns are drawn: a lit top, a dark belly. */
+const IRON: readonly string[] = ['#a8b0ba', '#5c6470', '#2a3038'];
+
 /**
- * The Maw (Жерло), the heavy gun: a great bone horn curled into a barrel, its rings ridged dark, its
- * bell a maw with the charge burning in it. Big and heavy: it fills its box. Kept inside -46..46.
+ * The Maw (Жерло), the heavy gun: a short, wide cannon. A bone stock and carry handle, a broad iron
+ * body with glowing vents, a thick barrel with a bone ring, and the muzzle a flared bone bell with
+ * the charge burning in it. It fills its box. Kept inside -46..46.
  */
 function paintMaw(c: Ctx): void {
-	// the horn, from its narrow root to the bell, as overlapping ridged rings
-	const rings: ReadonlyArray<readonly [number, number, number]> = [
-		[-36, 22, 8],
-		[-34, 8, 10],
-		[-28, -6, 12],
-		[-16, -16, 14],
-		[0, -18, 16],
-		[16, -11, 18]
-	];
-	for (const [rx, ry, rr] of rings) {
-		celPiece(
-			c,
-			() => {
-				c.beginPath();
-				c.arc(rx, ry, rr, 0, TAU);
-			},
-			HORN,
-			rx,
-			ry,
-			rr,
-			5
-		);
-		c.strokeStyle = 'rgba(70,52,30,.55)';
-		c.lineWidth = 2.5;
-		c.beginPath();
-		c.arc(rx, ry, rr * 0.62, -2.4, 0.6);
-		c.stroke();
-	}
-	// the bell, facing the shot
+	// the stock
 	celPiece(
 		c,
 		() => {
 			c.beginPath();
-			c.ellipse(30, -2, 14, 26, 0, 0, TAU);
+			c.moveTo(-46, -6);
+			c.lineTo(-30, -12);
+			c.lineTo(-30, 14);
+			c.lineTo(-44, 20);
+			c.closePath();
 		},
 		HORN,
-		30,
-		-2,
-		22
+		-38,
+		4,
+		14
 	);
-	bloom(c, 32, -2, 40, '255,150,50', 0.8);
+	// the grip
 	piece(
 		c,
 		() => {
 			c.beginPath();
-			c.ellipse(32, -2, 9, 19, 0, 0, TAU);
+			c.moveTo(-16, 16);
+			c.lineTo(-4, 16);
+			c.lineTo(-8, 40);
+			c.lineTo(-20, 40);
+			c.closePath();
 		},
-		radial(c, 32, -2, 1, 19, EMBER),
-		4
+		linear(c, 0, 16, 0, 40, [IRON[1], IRON[2]])
 	);
-	gloss(c, -6, -26, 8, 3, 0.85, -0.1);
-}
-
-/**
- * The Sting (Жало), the middle gun: a scorpion's sting, not a gun. Bone tail segments curling up into
- * a glowing bladder of venom and a hooked needle with a drop at its point. Kept inside -46..46.
- */
-function paintSting(c: Ctx): void {
-	const segs: ReadonlyArray<readonly [number, number, number]> = [
-		[-34, 30, 9],
-		[-32, 14, 10],
-		[-24, 0, 11]
-	];
-	for (const [sx, sy, sr] of segs) {
-		celPiece(
-			c,
-			() => {
-				c.beginPath();
-				c.ellipse(sx, sy, sr, sr * 0.8, -0.6, 0, TAU);
-			},
-			HORN,
-			sx,
-			sy,
-			sr,
-			5
-		);
-	}
-	// the needle: a hooked spike curving over and down to its point
+	// the carry handle, bone
 	celPiece(
 		c,
 		() => {
 			c.beginPath();
-			c.moveTo(-2, -24);
-			c.quadraticCurveTo(26, -44, 40, -12);
-			c.quadraticCurveTo(42, -2, 38, 6);
-			c.quadraticCurveTo(32, -18, 4, -8);
+			c.moveTo(-24, -16);
+			c.quadraticCurveTo(-12, -38, 4, -16);
+			c.lineTo(-2, -16);
+			c.quadraticCurveTo(-12, -30, -18, -16);
 			c.closePath();
+		},
+		HORN,
+		-10,
+		-24,
+		12,
+		5
+	);
+	// the body
+	piece(
+		c,
+		() => {
+			c.beginPath();
+			c.roundRect(-32, -18, 46, 36, 9);
+		},
+		linear(c, 0, -18, 0, 18, IRON)
+	);
+	// glowing vents
+	bloom(c, -12, 2, 22, '255,150,50', 0.45);
+	c.fillStyle = '#ffb040';
+	for (let k = 0; k < 3; k += 1) {
+		c.beginPath();
+		c.roundRect(-24 + k * 10, -6, 5, 14, 2);
+		c.fill();
+	}
+	// the barrel and its bone ring
+	piece(
+		c,
+		() => {
+			c.beginPath();
+			c.rect(12, -12, 18, 24);
+		},
+		linear(c, 0, -12, 0, 12, IRON)
+	);
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.roundRect(17, -15, 7, 30, 3);
 		},
 		HORN,
 		20,
-		-22,
-		22
+		0,
+		10,
+		4
 	);
-	bloom(c, -8, -12, 30, '80,220,255', 0.55);
+	// the bell, the maw with its fire
 	celPiece(
 		c,
 		() => {
 			c.beginPath();
-			c.ellipse(-8, -12, 17, 14, -0.4, 0, TAU);
+			c.moveTo(28, -14);
+			c.lineTo(44, -26);
+			c.lineTo(44, 26);
+			c.lineTo(28, 14);
+			c.closePath();
 		},
-		VENOM,
-		-8,
-		-12,
-		16
+		HORN,
+		36,
+		0,
+		18
 	);
-	gloss(c, -14, -18, 6, 3, 0.9, -0.4);
-	// the drop of venom at the needle's point
-	bloom(c, 38, 12, 14, '80,220,255', 0.8);
+	bloom(c, 42, 0, 34, '255,150,50', 0.8);
 	piece(
 		c,
 		() => {
 			c.beginPath();
-			c.moveTo(38, 6);
-			c.quadraticCurveTo(44, 14, 38, 19);
-			c.quadraticCurveTo(32, 14, 38, 6);
+			c.ellipse(42, 0, 5, 20, 0, 0, TAU);
+		},
+		radial(c, 42, 0, 1, 20, EMBER),
+		4
+	);
+	gloss(c, -16, -12, 12, 3, 0.6, 0);
+}
+
+/**
+ * The Sting (Жало), the middle gun: a slim rifle. A bone stock, a narrow iron body with a canister of
+ * venom on top, a long thin barrel wound with glowing coils, and a bone sting for a muzzle. Lighter
+ * and longer than the Maw. Kept inside -46..46.
+ */
+function paintSting(c: Ctx): void {
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.moveTo(-46, -4);
+			c.lineTo(-30, -9);
+			c.lineTo(-30, 7);
+			c.lineTo(-44, 12);
 			c.closePath();
 		},
-		VENOM.light,
-		3
+		HORN,
+		-38,
+		2,
+		11
 	);
+	piece(
+		c,
+		() => {
+			c.beginPath();
+			c.moveTo(-18, 8);
+			c.lineTo(-9, 8);
+			c.lineTo(-12, 30);
+			c.lineTo(-21, 30);
+			c.closePath();
+		},
+		linear(c, 0, 8, 0, 30, [IRON[1], IRON[2]])
+	);
+	piece(
+		c,
+		() => {
+			c.beginPath();
+			c.roundRect(-32, -10, 34, 20, 6);
+		},
+		linear(c, 0, -10, 0, 10, IRON)
+	);
+	// the canister of venom
+	bloom(c, -16, -16, 24, '80,220,255', 0.5);
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.roundRect(-27, -24, 22, 12, 6);
+		},
+		VENOM,
+		-16,
+		-18,
+		11,
+		5
+	);
+	gloss(c, -22, -21, 5, 2, 0.9, 0);
+	// the barrel and its coils
+	piece(
+		c,
+		() => {
+			c.beginPath();
+			c.rect(2, -5, 32, 10);
+		},
+		linear(c, 0, -5, 0, 5, IRON),
+		5
+	);
+	bloom(c, 18, 0, 22, '80,220,255', 0.4);
+	for (const cx of [8, 17, 26]) {
+		piece(
+			c,
+			() => {
+				c.beginPath();
+				c.roundRect(cx, -8, 4, 16, 2);
+			},
+			'#7fe6ff',
+			3
+		);
+	}
+	// the sting
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.moveTo(32, -8);
+			c.lineTo(46, 0);
+			c.lineTo(32, 8);
+			c.closePath();
+		},
+		HORN,
+		37,
+		0,
+		8,
+		4
+	);
+	bloom(c, 45, 0, 12, '80,220,255', 0.8);
+	gloss(c, -18, -6, 9, 2, 0.6, 0);
 }
 
 /** The Maw and the Sting in the icon box; the berserk keeps the game's own fist. */
