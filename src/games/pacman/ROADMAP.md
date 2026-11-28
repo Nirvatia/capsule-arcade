@@ -108,7 +108,10 @@ last (see Later).
    empty, it lived for ever and outdid the rest per food), and once the food after the last split
    was eaten, nothing could hurt the boss. Done: each weapon carries one load (the Maw a shot, the
    Sting 3 s, the berserk 3 rushes; the dial shows it as `2/3`), the Sting's bolt 10 → 5, the food
-   grows back (a tile every 1.5 s, 6+ tiles from the hero). Left: his play of these numbers (`DoomBalance`: the weights, the glance,
+   grows back (a tile every 1.5 s, 6+ tiles from the hero). His fourth play: "much better"; done:
+   the rush needs no food (only its load), the berserk's speed lasts 5 s after it is taken, and in
+   the split's window (all four eaten) the rush and the Sting hit ×3 (`splitWindow`, for its look
+   in the art pass). Left: his play of these numbers (`DoomBalance`: the weights, the glance,
    the segment), then **one art pass in `hell-kit`** (frames, his approval, then into the game):
    - the weapons: the Sting's icon (unreadable), its muzzle flash and its bolts' hits (boss, wall,
      imp; now only a white flash on the boss); the rush redone (it reads as caramel), its trail and its

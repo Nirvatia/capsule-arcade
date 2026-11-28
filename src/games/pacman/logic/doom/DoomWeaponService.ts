@@ -149,6 +149,11 @@ export class DoomWeaponService {
 		return DoomWeaponModel.loadOf(this.model.slot);
 	}
 
+	/** The berserk's speed still lasts. */
+	get hasted(): boolean {
+		return this.model.haste > 0;
+	}
+
 	/** The meter cannot pay the weapon in hand. */
 	get starved(): boolean {
 		return this.model.starved;

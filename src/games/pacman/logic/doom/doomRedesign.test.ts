@@ -23,9 +23,12 @@ import {
 	PHASE_THRESHOLDS,
 	PLAYER_MAX_HP,
 	RUSH_COOLDOWN,
-	RUSH_COST,
 	RUSH_COUNTER_MUL,
 	RUSH_LOAD,
+	SPLIT_FORM_STUN,
+	SPLIT_WINDOW_MUL,
+	BERSERK_HASTE,
+	BERSERK_SPEED_MUL,
 	RUSH_DAMAGE,
 	SPLIT_GHOST_DAMAGE,
 	SPLIT_PACMAN,
@@ -239,6 +242,37 @@ describe('the split', () => {
 		expect(f.boss.isStunned).toBe(true);
 	});
 
+	it('all four eaten: in his stun the rush and the Sting hit SPLIT_WINDOW_MUL times harder', () => {
+		const f = fight();
+		toSplit(f);
+		eatGhosts(f, 4);
+		finishSplit(f);
+		expect(f.doom.splitWindow).toBe(true);
+		const b = f.boss.tile;
+		const ways: Array<[PlayerDirection, number, number]> = [
+			['RIGHT', -1, 0],
+			['LEFT', 1, 0],
+			['DOWN', 0, -1],
+			['UP', 0, 1]
+		];
+		const way = ways.find(([, dx, dy]) =>
+			[1, 2, 3].every((k) => f.grid.isPlayerWalkable(b.x + dx * k, b.y + dy * k))
+		);
+		expect(way).toBeDefined();
+		const [dir, dx, dy] = way!;
+		f.player.placeAt({ x: b.x + dx * 3, y: b.y + dy * 3 });
+		f.player.setDesiredDirection(dir);
+		f.doom.debugGiveWeapon('berserk');
+		f.run(0.05);
+		const hp = f.boss.hp;
+		expect(f.doom.fire(f.player)).toBe('rush');
+		f.run(0.6);
+		expect(f.boss.hp).toBe(hp - RUSH_DAMAGE * SPLIT_WINDOW_MUL);
+		f.run(SPLIT_FORM_STUN);
+		expect(f.boss.isStunned).toBe(false);
+		expect(f.doom.splitWindow).toBe(false);
+	});
+
 	it('the weapons are off while it runs', () => {
 		const f = fight();
 		f.doom.debugGiveWeapon('berserk');
@@ -268,29 +302,15 @@ describe('the hand', () => {
 		f.run(0.05);
 	}
 
-	it('the berserk will not rush without a segment in the meter', () => {
+	it('the berserk rushes on an empty meter and waits its cooldown', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('berserk');
 		f.tick();
-		eat(f, RUSH_COST - 1);
-		const hp = f.boss.hp;
-		expect(f.doom.fire(f.player)).toBeNull();
-		f.run(0.6);
-		expect(f.boss.hp).toBe(hp);
-		expect(f.doom.armed).toBe('berserk');
-	});
-
-	it('a rush pays a segment and waits its cooldown; the last segment spends the berserk', () => {
-		const f = fight();
-		lineUp(f);
-		f.doom.debugGiveWeapon('berserk');
-		f.tick();
-		eat(f, RUSH_COST * 2);
+		expect(f.doom.food).toBe(0);
 		const hp = f.boss.hp;
 		expect(f.doom.counterWindow).toBe(false);
 		expect(f.doom.fire(f.player)).toBe('rush');
-		expect(f.doom.food * MAW_COST).toBeCloseTo(RUSH_COST);
 		f.run(0.6);
 		expect(f.boss.hp).toBe(hp - RUSH_DAMAGE);
 		expect(f.doom.fire(f.player)).toBeNull();
@@ -313,6 +333,19 @@ describe('the hand', () => {
 		}
 		expect(f.doom.food).toBe(1);
 		expect(f.doom.armed).toBe('');
+	});
+
+	it('the berserk is faster only for BERSERK_HASTE s after it is taken', () => {
+		const f = fight();
+		f.run(INTRO_DURATION + 0.1);
+		const speed = () => (f.player as unknown as { speedModifierValue: number }).speedModifierValue;
+		const base = speed();
+		f.doom.debugGiveWeapon('berserk');
+		f.tick();
+		expect(speed()).toBeCloseTo(base * BERSERK_SPEED_MUL);
+		f.run(BERSERK_HASTE + 0.1);
+		expect(f.doom.armed).toBe('berserk');
+		expect(speed()).toBeCloseTo(base);
 	});
 
 	it("a rush in the boss's live attack is a counter: more damage, unhurt", () => {
@@ -367,6 +400,19 @@ describe('the hand', () => {
 		expect(f.boss.hp).toBe(after);
 		// an empty meter only stops it: its load is not used up
 		expect(f.doom.armed).toBe('plasma');
+	});
+
+	it("the Sting's bolts hit SPLIT_WINDOW_MUL times harder in the split's window", () => {
+		const f = fight();
+		lineUp(f);
+		(f.doom as unknown as { splitWindowValue: boolean }).splitWindowValue = true;
+		f.doom.debugGiveWeapon('plasma');
+		f.doom.debugGiveWeapon('food');
+		const hp = f.boss.hp;
+		f.run(0.5, true);
+		expect(f.doom.splitWindow).toBe(true);
+		expect(hp - f.boss.hp).toBeGreaterThan(0);
+		expect((hp - f.boss.hp) % (STING_DAMAGE * SPLIT_WINDOW_MUL)).toBe(0);
 	});
 
 	it('a Sting carries STING_LOAD s of fire, then is spent though the meter was refilled', () => {

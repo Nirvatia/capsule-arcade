@@ -30,6 +30,7 @@ import {
 	FOOD_SEGMENTS,
 	MAW_COST,
 	RUSH_COUNTER_MUL,
+	SPLIT_WINDOW_MUL,
 	RUSH_DAMAGE,
 	RUSH_STUN,
 	RUSH_TILES,
@@ -77,6 +78,7 @@ export class DoomAbilityService {
 	private rushHit = false;
 	private foodSeen = 0;
 	private regrowClock = 0;
+	private splitWindowValue = false;
 	private readonly rng: () => number = Math.random;
 	private splitWasActive = false;
 	private readonly processedTracers = new Set<DoomBfgTracer>();
@@ -146,6 +148,11 @@ export class DoomAbilityService {
 		return this.weapons.food / FOOD_MAX;
 	}
 
+	/** The boss stands stunned after a split with all four eaten: the rush and the Sting hit ×3. */
+	get splitWindow(): boolean {
+		return this.splitWindowValue;
+	}
+
 	/** What is left of the weapon's load in hand (shots, seconds of fire or rushes) and its whole. */
 	get load(): { readonly left: number; readonly max: number } {
 		return { left: this.weapons.load, max: this.weapons.loadMax };
@@ -213,7 +220,7 @@ export class DoomAbilityService {
 		player.setSpeedModifier(
 			split.active
 				? 1
-				: (this.weapons.berserkActive ? BERSERK_SPEED_MUL : 1) * this.boss.playerSpeedFactor(player)
+				: (this.weapons.hasted ? BERSERK_SPEED_MUL : 1) * this.boss.playerSpeedFactor(player)
 		);
 		if (this.playerDeadValue) {
 			return;
@@ -240,6 +247,11 @@ export class DoomAbilityService {
 		if (this.splitWasActive) {
 			this.splitWasActive = false;
 			this.pickups.fillEmpty(this.needs(), player);
+			// all four eaten: he formed stunned, the window for the rush's and the Sting's triple hit
+			this.splitWindowValue = this.boss.isStunned;
+		}
+		if (!this.boss.isStunned) {
+			this.splitWindowValue = false;
 		}
 		this.regrowFood(dt, player);
 		this.ballHitBossValue = false;
@@ -384,6 +396,7 @@ export class DoomAbilityService {
 		this.progress.clearEnergizers();
 		this.foodSeen = this.progress.collectedDots;
 		this.regrowClock = 0;
+		this.splitWindowValue = false;
 		this.pickups.reset(this.needs());
 	}
 
@@ -484,7 +497,10 @@ export class DoomAbilityService {
 		if (!this.rushHit && dx * dx + dy * dy < RUSH_REACH_SQ && !this.boss.defeated) {
 			this.rushHit = true;
 			struck = true;
-			const mul = this.rushCounter ? RUSH_COUNTER_MUL : 1;
+			const mul = Math.max(
+				this.rushCounter ? RUSH_COUNTER_MUL : 1,
+				this.splitWindowValue ? SPLIT_WINDOW_MUL : 1
+			);
 			this.boss.takeDamage(RUSH_DAMAGE * mul, this.rushCounter ? 'counter rush' : 'rush');
 			this.boss.applyStun(RUSH_STUN);
 			if (!player.isInvulnerable) {
@@ -539,7 +555,8 @@ export class DoomAbilityService {
 			const bdx = bolt.x - bossPos.x;
 			const bdy = bolt.y - bossPos.y;
 			if (bdx * bdx + bdy * bdy < BOLT_HIT_RADIUS_SQ && !this.boss.defeated) {
-				this.boss.takeDamage(STING_DAMAGE, 'Sting');
+				const mul = this.splitWindowValue ? SPLIT_WINDOW_MUL : 1;
+				this.boss.takeDamage(STING_DAMAGE * mul, mul > 1 ? 'Sting, split window' : 'Sting');
 				this.weapons.removeBolt(i);
 				continue;
 			}

@@ -302,14 +302,15 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
   end the rest run back to **their core** (that is the reason he forms there, not in the lair);
   eating all four ends it early. **All four eaten**: he forms on the core **stunned for 5 s** and
   loses nothing more: the hero knew where all along, so he stands on a straight line with the charge
-  he ate during the split, the window for the real hit. **Fewer**: no stun, he only loses 75 HP per
+  he ate during the split, the window for the real hit: the Maw's full orb, and **the rush and the
+  Sting ×3** while that stun lasts (2026-11-28). **Fewer**: no stun, he only loses 75 HP per
   eaten ghost, far less than a hit on him stunned (the owner's rule, 2026-11-28). The split's damage
   never crosses the next phase's threshold.
 - **The button** uses the weapon in hand, one action each (no gestures, no taps against holds: the
   owner, 2026-11-28). A new weapon picked up replaces the one in hand. **Each weapon carries one load**
   and is spent when it is gone, however much is eaten: the Maw one shot, the Sting 3 s of fire, the
-  berserk 3 rushes (the dial shows what is left, e.g. 2/3); the food still pays every use, and a
-  press the meter cannot pay is refused with a dull click (2026-11-28: the rotation of the weapons;
+  berserk 3 rushes (the dial shows what is left, e.g. 2/3); the food pays the guns (the berserk
+  needs none), and a press the meter cannot pay is refused with a dull click (2026-11-28: the rotation of the weapons;
   a first rule, "spent when the meter cannot pay", let a Sting let go early live for ever).
 - **Pickups** (four spots in the middle of the outer sides, away from the corners, which are the
   split's energizers'; hidden during the split). **The weapons come one at a time** (2026-11-28):
@@ -317,9 +318,9 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
   drawn by the phase's weights (berserk / Sting / Maw: 60/30/10, 40/35/25, 25/30/45), so the heavy
   gun is rare at first and the likeliest at the end. The fight starts with one lying. The weapons,
   light to heavy:
-  - **Berserk** (light): ×1.15 speed while held; the button is a **rush** along the heading
-    (5 tiles, to a wall) that **costs a segment** (none without it): 50 damage and a short stun, the
-    imps on the way die, then 2.5 s to rush again. A plain rush is not covered (touching the boss in its strike costs nothing more). A rush
+  - **Berserk** (light, no food): ×1.15 speed for 5 s after it is taken (not while held: the
+    owner, 2026-11-28); the button is a **rush** along the heading (5 tiles, to a wall): 50 damage
+    and a short stun, the imps on the way die, then 2.5 s to rush again. A plain rush is not covered (touching the boss in its strike costs nothing more). A rush
     made **while the boss's attack is live** (the lava ball's run, a burning rift or seal, the
     eruption: his ACTIVE state or a hazard burning) is a **counter**: ×3 damage, unhurt for the rush.
     Its look: the hero spins up into a whirlwind of blood, the same for both heroes; while a rush

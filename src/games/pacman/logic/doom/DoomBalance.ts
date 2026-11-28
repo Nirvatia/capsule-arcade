@@ -125,10 +125,11 @@ export const STING_SPEED = 16;
 export const STING_DAMAGE = 5;
 /** Seconds of fire one Sting carries (a whole meter's worth), then it is spent. */
 export const STING_LOAD = 3;
-/** The berserk (the light one): faster, the button is a rush that costs a segment, with a cooldown. */
+/** The berserk (the light one, no food): faster for a while after it is taken, the button a rush. */
 export const BERSERK_SPEED_MUL = 1.15;
+/** Seconds of `BERSERK_SPEED_MUL` after the berserk is taken. */
+export const BERSERK_HASTE = 5;
 export const RUSH_TILES = 5;
-export const RUSH_COST = FOOD_PER_SEGMENT;
 /** Rushes one berserk carries, then it is spent. */
 export const RUSH_LOAD = 3;
 export const RUSH_COOLDOWN = 2.5;
@@ -136,6 +137,8 @@ export const RUSH_DAMAGE = 50;
 export const RUSH_STUN = 0.5;
 /** A rush made while the boss's attack is live: this many times the damage, and unhurt. */
 export const RUSH_COUNTER_MUL = 3;
+/** The split's window (the boss formed stunned, all four eaten): the rush and the Sting hit this many times harder. */
+export const SPLIT_WINDOW_MUL = 3;
 /**
  * The weapons come one at a time: only while the hand is empty and none lies on the map, after
  * `WEAPON_WAIT_MIN..MAX` s. Its kind is drawn by the phase's weights (berserk, Sting, Maw): the

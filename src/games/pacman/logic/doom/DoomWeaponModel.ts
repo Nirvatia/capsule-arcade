@@ -2,8 +2,8 @@ import {
 	FOOD_PER_SEGMENT,
 	FOOD_SEGMENTS,
 	MAW_COST,
+	BERSERK_HASTE,
 	RUSH_COOLDOWN,
-	RUSH_COST,
 	RUSH_LOAD,
 	STING_FOOD_PER_SECOND,
 	STING_LOAD
@@ -14,7 +14,7 @@ import {
  * button uses it. `bfg` is the Maw (Жерло, the heavy gun), `plasma` the Sting (Жало), `berserk` the
  * light one. A new pickup replaces the weapon in hand. Each weapon picked up carries one **load**
  * (the Maw one shot, the Sting `STING_LOAD` s of fire, the berserk `RUSH_LOAD` rushes); the food
- * pays every use, and when the load is gone the weapon is spent and leaves the hand.
+ * pays the guns (the berserk needs none), and when the load is gone the weapon is spent.
  */
 export type DoomSlotItem = 'berserk' | 'plasma' | 'bfg' | null;
 
@@ -43,6 +43,8 @@ export class DoomWeaponModel {
 	private spentValue: DoomSlotItem = null;
 	/** What is left of the load in hand: shots, seconds of fire or rushes. */
 	public load = 0;
+	/** Seconds the berserk's speed still lasts. */
+	public haste = 0;
 
 	get berserkActive(): boolean {
 		return this.slot === 'berserk';
@@ -75,6 +77,7 @@ export class DoomWeaponModel {
 		this.slot = item;
 		this.rushCooldown = 0;
 		this.load = DoomWeaponModel.loadOf(item);
+		this.haste = item === 'berserk' ? BERSERK_HASTE : 0;
 		return true;
 	}
 
@@ -83,28 +86,24 @@ export class DoomWeaponModel {
 		return item === 'berserk' ? RUSH_LOAD : item === 'plasma' ? STING_LOAD : item === 'bfg' ? 1 : 0;
 	}
 
-	/** The berserk's rush can go now: its cooldown is over and the meter holds a segment. */
+	/** The berserk's rush can go now: its cooldown is over (it needs no food). */
 	get rushReady(): boolean {
-		return this.slot === 'berserk' && this.rushCooldown <= 0 && this.food >= RUSH_COST;
+		return this.slot === 'berserk' && this.rushCooldown <= 0;
 	}
 
 	/** The meter cannot pay the weapon in hand: the press is refused, not merely early. */
 	get starved(): boolean {
-		if (this.slot === 'berserk') {
-			return this.food < RUSH_COST;
-		}
 		if (this.slot === 'plasma') {
 			return this.food <= 0;
 		}
 		return this.slot === 'bfg' && !this.bfgReady;
 	}
 
-	/** A rush goes: it pays a segment, starts the cooldown and uses one of the load. */
+	/** A rush goes: it starts the cooldown and uses one of the load. */
 	spendRush(): boolean {
 		if (!this.rushReady) {
 			return false;
 		}
-		this.food -= RUSH_COST;
 		this.rushCooldown = RUSH_COOLDOWN;
 		this.load -= 1;
 		if (this.load <= 0) {
@@ -168,6 +167,7 @@ export class DoomWeaponModel {
 			return;
 		}
 		this.rushCooldown = Math.max(0, this.rushCooldown - dt);
+		this.haste = Math.max(0, this.haste - dt);
 		if (this.bfgCharging) {
 			this.bfgChargeTimer = Math.min(BFG_CHARGE_TIME, this.bfgChargeTimer + dt);
 			if (this.bfgChargeTimer >= BFG_CHARGE_TIME) {
@@ -194,5 +194,6 @@ export class DoomWeaponModel {
 		this.chargeCompletedValue = false;
 		this.spentValue = null;
 		this.load = 0;
+		this.haste = 0;
 	}
 }
