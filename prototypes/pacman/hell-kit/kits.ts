@@ -6,8 +6,8 @@
 import type { Ctx, Dir } from './paint';
 import { FLESH_KIT } from './kitFlesh';
 
-/** The weapons' pickups: the Maw (`bfg`), the Sting (`plasma`), the berserk. */
-export type Item = 'bfg' | 'plasma' | 'berserk';
+/** The new weapons' pickups: the Maw (`bfg`) and the Sting (`plasma`); the berserk keeps its fist. */
+export type Item = 'bfg' | 'plasma';
 
 export interface Kit {
 	readonly id: string;

@@ -42,9 +42,9 @@ const TINT = ['255,90,60', '255,120,200', '90,220,255', '255,170,70'];
 function ghostShape(S: number, i: number): GhostShape {
 	// about the hero's size: in the split they are the enemies, not the boss's small imps
 	// the hero's size, horns included within the tile
-	// a little smaller than the hero, a long ragged skirt (the owner, 2026-11-28)
-	const w = S * 0.28;
-	return { w, domeY: -w * 0.4, hem: w * 1.3, feet: 5, torn: 0.6, seed: 3 + i * 1.7 };
+	// a little smaller than the hero, a ragged skirt a little longer than the arcade's, not tall
+	const w = S * 0.3;
+	return { w, domeY: -w * 0.2, hem: w * 1.1, feet: 5, torn: 0.6, seed: 3 + i * 1.7 };
 }
 
 /** The flayed ghost: body, ribs in its shade, a stitched seam, bone horns, a fanged grin. */
@@ -293,223 +293,144 @@ function celPiece(c: Ctx, path: () => void, t: Tones, cx: number, cy: number, r:
 }
 
 /** Raw muscle, kept light enough to stand off the red floor. */
-const MEAT: Tones = { light: '#ffc8bc', mid: '#e2645e', shade: '#7a1c26' };
+/** The weapons' bone: pale, so the pickups stand off the red floor (no red in the items: the owner). */
+const HORN: Tones = { light: '#fffaf0', mid: '#e4d4b0', shade: '#8a7452' };
 /** The Maw's charge: hell's own fire, not the old green. */
 const EMBER: readonly string[] = ['#fff6d0', '#ffb040', '#c84010'];
+/** The Sting's venom. */
+const VENOM: Tones = { light: '#e8fdff', mid: '#4ed0f4', shade: '#14628e' };
 
 /**
- * The Maw (Жерло), the heavy gun: a thick barrel of flesh bound by two wide bone rings, a bone stock,
- * and the muzzle a round toothed maw with the charge burning inside it. The biggest, heaviest of
- * the three: it fills its box. Kept inside -46..46.
+ * The Maw (Жерло), the heavy gun: a great bone horn curled into a barrel, its rings ridged dark, its
+ * bell a maw with the charge burning in it. Big and heavy: it fills its box. Kept inside -46..46.
  */
 function paintMaw(c: Ctx): void {
-	celPiece(
-		c,
-		() => {
-			c.beginPath();
-			c.moveTo(-46, -6);
-			c.lineTo(-26, -12);
-			c.lineTo(-22, 14);
-			c.lineTo(-44, 20);
-			c.closePath();
-		},
-		BONE,
-		-34,
-		4,
-		16
-	);
-	celPiece(
-		c,
-		() => {
-			c.beginPath();
-			c.roundRect(-28, -20, 50, 40, 16);
-		},
-		MEAT,
-		-4,
-		0,
-		30
-	);
-	for (const bx of [-18, 2]) {
+	// the horn, from its narrow root to the bell, as overlapping ridged rings
+	const rings: ReadonlyArray<readonly [number, number, number]> = [
+		[-36, 22, 8],
+		[-34, 8, 10],
+		[-28, -6, 12],
+		[-16, -16, 14],
+		[0, -18, 16],
+		[16, -11, 18]
+	];
+	for (const [rx, ry, rr] of rings) {
 		celPiece(
 			c,
 			() => {
 				c.beginPath();
-				c.roundRect(bx, -24, 11, 48, 5);
+				c.arc(rx, ry, rr, 0, TAU);
 			},
-			JAW,
-			bx + 5,
-			0,
-			16
+			HORN,
+			rx,
+			ry,
+			rr,
+			5
 		);
-	}
-	// the maw: lips, a ring of teeth, the fire inside
-	celPiece(
-		c,
-		() => {
-			c.beginPath();
-			c.ellipse(30, 0, 15, 26, 0, 0, TAU);
-		},
-		MEAT,
-		30,
-		0,
-		22
-	);
-	bloom(c, 32, 0, 40, '255,150,50', 0.75);
-	piece(
-		c,
-		() => {
-			c.beginPath();
-			c.ellipse(32, 0, 9, 18, 0, 0, TAU);
-		},
-		radial(c, 32, 0, 1, 18, EMBER),
-		4
-	);
-	for (const [ty, a] of [
-		[-14, 0.5],
-		[-4, 0.15],
-		[6, -0.15],
-		[15, -0.5]
-	] as const) {
-		piece(
-			c,
-			() => {
-				c.beginPath();
-				c.moveTo(22, ty - 4);
-				c.lineTo(31, ty + a * 4);
-				c.lineTo(22, ty + 4);
-				c.closePath();
-			},
-			'#fff6e4',
-			3
-		);
-	}
-	gloss(c, -14, -12, 10, 3.5, 0.75, -0.1);
-}
-
-/**
- * The Sting (Жало), the middle gun: a bile sac on a bone grip and a long curved stinger for a barrel,
- * its point glowing. Slimmer and lighter than the Maw. Kept inside -46..46.
- */
-function paintSting(c: Ctx): void {
-	celPiece(
-		c,
-		() => {
-			c.beginPath();
-			c.moveTo(-26, 6);
-			c.lineTo(-14, 6);
-			c.lineTo(-18, 34);
-			c.lineTo(-30, 34);
-			c.closePath();
-		},
-		BONE,
-		-22,
-		20,
-		12
-	);
-	bloom(c, -22, -4, 26, '70,210,255', 0.5);
-	celPiece(
-		c,
-		() => {
-			c.beginPath();
-			c.ellipse(-22, -4, 18, 15, 0, 0, TAU);
-		},
-		BILE,
-		-22,
-		-4,
-		17
-	);
-	gloss(c, -28, -10, 6, 3, 0.9, -0.3);
-	// the stinger: segments narrowing toward the point
-	for (let k = 0; k < 4; k += 1) {
-		const x0 = -6 + k * 12;
-		const h = 10 - k * 2;
-		celPiece(
-			c,
-			() => {
-				c.beginPath();
-				c.moveTo(x0, -h - k * 1.5);
-				c.lineTo(x0 + 13, -h + 2 - (k + 1) * 1.5);
-				c.lineTo(x0 + 13, h - 2 - (k + 1) * 1.5);
-				c.lineTo(x0, h - k * 1.5);
-				c.closePath();
-			},
-			JAW,
-			x0 + 6,
-			-k * 1.5,
-			10,
-			4.5
-		);
-	}
-	bloom(c, 44, -8, 18, '80,220,255', 0.8);
-	piece(
-		c,
-		() => {
-			c.beginPath();
-			c.moveTo(42, -13);
-			c.lineTo(48, -8);
-			c.lineTo(42, -3);
-			c.closePath();
-		},
-		'#bff4ff',
-		3.5
-	);
-}
-
-/**
- * The berserk, the light weapon: a raw fist of muscle with bone spikes over its knuckles. Compact,
- * the smallest of the three. Kept inside -46..46.
- */
-function paintBerserk(c: Ctx): void {
-	c.scale(1.18, 1.18);
-	const fist = (): void => {
+		c.strokeStyle = 'rgba(70,52,30,.55)';
+		c.lineWidth = 2.5;
 		c.beginPath();
-		c.moveTo(-26, 30);
-		c.quadraticCurveTo(-32, 6, -24, -10);
-		c.quadraticCurveTo(-4, -22, 22, -14);
-		c.quadraticCurveTo(32, -4, 28, 16);
-		c.quadraticCurveTo(20, 34, -26, 30);
-		c.closePath();
-	};
-	celPiece(c, fist, MEAT, 0, 6, 28);
-	// the finger joints
-	c.strokeStyle = INK;
-	c.lineWidth = 4;
-	for (const fx of [-12, 0, 12]) {
-		c.beginPath();
-		c.moveTo(fx, -14);
-		c.quadraticCurveTo(fx + 3, -2, fx, 8);
+		c.arc(rx, ry, rr * 0.62, -2.4, 0.6);
 		c.stroke();
 	}
-	// the thumb across the front
+	// the bell, facing the shot
 	celPiece(
 		c,
 		() => {
 			c.beginPath();
-			c.moveTo(-24, 10);
-			c.quadraticCurveTo(-4, 4, 12, 14);
-			c.quadraticCurveTo(10, 22, -20, 22);
-			c.closePath();
+			c.ellipse(30, -2, 14, 26, 0, 0, TAU);
 		},
-		MEAT,
-		-6,
-		14,
-		14,
-		5
+		HORN,
+		30,
+		-2,
+		22
 	);
-	// bone spikes over the knuckles
-	for (const [kx, a] of [
-		[-14, -1.9],
-		[-1, -1.62],
-		[12, -1.35]
-	] as const) {
-		fang(c, kx, -16, 20, 5, a, JAW, 100, 0.8);
-	}
-	gloss(c, -16, -4, 7, 3, 0.7, -0.4);
+	bloom(c, 32, -2, 40, '255,150,50', 0.8);
+	piece(
+		c,
+		() => {
+			c.beginPath();
+			c.ellipse(32, -2, 9, 19, 0, 0, TAU);
+		},
+		radial(c, 32, -2, 1, 19, EMBER),
+		4
+	);
+	gloss(c, -6, -26, 8, 3, 0.85, -0.1);
 }
 
-function icon(c: Ctx, item: 'bfg' | 'plasma' | 'berserk', x: number, y: number, S: number): void {
+/**
+ * The Sting (Жало), the middle gun: a scorpion's sting, not a gun. Bone tail segments curling up into
+ * a glowing bladder of venom and a hooked needle with a drop at its point. Kept inside -46..46.
+ */
+function paintSting(c: Ctx): void {
+	const segs: ReadonlyArray<readonly [number, number, number]> = [
+		[-34, 30, 9],
+		[-32, 14, 10],
+		[-24, 0, 11]
+	];
+	for (const [sx, sy, sr] of segs) {
+		celPiece(
+			c,
+			() => {
+				c.beginPath();
+				c.ellipse(sx, sy, sr, sr * 0.8, -0.6, 0, TAU);
+			},
+			HORN,
+			sx,
+			sy,
+			sr,
+			5
+		);
+	}
+	// the needle: a hooked spike curving over and down to its point
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.moveTo(-2, -24);
+			c.quadraticCurveTo(26, -44, 40, -12);
+			c.quadraticCurveTo(42, -2, 38, 6);
+			c.quadraticCurveTo(32, -18, 4, -8);
+			c.closePath();
+		},
+		HORN,
+		20,
+		-22,
+		22
+	);
+	bloom(c, -8, -12, 30, '80,220,255', 0.55);
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.ellipse(-8, -12, 17, 14, -0.4, 0, TAU);
+		},
+		VENOM,
+		-8,
+		-12,
+		16
+	);
+	gloss(c, -14, -18, 6, 3, 0.9, -0.4);
+	// the drop of venom at the needle's point
+	bloom(c, 38, 12, 14, '80,220,255', 0.8);
+	piece(
+		c,
+		() => {
+			c.beginPath();
+			c.moveTo(38, 6);
+			c.quadraticCurveTo(44, 14, 38, 19);
+			c.quadraticCurveTo(32, 14, 38, 6);
+			c.closePath();
+		},
+		VENOM.light,
+		3
+	);
+}
+
+/** The Maw and the Sting in the icon box; the berserk keeps the game's own fist. */
+function icon(c: Ctx, item: 'bfg' | 'plasma', x: number, y: number, S: number): void {
 	shadow(c, x, y + S * 0.34, S * 0.3, S * 0.06);
-	inBox(c, x, y, S, item === 'bfg' ? paintMaw : item === 'plasma' ? paintSting : paintBerserk);
+	inBox(c, x, y, S, item === 'bfg' ? paintMaw : paintSting);
 }
 
 /** A bolt of bile: a glowing drop, stretched along its flight, two drips behind. */

@@ -74,6 +74,29 @@ function canvas(w: number, h: number, label: string): [HTMLCanvasElement, Canvas
 	return [cv, ctx];
 }
 
+/** How the game shows a pickup lying on the floor: its glow under it (`DoomCombatView`), then the icon. */
+const PICKUP_GLOW: Record<'bfg' | 'plasma' | 'berserk' | 'medkit', string> = {
+	bfg: '255,150,60',
+	plasma: '80,210,255',
+	berserk: '255,122,26',
+	medkit: '255,58,42'
+};
+
+function pickup(ctx: CanvasRenderingContext2D, kit: Kit, item: 'bfg' | 'plasma' | 'berserk' | 'medkit', x: number, y: number, S: number): void {
+	const r = S * 0.62;
+	const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+	g.addColorStop(0, `rgba(${PICKUP_GLOW[item]},.55)`);
+	g.addColorStop(0.45, `rgba(${PICKUP_GLOW[item]},.22)`);
+	g.addColorStop(1, `rgba(${PICKUP_GLOW[item]},0)`);
+	ctx.save();
+	ctx.globalCompositeOperation = 'lighter';
+	ctx.fillStyle = g;
+	ctx.fillRect(x - r, y - r, r * 2, r * 2);
+	ctx.restore();
+	if (item === 'bfg' || item === 'plasma') kit.icon(ctx, item, x, y, S);
+	else existing(ctx, item, x, y, S);
+}
+
 function existing(ctx: CanvasRenderingContext2D, kind: 'berserk' | 'bfg' | 'medkit', x: number, y: number, S: number): void {
 	const s = S * 0.9;
 	ctx.drawImage(pickupSprite(kind).icon, x - s / 2, y - s / 2, s, s);
@@ -98,8 +121,7 @@ function drawScene(kit: Kit): HTMLCanvasElement {
 		}
 	}
 	for (const p of PICKUPS) {
-		if (p.item === 'medkit') existing(ctx, 'medkit', X(p.tile.x), Y(p.tile.y), S);
-		else kit.icon(ctx, p.item, X(p.tile.x), Y(p.tile.y), S);
+		pickup(ctx, kit, p.item, X(p.tile.x), Y(p.tile.y), S);
 	}
 	GHOSTS.forEach((g, i) => kit.ghost(ctx, i, X(g.x), Y(g.y), S, g.dir, g.fright, T + i * 0.4));
 	heroView.draw(ctx, player, L, 0.4, { look: 'normal', charge: 0, dying: false });
@@ -175,12 +197,12 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 	for (let k = -1; k <= 1; k += 1) kit.food(ctx, c.x + k * S * 0.55, c.y, S);
 	c = cell(1, 1, 1, 'энерджайзер');
 	kit.energizer(ctx, c.x, c.y, S, T);
-	c = cell(2, 1, 1, 'берсерк');
-	kit.icon(ctx, 'berserk', c.x, c.y, S);
+	c = cell(2, 1, 1, 'берсерк (кулак)');
+	pickup(ctx, kit, 'berserk', c.x, c.y, S);
 	c = cell(3, 1, 1, 'Жало');
-	kit.icon(ctx, 'plasma', c.x, c.y, S);
+	pickup(ctx, kit, 'plasma', c.x, c.y, S);
 	c = cell(4, 1, 1, 'Жерло');
-	kit.icon(ctx, 'bfg', c.x, c.y, S);
+	pickup(ctx, kit, 'bfg', c.x, c.y, S);
 	c = cell(0, 2, 1, 'выстрелы Жала');
 	for (let k = -1; k <= 1; k += 1) kit.bolt(ctx, c.x + k * S * 0.45, c.y, S * 0.8, 'RIGHT');
 	c = cell(1, 2, 1, 'герой');
@@ -188,7 +210,7 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 	c = cell(2, 2, 1, 'босс, длинная юбка');
 	boss(ctx, c.x, c.y, S);
 	c = cell(3, 2, 1, 'есть: аптечка', true);
-	existing(ctx, 'medkit', c.x, c.y, S);
+	pickup(ctx, kit, 'medkit', c.x, c.y, S);
 	c = cell(4, 2, 1, 'было: BFG', true);
 	existing(ctx, 'bfg', c.x, c.y, S);
 	c = cell(0, 3, 3, 'рывок берсерка: превращение и удар');
@@ -201,8 +223,6 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 	kit.form(ctx, c.x - CELL * 0.12, c.y, S, 'RIGHT', 0.5, T);
 	kit.form(ctx, c.x + CELL * 0.78, c.y, S, 'RIGHT', 1, T);
 	kit.impact(ctx, c.x + CELL * 1.25, c.y, S);
-	c = cell(3, 3, 1, 'было: кулак', true);
-	existing(ctx, 'berserk', c.x, c.y, S);
 	return cv;
 }
 
