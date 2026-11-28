@@ -109,6 +109,7 @@ const st = {
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: красный маньяк',
 	'look-gloss': 'v4: стены забирает масса (глянец: чёрная, блик на горбах, лайм в складках)',
+	'look-lacquer': 'v4: стены — гладкий чёрный лак (без фактуры внутри, один мягкий отблеск ламп), лайм только на фронте роста',
 	'look-moss': 'v4: стены забирает масса (мох: матовый, бархатный, чёрно-оливковый)',
 	'lit-lit': 'Свет v4: пятна от ламп станции на полу, тени у подножия стен и падающие вниз-вправо, сталь стен темнее пола, глянец ловит лампы, еда мельче; лампы гаснут с заражением',
 	'mimic-now': 'Мимики как в игре: степперы',
@@ -155,7 +156,8 @@ const GROUPS: Group[] = [
 		items: [
 			['Как в игре', 'now'],
 			['Глянец', 'gloss'],
-			['Мох', 'moss']
+			['Мох', 'moss'],
+			['Лак', 'lacquer']
 		],
 		after: (v) => setLook(v as 'now' | WallMaterial)
 	},
@@ -632,6 +634,15 @@ function frame(now: number): void {
 	const hero = heroAt(t);
 	world.drawLight(ctx, t, st.inf, st.alarm ? 'alert' : 'quarantine', true);
 	const L = world.layout;
+	if (sl) {
+		// the infection in the air: the spores in the pools, the heartbeat's wave (stage space)
+		const zk = L.tileSize / sc.TILE;
+		ctx.save();
+		ctx.translate(L.offsetX - sc.tx(0) * zk, L.offsetY - sc.ty(0) * zk);
+		ctx.scale(zk, zk);
+		sl.drawAir(ctx, t);
+		ctx.restore();
+	}
 	const S = L.tileSize;
 	const ph = ringPhase(t);
 	if (ph) {

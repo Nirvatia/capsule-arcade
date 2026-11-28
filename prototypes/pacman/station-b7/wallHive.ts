@@ -8,6 +8,9 @@
 //   materials  `gloss`: black and wet, a cold highlight on the crests, lime glowing deep in the
 //              folds in a few patches; `moss`: matte and velvety, black to dark olive by height, a
 //              soft fuzzy edge, a little lime on some crests;
+//   `lacquer`  a smooth black slab, no texture inside: a rounded edge, one soft sheen from the lamps
+//              over it (and a spot under a lamp), the organics only in its wobbling outline; lime only on
+//              the growth front;
 //   growth     it takes the walls from the lair out, a ragged front (by 98% every wall);
 //   life       the lime in the folds swells with the heartbeat, over the light.
 import type { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
@@ -16,13 +19,13 @@ import { heartbeat } from '../../../src/games/pacman/render/station/b7/b7Hive';
 type Scene = ReturnType<typeof createB7Scene>;
 type Ctx = CanvasRenderingContext2D;
 type Rows = readonly (readonly string[])[];
-export type WallMaterial = 'gloss' | 'moss';
+export type WallMaterial = 'gloss' | 'moss' | 'lacquer';
 
 /** The station's light on the maze (`lightPass`): at a point (stage px from the maze's origin) the
  *  lamps' strength and the direction to them, weighted; `version` changes when it does. */
 export interface LightField {
 	readonly version: number;
-	at(sx: number, sy: number): readonly [number, number, number];
+	at(sx: number, sy: number): readonly [number, number, number, number];
 }
 
 /** Bake pixels per stage pixel. */
@@ -90,6 +93,7 @@ export class WallHive {
 	/** The gloss's normals (x, y, z per pixel): its highlights are the lamps', drawn per update. */
 	private readonly norm: Float32Array | null;
 	private light: LightField | null = null;
+	private readonly lacquer: boolean;
 	private lightShown = -1;
 
 	constructor(
@@ -143,13 +147,16 @@ export class WallHive {
 				const m = D[i] + (vnoise(sx * 0.09, sy * 0.09) - 0.5) * 4;
 				dm[i] = m;
 				if (m < -1.5) continue;
-				const l = material === 'gloss' ? fbm(sx / 24, sy / 24, 2) : fbm(sx / 15, sy / 15, 3);
+				const lac = material === 'lacquer';
+				const l = lac ? 0.5 : material === 'gloss' ? fbm(sx / 24, sy / 24, 2) : fbm(sx / 15, sy / 15, 3);
 				const ridge = material === 'gloss' ? 0 : 1 - Math.abs(2 * fbm(sx / 8 + 31, sy / 8 + 17, 2) - 1);
 				const f = material === 'moss' ? fbm(sx / 2.6, sy / 2.6, 2) : 0;
 				const h = smooth(0, 9, m);
 				lump[i] = l;
 				fuzz[i] = f;
-				Hf[i] = h * (3 + 7 * l + (material === 'gloss' ? 2.2 : 1) * ridge) + (material === 'moss' ? 0.8 * f : 0);
+				Hf[i] = lac
+					? smooth(0, 11, m) * (6 + (vnoise(sx / 70, sy / 70) - 0.5) * 1.4)
+					: h * (3 + 7 * l + (material === 'gloss' ? 2.2 : 1) * ridge) + (material === 'moss' ? 0.8 * f : 0);
 				const tx0 = Math.min(COLS - 1, Math.floor(sx / TILE));
 				const ty0 = Math.min(ROWS - 1, Math.floor(sy / TILE));
 				const d = wall(tx0, ty0) ? scene.infectionDistance(tx0, ty0) : nearestWallDist(scene, wall, tx0, ty0);
@@ -161,7 +168,8 @@ export class WallHive {
 		// shade it: normals from the height field, the light from the top left
 		this.rgba = new Uint8ClampedArray(W * H * 4);
 		this.lime = new Float32Array(W * H);
-		this.norm = material === 'gloss' ? new Float32Array(W * H * 3) : null;
+		this.norm = material !== 'moss' ? new Float32Array(W * H * 3) : null;
+		this.lacquer = material === 'lacquer';
 		const L = norm3(-0.55, -0.65, 0.55);
 		const Hh = norm3(L[0], L[1], L[2] + 1);
 		for (let v = 1; v < H - 1; v++)
@@ -183,7 +191,19 @@ export class WallHive {
 				const cavity = smooth(0.55, 0.85, 1 - lump[i]) * smooth(3, 8, m);
 				const patch = smooth(0.45, 0.68, vnoise(sx / 42 + 5, sy / 42 + 3));
 				let lime: number;
-				if (material === 'gloss') {
+				if (material === 'lacquer') {
+					const shade = 0.42 + 1.05 * diff;
+					r = 13 * shade;
+					g = 15 * shade;
+					b = 19 * shade;
+					a = smooth(-1.5, 0.6, m);
+					lime = 0;
+					if (this.norm) {
+						this.norm[i * 3] = N[0];
+						this.norm[i * 3 + 1] = N[1];
+						this.norm[i * 3 + 2] = N[2];
+					}
+				} else if (material === 'gloss') {
 					const shade = 0.38 + 1.35 * diff;
 					// a faint key highlight for the form; the lamps' own come in `update`
 					const spec = (Math.pow(nh, 40) * 0.95 + Math.pow(nh, 6) * 0.1) * 0.3;
@@ -248,12 +268,15 @@ export class WallHive {
 			let b = this.rgba[i * 4 + 2];
 			if (this.norm && this.light) {
 				// the lamps' highlight: toward the lamps that light this point, as strong as they are
-				const [I, dx, dy] = this.light.at((i % W) / Z, Math.floor(i / W) / Z);
+				const [I, dx, dy, spot] = this.light.at((i % W) / Z, Math.floor(i / W) / Z);
 				if (I > 0.02) {
 					const L = norm3(dx * 0.8, dy * 0.8, 0.6);
 					const Hh = norm3(L[0], L[1], L[2] + 1);
 					const nh = Math.max(0, this.norm[i * 3] * Hh[0] + this.norm[i * 3 + 1] * Hh[1] + this.norm[i * 3 + 2] * Hh[2]);
-					const sp = (Math.pow(nh, 36) * 0.95 + Math.pow(nh, 6) * 0.12) * I;
+					// the lacquer: one soft sheen over the slab and a spot under a lamp, nothing sharp
+					const sp = this.lacquer
+						? (Math.pow(nh, 14) * 0.45 + Math.pow(nh, 3) * 0.05) * I + 0.38 * spot
+						: (Math.pow(nh, 36) * 0.95 + Math.pow(nh, 6) * 0.12) * I;
 					r += 230 * sp;
 					g += 238 * sp;
 					b += 244 * sp;
@@ -263,7 +286,12 @@ export class WallHive {
 			m.data[i * 4 + 1] = g;
 			m.data[i * 4 + 2] = b;
 			m.data[i * 4 + 3] = a * cov;
-			const l = this.lime[i] * cov;
+			// the lacquer's lime: only on its growth front, a soft band where it is taking the steel
+			const l = this.lacquer
+				? infection < 0.985
+					? Math.max(0, 1 - (infection - this.arrival[i]) / 0.035) * 0.8 * (cov > 0 ? 1 : 0)
+					: 0
+				: this.lime[i] * cov;
 			if (l > 0.01) {
 				gl.data[i * 4] = LIME[0];
 				gl.data[i * 4 + 1] = LIME[1];
