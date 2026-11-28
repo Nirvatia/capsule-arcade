@@ -17,6 +17,10 @@ import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinky
 import { FLESH_KIT } from '../hell-kit/kitFlesh';
 import * as W from './weapons';
 import * as B from './bossFx';
+import * as E from './endFx';
+import { tar } from '../../../src/games/pacman/render/doom/attackArt';
+import { drawBonusLife } from '../../../src/games/pacman/render/items/BonusLifeView';
+import { drawExit } from '../../../src/games/pacman/render/items/ExitView';
 
 type Ctx = CanvasRenderingContext2D;
 type Look = 'normal' | 'berserk';
@@ -251,6 +255,50 @@ const hitCard = (title: string, strength: number): Card => ({
 });
 
 const GHOST_FROM: ReadonlyArray<readonly [number, number]> = [[-3, -1], [3, -1], [-3, 1], [3, 1]];
+
+/** The corridor's tiles the tar cards cover, and the tar painters' origin in a card. */
+const TAR_TILES = [3, 4, 5, 6, 7, 8].map((c) => ({ c, r: ROW }));
+const tarCard = (title: string, paint: typeof tar): Card => ({
+	title,
+	period: 4,
+	scene: (st, _u, t) => {
+		paint(st.ctx, TAR_TILES, -STRIP.x * st.S, -STRIP.y * st.S, st.S, t);
+		st.hero(2.6);
+	}
+});
+
+const END_SECTIONS: readonly Section[] = [
+	{
+		id: 'end',
+		title: 'Финал: смерть босса, сердце, выход',
+		note: 'Сейчас босс просто пропадает, а сердце и выход — общие для всех миров. Новое: босс трясётся, светится и лопается, остаётся лужа крови с его рогами; сердце ада (+1 жизнь); выход — железный люк, раскрывается зрачком на золотой свет.',
+		cards: [
+			{ title: 'Смерть босса: новое', period: 3, scene: (st, u, t) => E.bossDeath(st.ctx, st.X(6), st.Y(), st.S, ease(0.05, 0.85, u), t, (dx) => st.boss(6, false, 0, dx)) },
+			{
+				title: 'Сердце и выход: сейчас',
+				period: 3,
+				scene: (st, _u, t) => {
+					drawBonusLife(st.ctx, st.X(4), st.Y(), st.S, t);
+					drawExit(st.ctx, st.X(7), st.Y(), st.S, t);
+				}
+			},
+			{
+				title: 'Сердце и выход: ада',
+				period: 3,
+				scene: (st, u, t) => {
+					E.heartReward(st.ctx, st.X(4), st.Y(), st.S, t);
+					E.exitHatch(st.ctx, st.X(7), st.Y(), st.S, t, ease(0, 0.4, u));
+				}
+			}
+		]
+	},
+	{
+		id: 'tar',
+		title: 'Смола третьей фазы',
+		note: 'Замедляет на краях лабиринта. Сейчас — круглые лужи в клетках. A: сухая чёрная корка с тлеющими трещинами. B: глянцевый чёрный поток с рябью вдоль коридора.',
+		cards: [tarCard('Сейчас: лужи', tar), tarCard('A: корка', E.tarCrust), tarCard('B: поток', E.tarFlow)]
+	}
+];
 
 const BOSS_SECTIONS: readonly Section[] = [
 	{
@@ -538,7 +586,7 @@ const section = (id: string, title: string, note: string): HTMLElement => {
 	root.append(s);
 	return grid;
 };
-for (const sec of [...BOSS_SECTIONS, ...SECTIONS]) {
+for (const sec of [...END_SECTIONS, ...BOSS_SECTIONS, ...SECTIONS]) {
 	const g = section(sec.id, sec.title, sec.note);
 	sec.cards.forEach((c) => g.append(cardEl(c)));
 }
