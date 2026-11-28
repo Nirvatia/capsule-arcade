@@ -174,8 +174,13 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 	existing(ctx, 'berserk', c.x, c.y, S);
 	c = cell(0, 3, 3, 'рывок: превращение и удар');
 	hero(ctx, c.x - CELL * 1.05, c.y, S, 'berserk');
-	kit.form(ctx, c.x - CELL * 0.1, c.y, S, 'RIGHT', 0.45, T);
-	kit.form(ctx, c.x + CELL * 0.82, c.y, S, 'RIGHT', 1, T);
+	// halfway: the fruit fades as the skull grows over it
+	ctx.save();
+	ctx.globalAlpha = 0.4;
+	hero(ctx, c.x - CELL * 0.12, c.y, S, 'berserk');
+	ctx.restore();
+	kit.form(ctx, c.x - CELL * 0.12, c.y, S, 'RIGHT', 0.5, T);
+	kit.form(ctx, c.x + CELL * 0.78, c.y, S, 'RIGHT', 1, T);
 	kit.impact(ctx, c.x + CELL * 1.25, c.y, S);
 	c = cell(3, 3, 1, 'есть: BFG', true);
 	existing(ctx, 'bfg', c.x, c.y, S);
@@ -185,10 +190,10 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 }
 
 const root = document.getElementById('kits') as HTMLElement;
-KITS.forEach((kit, n) => {
+KITS.forEach((kit) => {
 	const section = document.createElement('section');
 	section.className = 'kit';
-	section.innerHTML = `<header><span class="tag">Набор ${'АБВ'[n]}</span><h2>${kit.name}</h2><p>${kit.idea}</p></header>`;
+	section.innerHTML = `<header><span class="tag">Выбранный набор</span><h2>${kit.name}</h2><p>${kit.idea}</p></header>`;
 	const row = document.createElement('div');
 	row.className = 'frames';
 	const scene = document.createElement('figure');

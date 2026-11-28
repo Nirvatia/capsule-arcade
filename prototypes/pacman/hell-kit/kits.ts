@@ -1,12 +1,10 @@
-// Three whole kits for the hell redesign's missing art (DESIGN §7 "The fight, redesigned"), each one
+// The kit (three were offered, the owner kept one) for the hell redesign's missing art (DESIGN §7 "The fight, redesigned"), each one
 // idea drawn in the hell's own language (`paint.ts`): the food, the split's energizer, its four equal
 // ghosts (and frightened), the snare (lying open, shut, as a pickup), the plasma (pickup and bolts),
 // the armour (pickup and on the hero), and the berserk's rush as the hero's transformation.
 // (x, y) is a tile's centre in px, S the tile in px.
 import type { Ctx, Dir } from './paint';
 import { FLESH_KIT } from './kitFlesh';
-import { FORGE_KIT } from './kitForge';
-import { BRIM_KIT } from './kitBrim';
 
 export type Item = 'snare' | 'plasma' | 'armour';
 
@@ -30,4 +28,5 @@ export interface Kit {
 	impact(c: Ctx, x: number, y: number, S: number): void;
 }
 
-export const KITS: readonly Kit[] = [FLESH_KIT, FORGE_KIT, BRIM_KIT];
+/** The owner picked «Плоть» (2026-11-28); the forge and the brimstone kits are gone. */
+export const KITS: readonly Kit[] = [FLESH_KIT];
