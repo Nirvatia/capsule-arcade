@@ -124,13 +124,6 @@ export interface Cyst {
 	readonly ph: number;
 }
 
-/** A round pad under the spawn or the fruit: where its glow breathes. */
-export interface Pad {
-	readonly cx: number;
-	readonly cy: number;
-	readonly k: number;
-}
-
 export interface FleshBake {
 	/** The ground, FRAME-sized. */
 	readonly ground: HTMLCanvasElement;
@@ -145,7 +138,6 @@ export interface FleshBake {
 	readonly cysts: readonly Cyst[];
 	/** The tunnel pads, for the live gateways (`fleshTeleport`). */
 	readonly tunnels: readonly Tunnel[];
-	readonly pads: readonly Pad[];
 	/** The lair's centre, scene units. */
 	readonly lair: { readonly x: number; readonly y: number };
 	/** The lair's gate, drawn live (`FleshLive`), or null. */
@@ -722,47 +714,12 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 
 	const wallShadow = clipTo(blur(tint(wallM, '#000'), 2, true), deckM);
 
-	// ---- the tunnel pads (live gateways) and the round pads under the spawn and the fruit ----
-	const maw = layer();
+	// ---- the tunnel pads (live gateways); the spawn and the fruit have no mark of their own ----
 	const tunnels: Tunnel[] = [];
-	const pads: Pad[] = [];
-	{
-		const mx = maw.x;
-		for (let rr = 0; rr < rows; rr += 1) {
-			for (let c = 0; c < cols; c += 1) {
-				if (kindOf(S, c, rr) === 'tele') {
-					tunnels.push({ cx: tx(c + 0.5), cy: ty(rr + 0.5), dir: c < cols / 2 ? 1 : -1 });
-				}
-			}
-		}
-		for (let rr = 0; rr < rows; rr += 1) {
-			for (let c = 0; c < cols; c += 1) {
-				const t = S[rr][c];
-				const R2 = t === 'PM' ? T * 0.38 : t === 'FT' ? T * 0.3 : 0;
-				if (R2 === 0) {
-					continue;
-				}
-				const cx = tx(c + 0.5);
-				const cy = ty(rr + 0.5);
-				mx.fillStyle = '#12030a';
-				mx.beginPath();
-				mx.arc(cx, cy, R2 + 3, 0, 7);
-				mx.fill();
-				mx.strokeStyle = '#6a2326';
-				mx.lineWidth = 5;
-				mx.beginPath();
-				mx.arc(cx, cy, R2, 0, 7);
-				mx.stroke();
-				mx.strokeStyle = 'rgba(255,190,170,.45)';
-				mx.lineWidth = 1.6;
-				mx.beginPath();
-				mx.arc(cx, cy, R2, 3.6, 5.0);
-				mx.stroke();
-				mx.fillStyle = '#1a0409';
-				mx.beginPath();
-				mx.arc(cx, cy, R2 - 2.5, 0, 7);
-				mx.fill();
-				pads.push({ cx, cy, k: t === 'PM' ? 0.3 : 0.26 });
+	for (let rr = 0; rr < rows; rr += 1) {
+		for (let c = 0; c < cols; c += 1) {
+			if (kindOf(S, c, rr) === 'tele') {
+				tunnels.push({ cx: tx(c + 0.5), cy: ty(rr + 0.5), dir: c < cols / 2 ? 1 : -1 });
 			}
 		}
 	}
@@ -775,7 +732,6 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 		m.globalAlpha = 0.8;
 		m.drawImage(bloodFloor, LX, LY);
 		m.globalAlpha = 1;
-		m.drawImage(maw.cv, LX, LY);
 		m.globalAlpha = st.ao;
 		m.drawImage(wallShadow, LX, LY);
 		m.globalAlpha = 1;
@@ -831,7 +787,6 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 		pools,
 		cysts,
 		tunnels,
-		pads,
 		lair: { x: MX + (cols * T) / 2, y: MY + (rows * T) / 2 },
 		gate: gateOf(S, MX, MY, T),
 		cols,

@@ -75,7 +75,7 @@ export interface Snare {
 export const PICKUP_TILES: readonly GridPoint[] = [
 	{ x: 12, y: 2 },
 	{ x: 19, y: 12 },
-	{ x: 12, y: 23 },
+	{ x: 12, y: 24 },
 	{ x: 5, y: 12 }
 ];
 const HAND: readonly HandItem[] = ['berserk', 'snare', 'plasma'];

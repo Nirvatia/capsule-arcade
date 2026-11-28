@@ -199,12 +199,6 @@ export class FleshLive {
 		const lr = T * (3.2 + 0.7 * beat);
 		ctx.globalAlpha = 0.55 + 0.45 * Math.min(1, beat + 0.25);
 		ctx.drawImage(lairGlow(), b.lair.x - lr, b.lair.y - lr, lr * 2, lr * 2);
-
-		for (const p of b.pads) {
-			const sz = T * (1.3 + 0.3 * beat);
-			ctx.globalAlpha = 0.28;
-			ctx.drawImage(glowSprite(GLOW), p.cx - sz / 2, p.cy - sz / 2, sz, sz);
-		}
 		ctx.restore();
 	}
 }
