@@ -13,6 +13,7 @@ import { planZone, zoneSpots, type ZoneKind } from '../../../src/games/pacman/lo
 import { drawLureFlare, LURE_RGB } from '../../../src/games/pacman/render/station/lureFlare';
 import { CJ_BODY_RATIO } from '../../../src/games/pacman/render/actors/hero/vesselHero';
 import { CinnabarHero } from '../../../src/games/pacman/render/actors/hero/CinnabarHero';
+import { FRUIT_BODY_RATIO, MelonHero, OrangeHero } from '../../../src/games/pacman/render/actors/hero/FruitHero';
 import { GAME_FEEL } from '../../../src/games/pacman/render/actors/HeroView';
 import { drawHeroGlow } from '../../../src/games/pacman/render/station/pretender';
 import type { PretenderState } from '../../../src/games/pacman/render/station/pretender';
@@ -29,6 +30,11 @@ const D = Math.min(window.devicePixelRatio || 1, 2);
 const world = new B7World(GRID_STATION);
 const heroView = new CinnabarHero();
 heroView.setFeel(GAME_FEEL);
+// the game's heroes today, the orange and the watermelon, walking the same run toward each other
+const orange = new OrangeHero();
+const melon = new MelonHero();
+orange.setFeel(GAME_FEEL);
+melon.setFeel(GAME_FEEL);
 world.setQuality('medium');
 
 // ------------------------------------------------------------------ the v4 candidates
@@ -91,7 +97,7 @@ const open = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && OPE
 type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'press' | 'torn' | 'off';
 type Pick = 'now' | 'off';
 type Mim = 'now' | 'off' | ShadeLook;
-const isShade = (m: Mim): m is ShadeLook => m === 'b1' || m === 'b2';
+const isShade = (m: Mim): m is ShadeLook => m === 'b1' || m === 'b2' || m === 'hood';
 type Lure = 'on' | 'off';
 const st = {
 	inf: 0.65,
@@ -103,7 +109,8 @@ const st = {
 	lure: 'off' as Lure,
 	big: false,
 	look: 'now' as 'now' | WallMaterial,
-	lit: 'now' as 'now' | 'lit'
+	lit: 'now' as 'now' | 'lit',
+	hero: 'fruit' as 'fruit' | 'red'
 };
 
 const NOTES: Record<string, string> = {
@@ -114,6 +121,7 @@ const NOTES: Record<string, string> = {
 	'lit-lit': 'Свет v4: пятна от ламп станции на полу, тени у подножия стен и падающие вниз-вправо, сталь стен темнее пола, глянец ловит лампы, еда мельче; лампы гаснут с заражением',
 	'mimic-now': 'Мимики как в игре: степперы',
 	'mimic-b1': 'Морок B1: голова из дыма в 0.8 клетки, острый капюшон назад, хвост дыма — движение',
+	'mimic-hood': 'Морок-капюшон: яркая мантия цвета вида (как красный герой), лицо — чёрная пустота-лак улья с глазами, подол рвётся назад клочьями',
 	'mimic-b2': 'Морок B2: голова из дыма в 0.8 клетки, круглый капюшон, хвост дыма — движение',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит',
@@ -171,12 +179,21 @@ const GROUPS: Group[] = [
 		after: () => setLit()
 	},
 	{
+		label: 'Герой',
+		key: 'hero',
+		items: [
+			['Апельсин и арбуз', 'fruit'],
+			['Красный (старый)', 'red']
+		]
+	},
+	{
 		label: 'Мимики',
 		key: 'mimic',
 		items: [
 			['Как в игре', 'now'],
 			['Морок B1', 'b1'],
 			['Морок B2', 'b2'],
+			['Морок-капюшон', 'hood'],
 			['Выкл', 'off']
 		]
 	},
@@ -676,20 +693,22 @@ function frame(now: number): void {
 		}
 	}
 	{
-		// the game's hero, the Cinnabar vessel, walking his corridor
-		const hx = L.offsetX + hero.x * S;
-		const hy = L.offsetY + hero.y * S;
-		drawHeroGlow(ctx, hx, hy, S);
-		heroView.setRadius(S * CJ_BODY_RATIO);
-		heroView.update(dt, {
-			x: hx,
-			y: hy,
-			angle: Math.atan2(hero.dy, hero.dx),
-			moving: true,
-			power: false,
-			ending: false
-		});
-		heroView.draw(ctx);
+		// the heroes: the game's orange and watermelon (toward each other on the run), or the old red
+		const walkers2: Array<[CinnabarHero | OrangeHero | MelonHero, number, ReturnType<typeof heroAt>]> =
+			st.hero === 'red'
+				? [[heroView, CJ_BODY_RATIO, hero]]
+				: [
+						[orange, FRUIT_BODY_RATIO, hero],
+						[melon, FRUIT_BODY_RATIO, heroAt(t + (heroRun.n - 1) / 6)]
+					];
+		for (const [view, ratio, h] of walkers2) {
+			const hx = L.offsetX + h.x * S;
+			const hy = L.offsetY + h.y * S;
+			drawHeroGlow(ctx, hx, hy, S);
+			view.setRadius(S * ratio);
+			view.update(dt, { x: hx, y: hy, angle: Math.atan2(h.dy, h.dx), moving: true, power: false, ending: false });
+			view.draw(ctx);
+		}
 	}
 	if (st.lure !== 'off') drawLureFlare(ctx, L.offsetX + (lx + 0.5) * S, L.offsetY + (ly + 0.5) * S, S, t, 1);
 	world.drawGrain(ctx, t);

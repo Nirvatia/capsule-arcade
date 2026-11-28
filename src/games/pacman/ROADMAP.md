@@ -349,6 +349,17 @@ last (see Later).
          master asset, one wall island (a corner and a straight) as steel, half taken with a growth
          front, fully taken, in two materials (glossy black with lime in the folds; a matte
          thicket), volume from a baked height field lit from the top left, not from detail.
+         Then (same day, `station-b7`, all on the game's scene, the hull untouched): **liked by the
+         owner**: «Свет v4» (`lightPass`: one value plan held by the lamps, the floor lit in pools,
+         contact and cast shadows, the steel under the floor; the failed lamps sick lime, spores, a
+         heartbeat wave over the floor; measured median L* floor > wall foot > walls > background in
+         every phase) with the walls as **black lacquer** (`wallHive` `lacquer`: no texture inside,
+         one soft sheen and a spot per lamp, lime only on the growth front; wall noise 2.5 against
+         the game's 7.1). Dropped: the moss and the lumpy gloss (noisy), the lime edge (tiring), a
+         flat-lifted floor. The shade got lost on it; candidate: **the hooded shade** (`shadeLooks`
+         `hood`: a bright solid robe in the kind's colour, the face a lacquer void with its eyes, the
+         hem's wisps for the motion; 0.78 × 0.86 of a tile). The page shows the orange and the
+         watermelon too («Герой»).
       8. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance

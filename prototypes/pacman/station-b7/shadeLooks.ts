@@ -9,7 +9,7 @@
 //   b2  a round hood.
 import type { GhostKind } from '../../../src/games/pacman/logic/actors/GhostModel';
 
-export type ShadeLook = 'b1' | 'b2';
+export type ShadeLook = 'b1' | 'b2' | 'hood';
 export type ShadeState = 'hunt' | 'tell' | 'rage' | 'fright' | 'eyes' | 'mimic';
 
 export interface ShadeOpts {
@@ -328,6 +328,10 @@ function drawStain(c: Ctx, S: number, kind: GhostKind, o: ShadeOpts, k: number):
 }
 
 export function drawShade(c: Ctx, x: number, y: number, S: number, kind: GhostKind, st: ShadeState, look: ShadeLook, o: ShadeOpts): void {
+	if (look === 'hood') {
+		drawHood(c, x, y, S, kind, st, o);
+		return;
+	}
 	const seed = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'].indexOf(kind) * 13 + 1;
 	c.save();
 	c.translate(x, y);
@@ -403,3 +407,174 @@ export function drawShade(c: Ctx, x: number, y: number, S: number, kind: GhostKi
 
 /** For the size check: the head's extent in tiles, the rim included (no tail). */
 export const SHADE_HEAD_R = HEAD_R;
+
+// ------------------------------------------------------------------------------ the hooded shade
+// Round 3 (the owner, 2026-11-28, on the lacquer maze: the dark shade got lost, the old red hero
+// stands out): the shade inverted. Its robe is solid and bright in its kind's colour, drawn the
+// game's way (flat cel bands, a dark ink line, the key light from the top left, a contact shadow,
+// a lacquer sheen on the hood); its face is the black void under the hood (the walls' lacquer: they
+// are the hive) with its kind's eyes. The motion is the hem: its tatters stream back and two or three
+// short wisps tear off it, no tail. Inside 0.9 of a tile.
+
+/** Each kind's hood: the tip's height and lean to the side, how pointed, the robe's width. */
+const HOOD: Readonly<Record<GhostKind, { tip: number; side: number; sharp: number; wide: number; tatters: number }>> = {
+	BLINKY: { tip: 0.39, side: 0, sharp: 1, wide: 0.95, tatters: 4 },
+	PINKY: { tip: 0.36, side: 0.12, sharp: 0.55, wide: 0.92, tatters: 4 },
+	INKY: { tip: 0.37, side: -0.04, sharp: 0.7, wide: 0.88, tatters: 5 },
+	CLYDE: { tip: 0.35, side: 0, sharp: 0.15, wide: 1.04, tatters: 3 }
+};
+
+function rgbOf(s: string): [number, number, number] {
+	const [r, g, b] = s.split(',').map((v) => Number(v));
+	return [r, g, b];
+}
+const tint = (c: readonly number[], k: number) =>
+	c.map((v) => Math.round(k >= 1 ? v + (255 - v) * (k - 1) : v * k)).join(', ');
+
+function robePath(c: Ctx, S: number, kind: GhostKind, o: ShadeOpts): void {
+	const f = HOOD[kind];
+	const t = o.time;
+	const lean = o.lookX * 0.06;
+	const W = 0.33 * f.wide;
+	const ax = (f.side + lean) * S;
+	const ay = -f.tip * S;
+	const back = -o.lookX * 0.11;
+	c.beginPath();
+	c.moveTo(ax, ay);
+	c.bezierCurveTo(
+		ax + S * lerp(0.24, 0.1, f.sharp),
+		ay + S * lerp(0.0, 0.08, f.sharp),
+		S * (W * 0.92 + lean * 0.4),
+		-S * 0.28,
+		S * (W * 0.86 + lean * 0.2),
+		-S * 0.08
+	);
+	c.quadraticCurveTo(S * W * 1.06, S * 0.12, S * (W * 1.02 + back * 0.4), S * 0.3);
+	const n = f.tatters;
+	for (let i = 0; i < n; i++) {
+		const u = (i + 0.5) / n;
+		const x = lerp(W * 1.02, -W * 1.02, u) + back * (0.6 + 0.4 * u);
+		const y = 0.37 + 0.02 * Math.sin(t * 7 + i * 1.9) + (i % 2 ? -0.012 : 0.012);
+		c.lineTo(x * S, y * S);
+		const nx = lerp(W * 1.02, -W * 1.02, (i + 1) / n) + back;
+		if (i < n - 1) c.lineTo(nx * S, (0.31 + 0.02 * Math.sin(t * 5 + i)) * S);
+	}
+	c.lineTo(S * (-W * 1.02 + back * 0.4), S * 0.3);
+	c.quadraticCurveTo(-S * W * 1.06, S * 0.12, -S * (W * 0.86 - lean * 0.2), -S * 0.08);
+	c.bezierCurveTo(
+		-S * (W * 0.92 - lean * 0.4),
+		-S * 0.28,
+		ax - S * lerp(0.24, 0.1, f.sharp),
+		ay + S * lerp(0.0, 0.08, f.sharp),
+		ax,
+		ay
+	);
+	c.closePath();
+}
+
+function drawHood(c: Ctx, x: number, y: number, S: number, kind: GhostKind, st: ShadeState, o: ShadeOpts): void {
+	const f = HOOD[kind];
+	const t = o.time;
+	const rage = st === 'rage';
+	const fright = st === 'fright';
+	const base: [number, number, number] = fright
+		? o.white
+			? [236, 240, 255]
+			: [52, 84, 232]
+		: rage
+			? [236, 44, 30]
+			: rgbOf(KIND_RGB[kind]);
+	const VOID = '9, 9, 13';
+	const faceLook: Look = {
+		rim: st === 'tell' ? TELL_RGB : rage ? '255, 210, 120' : fright ? '245, 248, 255' : KIND_RGB[kind],
+		top: VOID,
+		bottom: VOID,
+		white: st === 'tell' ? '255, 226, 120' : rage ? '255, 244, 220' : fright ? '245, 248, 255' : mixWhite(KIND_RGB[kind], 0.78),
+		shiver: 0,
+		embers: 0
+	};
+	c.save();
+	c.translate(x, y);
+	if (st === 'eyes') {
+		drawFace(c, S, kind, 'hunt', o, { ...faceLook, rim: EYES_RGB, white: '255, 246, 214' }, -S * 0.05, 1, false);
+		c.restore();
+		return;
+	}
+	const fold = st === 'mimic' ? clamp(o.fold ?? 0, 0, 1) : 0;
+	if (st === 'mimic') drawStain(c, S, kind, o, smooth(0.35, 0.85, fold));
+	if (fold > 0.97) {
+		c.restore();
+		return;
+	}
+	// the wisps tearing off the hem along its way (short: three at most)
+	const tr = o.trail ?? [];
+	for (let j = 0; j < Math.min(3, tr.length); j++) {
+		const k = (j + 1) / 4;
+		const p = tr[Math.min(tr.length - 1, j * 2 + 1)];
+		const r = S * (0.09 - 0.022 * j);
+		const wob = Math.sin(t * 6 + j * 2) * S * 0.04;
+		c.fillStyle = `rgba(${tint(base, 1.25)}, ${0.55 * (1 - k)})`;
+		c.beginPath();
+		c.arc(p.x + wob, p.y + S * (0.3 - 0.05 * j) + wob * 0.5, r, 0, Math.PI * 2);
+		c.fill();
+	}
+	// the contact shadow and a soft glow of its colour, inside its tile
+	c.fillStyle = 'rgba(0, 0, 0, 0.32)';
+	c.beginPath();
+	c.ellipse(0, S * 0.37, S * 0.29 * (1 - fold * 0.3), S * 0.06, 0, 0, Math.PI * 2);
+	c.fill();
+	glow(c, 0, 0, S * 0.5, base.join(', '), 0.16 * (1 - fold));
+	c.save();
+	const turn = clamp(o.turn ?? 0, 0, 1);
+	const crouch = st === 'tell' ? 0.92 : 1;
+	const shiver = st === 'tell' || fright ? Math.sin(t * 47) * S * 0.018 : 0;
+	const bob = Math.sin(t * 3.2 + KIND_RGB[kind].length) * S * 0.018;
+	c.translate(shiver, bob + fold * S * 0.25 + (1 - crouch) * S * 0.3);
+	c.scale(Math.max(0.12, 1 - 1.7 * turn) * lerp(1, 1.25, fold), crouch * lerp(1, 0.15, fold));
+	c.globalAlpha *= 1 - smooth(0.6, 0.97, fold);
+	// the robe: flat cel bands clipped to it, the ink line, the lacquer sheen on the hood
+	robePath(c, S, kind, o);
+	c.fillStyle = `rgb(${base.join(', ')})`;
+	c.fill();
+	c.save();
+	c.clip();
+	c.fillStyle = `rgb(${tint(base, 0.62)})`;
+	c.beginPath();
+	c.ellipse(S * 0.3, S * 0.32, S * 0.42, S * 0.34, -0.5, 0, Math.PI * 2);
+	c.fill();
+	c.fillStyle = `rgb(${tint(base, 1.28)})`;
+	c.beginPath();
+	c.ellipse(-S * 0.2, -S * 0.22, S * 0.17, S * 0.24, 0.5, 0, Math.PI * 2);
+	c.fill();
+	c.restore();
+	robePath(c, S, kind, o);
+	c.strokeStyle = `rgb(${tint(base, 0.28)})`;
+	c.lineWidth = S * 0.05;
+	c.lineJoin = 'round';
+	c.stroke();
+	c.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+	c.lineWidth = S * 0.035;
+	c.lineCap = 'round';
+	c.beginPath();
+	const hx0 = (f.side * 0.5 + o.lookX * 0.03) * S;
+	c.arc(hx0, -S * 0.12, S * 0.24, Math.PI * 1.18, Math.PI * 1.42);
+	c.stroke();
+	// the face: the void under the hood, the hive's lacquer, its eyes inside
+	const fx = (f.side * 0.45 + o.lookX * 0.06) * S;
+	const fy = -S * 0.12 + o.lookY * S * 0.03;
+	c.fillStyle = `rgb(${VOID})`;
+	c.beginPath();
+	c.ellipse(fx, fy, S * 0.2 * f.wide, S * (rage ? 0.19 : 0.155), 0, 0, Math.PI * 2);
+	c.fill();
+	c.strokeStyle = 'rgba(200, 214, 230, 0.28)';
+	c.lineWidth = S * 0.02;
+	c.beginPath();
+	c.ellipse(fx, fy, S * 0.17 * f.wide, S * 0.12, 0, Math.PI * 1.1, Math.PI * 1.5);
+	c.stroke();
+	c.save();
+	c.translate(fx - o.lookX * S * 0.05, 0);
+	drawFace(c, S * 0.92, kind, st === 'mimic' ? 'hunt' : st, o, faceLook, fy - o.lookY * S * 0.03, 1, false);
+	c.restore();
+	c.restore();
+	c.restore();
+}
