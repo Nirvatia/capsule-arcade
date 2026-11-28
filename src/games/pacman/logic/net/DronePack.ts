@@ -50,6 +50,12 @@ export class DronePack {
 	private clock = 0;
 	/** Seconds the pack still flees. */
 	fear = 0;
+	/**
+	 * The classic ghosts (the hell's split): a frightened one turns at random at each junction
+	 * instead of running to the tile farthest from the hero (where it paced to and fro), and the
+	 * shy one never retreats to its corner.
+	 */
+	classic = false;
 
 	constructor(
 		private readonly grid: GridService,
@@ -220,7 +226,7 @@ export class DronePack {
 		}
 		const ahead = all.filter((o) => !(o.dx === -d.dx && o.dy === -d.dy));
 		const pick = ahead.length > 0 ? ahead : all;
-		const map = this.mapFor(d, here);
+		const map = this.classic && d.state === 'fright' ? null : this.mapFor(d, here);
 		let best = pick[Math.floor(this.rng() * pick.length)];
 		if (map) {
 			const flee = d.state === 'fright' ? -1 : 1;
@@ -249,7 +255,7 @@ export class DronePack {
 		if (d.role === 2) {
 			return this.flankMap;
 		}
-		if (d.role === 3) {
+		if (d.role === 3 && !this.classic) {
 			return this.heroMap[here.y * this.grid.width + here.x] > NET.drone.shy
 				? this.heroMap
 				: (this.homeMaps[this.list.indexOf(d)] ?? this.heroMap);

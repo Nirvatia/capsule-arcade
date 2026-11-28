@@ -270,8 +270,8 @@ pads, and no ghosts but their lord.
   - Every attack is telegraphed and checked for fairness: there is always a way out.
 - **Player**: 3 HP in the fight (separate from lives). Losing them drops Pac-Man into the
   abyss: the run goes on to the next level without losing a life.
-- **Weapons**: the berserk, the Sting (Жало) and the Maw (Жерло) on one food meter, and the medkit,
-  on four spots off the corners (see "The fight, redesigned" below).
+- **Weapons**: the berserk, the Sting (Жало) and the Maw (Жерло) on one food meter, one at a time,
+  and the medkit, on four spots off the corners (see "The fight, redesigned" below).
 - **Reward**: when the boss dies a heart appears at the far end of the maze from the player
   (it has to be run for) and an exit far from both;
   taking either ends the level as a win, the heart also gives +1 life.
@@ -286,13 +286,15 @@ guns; **pickups** are the weapons, a hierarchy to choose from; the boss's **atta
 from (unchanged); the **split** is the phase change, plain Pac-Man with a window to strike.
 
 - **Food** (its sprite is the owner's later pick: the fang is the lead) fills the maze at the start;
-  each piece is 10 points and fills the **food meter**, the guns' one resource: 3 segments of 10
-  pieces (the ring on the dial with its segment ticks, shown whatever is in hand).
+  each piece is 10 points and fills the **food meter**, the weapons' one resource: 3 segments of 20
+  pieces (the ring on the dial with its segment ticks, shown whatever is in hand; 60 for the whole
+  meter since 2026-11-28, was 30: the maze's ~240 pieces made the Maw always ready).
 - **The split** replaces the phase transition at 1000 and 500 HP (so twice a fight). The boss
   stands and shakes (the omen, the old transition's 2.5 s), then bursts where he is: his flesh
   splatters into **new food** (every eaten tile fills again) and his **core** stays on that tile
   (always a corridor, shown all the time, not touchable). Then **18 s of plain Pac-Man**: four
-  equal ghosts (Blinky, Pinky, Inky, Clyde, the classic chase, all slower than the hero), the
+  equal ghosts (Blinky, Pinky, Inky, Clyde, the classic chase, all slower than the hero; frightened,
+  they turn at random at junctions, and none hides in its corner), the
   weapons off (what is in hand is kept), a ghost's touch costs 1 HP, and four **energizers** in the
   corners (they exist only here). An eaten ghost does not return (200/400/800/1600 points). At the
   end the rest run back to **their core** (that is the reason he forms there, not in the lair);
@@ -302,13 +304,19 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
   eaten ghost, far less than a hit on him stunned (the owner's rule, 2026-11-28). The split's damage
   never crosses the next phase's threshold.
 - **The button** uses the weapon in hand, one action each (no gestures, no taps against holds: the
-  owner, 2026-11-28). A new weapon picked up replaces the one in hand: the choice is always there.
+  owner, 2026-11-28). A new weapon picked up replaces the one in hand. **A weapon is spent** and leaves
+  the hand when the meter it used cannot pay its next use: the Maw after its shot, the Sting on an
+  empty meter (let go earlier, it stays), the berserk when a rush leaves less than a segment. A
+  press the meter cannot pay is refused with a dull click (2026-11-28: the rotation of the weapons).
 - **Pickups** (four spots in the middle of the outer sides, away from the corners, which are the
-  split's energizers'; hidden during the split; one of each kind at most, never the weapon in hand,
-  15–20 s to come). The weapons, light to heavy:
-  - **Berserk** (light, free): ×1.15 speed while held; the button is a **rush** along the heading
-    (5 tiles, to a wall): 50 damage and a short stun, the imps on the way die, then 2.5 s to rush
-    again. A plain rush is not covered (touching the boss in its strike costs nothing more). A rush
+  split's energizers'; hidden during the split). **The weapons come one at a time** (2026-11-28):
+  only while the hand is empty and none lies, 4–6 s after, on a spot away from the hero; its kind
+  drawn by the phase's weights (berserk / Sting / Maw: 60/30/10, 40/35/25, 25/30/45), so the heavy
+  gun is rare at first and the likeliest at the end. The fight starts with one lying. The weapons,
+  light to heavy:
+  - **Berserk** (light): ×1.15 speed while held; the button is a **rush** along the heading
+    (5 tiles, to a wall) that **costs a segment** (none without it): 50 damage and a short stun, the
+    imps on the way die, then 2.5 s to rush again. A plain rush is not covered (touching the boss in its strike costs nothing more). A rush
     made **while the boss's attack is live** (the lava ball's run, a burning rift or seal, the
     eruption: his ACTIVE state or a hazard burning) is a **counter**: ×3 damage, unhurt for the rush.
     Its look: the hero spins up into a whirlwind of blood, the same for both heroes; while a rush
@@ -316,9 +324,10 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
   - **Жало** (the Sting, middle): fires bolts along the corridor while the button is held, a segment
     of the meter a second (about 100 damage a segment if all hit), no stun, kills imps; on the move.
   - **Жерло** (the Maw, the old BFG renamed, heavy): needs the **whole meter**; the hero stands
-    still for its charge (0.8 s), then the orb: 400 damage and a 1 s stun, the tracers along the
-    corridors as before.
-  - **Medkit**: only when hurt (+1 HP).
+    still for its charge (0.8 s), then the orb: **400 damage only on a stunned boss** (the split's
+    window, or a rush's or an orb's stun), **150 otherwise** (a glance), and a 1 s stun; the tracers
+    along the corridors as before.
+  - **Medkit**: only when hurt (+1 HP), 15–20 s after he is hurt, on its own wait.
     The armour and the snare were dropped (2026-11-28: too many things, no hierarchy).
 
 ## 7a. The station (boss level)
@@ -556,7 +565,7 @@ in `config/zoneConfig.ts`), the picture in `render/zone` (`zoneBake`, `zoneSprit
 ## 7c. The Net (dropped; kept unwired)
 
 The owner played it (2026-11-27): "just Pac-Man with gates", and the drones could not be outrun in the alarm.
-The Port (§7d) took its drones and doors.
+The Port (§7d, deleted) took its drones and doors; the hell's split still uses the drones.
 
 A cyberpunk **server maze** on the **Lady Bug** idea (the owner, 2026-11-27, after the Zone failed
 the drive test). Everything is self-lit: dark blocks with a neon rim on a dark blue field, the
@@ -587,45 +596,12 @@ itself, like the original). Prototype `prototypes/pacman/net`; the rules are gam
   play and tuning, his own maze, the hijack, the HUD and sound, the fruit heroes' look here, the
   place in `BOSS_ROTATION`.
 
-## 7d. The Port (boss level candidate, a playable prototype)
+## 7d. The Port (dropped, deleted)
 
-**The hero hunts a boss.** The owner picked the idea (2026-11-27, after the Zone and the Net failed): a
-boss level must change the objective, and Pac-Man's own fantasy turned round (he chases, the boss is the
-prey) does. A free runner cannot be caught in a maze with loops, so the Broker has **a plan, and a plan
-needs time**. Prototype `prototypes/pacman/port`; the rules are game code in `logic/port`
-(`PortService`, `BrokerBoss`, numbers in `config/portConfig.ts`; the drones and the doors are
-`logic/net`'s), the picture in `render/port`.
-
-- **The Broker**: a smuggler AI in a loader's body (a screen for a face: a ghost's, cyan). He hacks the
-  four crane **terminals** one by one, standing at each for 4 s (3.4, 2.8 in the later phases) while a
-  ring fills; then he runs to the next one, **the farthest from the hero** (marked by rings running in
-  to it). He plans round the shut yard gates (a hero running ahead of him through one cuts his way),
-  sprints when the hero is within four tiles, is slowed by a power cell. 4.8 / 5.2 / 5.6 tiles a second
-  by phase, the hero 6.
-- **Catching him**: touch him, at a terminal or on the run (he never hurts the hero by touch). A bite
-  takes one of his three health (shown above him), **heals the hero one life**, stuns him for 1.1 s;
-  he then warps to the farthest terminal and the plan starts over (terminals and extra drones reset).
-  Three bites end him.
-- **Losing**: he hacks all four terminals and gets away; or three hits from the drones.
-- **The port's drones** (the only thing that costs the hero a life): three on the field, four colours as
-  the ghosts, a spotlight ahead, a siren; **one more wakes for every terminal he hacks** (six at most).
-  Never faster than the hero.
-- **The hero's tools**: a **dash** (Space; four tiles, safe while it lasts) charged by nuts, one charge
-  per 12, three at most; the **yard gates**, ten in the corridors (green posts, a dashed line): he
-  always passes them and each slams shut behind him for 8 s (a striped bar, a red beacon), the drones and
-  the Broker cannot cross; four **power cells** in the corners: the drones flee and can be eaten (200,
-  400, 800, 1600), the Broker is slowed 7 s.
-- **The world**: a container terminal at night, the maze is the yard (`grid_port`: long rows of
-  containers with lanes, a control building in the middle, tunnels are yard gates). Round it a whole
-  scene: the sea with two ships, two gantry cranes along the quay, rails, loose container stacks,
-  trucks on the road, warehouses, floodlight poles with their pools of light. The containers are painted
-  one by one (corrugated roofs, corner castings, a company stripe, rust, one light from the top left);
-  the control building has a helipad, a radar and lit windows; the corridors are wet concrete with a
-  faint slab grid, a few puddles and painted bay lines. The sprites (the Broker, the drones, the
-  terminals, the cells, the nuts) have the same finish. 60 fps in headless Chromium without a GPU.
-- **Open**: the owner's play and tuning, the names (the working ones: the Broker, the Port), his own
-  maze, weather and a day variant, the Broker's phase looks, sound, the HUD, the fruit heroes' look
-  here, the place in `BOSS_ROTATION`.
+The hero hunted a boss (the Broker, hacking four crane terminals) in a container terminal at night,
+with the Net's drones and gates. Played twice (2026-11-27): passed without trying, the art unreadable.
+Dropped and deleted (2026-11-28, the owner); recoverable from commit `be091bd`. Its lessons stay in
+the boss worlds' rules (ROADMAP Part II.3): the hunted boss must still threaten the hero, few hues.
 
 ## 8. The arcade (secret level)
 

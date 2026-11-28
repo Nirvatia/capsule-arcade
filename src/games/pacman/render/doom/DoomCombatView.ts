@@ -347,16 +347,6 @@ export class DoomCombatView {
 				ctx.rotate(ready ? Math.sin(time * 2 + phase) * 0.1 : 0);
 				ctx.drawImage(sprite.icon, -13 * u, -13 * u, 26 * u, 26 * u);
 				ctx.restore();
-			} else if (!pickup.visible && pickup.respawnProgress > 0) {
-				const radius = 9 * u;
-				ctx.save();
-				ctx.globalAlpha = 0.35;
-				ctx.strokeStyle = '#ff8a5a';
-				ctx.lineWidth = Math.max(1, 1.4 * u);
-				ctx.beginPath();
-				ctx.arc(px, py, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pickup.respawnProgress);
-				ctx.stroke();
-				ctx.restore();
 			}
 		}
 	}

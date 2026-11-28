@@ -98,21 +98,43 @@ last (see Later).
    mock-up; (d) the HUD (done in part: the ring is the food meter with segment ticks, shown always).
    The owner played it (2026-11-28): "plays briskly"; his rule, in the prototype: the stun only for
    all four eaten (no HP then), fewer give 75 HP each and no stun.
-   **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):
-   (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
-   bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a
-   small shadow, no glow): the eye reads best, but **the owner picked the fang** (2026-11-27: it does
-   not clutter the maze and is easy to see). The game turns the drawn maze's dots into floor and
-   `assertDoomMap` demands a map without them, so food needs both changed; its effect (score, heals, the
-   BFG's charge) is open. (2) **the split**: four still frames were rejected (unconnected, the omen read
-   as a sticker); now a **playable scripted loop** (arrow keys; fight 7 s, the omen, the burst, 22 s of
-   plain Pac-Man with the weapon shut off, the four running back into the lair, the weak boss 4.5 s that a
-   touch hits), on the real hero, maze, food and the ghosts' chase (`PlayerService`, `DronePack`);
-   open: how long, whether the energizers stay (they do in the mock), what surviving earns, the real
-   boss's pathing and attacks instead of the generic chase. **A hole the owner found: the mock returns
-   the four into the lair and opens it, but the hero never enters the lair and the BFG's orb stops at
-   walls, so the weak boss could not be hit. The boss must re-form in a corridor the hero can reach and
-   shoot along (and why there needs a reason).**
+   **The owner's second play in the game (2026-11-28)**: too easy (five Maw shots and the meter always
+   full), the berserk spammed for free, the split's ghosts pacing in a far corner, tar on a teleport.
+   Done the same day (`DESIGN.md` §7, tested): the meter 3×20 (was 3×10); the Maw's 400 only on a
+   stunned boss, 150 otherwise; a rush costs a segment; a weapon is spent when the meter cannot pay
+   its next use; the weapons come one at a time by the phase's weights; the medkit on its own wait;
+   frightened split ghosts turn at random and the shy one never hides (`DronePack.classic`); no tar on
+   a teleport or its mouth. Left: his play of these numbers (`DoomBalance`: the weights, the glance,
+   the segment), then **one art pass in `hell-kit`** (frames, his approval, then into the game):
+   - the weapons: the Sting's icon (unreadable), its muzzle flash and its bolts' hits (boss, wall,
+     imp; now only a white flash on the boss); the rush redone (it reads as caramel), its trail and its
+     hit, the counter's ×3 hit stronger than a plain one, the gold "counter now" ring checked; the
+     Maw's charge on the hero checked, its glance and its full hit told apart; a weapon spent (now a
+     grey placeholder ring, fx `spent`); a weapon arriving on its spot; the refused press (sound
+     only now); the medkit in the «Плоть» style (check);
+   - the boss: a clear stunned state (now spiral eyes and a slow body): slumped, something circling,
+     the window and how long it lasts; hit reactions by strength (now a white flash); the split's
+     omen, the core (`doomPlaceholders.drawCore`), the four running back and his forming on it; his
+     death, the heart and the exit (check);
+   - the split: **a ghost eaten** (no effect at all: the fx `ghost-eaten` event has no painter): the
+     flesh bursting, the 200-1600 score, the sound; the frightened flayed ghost and its blink (check);
+   - the hazards: the tar without round pools in the tiles (e.g. a cracked crust along the corridor);
+   - the HUD: the meter's 20-piece segments, the empty slot after a weapon is spent.
+     **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):
+     (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
+     bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a
+     small shadow, no glow): the eye reads best, but **the owner picked the fang** (2026-11-27: it does
+     not clutter the maze and is easy to see). The game turns the drawn maze's dots into floor and
+     `assertDoomMap` demands a map without them, so food needs both changed; its effect (score, heals, the
+     BFG's charge) is open. (2) **the split**: four still frames were rejected (unconnected, the omen read
+     as a sticker); now a **playable scripted loop** (arrow keys; fight 7 s, the omen, the burst, 22 s of
+     plain Pac-Man with the weapon shut off, the four running back into the lair, the weak boss 4.5 s that a
+     touch hits), on the real hero, maze, food and the ghosts' chase (`PlayerService`, `DronePack`);
+     open: how long, whether the energizers stay (they do in the mock), what surviving earns, the real
+     boss's pathing and attacks instead of the generic chase. **A hole the owner found: the mock returns
+     the four into the lair and opens it, but the hero never enters the lair and the BFG's orb stops at
+     walls, so the weak boss could not be hit. The boss must re-form in a corridor the hero can reach and
+     shoot along (and why there needs a reason).**
 2. **A random boss on every 5th level, for both heroes**: in (`logic/level/BossCatalog`). It
    draws from `BOSS_ROTATION`, the finished bosses: the hell and the station (since 2026-11-26).
    Left: difficulty scaled by level number, not world, now that a second boss is in.
@@ -299,25 +321,15 @@ last (see Later).
      reward; few things on the maze, bold and readable.
    - **The Net dropped** (2026-11-27, played: "just Pac-Man with gates; no escape from the drones in the
      alarm"): a tool without a goal, and my surge made the drones faster than the hero. The code stays
-     unwired (`render/net`, `prototypes/pacman/net`; `logic/net`'s drones and doors live on in the
-     Port); delete when the owner says. Rules it left: **a boss world must change the objective, not
+     unwired (`render/net`, `prototypes/pacman/net`; `logic/net`'s `DronePack` lives on in the hell's
+     split); delete when the owner says. Rules it left: **a boss world must change the objective, not
      only add a tool**; and **there is always a way out: the hero is never slower than what chases him.**
-   - **The Port, played** (2026-11-27): the owner passed it twice without trying; the art was
-     unreadable (every container its own colour, everything coloured at once); "partly works", he is
-     thinking. What he sees in the other two: the hell keeps Pac-Man's tension (you flee the boss's
-     attacks all the time and look for chances), the station is pure Pac-Man, harder, with traps. So
-     **the hunted boss must still threaten the hero** (attacks to flee, not only drones), the world needs
-     **few hues** (one dominant colour, accents rare), and the first pass should be hard.
-   - **The Port is the current candidate** (`DESIGN.md` §7d): the hero **hunts a boss** (the Broker,
-     a smuggler AI hacking four crane terminals one by one; catch him at a terminal or on the run, three
-     bites end him, if he hacks all four he gets away), the port's drones hunt the hero, the yard gates
-     slam shut behind him (they cut the drones and the Broker's way), nuts charge a dash, power cells
-     slow the Broker and scare the drones. A container terminal at night. A playable prototype:
-     `prototypes/pacman/port` (rules in `logic/port`, picture in `render/port`, tested). Left: the
-     owner's play and tuning (`config/portConfig.ts`); the names; his own maze (`grid_port` is a first
-     one, terminals in `portConfig`); the weather and the day variant; the Broker's phases' looks, the
-     drones' catch-me moments, sound, the HUD; the fruit heroes' look here; then wiring
-     (`LevelSession`, `BossCatalog`, the dev panel).
+   - **The Port dropped and deleted** (2026-11-28, the owner; `DESIGN.md` §7d, commit `be091bd`): the
+     hero hunted the Broker in a container terminal. Played twice: passed without trying, the art
+     unreadable. What the owner saw in the other two: the hell keeps Pac-Man's tension (you flee the
+     boss's attacks and look for chances), the station is pure Pac-Man, harder, with traps. So **the
+     hunted boss must still threaten the hero**, a world needs **few hues** (one dominant colour,
+     accents rare), and the first pass should be hard.
    - **Art standard for every boss world** (the owner, 2026-11-27, after two worlds fell short of the
      game's level): a **maze of its own** (never another world's flipped), a **whole scene round it**
      (the seasons' houses and parasols, the hell's ribs and cysts: here the sea, a ship, cranes,

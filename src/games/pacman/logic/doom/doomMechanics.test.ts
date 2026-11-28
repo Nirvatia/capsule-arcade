@@ -11,6 +11,7 @@ import { ScoreModel } from '../level/ScoreModel';
 import { DoomAbilityService } from './DoomAbilityService';
 import {
 	BFG_ORB_DAMAGE,
+	BFG_ORB_GLANCE_DAMAGE,
 	BOSS_HP,
 	ERUPTION_ACTIVE,
 	ERUPTION_INNER,
@@ -143,7 +144,7 @@ function walk(player: PlayerService, dirs: PlayerDirection[], onStep?: () => voi
 describe('doom pickups', () => {
 	it('every pickup spot can be collected from every side', () => {
 		const { grid } = makeWorld();
-		const needs = { hp: 2, armour: false, held: null, handFree: true };
+		const needs = { hp: 2, held: null, handFree: true, phase: 1 };
 		for (const corner of DOOM_PICKUP_TILES) {
 			const sides = grid
 				.walkableNeighbors(corner.x, corner.y)
@@ -153,6 +154,8 @@ describe('doom pickups', () => {
 				const world = makeWorld();
 				const pickups = new DoomPickupService(DOOM_PICKUP_TILES, needs);
 				const pickup = pickups.list.find((p) => p.tile.x === corner.x && p.tile.y === corner.y)!;
+				pickups.list.forEach((p) => p.reset());
+				pickup.spawn('medkit');
 				const route = [
 					...pathTo(world.grid, world.player.tile, side, corner),
 					...pathTo(world.grid, side, corner)
@@ -186,7 +189,8 @@ describe('doom boss', () => {
 			ability.update(STEP, player);
 		}
 		// the orb itself must connect (tracers alone would only deal BFG_TRACER_DAMAGE)
-		expect(boss.hp).toBe(BOSS_HP - BFG_ORB_DAMAGE);
+		// he was not stunned: the orb glances (the full hit is for a stunned boss)
+		expect(boss.hp).toBe(BOSS_HP - BFG_ORB_GLANCE_DAMAGE);
 	});
 
 	it('enemy pathing never routes through the empty border', () => {

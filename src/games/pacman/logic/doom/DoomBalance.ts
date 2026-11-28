@@ -104,14 +104,17 @@ export const TRANSITION_DURATION = 2.5;
 export const ATTACK_RETRY_INTERVAL = 0.25;
 export const BOSS_HP = 1500;
 export const PHASE_THRESHOLDS = [1000, 500] as const;
+/** The Maw's orb on a stunned boss (the split's window, a rush's or an orb's stun): the real hit. */
 export const BFG_ORB_DAMAGE = 400;
+/** The Maw's orb on a boss who is not stunned: a glance. */
+export const BFG_ORB_GLANCE_DAMAGE = 150;
 export const BFG_ORB_STUN = 1.0;
 export const BFG_TRACER_DAMAGE = 100;
 /**
  * The weapons' one resource, the food (DESIGN §7 "The fight, redesigned"): a meter of
  * `FOOD_SEGMENTS` segments of `FOOD_PER_SEGMENT` pieces each.
  */
-export const FOOD_PER_SEGMENT = 10;
+export const FOOD_PER_SEGMENT = 20;
 export const FOOD_SEGMENTS = 3;
 /** The Maw (Жерло, the heavy gun): the whole meter for one charged shot, fired standing still. */
 export const MAW_COST = FOOD_SEGMENTS * FOOD_PER_SEGMENT;
@@ -120,14 +123,31 @@ export const STING_FOOD_PER_SECOND = FOOD_PER_SEGMENT;
 export const STING_RATE = 0.1;
 export const STING_SPEED = 16;
 export const STING_DAMAGE = 10;
-/** The berserk (the light one, free): faster, the button is a rush with a cooldown. */
+/** The berserk (the light one): faster, the button is a rush that costs a segment, with a cooldown. */
 export const BERSERK_SPEED_MUL = 1.15;
 export const RUSH_TILES = 5;
+export const RUSH_COST = FOOD_PER_SEGMENT;
 export const RUSH_COOLDOWN = 2.5;
 export const RUSH_DAMAGE = 50;
 export const RUSH_STUN = 0.5;
 /** A rush made while the boss's attack is live: this many times the damage, and unhurt. */
 export const RUSH_COUNTER_MUL = 3;
+/**
+ * The weapons come one at a time: only while the hand is empty and none lies on the map, after
+ * `WEAPON_WAIT_MIN..MAX` s. Its kind is drawn by the phase's weights (berserk, Sting, Maw): the
+ * heavy gun is rare at first and common at the end.
+ */
+export const WEAPON_WAIT_MIN = 4;
+export const WEAPON_WAIT_MAX = 6;
+export const WEAPON_WEIGHTS: ReadonlyArray<readonly [berserk: number, sting: number, maw: number]> =
+	[
+		[60, 30, 10],
+		[40, 35, 25],
+		[25, 30, 45]
+	];
+/** The medkit comes to a hurt hero after this wait (none lies yet). */
+export const MEDKIT_WAIT_MIN = 15;
+export const MEDKIT_WAIT_MAX = 20;
 /** The split (at each phase threshold): the burst, the Pac-Man part, the return to the core. */
 export const SPLIT_BURST = 0.6;
 export const SPLIT_PACMAN = 18;

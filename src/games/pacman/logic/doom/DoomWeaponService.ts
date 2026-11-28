@@ -28,7 +28,9 @@ export interface DoomFxEvent {
 		| 'bite'
 		| 'pickup'
 		| 'boss-hit'
-		| 'player-hit';
+		| 'player-hit'
+		/** The weapon in hand is spent and leaves it (`detail`: the weapon). */
+		| 'spent';
 	readonly x: number;
 	readonly y: number;
 	readonly dx?: number;
@@ -133,8 +135,19 @@ export class DoomWeaponService {
 		this.model.addFood(count);
 	}
 
-	startRushCooldown(): void {
-		this.model.startRushCooldown();
+	/** Pays the rush (a segment) and starts its cooldown; false if it cannot go. */
+	spendRush(): boolean {
+		return this.model.spendRush();
+	}
+
+	/** The meter cannot pay the weapon in hand. */
+	get starved(): boolean {
+		return this.model.starved;
+	}
+
+	/** The weapon just spent (once), for its effect. */
+	consumeSpent(): DoomSlotItem {
+		return this.model.consumeSpent();
 	}
 
 	startBfgCharge(): boolean {

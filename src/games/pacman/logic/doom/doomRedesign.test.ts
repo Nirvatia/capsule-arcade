@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { zoneRng } from '../zone/zoneRng';
 import { GRID_DOOM, DOOM_PICKUP_TILES } from '../../config/mazes/doom';
 import type { PacmanEventMap } from '../../core/Events';
 import { EventBus } from '../../engine/EventBus';
@@ -8,25 +9,32 @@ import { LevelProgress } from '../level/LevelProgress';
 import { ScoreModel } from '../level/ScoreModel';
 import { GridModel } from '../maze/GridModel';
 import { GridService } from '../maze/GridService';
-import type { DronePack } from '../net/DronePack';
+import { DronePack } from '../net/DronePack';
+import { DoomArena } from './DoomArena';
 import { DoomAbilityService } from './DoomAbilityService';
 import {
 	BFG_ORB_DAMAGE,
+	BFG_ORB_GLANCE_DAMAGE,
 	BOSS_HP,
+	FOOD_PER_SEGMENT,
+	MEDKIT_WAIT_MAX,
 	INTRO_DURATION,
 	MAW_COST,
 	PHASE_THRESHOLDS,
 	PLAYER_MAX_HP,
 	RUSH_COOLDOWN,
+	RUSH_COST,
 	RUSH_COUNTER_MUL,
 	RUSH_DAMAGE,
 	SPLIT_GHOST_DAMAGE,
 	SPLIT_PACMAN,
-	STING_DAMAGE
+	STING_DAMAGE,
+	WEAPON_WAIT_MAX
 } from './DoomBalance';
 import { DoomBossService } from './DoomBossService';
 import { assertDoomMap } from './DoomMapValidation';
 import { DoomPickupService } from './DoomPickupService';
+import type { DoomPickupNeeds } from './DoomPickupService';
 import type { DoomSplitService } from './DoomSplitService';
 
 const STEP = 1 / 60;
@@ -172,7 +180,8 @@ describe('the food meter feeds the guns', () => {
 		expect(f.doom.fire(f.player)).toBe('bfg');
 		f.run(1);
 		expect(f.doom.food).toBe(0);
-		expect(f.doom.armed).toBe('bfg');
+		// one shot spends the Maw: it leaves the hand
+		expect(f.doom.armed).toBe('');
 	});
 });
 
@@ -255,26 +264,44 @@ describe('the hand', () => {
 		f.run(0.05);
 	}
 
-	it('the berserk rushes for free, then waits its cooldown', () => {
+	it('the berserk will not rush without a segment in the meter', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('berserk');
 		f.tick();
+		eat(f, RUSH_COST - 1);
+		const hp = f.boss.hp;
+		expect(f.doom.fire(f.player)).toBeNull();
+		f.run(0.6);
+		expect(f.boss.hp).toBe(hp);
+		expect(f.doom.armed).toBe('berserk');
+	});
+
+	it('a rush pays a segment and waits its cooldown; the last segment spends the berserk', () => {
+		const f = fight();
+		lineUp(f);
+		f.doom.debugGiveWeapon('berserk');
+		f.tick();
+		eat(f, RUSH_COST * 2);
 		const hp = f.boss.hp;
 		expect(f.doom.counterWindow).toBe(false);
 		expect(f.doom.fire(f.player)).toBe('rush');
+		expect(f.doom.food * MAW_COST).toBeCloseTo(RUSH_COST);
 		f.run(0.6);
 		expect(f.boss.hp).toBe(hp - RUSH_DAMAGE);
 		expect(f.doom.fire(f.player)).toBeNull();
 		f.run(RUSH_COOLDOWN);
 		expect(f.doom.fire(f.player)).toBe('rush');
-		expect(f.doom.armed).toBe('berserk');
+		// what he ate on the way does not make a segment: the berserk is spent
+		expect(f.doom.food * MAW_COST).toBeLessThan(RUSH_COST);
+		expect(f.doom.armed).toBe('');
 	});
 
 	it("a rush in the boss's live attack is a counter: more damage, unhurt", () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('berserk');
+		f.doom.debugGiveWeapon('food');
 		f.tick();
 		Object.defineProperty(f.doom, 'counterWindow', { get: () => true });
 		const hp = f.boss.hp;
@@ -289,6 +316,7 @@ describe('the hand', () => {
 		lineUp(f);
 		f.run(2);
 		f.doom.debugGiveWeapon('berserk');
+		f.doom.debugGiveWeapon('food');
 		f.tick();
 		expect(f.doom.fire(f.player)).toBe('rush');
 		expect(f.player.isInvulnerable).toBe(false);
@@ -306,11 +334,11 @@ describe('the hand', () => {
 		expect(seen).toBe(true);
 	});
 
-	it('the Sting fires while held, a segment a second, and stops on an empty meter', () => {
+	it('the Sting fires while held, a segment a second, and is spent on an empty meter', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('plasma');
-		eat(f, 10);
+		eat(f, FOOD_PER_SEGMENT);
 		const hp = f.boss.hp;
 		f.run(2, true);
 		expect(f.doom.food).toBe(0);
@@ -319,10 +347,21 @@ describe('the hand', () => {
 		const after = f.boss.hp;
 		f.run(1, true);
 		expect(f.boss.hp).toBe(after);
+		expect(f.doom.armed).toBe('');
+	});
+
+	it('the Sting let go before the meter is empty stays in hand', () => {
+		const f = fight();
+		lineUp(f);
+		f.doom.debugGiveWeapon('plasma');
+		eat(f, FOOD_PER_SEGMENT * 2);
+		f.run(0.5, true);
+		f.run(0.5);
+		expect(f.doom.food).toBeGreaterThan(0);
 		expect(f.doom.armed).toBe('plasma');
 	});
 
-	it('the Maw orb hits for its full damage', () => {
+	it('the Maw orb hits a stunned boss for its full damage', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('bfg');
@@ -333,47 +372,161 @@ describe('the hand', () => {
 		f.run(1.5);
 		expect(f.boss.hp).toBeLessThanOrEqual(hp - BFG_ORB_DAMAGE);
 	});
+
+	it('the Maw orb only glances off a boss who is not stunned', () => {
+		const f = fight();
+		lineUp(f);
+		// wake him but keep him where he stands: the boss is not updated below
+		const model = (f.boss as unknown as { model: { state: string; stunTimer: number } }).model;
+		model.state = 'CHASE';
+		model.stunTimer = 0;
+		f.doom.debugGiveWeapon('bfg');
+		f.doom.debugGiveWeapon('food');
+		const step = (): void => {
+			f.player.update(STEP);
+			f.doom.update(STEP, f.player);
+		};
+		step();
+		const hp = f.boss.hp;
+		expect(f.boss.isStunned).toBe(false);
+		expect(f.doom.fire(f.player)).toBe('bfg');
+		for (let t = 0; t < 1.5; t += STEP) {
+			step();
+		}
+		expect(f.boss.hp).toBe(hp - BFG_ORB_GLANCE_DAMAGE);
+	});
 });
 
 describe('the pickups', () => {
+	const full = { hp: PLAYER_MAX_HP, held: null, handFree: true, phase: 1 } as const;
+	const still = new PlayerService(
+		new GridService(new GridModel(GRID_DOOM)),
+		new LevelProgress(
+			new GridService(new GridModel(GRID_DOOM)),
+			new ScoreModel(),
+			new EventBus<PacmanEventMap>()
+		),
+		new EventBus<PacmanEventMap>()
+	);
+	const lying = (pickups: DoomPickupService) =>
+		pickups.list.map((p) => p.kind).filter((k) => k !== null);
+	const wait = (pickups: DoomPickupService, seconds: number, needs: DoomPickupNeeds) => {
+		for (let t = 0; t < seconds; t += STEP) {
+			pickups.update(STEP, still, needs);
+		}
+	};
+
 	it('a new weapon replaces the one in hand; the same one is not taken', () => {
-		const pickups = new DoomPickupService(DOOM_PICKUP_TILES, {
-			hp: PLAYER_MAX_HP,
-			held: 'plasma',
-			handFree: true
-		});
-		expect(
-			pickups.isCollectible('berserk', { hp: PLAYER_MAX_HP, held: 'plasma', handFree: true })
-		).toBe(true);
-		expect(
-			pickups.isCollectible('plasma', { hp: PLAYER_MAX_HP, held: 'plasma', handFree: true })
-		).toBe(false);
-		expect(
-			pickups.isCollectible('bfg', { hp: PLAYER_MAX_HP, held: 'plasma', handFree: false })
-		).toBe(false);
+		const pickups = new DoomPickupService(DOOM_PICKUP_TILES, { ...full, held: 'plasma' });
+		expect(pickups.isCollectible('berserk', { ...full, held: 'plasma' })).toBe(true);
+		expect(pickups.isCollectible('plasma', { ...full, held: 'plasma' })).toBe(false);
+		expect(pickups.isCollectible('bfg', { ...full, held: 'plasma', handFree: false })).toBe(false);
 	});
 
-	it('bring the medkit only to a hurt hero', () => {
-		const whole = new DoomPickupService(DOOM_PICKUP_TILES, {
-			hp: PLAYER_MAX_HP,
-			held: null,
-			handFree: true
+	it('bring the medkit only to a hurt hero, after its wait', () => {
+		const pickups = new DoomPickupService(DOOM_PICKUP_TILES, full);
+		wait(pickups, MEDKIT_WAIT_MAX + 1, { ...full, held: 'berserk' });
+		expect(lying(pickups)).not.toContain('medkit');
+		wait(pickups, MEDKIT_WAIT_MAX + 1, { ...full, hp: 1, held: 'berserk' });
+		expect(lying(pickups)).toContain('medkit');
+		expect(pickups.isCollectible('medkit', full)).toBe(false);
+	});
+
+	it('one weapon at a time: none comes while one is held or lies', () => {
+		const pickups = new DoomPickupService(DOOM_PICKUP_TILES, full);
+		expect(lying(pickups)).toHaveLength(1);
+		wait(pickups, 30, full);
+		expect(lying(pickups)).toHaveLength(1);
+		pickups.list.forEach((p) => p.reset());
+		wait(pickups, 30, { ...full, held: 'bfg' });
+		expect(lying(pickups)).toHaveLength(0);
+		wait(pickups, WEAPON_WAIT_MAX + 0.1, full);
+		expect(lying(pickups)).toHaveLength(1);
+	});
+
+	it('the heavy gun is rare in the first phase and the likeliest in the last', () => {
+		let i = 0;
+		const sweep = () => ((i += 1) % 1000) / 1000;
+		const pickups = new DoomPickupService(DOOM_PICKUP_TILES, { ...full, held: 'bfg' }, sweep);
+		const count = (phase: number) => {
+			const n = { berserk: 0, plasma: 0, bfg: 0, medkit: 0 };
+			for (let k = 0; k < 1000; k += 1) {
+				n[pickups.drawWeapon(phase)] += 1;
+			}
+			return n;
+		};
+		const first = count(1);
+		const last = count(3);
+		expect(first.bfg).toBeLessThan(first.plasma);
+		expect(first.plasma).toBeLessThan(first.berserk);
+		expect(last.bfg).toBeGreaterThan(last.plasma);
+		expect(last.bfg).toBeGreaterThan(last.berserk);
+	});
+});
+
+describe('the tar', () => {
+	it('never lies on a teleport nor at its mouth', () => {
+		const grid = new GridService(new GridModel(GRID_DOOM));
+		const arena = new DoomArena(grid);
+		(arena as unknown as { corruptionValue: number }).corruptionValue = 1;
+		let teleports = 0;
+		for (let y = 0; y < grid.height; y += 1) {
+			for (let x = 0; x < grid.width; x += 1) {
+				if (!grid.isTeleport(x, y)) {
+					continue;
+				}
+				teleports += 1;
+				for (const [dx, dy] of [
+					[0, 0],
+					[1, 0],
+					[-1, 0],
+					[0, 1],
+					[0, -1]
+				]) {
+					expect(arena.isCorrupted(x + dx, y + dy), `${x + dx},${y + dy}`).toBe(false);
+				}
+			}
+		}
+		expect(teleports).toBeGreaterThan(0);
+	});
+});
+
+describe("the split's ghosts", () => {
+	it('a frightened one turns at random at a junction, not always away from the hero', () => {
+		const f = fight();
+		const pack = (f.doom.split as unknown as { pack: DronePack }).pack;
+		pack.update(STEP, {
+			hero: { x: 12, y: 21 },
+			ahead2: { x: 12, y: 21 },
+			ahead4: { x: 12, y: 21 },
+			speedMul: 1,
+			shut: () => false
 		});
-		expect(whole.list.map((p) => p.kind)).not.toContain('medkit');
-		expect(whole.choices({ hp: 1, held: null, handFree: true })).toContain('medkit');
-		expect(whole.isCollectible('medkit', { hp: PLAYER_MAX_HP, held: null, handFree: true })).toBe(
-			false
+		pack.hack(30);
+		const d = pack.list[0];
+		const aim = (pack as unknown as { aim: (d: unknown, w: unknown) => void }).aim.bind(pack);
+		const ways = new Set<string>();
+		for (let k = 0; k < 24; k += 1) {
+			Object.assign(d, { state: 'fright', fx: 5, fy: 5, dx: 0, dy: 0 });
+			aim(d, { shut: () => false });
+			ways.add(`${d.dx},${d.dy}`);
+		}
+		expect(ways.size).toBeGreaterThan(1);
+	});
+
+	it('the shy one does not retreat to its corner near the hero', () => {
+		const pack = new DronePack(
+			new GridService(new GridModel(GRID_DOOM)),
+			[{ x: 2, y: 2 }],
+			zoneRng(5),
+			4
 		);
-	});
-
-	it('never lay the weapon in hand, nor two of a kind', () => {
-		const pickups = new DoomPickupService(DOOM_PICKUP_TILES, {
-			hp: 1,
-			held: 'plasma',
-			handFree: true
-		});
-		const lying = pickups.list.map((p) => p.kind).filter((k) => k !== null);
-		expect(lying).not.toContain('plasma');
-		expect(new Set(lying).size).toBe(lying.length);
+		pack.classic = true;
+		const mapFor = (pack as unknown as { mapFor: (d: unknown, h: unknown) => unknown }).mapFor.bind(
+			pack
+		);
+		const shy = pack.list[3];
+		const heroMap = (pack as unknown as { heroMap: unknown }).heroMap;
+		expect(mapFor(shy, { x: 5, y: 5 })).toBe(heroMap);
 	});
 });

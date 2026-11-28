@@ -164,9 +164,9 @@ export class DoomArena {
 		return { x: echo.tile.x + 0.5 + tx * t, y: echo.tile.y + 0.5 + ty * t };
 	}
 
-	/** Outer corridors decay in phase 3; protected (pickup) tiles never do. */
+	/** Outer corridors decay in phase 3; protected (pickup) tiles and the teleports' mouths never do. */
 	isCorrupted(x: number, y: number): boolean {
-		if (this.corruptionValue <= 0 || !this.grid.isWalkable(x, y)) {
+		if (this.corruptionValue <= 0 || !this.grid.isWalkable(x, y) || this.nearTeleport(x, y)) {
 			return false;
 		}
 		const band = CORRUPTION_BAND;
@@ -176,6 +176,14 @@ export class DoomArena {
 			return false;
 		}
 		return hash01(x, y) < this.corruptionValue;
+	}
+
+	/** A teleport's tile or one next to it. */
+	private nearTeleport(x: number, y: number): boolean {
+		const g = this.grid;
+		const at = (tx: number, ty: number): boolean =>
+			tx >= 0 && ty >= 0 && tx < g.width && ty < g.height && g.isTeleport(tx, ty);
+		return at(x, y) || at(x - 1, y) || at(x + 1, y) || at(x, y - 1) || at(x, y + 1);
 	}
 
 	/** Speed multiplier for the player from pull and corruption. */

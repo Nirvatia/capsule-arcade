@@ -20,6 +20,7 @@ import {
 	PLAYER_MAX_HP,
 	PLAYER_IFRAMES,
 	BFG_ORB_DAMAGE,
+	BFG_ORB_GLANCE_DAMAGE,
 	BFG_ORB_STUN,
 	BFG_TRACER_DAMAGE,
 	BERSERK_SPEED_MUL,
@@ -60,6 +61,7 @@ export class DoomAbilityService {
 	private readonly boss: DoomBossService;
 	private readonly progress: LevelProgress;
 	private readonly pickups: DoomPickupService;
+	private readonly events: EventBus<PacmanEventMap>;
 	private readonly weapons: DoomWeaponService;
 	private readonly splitValue: DoomSplitService;
 	private debug: DebugSink = NO_DEBUG;
@@ -95,6 +97,7 @@ export class DoomAbilityService {
 		this.grid = grid;
 		this.boss = boss;
 		this.progress = progress;
+		this.events = events;
 		this.weapons = new DoomWeaponService(grid);
 		this.pickups = new DoomPickupService(pickupTiles, this.needs());
 		this.splitValue = new DoomSplitService(grid, progress, score, events);
@@ -227,7 +230,7 @@ export class DoomAbilityService {
 		}
 		if (this.splitWasActive) {
 			this.splitWasActive = false;
-			this.pickups.fillEmpty(this.needs());
+			this.pickups.fillEmpty(this.needs(), player);
 		}
 		this.ballHitBossValue = false;
 		this.weapons.update(dt);
@@ -246,6 +249,11 @@ export class DoomAbilityService {
 			this.weapons.fireSting(player, dt);
 		} else {
 			this.weapons.releaseSting();
+		}
+		const spent = this.weapons.consumeSpent();
+		if (spent) {
+			const p = player.position;
+			this.weapons.pushFx({ kind: 'spent', x: p.x, y: p.y, detail: spent });
 		}
 		const collected = this.pickups.update(dt, player, this.needs());
 		if (collected) {
@@ -279,15 +287,19 @@ export class DoomAbilityService {
 			return null;
 		}
 		const slot = this.weapons.slot;
+		if (slot && this.weapons.starved) {
+			// the meter cannot pay it: a dull click, nothing goes
+			this.events.emit('audio:cue', { cue: 'ability-fizzle' });
+			return null;
+		}
 		if (slot === 'berserk') {
-			if (!player.facing || !this.weapons.rushReady) {
+			if (!player.facing || !this.weapons.spendRush()) {
 				return null;
 			}
 			this.rushing = true;
 			this.rushHit = false;
 			this.rushCounter = this.counterWindow;
 			player.startDash(RUSH_TILES, this.rushCounter ? RUSH_COVER : 0);
-			this.weapons.startRushCooldown();
 			const p = player.position;
 			this.weapons.pushFx({
 				kind: 'rush',
@@ -381,7 +393,8 @@ export class DoomAbilityService {
 		return {
 			hp: this.playerHpValue,
 			held: this.weapons.slot,
-			handFree: !this.weapons.bfgCharging
+			handFree: !this.weapons.bfgCharging,
+			phase: this.boss.phase
 		};
 	}
 
@@ -457,7 +470,12 @@ export class DoomAbilityService {
 			const bdx = shot.x - bossPos.x;
 			const bdy = shot.y - bossPos.y;
 			if (bdx * bdx + bdy * bdy < BOSS_SHOT_HIT_RADIUS_SQ) {
-				this.boss.takeDamage(BFG_ORB_DAMAGE, 'Maw orb');
+				// the real hit only on a stunned boss (the split's window); a glance otherwise
+				const stunned = this.boss.isStunned;
+				this.boss.takeDamage(
+					stunned ? BFG_ORB_DAMAGE : BFG_ORB_GLANCE_DAMAGE,
+					stunned ? 'Maw orb, stunned' : 'Maw orb, glance'
+				);
 				this.boss.applyStun(BFG_ORB_STUN);
 				this.weapons.pushFx({ kind: 'boss-hit', x: bossPos.x, y: bossPos.y });
 				this.weapons.detonateShot(i);

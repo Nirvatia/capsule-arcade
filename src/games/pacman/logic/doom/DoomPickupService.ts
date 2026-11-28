@@ -1,32 +1,46 @@
 import type { PlayerService } from '../actors/PlayerService';
 import { DoomPickupModel } from './DoomPickupModel';
 import type { DoomPickupKind, DoomPickupTile } from './DoomPickupModel';
-import { PLAYER_MAX_HP } from './DoomBalance';
+import {
+	MEDKIT_WAIT_MAX,
+	MEDKIT_WAIT_MIN,
+	PLAYER_MAX_HP,
+	WEAPON_WAIT_MAX,
+	WEAPON_WAIT_MIN,
+	WEAPON_WEIGHTS
+} from './DoomBalance';
 
-const RESPAWN_MIN = 15;
-const RESPAWN_MAX = 20;
-/** Nothing could come (all kinds lie or are held): look again after this. */
-const RETRY = 3;
-const HAND_KINDS: readonly DoomPickupKind[] = ['berserk', 'plasma', 'bfg'];
+const HAND_KINDS = ['berserk', 'plasma', 'bfg'] as const;
 const PICKUP_CONTACT_RADIUS_SQ = 0.49;
+/** A spot this close to the hero does not get the next pickup (it would be taken unseen). */
+const NEAR_HERO_SQ = 4;
 
-/** What the pickups need to know of the hero. */
+/** What the pickups need to know of the hero and the fight. */
 export interface DoomPickupNeeds {
 	readonly hp: number;
-	/** The weapon in his hand (it does not lie on the map at the same time). */
+	/** The weapon in his hand: while he holds one, no other comes. */
 	readonly held: DoomPickupKind | null;
-	/** He can take a weapon now (not while the Maw charges); a new one replaces the old. */
+	/** He can take a weapon now (not while the Maw charges). */
 	readonly handFree: boolean;
+	/** The boss's phase, 1..3: it weighs which weapon comes. */
+	readonly phase: number;
 }
 
 /**
- * The four pickup spots. One of each kind at most on the map (and none of the kind in the hero's
- * hand); the medkit comes only for a hurt hero.
+ * The four pickup spots (DESIGN §7 "The fight, redesigned"). The weapons come **one at a time**:
+ * only while the hand is empty and none lies on the map, after a short wait, its kind drawn by the
+ * phase's weights. The medkit comes on its own wait, only to a hurt hero.
  */
 export class DoomPickupService {
 	private readonly pickups: DoomPickupModel[] = [];
+	private weaponWait = 0;
+	private medkitWait = 0;
 
-	constructor(tiles: ReadonlyArray<DoomPickupTile>, needs: DoomPickupNeeds) {
+	constructor(
+		tiles: ReadonlyArray<DoomPickupTile>,
+		needs: DoomPickupNeeds,
+		private readonly rng: () => number = Math.random
+	) {
 		if (!tiles || tiles.length === 0) {
 			console.error('DoomPickupService.constructor', 'no pickup tiles');
 			throw new Error('DoomPickupService.constructor: no pickup tiles');
@@ -47,30 +61,40 @@ export class DoomPickupService {
 			console.error('DoomPickupService.update', 'invalid delta time', dt);
 			return null;
 		}
-		for (const pickup of this.pickups) {
-			pickup.update(dt);
-			if (pickup.due) {
-				this.bring(pickup, needs);
+		if (this.weaponWanted(needs)) {
+			this.weaponWait -= dt;
+			if (this.weaponWait <= 0) {
+				this.place(this.drawWeapon(needs.phase), player);
 			}
+		} else {
+			this.weaponWait = this.wait(WEAPON_WAIT_MIN, WEAPON_WAIT_MAX);
+		}
+		if (this.medkitWanted(needs)) {
+			this.medkitWait -= dt;
+			if (this.medkitWait <= 0) {
+				this.place('medkit', player);
+			}
+		} else {
+			this.medkitWait = this.wait(MEDKIT_WAIT_MIN, MEDKIT_WAIT_MAX);
 		}
 		for (const pickup of this.pickups) {
 			const kind = pickup.kind;
 			if (!kind || !this.touchesPlayer(pickup.tile, player) || !this.isCollectible(kind, needs)) {
 				continue;
 			}
-			pickup.startRespawn(RESPAWN_MIN + Math.random() * (RESPAWN_MAX - RESPAWN_MIN));
+			pickup.reset();
 			return kind;
 		}
 		return null;
 	}
 
-	/** Every empty spot gets something now (the start, and after a split). */
-	fillEmpty(needs: DoomPickupNeeds): void {
-		for (const pickup of this.pickups) {
-			if (!pickup.visible) {
-				this.bring(pickup, needs);
-			}
+	/** The start, after a split and the dev button: a weapon comes at once if one is wanted. */
+	fillEmpty(needs: DoomPickupNeeds, player?: PlayerService): void {
+		if (this.weaponWanted(needs)) {
+			this.place(this.drawWeapon(needs.phase), player);
 		}
+		this.weaponWait = this.wait(WEAPON_WAIT_MIN, WEAPON_WAIT_MAX);
+		this.medkitWait = this.wait(MEDKIT_WAIT_MIN, MEDKIT_WAIT_MAX);
 	}
 
 	reset(needs: DoomPickupNeeds): void {
@@ -87,23 +111,48 @@ export class DoomPickupService {
 		return needs.handFree && needs.held !== kind;
 	}
 
-	/** The kinds that may come now, for these needs. */
-	choices(needs: DoomPickupNeeds): DoomPickupKind[] {
-		const lying = new Set(this.pickups.map((p) => p.kind));
-		const out = HAND_KINDS.filter((k) => !lying.has(k) && needs.held !== k);
-		if (needs.hp < PLAYER_MAX_HP && !lying.has('medkit')) {
-			out.push('medkit');
+	/** The weapon to come in `phase` (1..3), drawn by its weights. */
+	drawWeapon(phase: number): DoomPickupKind {
+		const row = WEAPON_WEIGHTS[Math.max(0, Math.min(WEAPON_WEIGHTS.length - 1, phase - 1))];
+		const total = row[0] + row[1] + row[2];
+		let roll = this.rng() * total;
+		for (let i = 0; i < HAND_KINDS.length; i += 1) {
+			roll -= row[i];
+			if (roll < 0) {
+				return HAND_KINDS[i];
+			}
 		}
-		return out;
+		return HAND_KINDS[HAND_KINDS.length - 1];
 	}
 
-	private bring(pickup: DoomPickupModel, needs: DoomPickupNeeds): void {
-		const choices = this.choices(needs);
-		if (choices.length === 0) {
-			pickup.startRespawn(RETRY);
+	private weaponWanted(needs: DoomPickupNeeds): boolean {
+		return needs.held === null && !this.pickups.some((p) => p.kind !== null && p.kind !== 'medkit');
+	}
+
+	private medkitWanted(needs: DoomPickupNeeds): boolean {
+		return needs.hp < PLAYER_MAX_HP && !this.pickups.some((p) => p.kind === 'medkit');
+	}
+
+	/** Lays `kind` on a free spot away from the hero (any free spot if all are near him). */
+	private place(kind: DoomPickupKind, player?: PlayerService): void {
+		const free = this.pickups.filter((p) => !p.visible);
+		if (free.length === 0) {
 			return;
 		}
-		pickup.spawn(choices[Math.floor(Math.random() * choices.length)]);
+		const pos = player?.position;
+		const far = pos
+			? free.filter((p) => {
+					const dx = pos.x - (p.tile.x + 0.5);
+					const dy = pos.y - (p.tile.y + 0.5);
+					return dx * dx + dy * dy >= NEAR_HERO_SQ;
+				})
+			: free;
+		const pool = far.length > 0 ? far : free;
+		pool[Math.floor(this.rng() * pool.length)].spawn(kind);
+	}
+
+	private wait(min: number, max: number): number {
+		return min + this.rng() * (max - min);
 	}
 
 	private touchesPlayer(tile: DoomPickupTile, player: PlayerService): boolean {

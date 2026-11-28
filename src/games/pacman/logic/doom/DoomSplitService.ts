@@ -69,6 +69,7 @@ export class DoomSplitService {
 		private readonly events: EventBus<PacmanEventMap>
 	) {
 		this.pack = new DronePack(grid, HOMES, zoneRng(5), GHOSTS.length, 0);
+		this.pack.classic = true;
 		this.sleepAll();
 	}
 
