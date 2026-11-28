@@ -88,7 +88,7 @@ render/
                    weaponArt (the weapons pass, `hell-weapons`): the Sting's icon, the medkit, the
                    Sting's muzzle and hits, the rush as the fang saw with its trail, hit and the
                    counter's gold ready ring, the Maw's charge and its two hits, a weapon arriving
-                   and spent, the refused press; WeaponFxView plays the weapons' fx events
+                   and spent (tossed away); WeaponFxView plays the weapons' fx events
                    (`sting-hit`, `rush-hit`, `maw-hit`, `spent`, `ghost-eaten`,
                    `split-form`) with them; bossArt (the boss and split pass): the stun's
                    skulls and timer, the split's window brackets, hit chips by strength (the
