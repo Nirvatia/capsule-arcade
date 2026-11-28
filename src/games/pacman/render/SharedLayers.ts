@@ -83,6 +83,12 @@ export class SharedLayers {
 		}
 	}
 
+	/** Drops both heroes' trails (the hell's rush ended: he reappears away from his old tail). */
+	cutHeroTrail(): void {
+		this.heroView.cutTrail();
+		this.msHeroView.cutTrail();
+	}
+
 	/** Eating, power-ups, teleports: both players react, only the one on screen shows it. */
 	trigger(cue: PacmanAudioCue): void {
 		this.heroView.trigger(cue);

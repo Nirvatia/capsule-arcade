@@ -262,6 +262,50 @@ describe('the split', () => {
 		expect(f.boss.isStunned).toBe(true);
 	});
 
+	it('all four eaten: his last weapon comes back to him charged', () => {
+		const f = fight();
+		f.doom.debugGiveWeapon('plasma');
+		toSplit(f);
+		eatGhosts(f, 4);
+		finishSplit(f);
+		expect(f.doom.armed).toBe('plasma');
+		expect(f.doom.food).toBe(1);
+		expect(f.doom.capacity).toBe(1);
+	});
+
+	it('all four eaten: a weapon spent before the split comes back too', () => {
+		const f = fight();
+		f.doom.debugGiveWeapon('bfg');
+		f.doom.debugGiveWeapon('food');
+		f.player.setDesiredDirection('UP');
+		f.run(0.2);
+		expect(f.doom.fire(f.player)).toBe('bfg');
+		f.run(1);
+		expect(f.doom.armed).toBe('');
+		toSplit(f);
+		eatGhosts(f, 4);
+		finishSplit(f);
+		expect(f.doom.armed).toBe('bfg');
+		expect(f.doom.bfgReady).toBe(true);
+	});
+
+	it('all four eaten with nothing ever held: the berserk, charged', () => {
+		const f = fight();
+		toSplit(f);
+		eatGhosts(f, 4);
+		finishSplit(f);
+		expect(f.doom.armed).toBe('berserk');
+		expect(f.doom.food).toBe(1);
+	});
+
+	it('fewer eaten: nothing is given', () => {
+		const f = fight();
+		toSplit(f);
+		eatGhosts(f, 3);
+		finishSplit(f);
+		expect(f.doom.armed).toBe('');
+	});
+
 	it('reports each ghost eaten and his forming for their effects; the stun timer runs down', () => {
 		const f = fight();
 		toSplit(f);

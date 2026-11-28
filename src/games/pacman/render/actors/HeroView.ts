@@ -131,6 +131,11 @@ export class HeroView {
 		return { x: p.x + Math.cos(a) * 0.3, y: p.y + Math.sin(a) * 0.3, angle: a };
 	}
 
+	/** Drops the hero's trail (after a stretch he was not drawn, as in the hell's rush). */
+	cutTrail(): void {
+		this.hero.cutTrail();
+	}
+
 	/** The world the hero is in (its colour touches the rim light, the trail, the particles). */
 	setSeason(season: HeroSeason): void {
 		this.season = season;

@@ -84,6 +84,16 @@ export class DoomWeaponModel {
 		return true;
 	}
 
+	/** Puts `item` in hand with its whole meter charged (the split's reward for all four eaten). */
+	giveCharged(item: Exclude<DoomSlotItem, null>): void {
+		this.cancelBfgCharge();
+		this.slot = item;
+		this.capacity = WEAPON_METER;
+		this.food = WEAPON_METER;
+		this.rushCooldown = 0;
+		this.haste = item === 'berserk' ? BERSERK_HASTE : 0;
+	}
+
 	/** The berserk's rush can go now: its cooldown is over and a segment is charged. */
 	get rushReady(): boolean {
 		return this.slot === 'berserk' && this.rushCooldown <= 0 && this.food >= RUSH_COST - EPS;

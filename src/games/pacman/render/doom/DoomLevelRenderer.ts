@@ -297,6 +297,10 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		const player = frame.level.player;
 		const rushing = Boolean(doom?.rushActive && player);
 		if (!rushing) {
+			if (this.rushStart >= 0) {
+				// the rush is over: he is back where the saw stopped, his old tail must not stay behind
+				this.shared.cutHeroTrail();
+			}
 			this.rushStart = -1;
 			this.shared.drawPlayer(frame, layout);
 		}

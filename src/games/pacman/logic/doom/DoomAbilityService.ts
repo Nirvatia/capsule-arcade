@@ -90,6 +90,8 @@ export class DoomAbilityService {
 	private foodSeen = 0;
 	private regrowClock = 0;
 	private splitWindowValue = false;
+	/** The last weapon he held before the split: all four eaten, it comes back to him charged. */
+	private lastWeapon: Exclude<DoomSlotItem, null> | null = null;
 	private stingFiringValue = false;
 	/** 1 at a refused press, fading: the HUD's dial flashes red. */
 	private refusedValue = 0;
@@ -291,14 +293,21 @@ export class DoomAbilityService {
 		}
 		if (this.splitWasActive) {
 			this.splitWasActive = false;
-			this.pickups.fillEmpty(this.needs(), player);
-			// all four eaten: he formed stunned, the window for the rush's and the Sting's triple hit
+			// all four eaten: he formed stunned, the window for the rush's and the Sting's triple hit,
+			// and the hero gets his last weapon back charged, so the window is never empty-handed
 			this.splitWindowValue = this.boss.isStunned;
+			if (this.splitWindowValue) {
+				this.weapons.giveCharged(this.lastWeapon ?? 'berserk');
+			}
+			this.pickups.fillEmpty(this.needs(), player);
 			const b = this.boss.position;
 			this.weapons.pushFx({ kind: 'split-form', x: b.x, y: b.y });
 		}
 		if (!this.boss.isStunned) {
 			this.splitWindowValue = false;
+		}
+		if (this.weapons.slot) {
+			this.lastWeapon = this.weapons.slot;
 		}
 		this.regrowFood(dt, player);
 		this.ballHitBossValue = false;
@@ -451,6 +460,7 @@ export class DoomAbilityService {
 		this.foodSeen = this.progress.collectedDots;
 		this.regrowClock = 0;
 		this.splitWindowValue = false;
+		this.lastWeapon = null;
 		this.pickups.reset(this.needs());
 	}
 

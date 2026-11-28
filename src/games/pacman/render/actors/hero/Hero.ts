@@ -437,6 +437,15 @@ export abstract class Hero {
 		return this.embers;
 	}
 
+	/**
+	 * Drops his trail where he stands: after a stretch he was not drawn (the hell's rush, when he is
+	 * the fang saw), so the old tail is not left behind at the start of it.
+	 */
+	cutTrail(): void {
+		this.embers = [];
+		this.resetLooks?.();
+	}
+
 	reset(): void {
 		this.embers = [];
 		this.flameDist = 0;

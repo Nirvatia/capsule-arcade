@@ -159,4 +159,33 @@ describe('the fruit heroes’ ribbon', () => {
 			expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(500);
 		}
 	});
+
+	it.each([
+		['the orange', () => new OrangeProbe()],
+		['the watermelon', () => new MelonProbe()]
+	] as const)('is cut after a stretch he was not drawn, not left behind (%s)', (_, make) => {
+		const hero = make();
+		hero.setRadius(RIBBON_R);
+		let t = 0;
+		let x = 0;
+		for (let i = 0; i < 20; i += 1) {
+			x += 5;
+			t += RIBBON_DT;
+			hero.update(RIBBON_DT, runningAt(x));
+		}
+		// the hell's rush: he is the fang saw for half a second, not drawn, and comes back five tiles on
+		const start = x;
+		x += RIBBON_R * 10;
+		hero.cutTrail();
+		for (let i = 0; i < 6; i += 1) {
+			x += 5;
+			t += RIBBON_DT;
+			hero.update(RIBBON_DT, runningAt(x));
+		}
+		const pieces = hero.stream.points(t, RIBBON_SPEC).filter((p) => p.length >= 2);
+		expect(pieces).toHaveLength(1);
+		for (const p of pieces[0]) {
+			expect(p.x).toBeGreaterThan(start + RIBBON_R * 5);
+		}
+	});
 });

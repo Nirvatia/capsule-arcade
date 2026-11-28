@@ -162,6 +162,11 @@ export class DoomWeaponService {
 		return this.model.haste > 0;
 	}
 
+	/** Puts `item` in hand with its whole meter charged. */
+	giveCharged(item: Exclude<DoomSlotItem, null>): void {
+		this.model.giveCharged(item);
+	}
+
 	/** The meter cannot pay the weapon in hand. */
 	get starved(): boolean {
 		return this.model.starved;

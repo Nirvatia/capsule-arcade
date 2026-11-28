@@ -304,7 +304,7 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
   eating all four ends it early. **All four eaten**: he forms on the core **stunned for 5 s** and
   loses nothing more: the hero knew where all along, so he stands on a straight line with the charge
   he ate during the split, the window for the real hit: the Maw's full orb, and **the rush and the
-  Sting ×3** while that stun lasts (2026-11-28). **Fewer**: no stun, he only loses 75 HP per
+  Sting ×3** while that stun lasts (2026-11-28). He gets **his last weapon back, fully charged** (the berserk if he never held one), so the window is never empty-handed (the owner, 2026-11-28). **Fewer**: no stun, he only loses 75 HP per
   eaten ghost, far less than a hit on him stunned (the owner's rule, 2026-11-28). The split's damage
   never crosses the next phase's threshold.
 - **The button** uses the weapon in hand, one action each (no gestures, no taps against holds: the
