@@ -18,6 +18,13 @@ type Ctx = CanvasRenderingContext2D;
 type Rows = readonly (readonly string[])[];
 export type WallMaterial = 'gloss' | 'moss';
 
+/** The station's light on the maze (`lightPass`): at a point (stage px from the maze's origin) the
+ *  lamps' strength and the direction to them, weighted; `version` changes when it does. */
+export interface LightField {
+	readonly version: number;
+	at(sx: number, sy: number): readonly [number, number, number];
+}
+
 /** Bake pixels per stage pixel. */
 const Z = 1.25;
 /** The wall plate's inset from a corridor, stage px (the game's hive uses the same). */
@@ -80,6 +87,10 @@ export class WallHive {
 	private readonly glow: HTMLCanvasElement;
 	private shown = -1;
 	private inf = 0;
+	/** The gloss's normals (x, y, z per pixel): its highlights are the lamps', drawn per update. */
+	private readonly norm: Float32Array | null;
+	private light: LightField | null = null;
+	private lightShown = -1;
 
 	constructor(
 		private readonly scene: Scene,
@@ -150,6 +161,7 @@ export class WallHive {
 		// shade it: normals from the height field, the light from the top left
 		this.rgba = new Uint8ClampedArray(W * H * 4);
 		this.lime = new Float32Array(W * H);
+		this.norm = material === 'gloss' ? new Float32Array(W * H * 3) : null;
 		const L = norm3(-0.55, -0.65, 0.55);
 		const Hh = norm3(L[0], L[1], L[2] + 1);
 		for (let v = 1; v < H - 1; v++)
@@ -173,7 +185,13 @@ export class WallHive {
 				let lime: number;
 				if (material === 'gloss') {
 					const shade = 0.38 + 1.35 * diff;
-					const spec = Math.pow(nh, 40) * 0.95 + Math.pow(nh, 6) * 0.1;
+					// a faint key highlight for the form; the lamps' own come in `update`
+					const spec = (Math.pow(nh, 40) * 0.95 + Math.pow(nh, 6) * 0.1) * 0.3;
+					if (this.norm) {
+						this.norm[i * 3] = N[0];
+						this.norm[i * 3 + 1] = N[1];
+						this.norm[i * 3 + 2] = N[2];
+					}
 					r = 15 * shade + 205 * spec;
 					g = 17 * shade + 226 * spec;
 					b = 20 * shade + 232 * spec;
@@ -205,10 +223,18 @@ export class WallHive {
 		this.glow = canvas(W, H);
 	}
 
+	/** The lamps the gloss reflects. */
+	setLight(light: LightField | null): void {
+		this.light = light;
+		this.lightShown = -1;
+	}
+
 	update(infection: number): void {
 		this.inf = infection;
-		if (Math.abs(this.shown - infection) < 0.002) return;
+		const lv = this.light?.version ?? -1;
+		if (Math.abs(this.shown - infection) < 0.002 && lv === this.lightShown) return;
 		this.shown = infection;
+		this.lightShown = lv;
 		const { W, H } = this;
 		const m = new ImageData(W, H);
 		const gl = new ImageData(W, H);
@@ -217,9 +243,25 @@ export class WallHive {
 			if (!a) continue;
 			const cov = Math.max(0, Math.min(1, (infection - this.arrival[i]) * 90));
 			if (cov <= 0) continue;
-			m.data[i * 4] = this.rgba[i * 4];
-			m.data[i * 4 + 1] = this.rgba[i * 4 + 1];
-			m.data[i * 4 + 2] = this.rgba[i * 4 + 2];
+			let r = this.rgba[i * 4];
+			let g = this.rgba[i * 4 + 1];
+			let b = this.rgba[i * 4 + 2];
+			if (this.norm && this.light) {
+				// the lamps' highlight: toward the lamps that light this point, as strong as they are
+				const [I, dx, dy] = this.light.at((i % W) / Z, Math.floor(i / W) / Z);
+				if (I > 0.02) {
+					const L = norm3(dx * 0.8, dy * 0.8, 0.6);
+					const Hh = norm3(L[0], L[1], L[2] + 1);
+					const nh = Math.max(0, this.norm[i * 3] * Hh[0] + this.norm[i * 3 + 1] * Hh[1] + this.norm[i * 3 + 2] * Hh[2]);
+					const sp = (Math.pow(nh, 36) * 0.95 + Math.pow(nh, 6) * 0.12) * I;
+					r += 230 * sp;
+					g += 238 * sp;
+					b += 244 * sp;
+				}
+			}
+			m.data[i * 4] = r;
+			m.data[i * 4 + 1] = g;
+			m.data[i * 4 + 2] = b;
 			m.data[i * 4 + 3] = a * cov;
 			const l = this.lime[i] * cov;
 			if (l > 0.01) {
@@ -265,7 +307,7 @@ function norm3(x: number, y: number, z: number): [number, number, number] {
 }
 
 /** Chamfer distance (px) to the nearest pixel whose mask differs from `want`, for pixels = want. */
-function chamfer(mask: Uint8Array, W: number, H: number, want: number): Float32Array {
+export function chamfer(mask: Uint8Array, W: number, H: number, want: number): Float32Array {
 	const INF = 1e9;
 	const d = new Float32Array(W * H);
 	for (let i = 0; i < W * H; i++) d[i] = mask[i] === want ? INF : 0;

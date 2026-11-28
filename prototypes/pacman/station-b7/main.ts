@@ -20,6 +20,7 @@ type CandState = PretenderState;
 
 
 import { WallHive, type WallMaterial } from './wallHive';
+import { StationLight } from './lightPass';
 import { drawShade, type ShadeLook, type ShadeOpts } from './shadeLooks';
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
@@ -30,27 +31,41 @@ const heroView = new CinnabarHero();
 heroView.setFeel(GAME_FEEL);
 world.setQuality('medium');
 
-// ------------------------------------------------------------------ the v4 candidate («Кандидат v4»)
-// The walls taken whole by the hive's mass (`wallHive`) in place of the game's hive layer; the
-// light map's base raised (act I bright, sinking to about 70% by the escape); the food the game's
-// own capsule at about half its size. Everything else is the game's scene.
-type HiveLayer = { update(i: number, dt: number): void; draw(c: CanvasRenderingContext2D): void; drawPulse(c: CanvasRenderingContext2D, i: number, t: number): void };
+// ------------------------------------------------------------------ the v4 candidates
+// «Кандидат v4»: the walls taken whole by the hive's mass (`wallHive`) in place of the game's hive
+// layer. «Свет v4»: one value plan held by the station's lamps (`lightPass`): the corridors lit in
+// pools, the walls' feet and cast shadows dark, the steel under the floor's value, the gloss
+// catching the lamps; the food the game's own capsule at about half its size. The hull is the game's.
+type HiveLayer = {
+	update(i: number, dt: number): void;
+	draw(c: CanvasRenderingContext2D): void;
+	drawPulse(c: CanvasRenderingContext2D, i: number, t: number): void;
+};
 const worldHive = world as unknown as { hive: HiveLayer };
 const gameHive = worldHive.hive;
 const gameLair = (gameHive as unknown as { lair: HTMLCanvasElement }).lair;
 const wallHives: Partial<Record<WallMaterial, WallHive>> = {};
+let stationLight: StationLight | null = null;
+const lightOn = () => (st.lit === 'lit' ? (stationLight ??= new StationLight(world.scene, GRID_STATION)) : null);
 function setLook(v: 'now' | WallMaterial): void {
 	if (v === 'now') worldHive.hive = gameHive;
-	else worldHive.hive = wallHives[v] ??= new WallHive(world.scene, GRID_STATION, gameLair, v);
+	else {
+		const h = (wallHives[v] ??= new WallHive(world.scene, GRID_STATION, gameLair, v));
+		h.setLight(lightOn());
+		worldHive.hive = h;
+	}
+}
+function setLit(): void {
+	for (const h of Object.values(wallHives)) h?.setLight(lightOn());
 }
 type SceneHooks = {
 	drawBioSpores(g: CanvasRenderingContext2D, time: number, showProps: boolean): void;
-	renderLightmap(lg: CanvasRenderingContext2D, ...rest: unknown[]): void;
+	drawLiveRoofFans(c: CanvasRenderingContext2D, t: number, ph: number): void;
 };
 const hooks = world.scene as unknown as SceneHooks;
 const spores = hooks.drawBioSpores;
 hooks.drawBioSpores = (g, time, showProps) => {
-	if (st.look === 'now') return spores(g, time, showProps);
+	if (st.lit === 'now') return spores(g, time, showProps);
 	// the same capsule, smaller about its own centre
 	const k = 0.55;
 	const small = {
@@ -59,42 +74,11 @@ hooks.drawBioSpores = (g, time, showProps) => {
 	} as unknown as CanvasRenderingContext2D;
 	spores(small, time, showProps);
 };
-// «Пол → Светлее»: the corridors' floor lifted (screen keeps its texture), under the hive and the
-// light; the walls untouched, so the walls and the floor part by their tone, not by a line
-const NOT_FLOOR = new Set(['WL', 'ES', 'EX', '0C', 'LE', 'LT', 'BY', 'IY', 'PY', 'CE']);
-const fans = (world.scene as unknown as { drawLiveRoofFans(c: CanvasRenderingContext2D, t: number, ph: number): void })
-	.drawLiveRoofFans;
-(world.scene as unknown as { drawLiveRoofFans(c: CanvasRenderingContext2D, t: number, ph: number): void }).drawLiveRoofFans = (
-	c,
-	t,
-	ph
-) => {
+// the floor's light goes over the scene's base and its live props, under the hive
+const fans = hooks.drawLiveRoofFans;
+hooks.drawLiveRoofFans = (c, t, ph) => {
 	fans(c, t, ph);
-	if (st.floor === 'now') return;
-	const sc = world.scene;
-	const k = st.inf;
-	const a = Math.round(96 - 44 * k);
-	c.save();
-	c.globalCompositeOperation = 'screen';
-	c.fillStyle = `rgb(${a - 6}, ${a}, ${a + 5})`;
-	for (let y = 0; y < GRID_STATION.length; y++)
-		for (let x = 0; x < GRID_STATION[0].length; x++)
-			if (!NOT_FLOOR.has(GRID_STATION[y][x])) c.fillRect(sc.tx(x), sc.ty(y), sc.TILE, sc.TILE);
-	c.restore();
-};
-const lightmap = hooks.renderLightmap;
-hooks.renderLightmap = (lg, ...rest) => {
-	lightmap(lg, ...rest);
-	if (st.look === 'now') return;
-	// the base raised: act I bright cold, less as the hive takes the station
-	const k = st.inf;
-	const a = k < 0.5 ? 74 - 28 * k : 60 - 8 * (k - 0.5);
-	lg.save();
-	lg.setTransform(1, 0, 0, 1, 0, 0);
-	lg.globalCompositeOperation = 'lighter';
-	lg.fillStyle = `rgb(${Math.round(a - 4)}, ${Math.round(a)}, ${Math.round(a + 3)})`;
-	lg.fillRect(0, 0, lg.canvas.width, lg.canvas.height);
-	lg.restore();
+	lightOn()?.drawFloor(c);
 };
 const grid = GRID_STATION;
 const H = grid.length;
@@ -119,14 +103,14 @@ const st = {
 	lure: 'off' as Lure,
 	big: false,
 	look: 'now' as 'now' | WallMaterial,
-	floor: 'now' as 'now' | 'light'
+	lit: 'now' as 'now' | 'lit'
 };
 
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: красный маньяк',
-	'look-gloss': 'v4: стены забирает масса (глянец: чёрная, блик на горбах, лайм в складках), свет акта I поднят, еда мельче',
-	'look-moss': 'v4: стены забирает масса (мох: матовый, бархатный, чёрно-оливковый), свет акта I поднят, еда мельче',
-	'floor-light': 'Пол светлее (только коридоры, стены не тронуты): акт I светлая сталь, темнеет с заражением',
+	'look-gloss': 'v4: стены забирает масса (глянец: чёрная, блик на горбах, лайм в складках)',
+	'look-moss': 'v4: стены забирает масса (мох: матовый, бархатный, чёрно-оливковый)',
+	'lit-lit': 'Свет v4: пятна от ламп станции на полу, тени у подножия стен и падающие вниз-вправо, сталь стен темнее пола, глянец ловит лампы, еда мельче; лампы гаснут с заражением',
 	'mimic-now': 'Мимики как в игре: степперы',
 	'mimic-b1': 'Морок B1: голова из дыма в 0.8 клетки, острый капюшон назад, хвост дыма — движение',
 	'mimic-b2': 'Морок B2: голова из дыма в 0.8 клетки, круглый капюшон, хвост дыма — движение',
@@ -176,12 +160,13 @@ const GROUPS: Group[] = [
 		after: (v) => setLook(v as 'now' | WallMaterial)
 	},
 	{
-		label: 'Пол',
-		key: 'floor',
+		label: 'Свет v4',
+		key: 'lit',
 		items: [
 			['Как в игре', 'now'],
-			['Светлее', 'light']
-		]
+			['Лампы и тени', 'lit']
+		],
+		after: () => setLit()
 	},
 	{
 		label: 'Мимики',
@@ -275,7 +260,7 @@ function render(): void {
 	const lines = [
 		st.ring === 'cycle' ? NOTES['ring-cycle'] : '',
 		st.look !== 'now' ? NOTES[`look-${st.look}`] : '',
-		st.floor !== 'now' ? NOTES[`floor-${st.floor}`] : '',
+		st.lit !== 'now' ? NOTES[`lit-${st.lit}`] : '',
 		st.mimic !== 'off' ? NOTES[`mimic-${st.mimic}`] : '',
 		st.rage !== 'off' ? NOTES[`rage-${st.rage}`] : '',
 		st.lure !== 'off' ? NOTES[`lure-${st.lure}`] : ''
@@ -636,6 +621,11 @@ function frame(now: number): void {
 	if (st.alarm && st.rage !== 'off') {
 		// the hero's flashlight, as if he stood by the lure
 		lights.push({ x: sc.MAZE_X + (lx - 2.5) * 34, y: sc.MAZE_Y + (ly + 0.5) * 34, r: 34 * 3.8, rgb: '236, 242, 230', alpha: 0.95 });
+	}
+	const sl = lightOn();
+	if (sl) {
+		sl.setInfection(st.inf);
+		lights.push(...sl.extraLights());
 	}
 	sc.setExtraLights(lights);
 	world.drawScene(ctx, t, dt, st.inf, true);
