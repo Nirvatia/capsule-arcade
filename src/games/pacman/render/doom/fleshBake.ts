@@ -521,35 +521,7 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 	}
 	const arenaFlesh = clipTo(arena.cv, deckM);
 
-	// blood on the corridor floor
-	const bf = layer();
-	{
-		const rb = rng(21);
-		const spots: Array<readonly [number, number]> = [];
-		for (let rr = 2; rr < rows - 1; rr += 1) {
-			for (let c = 1; c < cols - 1; c += 1) {
-				if (kindOf(S, c, rr) === 'floor' && rb() < 0.08) {
-					spots.push([c, rr]);
-				}
-			}
-		}
-		for (const s0 of spots) {
-			const X = tx(s0[0]) + T / 2 + (rb() - 0.5) * 6;
-			const Y = ty(s0[1]) + T / 2 + (rb() - 0.5) * 6;
-			const n = 3 + Math.floor(rb() * 3);
-			bf.x.fillStyle = '#4a070b';
-			for (let q = 0; q < n; q += 1) {
-				bf.x.beginPath();
-				bf.x.arc(X + (rb() - 0.5) * 10, Y + (rb() - 0.5) * 10, 4 + rb() * 6, 0, 7);
-				bf.x.fill();
-			}
-			bf.x.fillStyle = 'rgba(220,100,100,.4)';
-			bf.x.beginPath();
-			bf.x.arc(X - 2, Y - 2, 2, 0, 7);
-			bf.x.fill();
-		}
-	}
-	const bloodFloor = clipTo(bf.cv, deckM);
+	// no blood on the corridor floor: the corridors stay clean, the blood is on the walls (the owner, 2026-11-28)
 
 	// blood on the walls
 	const bw = layer();
@@ -574,21 +546,6 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 					bw.x.lineTo(x0 + (rbw() - 0.5) * 22, y0 + (rbw() - 0.5) * 22);
 					bw.x.stroke();
 					bw.x.globalAlpha = 1;
-				}
-				if (!isWall(c, rr + 1) && rbw() < 0.4) {
-					const dx0 = X4 + 5 + rbw() * (T - 10);
-					const len = 4 + rbw() * 9;
-					bw.x.strokeStyle = '#5e0a0f';
-					bw.x.lineWidth = 3;
-					bw.x.lineCap = 'round';
-					bw.x.beginPath();
-					bw.x.moveTo(dx0, Y4 + T - 8);
-					bw.x.lineTo(dx0, Y4 + T + len);
-					bw.x.stroke();
-					bw.x.fillStyle = '#7c0e14';
-					bw.x.beginPath();
-					bw.x.arc(dx0, Y4 + T + len, 2.6, 0, 7);
-					bw.x.fill();
 				}
 			}
 		}
@@ -700,7 +657,8 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 				}
 				return c2;
 			};
-			w.drawImage(clipTo(tint(ring(4), st.outline), wallM), LX, LY);
+			// a thin dark line (it was 4 px: too heavy at the game's scale, the owner, 2026-11-28)
+			w.drawImage(clipTo(tint(ring(2.5), st.outline), wallM), LX, LY);
 			// the hot seam lies on the floor, not on the plate, and only where the light reaches: the
 			// far side (down and right) is in the plates' shadow, the seam fades out into it
 			const lit = without(
@@ -729,15 +687,12 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 	{
 		const m = maze.x;
 		m.drawImage(arenaFlesh, LX, LY);
-		m.globalAlpha = 0.8;
-		m.drawImage(bloodFloor, LX, LY);
-		m.globalAlpha = 1;
 		m.globalAlpha = st.ao;
 		m.drawImage(wallShadow, LX, LY);
 		m.globalAlpha = 1;
 		m.drawImage(walls.cv, LX, LY);
 		m.globalAlpha = 0.8;
-		m.drawImage(bw.cv, LX, LY);
+		m.drawImage(clipTo(bw.cv, wallM), LX, LY);
 		m.globalAlpha = 1;
 		// the plates sit in the floor: a warm glow at the foot, a long cast shadow down and right,
 		// a tight dark crease; the plates themselves stay clear of all three

@@ -41,8 +41,9 @@ const TINT = ['255,90,60', '255,120,200', '90,220,255', '255,170,70'];
 
 function ghostShape(S: number, i: number): GhostShape {
 	// about the hero's size: in the split they are the enemies, not the boss's small imps
-	const w = S * 0.36;
-	return { w, domeY: -w * 0.18, hem: w * 1.02, feet: 4, torn: 0.45, seed: 3 + i * 1.7 };
+	// the hero's size, horns included within the tile
+	const w = S * 0.33;
+	return { w, domeY: -w * 0.02, hem: w * 0.98, feet: 4, torn: 0.45, seed: 3 + i * 1.7 };
 }
 
 /** The flayed ghost: body, ribs in its shade, a stitched seam, bone horns, a fanged grin. */
@@ -59,7 +60,7 @@ function ghost(c: Ctx, i: number, x: number, y: number, S: number, dir: Dir, fri
 	c.beginPath();
 	c.ellipse(w * 0.15, hem + w * 0.12, w * 0.95, w * 0.22, 0, 0, TAU);
 	c.fill();
-	drawHorns(c, 0, 0, shape, 0.62, { length: 0.5, curl: 0.16, bone: fright ? ['#e4e6f4', '#8a8ea8'] : ['#f1e4cc', '#9c8a72'], ember: null }, 0);
+	drawHorns(c, 0, 0, shape, 0.62, { length: 0.36, curl: 0.16, bone: fright ? ['#e4e6f4', '#8a8ea8'] : ['#f1e4cc', '#9c8a72'], ember: null }, 0);
 	ghostPath(c, 0, 0, shape, t * 1.3 + shape.seed);
 	c.fillStyle = tones.mid;
 	c.fill();
@@ -249,7 +250,8 @@ const JAW: Tones = { light: '#fffaf0', mid: '#ecdcbc', shade: '#9a8462' };
  * it parts it from the floor.
  */
 function snare(c: Ctx, x: number, y: number, S: number, open: number): void {
-	const R = S * 0.44;
+	// within its tile: the hinges reach 0.46 of it
+	const R = S * 0.36;
 	const ry = R * (0.16 + 0.62 * open);
 	c.fillStyle = 'rgba(10,0,3,.55)';
 	c.beginPath();
@@ -350,246 +352,230 @@ function celPiece(c: Ctx, path: () => void, t: Tones, cx: number, cy: number, r:
 	c.stroke();
 }
 
+const MEAT: Tones = { light: '#f08a86', mid: '#b23c44', shade: '#4e0c16' };
+const SINEW: Tones = { light: '#ffb0a0', mid: '#d0505a', shade: '#6a1220' };
+
 /**
- * The plasma: a bile cannon as heavy as the BFG. A flesh body bound by bone ribs, a vertebra grip,
- * a swollen bladder of glowing bile on its back, a ringed bone barrel ending in a fanged mouth that
- * holds the charge.
+ * The plasma: a bile cannon. Few, big parts at the game's scale: a flesh body under two bone bands,
+ * a bone grip, a swollen glowing bladder on its back, a bone barrel, the charge in its mouth.
+ * Kept inside -46..46 so it never leaves its tile.
  */
 function paintPlasma(c: Ctx): void {
-	// the grip: three vertebrae
-	for (let k = 0; k < 3; k += 1) {
-		celPiece(
-			c,
-			() => {
-				c.beginPath();
-				c.roundRect(-30 + k * 2, 12 + k * 10, 16, 11, 4);
-			},
-			BONE,
-			-22 + k * 2,
-			17 + k * 10,
-			9,
-			5
-		);
-	}
-	// the body
-	const body = (): void => {
-		c.beginPath();
-		c.moveTo(-46, -4);
-		c.quadraticCurveTo(-46, -20, -28, -20);
-		c.lineTo(10, -18);
-		c.quadraticCurveTo(20, -16, 20, -2);
-		c.lineTo(20, 10);
-		c.quadraticCurveTo(18, 20, 6, 20);
-		c.lineTo(-30, 20);
-		c.quadraticCurveTo(-46, 20, -46, -4);
-		c.closePath();
-	};
-	celPiece(c, body, { light: '#f08a86', mid: '#b23c44', shade: '#4e0c16' }, -12, 0, 30);
-	// bone ribs binding it
-	for (const bx of [-30, -14, 2]) {
-		celPiece(
-			c,
-			() => {
-				c.beginPath();
-				c.moveTo(bx - 4, -22);
-				c.quadraticCurveTo(bx + 6, 0, bx - 4, 22);
-				c.lineTo(bx + 4, 22);
-				c.quadraticCurveTo(bx + 14, 0, bx + 4, -22);
-				c.closePath();
-			},
-			BONE,
-			bx + 3,
-			0,
-			10,
-			4.5
-		);
-	}
-	// the bladder of bile on its back
-	bloom(c, -14, -30, 34, '70,210,255', 0.55);
-	const sac = (): void => {
-		c.beginPath();
-		c.ellipse(-14, -30, 24, 15, -0.08, 0, TAU);
-	};
-	celPiece(c, sac, BILE, -14, -30, 22);
-	c.save();
-	sac();
-	c.clip();
-	c.fillStyle = 'rgba(240,255,255,.85)';
-	c.beginPath();
-	c.arc(-6, -28, 6, 0, TAU);
-	c.fill();
-	c.strokeStyle = 'rgba(20,70,120,.7)';
-	c.lineWidth = 2.4;
-	c.beginPath();
-	c.moveTo(-34, -26);
-	c.quadraticCurveTo(-20, -36, -8, -24);
-	c.moveTo(-22, -42);
-	c.quadraticCurveTo(-14, -32, 2, -40);
-	c.stroke();
-	c.restore();
-	gloss(c, -24, -38, 7, 3, 0.9, -0.2);
-	// the barrel: bone rings widening to the muzzle
-	for (let k = 0; k < 3; k += 1) {
-		const bx = 20 + k * 8;
-		const h = 12 + k * 2;
-		celPiece(
-			c,
-			() => {
-				c.beginPath();
-				c.roundRect(bx, -h, 9, h * 2, 3);
-			},
-			BONE,
-			bx + 4,
-			0,
-			h,
-			5
-		);
-	}
-	// the mouth: lips, fangs, the charge
 	celPiece(
 		c,
 		() => {
 			c.beginPath();
-			c.ellipse(46, 0, 9, 23, 0, 0, TAU);
+			c.moveTo(-24, 10);
+			c.lineTo(-8, 10);
+			c.lineTo(-12, 40);
+			c.lineTo(-28, 40);
+			c.closePath();
 		},
-		{ light: '#f08a86', mid: '#b23c44', shade: '#4e0c16' },
-		46,
-		0,
-		16,
-		5
+		BONE,
+		-18,
+		24,
+		14
 	);
-	bloom(c, 47, 0, 34, '80,220,255', 0.75);
+	const body = (): void => {
+		c.beginPath();
+		c.roundRect(-44, -16, 58, 32, 14);
+	};
+	celPiece(c, body, MEAT, -15, 0, 30);
+	for (const bx of [-30, -6]) {
+		celPiece(
+			c,
+			() => {
+				c.beginPath();
+				c.roundRect(bx, -19, 10, 38, 4);
+			},
+			BONE,
+			bx + 5,
+			0,
+			12,
+			5
+		);
+	}
+	bloom(c, -16, -24, 34, '70,210,255', 0.6);
+	const sac = (): void => {
+		c.beginPath();
+		c.ellipse(-16, -24, 22, 14, 0, 0, TAU);
+	};
+	celPiece(c, sac, BILE, -16, -24, 20);
+	gloss(c, -24, -30, 7, 3.5, 0.9, -0.2);
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.moveTo(12, -12);
+			c.lineTo(38, -16);
+			c.lineTo(38, 16);
+			c.lineTo(12, 12);
+			c.closePath();
+		},
+		BONE,
+		25,
+		0,
+		16
+	);
+	bloom(c, 40, 0, 30, '80,220,255', 0.8);
 	piece(
 		c,
 		() => {
 			c.beginPath();
-			c.ellipse(47, 0, 5.5, 15, 0, 0, TAU);
+			c.ellipse(40, 0, 7, 17, 0, 0, TAU);
 		},
-		radial(c, 47, 0, 1, 16, ['#f4ffff', '#5ae0ff', '#0a5a8a']),
-		4
+		radial(c, 40, 0, 1, 17, ['#f4ffff', '#5ae0ff', '#0a5a8a']),
+		5
 	);
-	for (const fy of [-13, -5, 5, 13]) {
-		piece(
-			c,
-			() => {
-				c.beginPath();
-				c.moveTo(42, fy - 3);
-				c.lineTo(50, fy);
-				c.lineTo(42, fy + 3);
-				c.closePath();
-			},
-			'#fff6e4',
-			2.5
-		);
-	}
-	gloss(c, -32, -10, 9, 3, 0.7, -0.1);
 }
 
 /**
- * The armour: a cuirass of bone. A sternum down the middle, ribs curving to the sides over dark
- * leather, shoulder blades for pauldrons, straps with bone buckles; a piece of war gear, not a shell.
+ * The armour: a bone cuirass in few big parts at the game's scale: a dark leather plate, a sternum,
+ * three thick ribs to a side, two shoulder blades. Kept inside -46..46.
  */
 function paintArmour(c: Ctx): void {
-	const leather = (): void => {
-		c.beginPath();
-		c.moveTo(-30, -30);
-		c.quadraticCurveTo(-12, -22, -10, -36);
-		c.lineTo(10, -36);
-		c.quadraticCurveTo(12, -22, 30, -30);
-		c.lineTo(34, 6);
-		c.quadraticCurveTo(30, 34, 0, 44);
-		c.quadraticCurveTo(-30, 34, -34, 6);
-		c.closePath();
-	};
-	celPiece(c, leather, { light: '#8a5a44', mid: '#5a3424', shade: '#2a140c' }, 0, 4, 34);
-	// the ribs over it
-	for (let k = 0; k < 4; k += 1) {
-		const y0 = -18 + k * 13;
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.moveTo(-30, -30);
+			c.quadraticCurveTo(-12, -22, -10, -34);
+			c.lineTo(10, -34);
+			c.quadraticCurveTo(12, -22, 30, -30);
+			c.lineTo(32, 8);
+			c.quadraticCurveTo(28, 34, 0, 42);
+			c.quadraticCurveTo(-28, 34, -32, 8);
+			c.closePath();
+		},
+		{ light: '#8a5a44', mid: '#5a3424', shade: '#2a140c' },
+		0,
+		4,
+		34
+	);
+	for (let k = 0; k < 3; k += 1) {
+		const y0 = -14 + k * 17;
 		for (const side of [-1, 1]) {
 			celPiece(
 				c,
 				() => {
 					c.beginPath();
-					c.moveTo(side * 5, y0);
-					c.quadraticCurveTo(side * 26, y0 - 4, side * (31 - k * 2), y0 + 9);
-					c.lineTo(side * (27 - k * 2), y0 + 12);
-					c.quadraticCurveTo(side * 22, y0 + 4, side * 5, y0 + 6);
+					c.moveTo(side * 4, y0);
+					c.quadraticCurveTo(side * 26, y0 - 6, side * (30 - k * 3), y0 + 10);
+					c.lineTo(side * (24 - k * 3), y0 + 15);
+					c.quadraticCurveTo(side * 20, y0 + 6, side * 4, y0 + 9);
 					c.closePath();
 				},
 				JAW,
-				side * 18,
-				y0 + 5,
-				12,
-				4
+				side * 17,
+				y0 + 6,
+				13,
+				5
 			);
 		}
 	}
-	// the sternum
 	celPiece(
 		c,
 		() => {
 			c.beginPath();
-			c.roundRect(-6, -28, 12, 62, 5);
+			c.roundRect(-7, -26, 14, 58, 6);
 		},
 		JAW,
 		0,
 		2,
-		16,
-		5
+		16
 	);
-	// the shoulder blades and their spikes
 	for (const side of [-1, 1]) {
-		fang(c, side * 40, -38, 16, 4, -Math.PI / 2 + side * 0.5, JAW, 100, 0.9);
 		celPiece(
 			c,
 			() => {
 				c.beginPath();
-				c.moveTo(side * 16, -40);
-				c.quadraticCurveTo(side * 46, -48, side * 48, -26);
-				c.quadraticCurveTo(side * 40, -12, side * 24, -20);
+				c.moveTo(side * 14, -36);
+				c.quadraticCurveTo(side * 44, -44, side * 44, -22);
+				c.quadraticCurveTo(side * 36, -10, side * 20, -18);
 				c.closePath();
 			},
 			JAW,
-			side * 34,
-			-32,
-			16,
-			5
+			side * 31,
+			-28,
+			16
 		);
 	}
-	// straps and buckles
+}
+
+/**
+ * The snare's pickup, not the trap itself: a noose of sinew knotted round a bone peg, the sign of
+ * catching and holding. Kept inside -46..46.
+ */
+function paintNoose(c: Ctx): void {
+	// the loop
+	const loop = (): void => {
+		c.beginPath();
+		c.ellipse(0, -8, 30, 28, 0, 0, TAU);
+		c.ellipse(0, -8, 18, 16, 0, 0, TAU, true);
+	};
+	celPiece(c, loop, SINEW, -4, -14, 30);
+	// fibres along the sinew
+	c.save();
+	loop();
+	c.clip();
+	c.strokeStyle = 'rgba(110,20,30,.55)';
+	c.lineWidth = 2.2;
+	for (let k = 0; k < 14; k += 1) {
+		const a = (k / 14) * TAU;
+		c.beginPath();
+		c.moveTo(Math.cos(a) * 19, -8 + Math.sin(a) * 17);
+		c.lineTo(Math.cos(a + 0.35) * 29, -8 + Math.sin(a + 0.35) * 27);
+		c.stroke();
+	}
+	c.restore();
+	// the two tails running down from the knot
 	for (const side of [-1, 1]) {
-		piece(
-			c,
-			() => {
-				c.beginPath();
-				c.rect(side * 34 - 4, 4, 8, 16);
-			},
-			'#3a1c10',
-			4
-		);
 		celPiece(
 			c,
 			() => {
 				c.beginPath();
-				c.roundRect(side * 34 - 6, 8, 12, 8, 2);
+				c.moveTo(side * 4, 18);
+				c.quadraticCurveTo(side * 16, 30, side * 10, 44);
+				c.lineTo(side * 2, 44);
+				c.quadraticCurveTo(side * 6, 32, -side * 4, 22);
+				c.closePath();
 			},
-			JAW,
-			side * 34,
-			12,
-			6,
-			3
+			SINEW,
+			side * 7,
+			32,
+			10,
+			5
 		);
 	}
-	gloss(c, -2, -20, 2.5, 8, 0.85, 0);
+	// the knot and the bone peg through it
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.roundRect(-34, 12, 68, 12, 6);
+		},
+		JAW,
+		0,
+		18,
+		24
+	);
+	celPiece(
+		c,
+		() => {
+			c.beginPath();
+			c.ellipse(0, 18, 13, 11, 0, 0, TAU);
+		},
+		SINEW,
+		0,
+		18,
+		12
+	);
+	gloss(c, -16, -30, 8, 3.5, 0.85, -0.4);
 }
 
 function icon(c: Ctx, item: 'snare' | 'plasma' | 'armour', x: number, y: number, S: number): void {
-	if (item === 'snare') {
-		snare(c, x, y, S * 0.82, 0.85);
-		return;
-	}
-	shadow(c, x, y + S * 0.32, S * 0.32, S * 0.07);
-	inBox(c, x, y, S, item === 'plasma' ? paintPlasma : paintArmour);
+	shadow(c, x, y + S * 0.34, S * 0.3, S * 0.06);
+	inBox(c, x, y, S, item === 'plasma' ? paintPlasma : item === 'armour' ? paintArmour : paintNoose);
 }
 
 /** A bolt of bile: a glowing drop, stretched along its flight, two drips behind. */
@@ -668,7 +654,7 @@ function armour(c: Ctx, x: number, y: number, S: number, dir: Dir): void {
 	c.lineWidth = Math.max(0.8, S * 0.025);
 	c.stroke();
 	// the shoulder blade on top, its spike up and back
-	fang(c, -R * 0.55, -R * 1.02, S * 0.17, S * 0.045, -Math.PI / 2 - 0.55, JAW, S, 0.7);
+	fang(c, -R * 0.6, -R * 1.0, S * 0.08, S * 0.04, -Math.PI / 2 - 0.55, JAW, S, 0.7);
 	cel(
 		c,
 		() => {
@@ -688,116 +674,121 @@ function armour(c: Ctx, x: number, y: number, S: number, dir: Dir): void {
 	c.restore();
 }
 
+const VORTEX: readonly string[] = ['#ffb4a0', '#e0403a', '#9a1420', '#4a060c'];
+
 /**
- * The rush, the same for both heroes: the hero becomes a horned bone skull, a ram that charges with
- * its jaw open and its eye burning. `morph` grows it in (0 nothing, 1 whole); the caller fades the
- * hero out under it. Facing left it is mirrored, never upside down.
+ * The rush, the same for both heroes: the hero spins up into a whirlwind of blood, the boss's lava
+ * ball's opposite (that one rolls and cools; this one spins and sprays). A disc of crimson spiral
+ * bands with bone shards caught in them, a dark eye at the centre, drops flung off its rim, all
+ * leaning into the heading. `morph` grows it in (the caller fades the hero out under it); `t` turns
+ * it. Kept inside the tile.
  */
 function form(c: Ctx, x: number, y: number, S: number, dir: Dir, morph: number, t: number): void {
 	const m = Math.max(0, Math.min(1, morph));
 	if (m <= 0) return;
-	const r = S * 0.4;
+	const R = S * 0.42 * (0.5 + 0.5 * m);
+	const spin = t * 9;
+	const [dx, dy] = VEC[dir];
 	c.save();
-	c.globalAlpha *= Math.min(1, m * 1.4);
+	c.globalAlpha *= Math.min(1, m * 1.5);
 	c.translate(x, y);
-	if (dir === 'LEFT') c.scale(-1, 1);
-	else c.rotate(dir === 'UP' ? -Math.PI / 2 : dir === 'DOWN' ? Math.PI / 2 : 0);
-	const k = 0.55 + 0.45 * m;
-	c.scale(k, k);
-	bloom(c, r * 0.2, -r * 0.15, S * 0.6, '255,120,60', 0.35 * m);
-	// the far horn behind the skull
-	const horn = (side: number, len: number, w: number, tone: Tones): void => {
-		const path = (): void => {
+	// the dark pool under it and a red bloom
+	c.fillStyle = 'rgba(10,0,3,.5)';
+	c.beginPath();
+	c.ellipse(S * 0.03, S * 0.05, R * 1.02, R * 0.98, 0, 0, TAU);
+	c.fill();
+	bloom(c, 0, 0, R * 1.5, '255,70,50', 0.35 * m);
+	// the disc, squashed a little along the heading as it charges
+	c.save();
+	c.rotate(Math.atan2(dy, dx));
+	c.scale(1 + 0.1 * m, 1 - 0.08 * m);
+	const disc = (): void => {
+		c.beginPath();
+		c.arc(0, 0, R, 0, TAU);
+	};
+	disc();
+	c.fillStyle = VORTEX[2];
+	c.fill();
+	c.save();
+	disc();
+	c.clip();
+	// spiral bands, light to dark toward the eye
+	for (let arm = 0; arm < 3; arm += 1) {
+		for (let band = 0; band < 3; band += 1) {
 			c.beginPath();
-			c.moveTo(-r * 0.35, side * r * 0.2 - r * 0.45 + w);
-			c.bezierCurveTo(-r * 1.1, -r * 1.25, r * 0.4, -r * 1.55, r * (0.5 + len), -r * (0.75 - side * 0.1));
-			c.bezierCurveTo(r * 0.2, -r * 1.2, -r * 0.8, -r * 0.95, -r * 0.05, side * r * 0.2 - r * 0.45);
-			c.closePath();
-		};
-		cel(c, path, tone, 0, -r * 1.05, r * 0.7, S, 0.9);
-		// the horn's ridges
-		c.strokeStyle = 'rgba(90,70,40,.55)';
-		c.lineWidth = Math.max(0.8, S * 0.02);
-		for (let j = 1; j <= 3; j += 1) {
-			const u = j / 4;
-			c.beginPath();
-			c.arc(-r * 0.5 + u * r * 1.2, -r * 1.05 - Math.sin(u * Math.PI) * r * 0.2, r * 0.12, 0.3, 2.6);
+			for (let k = 0; k <= 40; k += 1) {
+				const u = k / 40;
+				const a = spin + arm * ((Math.PI * 2) / 3) + u * Math.PI * 1.6;
+				const rr = R * (1.05 - u * 0.85) - band * R * 0.06;
+				const px = Math.cos(a) * rr;
+				const py = Math.sin(a) * rr;
+				if (k === 0) c.moveTo(px, py);
+				else c.lineTo(px, py);
+			}
+			c.strokeStyle = VORTEX[band];
+			c.lineWidth = R * (0.26 - band * 0.06);
+			c.lineCap = 'round';
 			c.stroke();
 		}
-	};
-	horn(-1, 0.45, r * 0.15, { light: '#d8c8a8', mid: '#b4a07c', shade: '#6a5838' });
-	// the jaw, hinged under the skull, open as it charges
-	const gape = 0.15 + 0.35 * m;
-	c.save();
-	c.translate(-r * 0.25, r * 0.35);
-	c.rotate(gape);
-	cel(
-		c,
-		() => {
-			c.beginPath();
-			c.moveTo(-r * 0.25, -r * 0.05);
-			c.lineTo(r * 0.95, r * 0.0);
-			c.quadraticCurveTo(r * 1.0, r * 0.3, r * 0.75, r * 0.32);
-			c.lineTo(-r * 0.15, r * 0.28);
-			c.closePath();
-		},
-		JAW,
-		r * 0.35,
-		r * 0.15,
-		r * 0.55,
-		S
-	);
-	for (let j = 0; j < 4; j += 1) fang(c, r * (0.25 + j * 0.2), r * 0.02, S * 0.08, S * 0.025, -Math.PI / 2, JAW, S, 0.5);
-	c.restore();
-	// the cranium and the snout
-	const skull = (): void => {
-		c.beginPath();
-		c.moveTo(-r * 0.95, r * 0.05);
-		c.bezierCurveTo(-r * 1.0, -r * 0.85, r * 0.2, -r * 0.95, r * 0.55, -r * 0.45);
-		c.lineTo(r * 1.05, -r * 0.2);
-		c.quadraticCurveTo(r * 1.15, r * 0.15, r * 0.9, r * 0.3);
-		c.lineTo(-r * 0.2, r * 0.42);
-		c.quadraticCurveTo(-r * 0.85, r * 0.5, -r * 0.95, r * 0.05);
-		c.closePath();
-	};
-	cel(c, skull, JAW, 0, -r * 0.15, r * 0.9, S, 1.1);
-	c.save();
-	skull();
-	c.clip();
-	// cracks and the nasal hollow
-	c.strokeStyle = 'rgba(80,60,30,.7)';
-	c.lineWidth = Math.max(0.9, S * 0.022);
+	}
+	// the lit side and the shade, as every round thing in the hell
+	c.fillStyle = 'rgba(255,230,210,.22)';
 	c.beginPath();
-	c.moveTo(-r * 0.4, -r * 0.75);
-	c.lineTo(-r * 0.25, -r * 0.45);
-	c.lineTo(-r * 0.4, -r * 0.3);
-	c.stroke();
-	c.fillStyle = '#2a0608';
-	c.beginPath();
-	c.moveTo(r * 0.78, -r * 0.12);
-	c.lineTo(r * 0.92, r * 0.02);
-	c.lineTo(r * 0.72, r * 0.06);
-	c.closePath();
+	c.ellipse(-R * 0.3, -R * 0.35, R * 0.8, R * 0.55, -0.5, 0, TAU);
 	c.fill();
-	c.restore();
-	// the upper teeth
-	for (let j = 0; j < 4; j += 1) fang(c, r * (0.1 + j * 0.22), r * 0.36, S * 0.09, S * 0.028, Math.PI / 2, JAW, S, 0.5);
-	// the eye socket and its burning eye
-	c.fillStyle = '#1a0204';
+	c.fillStyle = 'rgba(30,0,6,.35)';
 	c.beginPath();
-	c.ellipse(r * 0.22, -r * 0.3, r * 0.24, r * 0.19, -0.2, 0, TAU);
+	c.rect(-R * 2, -R * 2, R * 4, R * 4);
+	c.ellipse(-R * 0.15, -R * 0.15, R * 1.1, R * 1.1, 0, 0, TAU);
+	c.fill('evenodd');
+	// bone shards caught in the flow
+	for (let k = 0; k < 5; k += 1) {
+		const a = spin * 1.2 + k * 1.26;
+		const rr = R * (0.45 + 0.1 * (k % 3));
+		c.save();
+		c.translate(Math.cos(a) * rr, Math.sin(a) * rr);
+		c.rotate(a + Math.PI / 2);
+		cel(
+			c,
+			() => {
+				c.beginPath();
+				c.moveTo(-R * 0.12, 0);
+				c.lineTo(0, -R * 0.06);
+				c.lineTo(R * 0.12, 0);
+				c.lineTo(0, R * 0.05);
+				c.closePath();
+			},
+			JAW,
+			0,
+			0,
+			R * 0.1,
+			S,
+			0.45
+		);
+		c.restore();
+	}
+	c.restore();
+	disc();
+	ink(c, S, 1.1);
+	// the eye of the storm
+	c.beginPath();
+	c.arc(0, 0, R * 0.2, 0, TAU);
+	c.fillStyle = radial(c, 0, 0, 0, R * 0.2, ['#2a0004', '#120002']);
 	c.fill();
 	ink(c, S, 0.6);
-	bloom(c, r * 0.25, -r * 0.3, S * 0.3, '255,170,60', 0.8 * m);
-	c.fillStyle = '#ffe48a';
-	c.beginPath();
-	c.ellipse(r * 0.27, -r * 0.3, r * 0.1, r * 0.08, 0, 0, TAU);
-	c.fill();
-	// the near horn over all of it
-	horn(1, 0.6, r * 0.2, JAW);
-	gloss(c, -r * 0.45, -r * 0.55, r * 0.18, r * 0.07, 0.8, -0.5);
 	c.restore();
-	void t;
+	// drops flung off the rim, behind the heading
+	for (let k = 0; k < 4; k += 1) {
+		const a = Math.atan2(-dy, -dx) + (k - 1.5) * 0.45;
+		const d = R * (1.02 + 0.06 * (k % 2));
+		c.beginPath();
+		c.ellipse(Math.cos(a) * d, Math.sin(a) * d, S * 0.035, S * 0.022, a, 0, TAU);
+		c.fillStyle = '#c8241c';
+		c.fill();
+		ink(c, S, 0.4);
+	}
+	gloss(c, -R * 0.45, -R * 0.5, R * 0.16, R * 0.06, 0.75);
+	c.restore();
 }
 
 /** The hit: bone shards and a splash of blood flung from the point. */
@@ -822,7 +813,7 @@ function impact(c: Ctx, x: number, y: number, S: number): void {
 export const FLESH_KIT: Kit = {
 	id: 'flesh',
 	name: 'Плоть',
-	idea: 'Материя самого ада, как стены и кисты. Призраки — содранные бесы со швом и проступающими рёбрами, еда — клыки в обрывке десны. Правка 1: энерджайзер — раскалённое сердце на тёмной подложке, капкан — светлые костяные челюсти над тёмной ямой, плазма — жёлчемёт весом с BFG, броня — костяная кираса, рывок — оба героя становятся рогатым черепом-тараном.',
+	idea: 'Материя самого ада, как стены и кисты. Призраки — содранные бесы со швом и проступающими рёбрами, еда — клыки в обрывке десны. Энерджайзер — раскалённое сердце на тёмной подложке, капкан — светлые костяные челюсти над тёмной ямой. Правка 2: подбор капкана — петля из жилы на костяной перекладине, плазма и броня крупнее и проще, рывок — оба героя раскручиваются в кровавый смерч.',
 	food,
 	energizer,
 	ghost,

@@ -76,7 +76,8 @@ last (see Later).
    `mood` prototypes. Look rules kept: one flesh world, no void; walls as blocks sitting in the
    floor (light from the top left, a cast shadow), no height or extrusion; surround not dimmed; nothing bright that jumps forward; few bold details; a slow
    heartbeat (~2.5 s); the teleport is the iron gateway; night stays `cord`; no round marks on the
-   spawn's and the fruit's tiles (removed 2026-11-28).
+   spawn's and the fruit's tiles (removed 2026-11-28); no blood on the corridor floor and no drips
+   off the walls, the blood is on the walls only; a thin dark line round the walls (2026-11-28).
    **The hell, the owner's list (2026-11-27)**: he finds the fight too empty (most of the time you
    wander an empty maze) and the BFG too strong. Done: the BFG's orb 350 to 250 and its tracers 150 to
    100 (six orb hits for the boss, was five), the tar pool keeps a margin from its tile's edge (tested).

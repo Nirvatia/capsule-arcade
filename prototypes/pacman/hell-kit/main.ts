@@ -142,15 +142,25 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 		ctx.fillStyle = ref ? '#8a7470' : '#d9c3b8';
 		ctx.textAlign = 'center';
 		ctx.fillText(label, x0 + (CELL * span - 6) / 2, y0 + CELL + 9);
-		return { x: x0 + (CELL * span - 6) / 2, y: y0 + (CELL - 6) / 2 };
+		const centre = { x: x0 + (CELL * span - 6) / 2, y: y0 + (CELL - 6) / 2 };
+		if (span === 1 && label !== 'еда' && label !== 'выстрелы') {
+			// the tile's bounds: nothing may leave them
+			ctx.save();
+			ctx.setLineDash([4, 4]);
+			ctx.strokeStyle = 'rgba(255,230,210,.28)';
+			ctx.lineWidth = 1;
+			ctx.strokeRect(centre.x - S / 2, centre.y - S / 2, S, S);
+			ctx.restore();
+		}
+		return centre;
 	};
 	const names = ['Блинки', 'Пинки', 'Инки', 'Клайд'];
 	for (let i = 0; i < 4; i += 1) {
 		const g = cell(i, 0, 1, names[i]);
-		kit.ghost(ctx, i, g.x, g.y + 6, S, 'RIGHT', false, T + i * 0.4);
+		kit.ghost(ctx, i, g.x, g.y, S, 'RIGHT', false, T + i * 0.4);
 	}
 	let c = cell(4, 0, 1, 'испуганный');
-	kit.ghost(ctx, 1, c.x, c.y + 6, S, 'LEFT', true, T);
+	kit.ghost(ctx, 1, c.x, c.y, S, 'LEFT', true, T);
 	c = cell(0, 1, 1, 'еда');
 	for (let k = -1; k <= 1; k += 1) kit.food(ctx, c.x + k * S * 0.55, c.y, S);
 	c = cell(1, 1, 1, 'энерджайзер');
