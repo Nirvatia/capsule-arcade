@@ -25,111 +25,218 @@ function horn(c: Ctx, x: number, y: number, S: number, a: number): void {
 }
 
 /**
- * The boss's death, `f` 0..1 over about 2 s: he shakes with light breaking through (0..0.35), bursts
- * (a white flash, flesh and his two horns flung out, 0.35..0.6), and what is left is a pool of blood
- * spreading on the floor with his horns lying in it (to the end; the pool stays).
+ * The boss's death, `f` 0..1 over about 3 s. He swells and shakes while beams of light break out of
+ * him and turn (0..0.4); he bursts: a white disc, two shock rings over three tiles, flesh flung far
+ * with blood trails, his horns thrown high (0.4..0.7); blood rains back, the pool spreads with his
+ * horns in it, embers rise from it (to the end; the pool stays).
  */
 export function bossDeath(c: Ctx, x: number, y: number, S: number, f: number, t: number, drawBoss: (dx: number) => void): void {
-	if (f < 0.35) {
-		const k = f / 0.35;
-		drawBoss(Math.sin(t * 70) * 0.04 * k);
-		bloom(c, x, y, S * (0.8 + 0.6 * k), '255,220,180', 0.3 + 0.5 * k);
+	const pool = Math.max(0, Math.min(1, (f - 0.42) / 0.35));
+	if (pool > 0) bloodPool(c, x, y, S, pool, t, f);
+	if (f < 0.4) {
+		const k = f / 0.4;
+		// the beams: eight long rays turning, longer and brighter as he swells
 		c.save();
-		c.strokeStyle = `rgba(255,240,210,${0.5 + 0.5 * k})`;
-		c.lineWidth = Math.max(1.2, S * 0.04);
-		c.lineCap = 'round';
+		c.globalCompositeOperation = 'lighter';
 		for (let i = 0; i < 8; i += 1) {
-			const a = (i * TAU) / 8 + 0.2;
-			const len = S * (0.2 + 0.35 * k);
+			const a = (i * TAU) / 8 + t * 0.8;
+			const len = S * (0.6 + 2.2 * k);
+			const w = S * (0.05 + 0.1 * k);
+			const g = c.createLinearGradient(x, y, x + Math.cos(a) * len, y + Math.sin(a) * len);
+			g.addColorStop(0, `rgba(255,240,210,${0.3 + 0.6 * k})`);
+			g.addColorStop(1, 'rgba(255,120,60,0)');
+			c.fillStyle = g;
 			c.beginPath();
-			c.moveTo(x, y);
+			c.moveTo(x + Math.cos(a + Math.PI / 2) * w, y + Math.sin(a + Math.PI / 2) * w);
 			c.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+			c.lineTo(x + Math.cos(a - Math.PI / 2) * w, y + Math.sin(a - Math.PI / 2) * w);
+			c.closePath();
+			c.fill();
+		}
+		c.restore();
+		c.save();
+		const swell = 1 + 0.25 * k;
+		c.translate(x, y);
+		c.scale(swell, swell);
+		c.translate(-x, -y);
+		drawBoss(Math.sin(t * 70) * 0.05 * k);
+		c.restore();
+		bloom(c, x, y, S * (0.8 + 1.0 * k), '255,220,180', 0.3 + 0.6 * k);
+		return;
+	}
+	const fly = Math.min(1, (f - 0.4) / 0.3);
+	const a = 1 - fly;
+	if (fly < 1) {
+		// the white disc and two shock rings
+		bloom(c, x, y, S * 3, '255,235,210', 0.9 * a);
+		c.fillStyle = `rgba(255,250,235,${a * a})`;
+		c.beginPath();
+		c.arc(x, y, S * (0.6 + 1.4 * fly), 0, TAU);
+		c.fill();
+		c.save();
+		for (const [d, w] of [[3.2, 0.08], [2.2, 0.05]]) {
+			c.strokeStyle = `rgba(255,${d > 3 ? 200 : 240},${d > 3 ? 160 : 220},${a})`;
+			c.lineWidth = S * w * a + 1;
+			c.beginPath();
+			c.arc(x, y, S * (0.4 + d * fly), 0, TAU);
 			c.stroke();
 		}
 		c.restore();
-		return;
+		// flesh flung far, each with a blood trail
+		for (let i = 0; i < 18; i += 1) {
+			const ang = (i * TAU) / 18 + (i % 3) * 0.15;
+			const reach = S * (1.4 + 0.9 * ((i * 7) % 5) / 4);
+			const d = reach * (1 - (1 - fly) ** 2);
+			const px = x + Math.cos(ang) * d;
+			const py = y + Math.sin(ang) * d + S * 0.5 * fly * fly;
+			c.strokeStyle = `rgba(160,10,16,${0.7 * a})`;
+			c.lineWidth = Math.max(1, S * 0.04);
+			c.beginPath();
+			c.moveTo(x + Math.cos(ang) * d * 0.6, y + Math.sin(ang) * d * 0.6);
+			c.lineTo(px, py);
+			c.stroke();
+			c.save();
+			c.translate(px, py);
+			c.globalAlpha *= Math.min(1, a * 2);
+			cel(c, () => { c.beginPath(); c.ellipse(0, 0, S * 0.09, S * 0.06, ang, 0, TAU); }, BLOOD, 0, 0, S * 0.09, S, 0.4);
+			c.restore();
+		}
 	}
-	const pool = Math.min(1, (f - 0.35) / 0.4);
-	// the pool, an irregular blob, under everything
+	// the horns: thrown high, spinning, then lying in the pool
+	for (const s of [-1, 1]) {
+		const k = Math.min(1, (f - 0.4) / 0.45);
+		const hx = x + s * S * (0.12 + 0.32 * k);
+		const hy = y - S * (1.6 * k - 1.72 * k * k) + S * 0.1;
+		horn(c, hx, hy, S * 1.2, s > 0 ? 0.4 + (1 - k) * 9 : Math.PI - 0.4 - (1 - k) * 9);
+	}
+}
+
+/** What he leaves: a pool of blood spreading, drops raining back into it, embers rising. */
+function bloodPool(c: Ctx, x: number, y: number, S: number, pool: number, t: number, f: number): void {
 	c.save();
 	c.beginPath();
-	for (let i = 0; i <= 16; i += 1) {
-		const a = (i * TAU) / 16;
-		const r = S * 0.55 * pool * (0.8 + 0.2 * Math.sin(i * 2.3));
+	for (let i = 0; i <= 20; i += 1) {
+		const a = (i * TAU) / 20;
+		const r = S * 0.7 * pool * (0.78 + 0.22 * Math.sin(i * 2.3));
 		const px = x + Math.cos(a) * r * 1.2;
 		const py = y + S * 0.15 + Math.sin(a) * r * 0.7;
 		if (i === 0) c.moveTo(px, py);
 		else c.lineTo(px, py);
 	}
 	c.closePath();
-	c.fillStyle = linear(c, 0, y - S * 0.2, 0, y + S * 0.5, ['#d0241e', '#7a0a10']);
+	c.fillStyle = linear(c, 0, y - S * 0.3, 0, y + S * 0.6, ['#e0281e', '#7a0a10']);
 	c.fill();
-	ink(c, S, 0.5);
-	c.fillStyle = 'rgba(255,200,190,.5)';
+	ink(c, S, 0.6);
+	c.fillStyle = 'rgba(255,210,200,.55)';
 	c.beginPath();
-	c.ellipse(x - S * 0.15, y + S * 0.02, S * 0.14 * pool, S * 0.03 * pool, -0.2, 0, TAU);
+	c.ellipse(x - S * 0.2, y + S * 0.02, S * 0.2 * pool, S * 0.035 * pool, -0.2, 0, TAU);
 	c.fill();
 	c.restore();
-	const fly = Math.min(1, (f - 0.35) / 0.25);
-	if (fly < 1) {
-		const a = 1 - fly;
-		bloom(c, x, y, S * 1.6, '255,230,200', 0.9 * a);
-		for (let i = 0; i < 10; i += 1) {
-			const ang = (i * TAU) / 10;
-			const d = S * (0.2 + 1.0 * fly);
-			c.save();
-			c.globalAlpha *= a;
-			c.translate(x + Math.cos(ang) * d, y + Math.sin(ang) * d + S * 0.4 * fly * fly);
-			cel(c, () => { c.beginPath(); c.ellipse(0, 0, S * 0.08, S * 0.05, ang, 0, TAU); }, BLOOD, 0, 0, S * 0.08, S, 0.4);
-			c.restore();
+	// drops raining back, splashing
+	const rain = Math.max(0, Math.min(1, (f - 0.55) / 0.35));
+	if (rain > 0 && rain < 1) {
+		for (let i = 0; i < 7; i += 1) {
+			const u = (rain * 1.6 + i / 7) % 1;
+			const px = x + (i - 3) * S * 0.22;
+			const py = y - S * 1.4 + u * S * 1.6;
+			c.fillStyle = BLOOD.mid;
+			c.beginPath();
+			c.ellipse(px, py, S * 0.035, S * 0.06, 0, 0, TAU);
+			c.fill();
 		}
 	}
-	// the horns: flung up, then lying in the pool
-	for (const s of [-1, 1]) {
-		const k = Math.min(1, fly);
-		const hx = x + s * S * (0.1 + 0.18 * k);
-		const hy = y - S * (0.5 * k - 0.62 * k * k) + S * 0.08;
-		horn(c, hx, hy, S, s > 0 ? 0.4 + (1 - k) * 3 : Math.PI - 0.4 - (1 - k) * 3);
+	// embers rising off it
+	for (let i = 0; i < 5; i += 1) {
+		const u = (t * 0.5 + i / 5) % 1;
+		c.fillStyle = `rgba(255,150,70,${(1 - u) * 0.8 * pool})`;
+		c.beginPath();
+		c.arc(x + Math.sin(i * 1.9 + t) * S * 0.4, y - u * S * 0.9, S * 0.025, 0, TAU);
+		c.fill();
 	}
 }
 
-/** The heart he leaves (+1 life): a hot heart floating over its shadow, beating, a crown of glow. */
-export function heartReward(c: Ctx, x: number, y: number, S: number, t: number): void {
+/** The floating and its shadow, shared by the hearts. */
+function floatAt(c: Ctx, x: number, y: number, S: number, t: number): number {
 	const bob = Math.sin(t * 2.4) * S * 0.05;
-	const beat = 1 + 0.14 * Math.max(0, Math.sin(t * 5)) ** 3;
-	c.fillStyle = 'rgba(8,1,3,.45)';
+	c.fillStyle = 'rgba(8,1,3,.5)';
 	c.beginPath();
-	c.ellipse(x + S * 0.04, y + S * 0.36, S * 0.26, S * 0.08, 0, 0, TAU);
+	c.ellipse(x + S * 0.04, y + S * 0.38, S * 0.28, S * 0.08, 0, 0, TAU);
 	c.fill();
-	bloom(c, x, y - S * 0.05 + bob, S * 1.2, '255,90,60', 0.55 + 0.4 * (beat - 1) * 7);
+	return bob;
+}
+
+function heartPath(c: Ctx, S: number, k: number): void {
+	c.beginPath();
+	c.moveTo(0, S * 0.32 * k);
+	c.bezierCurveTo(-S * 0.46 * k, S * 0.04 * k, -S * 0.32 * k, -S * 0.36 * k, 0, -S * 0.14 * k);
+	c.bezierCurveTo(S * 0.32 * k, -S * 0.36 * k, S * 0.46 * k, S * 0.04 * k, 0, S * 0.32 * k);
+	c.closePath();
+}
+
+/**
+ * Heart candidate 1, the reliquary: a red heart set in a white bone frame (a light disc with a dark
+ * ink edge reads on the dark floor), gold rays behind it.
+ */
+export function heartReliquary(c: Ctx, x: number, y: number, S: number, t: number): void {
+	const bob = floatAt(c, x, y, S, t);
+	const beat = 1 + 0.12 * Math.max(0, Math.sin(t * 5)) ** 3;
+	const cy = y - S * 0.06 + bob;
+	bloom(c, x, cy, S * 1.2, '255,226,150', 0.6);
 	c.save();
-	c.translate(x, y - S * 0.06 + bob);
-	c.scale(beat, beat);
-	const heart = (): void => {
+	c.strokeStyle = 'rgba(255,230,160,.8)';
+	c.lineWidth = Math.max(1.2, S * 0.04);
+	c.lineCap = 'round';
+	for (let i = 0; i < 8; i += 1) {
+		const a = (i * TAU) / 8 + t * 0.6;
 		c.beginPath();
-		c.moveTo(0, S * 0.32);
-		c.bezierCurveTo(-S * 0.46, S * 0.04, -S * 0.32, -S * 0.36, 0, -S * 0.14);
-		c.bezierCurveTo(S * 0.32, -S * 0.36, S * 0.46, S * 0.04, 0, S * 0.32);
-		c.closePath();
-	};
-	cel(c, heart, HEART, 0, 0, S * 0.32, S, 1.1);
-	// the veins and the vessels on top
-	c.strokeStyle = 'rgba(70,0,10,.7)';
-	c.lineWidth = Math.max(1, S * 0.025);
-	c.beginPath();
-	c.moveTo(-S * 0.12, -S * 0.1);
-	c.quadraticCurveTo(-S * 0.04, S * 0.04, -S * 0.1, S * 0.16);
-	c.moveTo(S * 0.1, -S * 0.12);
-	c.quadraticCurveTo(S * 0.16, 0, S * 0.04, S * 0.14);
-	c.stroke();
-	for (const vx of [-0.06, 0.06]) {
-		cel(c, () => { c.beginPath(); c.roundRect(S * vx - S * 0.035, -S * 0.3, S * 0.07, S * 0.14, S * 0.03); }, BLOOD, S * vx, -S * 0.24, S * 0.05, S, 0.6);
+		c.moveTo(x + Math.cos(a) * S * 0.48, cy + Math.sin(a) * S * 0.48);
+		c.lineTo(x + Math.cos(a) * S * 0.62, cy + Math.sin(a) * S * 0.62);
+		c.stroke();
 	}
-	c.fillStyle = 'rgba(255,255,255,.8)';
+	c.restore();
+	cel(c, () => { c.beginPath(); c.arc(x, cy, S * 0.44, 0, TAU); }, { light: '#ffffff', mid: '#f0e4cc', shade: '#b09a78' }, x, cy, S * 0.44, S, 1.2);
+	c.save();
+	c.translate(x, cy + S * 0.02);
+	c.scale(beat, beat);
+	cel(c, () => heartPath(c, S, 0.78), HEART, 0, 0, S * 0.25, S, 1);
+	c.fillStyle = 'rgba(255,255,255,.85)';
 	c.beginPath();
-	c.ellipse(-S * 0.15, -S * 0.1, S * 0.06, S * 0.025, -0.6, 0, TAU);
+	c.ellipse(-S * 0.12, -S * 0.08, S * 0.05, S * 0.02, -0.6, 0, TAU);
 	c.fill();
 	c.restore();
+}
+
+/**
+ * Heart candidate 2, the white-hot heart: the heart itself burning gold-white at its heart and red at
+ * its rim, a strong halo and a ring of flame round it.
+ */
+export function heartHot(c: Ctx, x: number, y: number, S: number, t: number): void {
+	const bob = floatAt(c, x, y, S, t);
+	const beat = 1 + 0.14 * Math.max(0, Math.sin(t * 5)) ** 3;
+	const cy = y - S * 0.06 + bob;
+	bloom(c, x, cy, S * 1.5, '255,200,120', 0.75);
+	c.save();
+	c.translate(x, cy);
+	c.scale(beat, beat);
+	heartPath(c, S, 1.05);
+	c.fillStyle = radial(c, -S * 0.04, -S * 0.04, 0, S * 0.38, ['#fffbe8', '#ffd27a', '#ff6a2a', '#b0141a']);
+	c.fill();
+	heartPath(c, S, 1.05);
+	ink(c, S, 1.2);
+	c.restore();
+	// a ring of small flames
+	for (let i = 0; i < 10; i += 1) {
+		const a = (i * TAU) / 10 + t * 1.2;
+		const fx = x + Math.cos(a) * S * 0.5;
+		const fy = cy + Math.sin(a) * S * 0.45;
+		const h = S * (0.08 + 0.04 * Math.sin(t * 9 + i));
+		c.fillStyle = 'rgba(255,170,70,.85)';
+		c.beginPath();
+		c.moveTo(fx - S * 0.03, fy);
+		c.quadraticCurveTo(fx, fy - h * 1.6, fx + S * 0.03, fy);
+		c.closePath();
+		c.fill();
+	}
 }
 
 /**
@@ -199,106 +306,111 @@ function rand(c: number, r: number, k: number): number {
 	return v - Math.floor(v);
 }
 
-/**
- * Tar candidate A, the crust: the corridor floor under a dry black crust, one sheet across its tiles
- * (no rounds), broken by cracks that glow a dull ember, a dull sheen along it.
- */
-export function tarCrust(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number): void {
-	const pad = s * 0.08;
-	const keys = new Set(tiles.map((q) => `${q.c},${q.r}`));
-	c.save();
-	c.beginPath();
-	for (const q of tiles) {
-		const x0 = ox + q.c * s + pad;
-		const y0 = oy + q.r * s + pad;
-		// reach into a tarred neighbour so the sheet has no seam
-		const w = s - pad * 2 + (keys.has(`${q.c + 1},${q.r}`) ? pad * 2 : 0);
-		const h = s - pad * 2 + (keys.has(`${q.c},${q.r + 1}`) ? pad * 2 : 0);
-		c.rect(x0, y0, w, h);
-	}
-	c.fillStyle = '#1c0e0c';
-	c.fill();
-	c.clip();
-	// the crust's plates: a faintly lighter patch per tile
-	for (const q of tiles) {
-		c.fillStyle = `rgba(80,50,40,${0.25 + 0.2 * rand(q.c, q.r, 1)})`;
-		c.beginPath();
-		c.moveTo(ox + (q.c + 0.2) * s, oy + (q.r + 0.25) * s);
-		c.lineTo(ox + (q.c + 0.75) * s, oy + (q.r + 0.15) * s);
-		c.lineTo(ox + (q.c + 0.8) * s, oy + (q.r + 0.7) * s);
-		c.lineTo(ox + (q.c + 0.3) * s, oy + (q.r + 0.8) * s);
-		c.closePath();
-		c.fill();
-	}
-	// the cracks, glowing a dull ember that breathes
-	const glow = 0.5 + 0.2 * Math.sin(t * 2);
-	for (const pass of [0, 1]) {
-		c.strokeStyle = pass === 0 ? '#060202' : `rgba(255,110,40,${glow})`;
-		c.lineWidth = pass === 0 ? Math.max(1.6, s * 0.06) : Math.max(0.8, s * 0.022);
-		c.lineCap = 'round';
-		c.lineJoin = 'round';
-		for (const q of tiles) {
-			c.beginPath();
-			let px = ox + q.c * s;
-			let py = oy + (q.r + 0.2 + 0.6 * rand(q.c, q.r, 2)) * s;
-			c.moveTo(px, py);
-			for (let k = 1; k <= 3; k += 1) {
-				px = ox + (q.c + k / 3) * s;
-				py = oy + (q.r + 0.2 + 0.6 * rand(q.c, q.r, 2 + k)) * s;
-				c.lineTo(px, py);
-			}
-			const bx = ox + (q.c + 0.3 + 0.4 * rand(q.c, q.r, 9)) * s;
-			c.moveTo(bx, oy + q.r * s);
-			c.lineTo(bx + s * 0.08, oy + (q.r + 0.4) * s);
-			c.stroke();
-		}
-	}
-	c.restore();
+/** The tar's inner box on a tile: it never leaves the tile and keeps a margin from its edge. */
+function inner(q: Tile, ox: number, oy: number, s: number): [number, number, number] {
+	const pad = s * 0.1;
+	return [ox + q.c * s + pad, oy + q.r * s + pad, s - pad * 2];
 }
 
 /**
- * Tar candidate B, the flow: one glossy black stream filling the corridor, slow ripples running along
- * it (chevrons, no rounds) and a long sheen.
+ * Tar candidate C, the slab: each tile its own square slab of glossy black tar, its corners softened
+ * (not round), its edges sagging into two drips, a long sheen along its top.
  */
-export function tarFlow(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number): void {
-	const pad = s * 0.08;
-	const keys = new Set(tiles.map((q) => `${q.c},${q.r}`));
-	c.save();
-	c.beginPath();
+export function tarSlab(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number): void {
 	for (const q of tiles) {
-		const x0 = ox + q.c * s + pad;
-		const y0 = oy + q.r * s + pad;
-		const w = s - pad * 2 + (keys.has(`${q.c + 1},${q.r}`) ? pad * 2 : 0);
-		const h = s - pad * 2 + (keys.has(`${q.c},${q.r + 1}`) ? pad * 2 : 0);
-		c.rect(x0, y0, w, h);
+		const [x0, y0, w] = inner(q, ox, oy, s);
+		const sag = s * 0.06;
+		c.beginPath();
+		c.moveTo(x0 + w * 0.12, y0);
+		c.lineTo(x0 + w * 0.88, y0);
+		c.lineTo(x0 + w, y0 + w * 0.12);
+		c.lineTo(x0 + w, y0 + w * 0.82);
+		c.lineTo(x0 + w * 0.78, y0 + w + sag);
+		c.lineTo(x0 + w * 0.6, y0 + w);
+		c.lineTo(x0 + w * 0.3, y0 + w + sag * 1.4);
+		c.lineTo(x0 + w * 0.12, y0 + w);
+		c.lineTo(x0, y0 + w * 0.86);
+		c.lineTo(x0, y0 + w * 0.12);
+		c.closePath();
+		c.fillStyle = linear(c, 0, y0, 0, y0 + w, ['#2a1416', '#0a0405']);
+		c.fill();
+		ink(c, s, 0.6);
+		c.fillStyle = 'rgba(255,230,220,.28)';
+		c.fillRect(x0 + w * 0.16, y0 + w * 0.14, w * 0.5, Math.max(1, s * 0.04));
+		// one slow bubble rising and bursting, its spot seeded per tile
+		const u = (t * 0.4 + rand(q.c, q.r, 3)) % 1;
+		c.strokeStyle = `rgba(160,120,120,${0.5 * (1 - u)})`;
+		c.lineWidth = Math.max(1, s * 0.025);
+		c.beginPath();
+		c.arc(x0 + w * (0.3 + 0.4 * rand(q.c, q.r, 4)), y0 + w * (0.4 + 0.3 * rand(q.c, q.r, 5)), s * 0.05 * u, 0, TAU);
+		c.stroke();
 	}
-	c.fillStyle = linear(c, 0, oy, 0, oy + s, ['#16090a', '#060203']);
-	c.fill();
-	c.clip();
+}
+
+/**
+ * Tar candidate D, the splat: each tile an irregular star-shaped splat of black tar (seeded per tile,
+ * so no two match), drips running out of its points, a sheen.
+ */
+export function tarSplat(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, _t: number): void {
 	for (const q of tiles) {
-		const horiz = keys.has(`${q.c + 1},${q.r}`) || keys.has(`${q.c - 1},${q.r}`);
-		for (let k = 0; k < 3; k += 1) {
-			const u = ((t * 0.35 + k / 3 + q.c * 0.33 + q.r * 0.33) % 1) * s;
-			c.strokeStyle = 'rgba(150,110,110,.35)';
-			c.lineWidth = Math.max(1, s * 0.03);
+		const [x0, y0, w] = inner(q, ox, oy, s);
+		const cx = x0 + w / 2;
+		const cy = y0 + w / 2;
+		c.beginPath();
+		const N = 9;
+		for (let i = 0; i <= N; i += 1) {
+			const a = (i * TAU) / N + rand(q.c, q.r, 1);
+			const r = w * (i % 2 ? 0.36 : 0.56) * (0.85 + 0.15 * rand(q.c, q.r, i + 2));
+			const px = cx + Math.cos(a) * r;
+			const py = cy + Math.sin(a) * r;
+			if (i === 0) c.moveTo(px, py);
+			else c.lineTo(px, py);
+		}
+		c.closePath();
+		c.fillStyle = linear(c, 0, y0, 0, y0 + w, ['#2a1416', '#0a0405']);
+		c.fill();
+		ink(c, s, 0.5);
+		c.fillStyle = 'rgba(255,230,220,.3)';
+		c.beginPath();
+		c.moveTo(cx - w * 0.2, cy - w * 0.12);
+		c.lineTo(cx + w * 0.05, cy - w * 0.2);
+		c.lineTo(cx - w * 0.12, cy - w * 0.08);
+		c.closePath();
+		c.fill();
+	}
+}
+
+/**
+ * Tar candidate E, the crust tile: each tile its own plate of dry black crust (square, softened
+ * corners), its cracks glowing a dull ember that breathes.
+ */
+export function tarCrustTile(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number): void {
+	const glow = 0.5 + 0.2 * Math.sin(t * 2);
+	for (const q of tiles) {
+		const [x0, y0, w] = inner(q, ox, oy, s);
+		c.beginPath();
+		c.roundRect(x0, y0, w, w, w * 0.14);
+		c.fillStyle = '#1c0e0c';
+		c.fill();
+		ink(c, s, 0.6);
+		c.save();
+		c.beginPath();
+		c.roundRect(x0, y0, w, w, w * 0.14);
+		c.clip();
+		for (const pass of [0, 1]) {
+			c.strokeStyle = pass === 0 ? '#060202' : `rgba(255,110,40,${glow})`;
+			c.lineWidth = pass === 0 ? Math.max(1.6, s * 0.06) : Math.max(0.8, s * 0.022);
+			c.lineCap = 'round';
+			c.lineJoin = 'round';
+			const mx = x0 + w * (0.35 + 0.3 * rand(q.c, q.r, 1));
+			const my = y0 + w * (0.35 + 0.3 * rand(q.c, q.r, 2));
 			c.beginPath();
-			if (horiz) {
-				const x = ox + q.c * s + u;
-				c.moveTo(x - s * 0.08, oy + (q.r + 0.25) * s);
-				c.lineTo(x, oy + (q.r + 0.5) * s);
-				c.lineTo(x - s * 0.08, oy + (q.r + 0.75) * s);
-			} else {
-				const y = oy + q.r * s + u;
-				c.moveTo(ox + (q.c + 0.25) * s, y - s * 0.08);
-				c.lineTo(ox + (q.c + 0.5) * s, y);
-				c.lineTo(ox + (q.c + 0.75) * s, y - s * 0.08);
+			for (const [ex, ey] of [[0, 0.2], [1, 0.3], [0.6, 1], [0.15, 0.9]]) {
+				c.moveTo(mx, my);
+				c.lineTo(x0 + w * (ex + (rand(q.c, q.r, ex * 7 + ey) - 0.5) * 0.2), y0 + w * ey);
 			}
 			c.stroke();
 		}
-		// the long sheen along the stream
-		c.fillStyle = 'rgba(255,230,220,.18)';
-		if (horiz) c.fillRect(ox + q.c * s, oy + (q.r + 0.28) * s, s, s * 0.05);
-		else c.fillRect(ox + (q.c + 0.28) * s, oy + q.r * s, s * 0.05, s);
+		c.restore();
 	}
-	c.restore();
 }

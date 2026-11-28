@@ -257,7 +257,8 @@ const hitCard = (title: string, strength: number): Card => ({
 const GHOST_FROM: ReadonlyArray<readonly [number, number]> = [[-3, -1], [3, -1], [-3, 1], [3, 1]];
 
 /** The corridor's tiles the tar cards cover, and the tar painters' origin in a card. */
-const TAR_TILES = [3, 4, 5, 6, 7, 8].map((c) => ({ c, r: ROW }));
+// one alone, a pair, one alone again: tar comes tile by tile and need not join
+const TAR_TILES = [3, 5, 6, 8].map((c) => ({ c, r: ROW }));
 const tarCard = (title: string, paint: typeof tar): Card => ({
 	title,
 	period: 4,
@@ -271,9 +272,9 @@ const END_SECTIONS: readonly Section[] = [
 	{
 		id: 'end',
 		title: 'Финал: смерть босса, сердце, выход',
-		note: 'Сейчас босс просто пропадает, а сердце и выход — общие для всех миров. Новое: босс трясётся, светится и лопается, остаётся лужа крови с его рогами; сердце ада (+1 жизнь); выход — железный люк, раскрывается зрачком на золотой свет.',
+		note: 'Смерть: босс разбухает, из него бьют вращающиеся лучи, лопается белой вспышкой с двумя ударными волнами, куски плоти с кровавыми следами, рога высоко вверх, кровавый дождь, лужа с рогами и угольками. Сердце: два светлых варианта, чтобы не терялось на полу. Выход (люк) принят.',
 		cards: [
-			{ title: 'Смерть босса: новое', period: 3, scene: (st, u, t) => E.bossDeath(st.ctx, st.X(6), st.Y(), st.S, ease(0.05, 0.85, u), t, (dx) => st.boss(6, false, 0, dx)) },
+			{ title: 'Смерть босса: эффектнее', period: 3.6, scene: (st, u, t) => E.bossDeath(st.ctx, st.X(6), st.Y(), st.S, ease(0.05, 0.85, u), t, (dx) => st.boss(6, false, 0, dx)) },
 			{
 				title: 'Сердце и выход: сейчас',
 				period: 3,
@@ -283,20 +284,25 @@ const END_SECTIONS: readonly Section[] = [
 				}
 			},
 			{
-				title: 'Сердце и выход: ада',
+				title: 'Сердце: 1 — в костяной оправе; выход — люк',
 				period: 3,
 				scene: (st, u, t) => {
-					E.heartReward(st.ctx, st.X(4), st.Y(), st.S, t);
+					E.heartReliquary(st.ctx, st.X(4), st.Y(), st.S, t);
 					E.exitHatch(st.ctx, st.X(7), st.Y(), st.S, t, ease(0, 0.4, u));
 				}
+			},
+			{
+				title: 'Сердце: 2 — раскалённое',
+				period: 3,
+				scene: (st, _u, t) => E.heartHot(st.ctx, st.X(4), st.Y(), st.S, t)
 			}
 		]
 	},
 	{
 		id: 'tar',
 		title: 'Смола третьей фазы',
-		note: 'Замедляет на краях лабиринта. Сейчас — круглые лужи в клетках. A: сухая чёрная корка с тлеющими трещинами. B: глянцевый чёрный поток с рябью вдоль коридора.',
-		cards: [tarCard('Сейчас: лужи', tar), tarCard('A: корка', E.tarCrust), tarCard('B: поток', E.tarFlow)]
+		note: 'Каждая клетка сама по себе (смола может лежать одиночными клетками), без кругов. C: глянцевая чёрная плита по форме клетки с потёками. D: неровная клякса, у каждой клетки своя. E: плита сухой корки с тлеющими трещинами.',
+		cards: [tarCard('Сейчас: лужи', tar), tarCard('C: плита', E.tarSlab), tarCard('D: клякса', E.tarSplat), tarCard('E: корка', E.tarCrustTile)]
 	}
 ];
 
