@@ -18,7 +18,7 @@ import { FLESH_KIT } from '../hell-kit/kitFlesh';
 import * as W from './weapons';
 import * as B from './bossFx';
 import * as E from './endFx';
-import { tar } from '../../../src/games/pacman/render/doom/attackArt';
+import * as F from './fixFx';
 import { drawBonusLife } from '../../../src/games/pacman/render/items/BonusLifeView';
 import { drawExit } from '../../../src/games/pacman/render/items/ExitView';
 
@@ -273,6 +273,77 @@ const tarCard = (title: string, paint: SlowPaint, over: boolean): Card => ({
 	}
 });
 
+const tankIcon = (c: Ctx): void => W.paintStingTank(c);
+
+const FIX_SECTIONS: readonly Section[] = [
+	{
+		id: 'fix',
+		title: 'Выброс оружия и пустой рывок',
+		note: 'Сейчас (неуклюже): иконка над героем трескается и разлетается осколками; отказ — рывок назад и разорванное красное кольцо. Новое легче и короче.',
+		cards: [
+			{
+				title: 'Выброс: сейчас',
+				period: 1.8,
+				scene: (st, u) => {
+					st.hero(5);
+					W.spent(st.ctx, st.X(5), st.Y(), st.S, ease(0.1, 0.9, u), tankIcon);
+				}
+			},
+			{
+				title: 'Выброс A: отбросил назад',
+				period: 1.8,
+				scene: (st, u) => {
+					st.hero(5);
+					F.spentToss(st.ctx, st.X(5), st.Y(), st.S, 'RIGHT', ease(0.1, 0.75, u), tankIcon);
+				}
+			},
+			{
+				title: 'Выброс B: истлел',
+				period: 1.8,
+				scene: (st, u) => {
+					st.hero(5);
+					F.spentAsh(st.ctx, st.X(5), st.Y(), st.S, ease(0.1, 0.7, u), tankIcon);
+				}
+			},
+			{
+				title: 'Пустой рывок: сейчас',
+				period: 1.6,
+				scene: (st, u) => {
+					const f = ease(0.2, 0.7, u);
+					const jolt = f > 0 && f < 1 ? Math.sin(f * Math.PI * 4) * 0.08 * (1 - f) : 0;
+					st.hero(5 - jolt, 'berserk');
+					if (f > 0 && f < 1) W.refused(st.ctx, st.X(5), st.Y(), st.S, 'RIGHT', f);
+				}
+			},
+			{
+				title: 'Пустой рывок A: осечка',
+				period: 1.6,
+				scene: (st, u) => {
+					const f = ease(0.2, 0.5, u);
+					const x = st.X(5);
+					const y = st.Y();
+					const sq = f > 0 && f < 1 ? F.refusedPuff(st.ctx, x, y, st.S, 'RIGHT', f) : 1;
+					st.ctx.save();
+					st.ctx.translate(x, y);
+					st.ctx.scale(2 - sq, sq);
+					st.ctx.translate(-x, -y);
+					st.hero(5, 'berserk');
+					st.ctx.restore();
+				}
+			},
+			{
+				title: 'Пустой рывок B: срыв',
+				period: 1.6,
+				scene: (st, u) => {
+					const f = ease(0.2, 0.55, u);
+					const off = f > 0 && f < 1 ? F.refusedLunge(st.ctx, st.X(5), st.Y(), st.S, 'RIGHT', f) : 0;
+					st.hero(5 + off, 'berserk');
+				}
+			}
+		]
+	}
+];
+
 const END_SECTIONS: readonly Section[] = [
 	{
 		id: 'end',
@@ -302,7 +373,7 @@ const END_SECTIONS: readonly Section[] = [
 		id: 'tar',
 		title: 'Замедление третьей фазы (вместо смолы)',
 		note: 'Не смола, а то, что держит: светлее пола, не похоже на урон, по клеткам, и реагирует на героя (он медленно идёт по коридору). 1: бледные руки грешников из трещины хватают его. 2: сухожилия натянуты по клетке и обтягивают его. 3: цепи крест-накрест натягиваются на нём. 4: ярко-алая трясина вздымается вокруг него.',
-		cards: [tarCard('Сейчас: лужи', (c, tl, ox, oy, s, t) => tar(c, tl, ox, oy, s, t), false), tarCard('1: руки из пола', E.slowHands, true), tarCard('2: паутина из жил', E.slowSinews, true), tarCard('3: цепи', E.slowChains, true), tarCard('4: кровавая трясина', E.slowBog, false)]
+		cards: [tarCard('Принято: руки из пола', E.slowHands, true)]
 	}
 ];
 
@@ -592,7 +663,7 @@ const section = (id: string, title: string, note: string): HTMLElement => {
 	root.append(s);
 	return grid;
 };
-for (const sec of [...END_SECTIONS, ...BOSS_SECTIONS, ...SECTIONS]) {
+for (const sec of [...FIX_SECTIONS, ...END_SECTIONS, ...BOSS_SECTIONS, ...SECTIONS]) {
 	const g = section(sec.id, sec.title, sec.note);
 	sec.cards.forEach((c) => g.append(cardEl(c)));
 }
