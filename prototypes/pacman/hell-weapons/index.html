@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Оружие ада</title>
+    <!-- The hell weapons art pass, one looping card per candidate on the real hell. `node prototypes/pacman/build.mjs hell-weapons`. -->
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=PT+Sans:wght@400;700&family=PT+Sans+Narrow:wght@700&display=swap" />
+    <style>
+      /* One dark world on purpose: the page is the hell's art at its own light. A column of kits, each a game frame beside its sheet. */
+      :root {
+        --ground: #0d0607;
+        --panel: #1a0b0c;
+        --ink: #efe1d8;
+        --muted: #a8908a;
+        --blood: #d23a2e;
+        --rule: #3a1a1a;
+        --display: "Oswald", "Arial Narrow", system-ui, sans-serif;
+        --body: "PT Sans", "Segoe UI", system-ui, sans-serif;
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        background: var(--ground);
+        color: var(--ink);
+        font: 16px/1.5 var(--body);
+      }
+      main {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding-block: 28px 48px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        display: grid;
+        gap: 40px;
+      }
+      .intro h1 {
+        font: 700 clamp(30px, 5vw, 46px) / 1.05 var(--display);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        margin: 0 0 10px;
+        text-wrap: balance;
+      }
+      .intro h1 span { color: var(--blood); }
+      .intro p { max-width: 68ch; margin: 0; color: var(--muted); }
+      #sections { display: grid; gap: 44px; }
+      section { display: grid; gap: 14px; border-top: 2px solid var(--rule); padding-top: 22px; }
+      section header { display: grid; gap: 4px; max-width: 72ch; }
+      section h2 { font: 700 28px/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.03em; margin: 0; }
+      section p { margin: 0; color: var(--muted); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 700px), 1fr)); gap: 22px; }
+      #dial .grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+      #dial .card:last-child { grid-column: 1 / -1; }
+      .card { margin: 0; display: grid; gap: 8px; min-width: 0; padding: 12px; background: var(--panel); border-radius: 6px; }
+      .views { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+      .views canvas, .card.dial canvas { display: block; max-width: 100%; height: auto; border-radius: 3px; }
+      figcaption { font-size: 14px; color: var(--muted); }
+      figcaption b { color: var(--ink); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="intro">
+        <h1>Оружие <span>ада</span></h1>
+        <p>Проход по оружию: каждый кандидат — своя карточка, проигрывается по кругу на настоящем полу ада. Слева масштаб игры (тайл 32 px), справа крупно. Первая карточка в разделе — как сейчас в игре.</p>
+      </div>
+      <div id="sections"></div>
+    </main>
+    <script>
+/*SCRIPT*/
+    </script>
+  </body>
+</html>
