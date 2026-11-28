@@ -79,7 +79,9 @@ render/
                    floor `sceneFloor` (one opaque tone, a contact shadow, grass at the feet).
   doom/            DoomLevelRenderer, the flesh hell: DoomWorld (camera, mood) over a scene
                    baked once (fleshBake, with fleshNoise) and moved by the heartbeat
-                   (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX;
+                   (fleshLive), light map, Blinky lord of hell and the imps (HellBlinkyView,
+                   HellImpView over hellActors, drawn anew; the dash's LavaDash kept), combat and
+                   weapon FX;
                    the boss's dash (doomDashFx: LavaDash, the body turned into a rolling lava
                    ball that lays a cooling track, its timing read from the telegraph's run);
                    fleshKit (with fleshPaint): the redesign's art, the owner's pick «Плоть»

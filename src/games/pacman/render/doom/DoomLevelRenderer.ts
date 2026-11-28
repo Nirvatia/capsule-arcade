@@ -10,10 +10,11 @@ import { DoomWorld } from './DoomWorld';
 import type { DoomLight } from './DoomWorld';
 import { pickupSprite } from './DoomSprites';
 import { SPLIT_MERGE } from '../../logic/doom/DoomBalance';
-import { drawFleshEnergizer, drawFleshGhost, drawStingBolt, fleshFoodSprite } from './fleshKit';
+import { drawFleshEnergizer, drawStingBolt, fleshFoodSprite } from './fleshKit';
 import { counterReady, mawCharge, rushSaw, rushTrail, stingMuzzle } from './weaponArt';
 import { WeaponFxView, hitStrength } from './WeaponFxView';
 import { core as drawCore, omen, stunOverlay, windowMark } from './bossArt';
+import { drawGhost } from './hellActors';
 import { bossDeath } from './finaleArt';
 import type { DoomAbilityService } from '../../logic/doom/DoomAbilityService';
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
@@ -32,6 +33,8 @@ import type { GridLayout } from '../maze/GridView';
  */
 /** Seconds the boss's death plays (the pool stays after). */
 const DEATH_TIME = 3;
+/** Seconds the boss gloats after hitting the hero. */
+const GLOAT_TIME = 1.2;
 /** Seconds of the boss's recoil from a hit. */
 const RECOIL_TIME = 0.22;
 /** The omen's cracks open fully over this long (the old transition's length). */
@@ -42,6 +45,8 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 	private readonly fxView = new DoomFxView();
 	private readonly weaponFx = new WeaponFxView();
 	private recoil: { x: number; y: number; amount: number; t: number } | null = null;
+	private gloatUntil = -1;
+	private now = 0;
 	/** When and where the boss died: his death plays, then his pool stays with his horns. */
 	private death: { start: number; x: number; y: number } | null = null;
 	private readonly bossView = new HellBlinkyView();
@@ -65,6 +70,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 
 	render(frame: RenderFrame): GridLayout {
 		const { ctx, dt, time, state, level, grid } = frame;
+		this.now = time;
 		const world = this.worldFor(frame);
 		world.resize(frame.width, frame.height, frame.pixelRatio);
 		const boss = level.doomBoss;
@@ -81,6 +87,10 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			for (const event of doom.consumeFx()) {
 				this.fxView.spawn(event);
 				this.weaponFx.spawn(event);
+				if (event.kind === 'player-hit') {
+					// he got the hero: he gloats for a moment
+					this.gloatUntil = time + GLOAT_TIME;
+				}
 				const strength = hitStrength(event);
 				if (strength > 0 && boss && level.player) {
 					// he recoils away from the hero, harder for a harder hit
@@ -532,7 +542,8 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			intro: boss.introProgress,
 			look: Math.atan2(target.y - at.y, target.x - at.x),
 			hit: echo ? 0 : this.bossHitFlash,
-			echo
+			echo,
+			gloat: !echo && this.now < this.gloatUntil
 		};
 	}
 }
@@ -556,10 +567,13 @@ function splitGhost(
 	fear: number,
 	scale = 1
 ): void {
-	const fright = fear > 0 && !(fear < 2 && Math.floor(time * 8) % 2 === 0);
-	ctx.save();
-	ctx.translate(x, y);
-	ctx.scale(scale, scale);
-	drawFleshGhost(ctx, index, 0, 0, S, facing, fright, time);
-	ctx.restore();
+	// the flayed four (`hellActors.drawGhost`): frightened they shiver blue, blinking white in the
+	// last two seconds; returning to the core (scale < 1) they stretch toward it and fade
+	const merging = scale < 1;
+	drawGhost(ctx, x, y, S, time, {
+		dir: facing,
+		kind: (index % 4) as 0 | 1 | 2 | 3,
+		mode: merging ? 'merge' : fear > 0 ? (fear < 2 ? 'blink' : 'fright') : 'walk',
+		k: merging ? Math.min(1, (1 - scale) / 0.3) : 0
+	});
 }

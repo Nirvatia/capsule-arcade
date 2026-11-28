@@ -258,7 +258,7 @@ hypnosis have no ghosts to work on here, and her berserk shows as her powered lo
 Level 5 (and every 5th): a burnt version of the meadow with lava, pentagrams and teleporter
 pads, and no ghosts but their lord.
 
-- **Boss: Blinky, lord of hell** — a red demon ghost, one tile in size, 1500 HP, three
+- **Boss: Blinky, lord of hell** — a red demon ghost, one tile in size (drawn anew 2026-11-28, `hell-actors`: he breathes, leans, tracks the hero with his eyes, crouches before the lava-ball dash, swells before a cast, squeezes on a hit, slumps stunned, gloats after hitting the hero; bull horns growing each phase, tusks and glowing cracks from phase 2, a second pair of horns, lava cracks and burning eyes in phase 3), 1500 HP, three
   phases (at 1000 and 500 HP), each with its look and attack set
   (`logic/doom/DoomBalance.ts`):
   - phase 1: ambush chase, dash, rift (the corridor burns end to end);
@@ -275,7 +275,7 @@ pads, and no ghosts but their lord.
 - **Reward**: when the boss dies a heart appears at the far end of the maze from the player
   (it has to be run for) and an exit far from both;
   taking either ends the level as a win, the heart also gives +1 life.
-- Direction rule: every actor shows where it heads (eyes; the imps add a small chevron; the boss's eyes are enough
+- Direction rule: every actor shows where it heads (eyes; the imps' eyes and their tail behind them; the boss's eyes are enough
   on the tile's leading edge; Pac-Man has his mouth).
 
 ### The fight, redesigned (the owner's approval, 2026-11-28; in the game since 2026-11-28 with placeholder art, the lines above on the weapons and the transition are replaced by this)

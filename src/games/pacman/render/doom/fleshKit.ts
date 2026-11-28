@@ -1,169 +1,28 @@
 // The hell's «Плоть» kit (the owner's pick in the `hell-kit` prototype, 2026-11-28): the food (a fang in
-// a scrap of gum), the split's energizer (a hot heart), its four equal flayed ghosts, the Sting's bolts,
+// a scrap of gum), the split's energizer (a hot heart), the Sting's bolts,
 // the weapons' pickup icons (the Maw «Жерло» and the Sting «Жало», painted in the -50..50 box of
-// `doomItems`) and the berserk's rush (the hero spun up into a whirlwind of blood). Drawn with
+// `doomItems`; the Sting's and the ghosts' now in `weaponArt` and `hellActors`). Drawn with
 // `fleshPaint`: light from the upper left, cel bands, an ink line; no red in the items.
 import {
 	INK,
 	TAU,
-	VEC,
 	bloom,
 	cel,
-	celBands,
-	drawEyes,
-	drawHorns,
 	face,
 	fang,
-	ghostPath,
 	gloss,
 	ink,
-	lightGlow,
 	linear,
 	radial,
-	rim,
 	shadow,
 	type Ctx,
 	type Dir,
-	type GhostShape,
 	type Tones
 } from './fleshPaint';
 
 const BONE: Tones = { light: '#fff6e4', mid: '#e6d4b0', shade: '#a8916a' };
 const GUM: Tones = { light: '#f6a8a4', mid: '#c4545a', shade: '#6a1a22' };
 const BILE: Tones = { light: '#dcfbff', mid: '#46c2ee', shade: '#16608e' };
-const SKINS: readonly Tones[] = [
-	{ light: '#ff9c86', mid: '#d8392c', shade: '#7a1210' },
-	{ light: '#ffc0dc', mid: '#de5a9a', shade: '#7c1a50' },
-	{ light: '#a8eef8', mid: '#2fa6c6', shade: '#0f4f68' },
-	{ light: '#ffd29a', mid: '#e47a26', shade: '#7a3608' }
-];
-const FRIGHT: Tones = { light: '#c8d2ff', mid: '#3d4fd8', shade: '#151c6e' };
-const TINT = ['255,90,60', '255,120,200', '90,220,255', '255,170,70'];
-
-function ghostShape(S: number, i: number): GhostShape {
-	// about the hero's size: in the split they are the enemies, not the boss's small imps
-	// the hero's size, horns included within the tile
-	// a little smaller than the hero, a ragged skirt a little longer than the arcade's, not tall
-	const w = S * 0.3;
-	return { w, domeY: -w * 0.2, hem: w * 1.1, feet: 5, torn: 0.6, seed: 3 + i * 1.7 };
-}
-
-/** The flayed ghost: body, ribs in its shade, a stitched seam, bone horns, a fanged grin. */
-export function drawFleshGhost(
-	c: Ctx,
-	i: number,
-	x: number,
-	y: number,
-	S: number,
-	dir: Dir,
-	fright: boolean,
-	t: number
-): void {
-	const shape = ghostShape(S, i);
-	const { w, domeY, hem } = shape;
-	const tones = fright ? FRIGHT : SKINS[i];
-	c.save();
-	c.lineJoin = 'round';
-	c.lineCap = 'round';
-	lightGlow(c, x, y, w * 1.9, fright ? '90,110,255' : TINT[i], 0.16);
-	c.translate(x, y);
-	c.fillStyle = 'rgba(8,1,3,.4)';
-	c.beginPath();
-	c.ellipse(w * 0.15, hem + w * 0.12, w * 0.95, w * 0.22, 0, 0, TAU);
-	c.fill();
-	drawHorns(
-		c,
-		0,
-		0,
-		shape,
-		0.62,
-		{
-			length: 0.32,
-			curl: 0.16,
-			bone: fright ? ['#e4e6f4', '#8a8ea8'] : ['#f1e4cc', '#9c8a72'],
-			ember: null
-		},
-		0
-	);
-	ghostPath(c, 0, 0, shape, t * 1.3 + shape.seed);
-	c.fillStyle = tones.mid;
-	c.fill();
-	c.save();
-	ghostPath(c, 0, 0, shape, t * 1.3 + shape.seed);
-	c.clip();
-	celBands(c, shape, tones);
-	// ribs showing through the shade side
-	c.strokeStyle = fright ? 'rgba(220,226,255,.55)' : 'rgba(255,236,214,.5)';
-	c.lineWidth = Math.max(1, w * 0.07);
-	for (let k = 0; k < 3; k += 1) {
-		const ry = domeY + w * (0.55 + k * 0.28);
-		c.beginPath();
-		c.moveTo(w * 0.2, ry);
-		c.quadraticCurveTo(w * 0.62, ry - w * 0.12, w * 0.9, ry + w * 0.08);
-		c.stroke();
-	}
-	// the stitched seam down the left
-	c.strokeStyle = INK;
-	c.lineWidth = Math.max(0.9, w * 0.05);
-	c.beginPath();
-	c.moveTo(-w * 0.55, domeY + w * 0.5);
-	c.quadraticCurveTo(-w * 0.75, domeY + w * 0.95, -w * 0.45, hem - w * 0.1);
-	c.stroke();
-	for (let k = 0; k < 4; k += 1) {
-		const sy = domeY + w * (0.6 + k * 0.26);
-		const sx = -w * (0.58 + 0.08 * Math.sin(k));
-		c.beginPath();
-		c.moveTo(sx - w * 0.1, sy - w * 0.05);
-		c.lineTo(sx + w * 0.1, sy + w * 0.05);
-		c.stroke();
-	}
-	c.restore();
-	ghostPath(c, 0, 0, shape, t * 1.3 + shape.seed);
-	c.lineWidth = Math.max(1.4, w * 0.15);
-	c.strokeStyle = INK;
-	c.stroke();
-	rim(c, 0, domeY, w, S);
-	const look = Math.atan2(VEC[dir][1], VEC[dir][0]);
-	if (fright) {
-		// small blank eyes and a quivering mouth
-		for (const side of [-1, 1]) {
-			c.fillStyle = '#f4f0ff';
-			c.beginPath();
-			c.arc(side * w * 0.36, domeY + w * 0.25, w * 0.13, 0, TAU);
-			c.fill();
-		}
-		c.strokeStyle = '#f4f0ff';
-		c.lineWidth = Math.max(1, w * 0.09);
-		c.beginPath();
-		for (let k = 0; k <= 6; k += 1)
-			c.lineTo(-w * 0.5 + (k * w) / 6, domeY + w * 0.78 + (k % 2 ? -1 : 1) * w * 0.07);
-		c.stroke();
-	} else {
-		drawEyes(c, 0, domeY + w * 0.4, w, look, { sclera: '#ffe27a', glow: null }, 1, false, t);
-		// the fanged grin
-		c.fillStyle = '#2a0406';
-		c.beginPath();
-		c.ellipse(0, domeY + w * 0.98, w * 0.42, w * 0.16, 0, 0, Math.PI);
-		c.fill();
-		for (let k = -1; k <= 1; k += 2) {
-			c.fillStyle = '#fff2dc';
-			c.beginPath();
-			c.moveTo(k * w * 0.26 - w * 0.06, domeY + w * 0.98);
-			c.lineTo(k * w * 0.26, domeY + w * 1.14);
-			c.lineTo(k * w * 0.26 + w * 0.06, domeY + w * 0.98);
-			c.closePath();
-			c.fill();
-		}
-		c.lineWidth = Math.max(0.9, w * 0.06);
-		c.strokeStyle = INK;
-		c.beginPath();
-		c.ellipse(0, domeY + w * 0.98, w * 0.42, w * 0.16, 0, 0, Math.PI);
-		c.stroke();
-	}
-	c.restore();
-}
-
-/** A fang lying point down, its root in a scrap of gum. */
 export function drawFleshFood(c: Ctx, x: number, y: number, S: number): void {
 	shadow(c, x, y + S * 0.06, S * 0.12, S * 0.05);
 	fang(c, x, y - S * 0.1, S * 0.24, S * 0.075, Math.PI / 2, BONE, S, 0.8);

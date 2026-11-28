@@ -1,18 +1,10 @@
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
 import type { DoomShape, DoomStateName } from '../../logic/doom/DoomBossModel';
 import type { GridLayout } from '../maze/GridView';
-import type { CelTones, EyeStyle, GhostShape, HornStyle } from './hellGhost';
-import {
-	celBands,
-	celOutline,
-	dirAngle,
-	drawEyes,
-	drawHorns,
-	ghostPath,
-	lightGlow
-} from './hellGhost';
+import { dirAngle, lightGlow } from './hellGhost';
 import { LavaDash } from './doomDashFx';
-import { IRON_HORN, drawCheeks, drawHelm } from './bossArmor';
+import { drawBoss } from './hellActors';
+import type { BossMode, BossState } from './hellActors';
 
 /** Everything the view needs about one body (the boss or its phase-3 echo). */
 export interface BossSnapshot {
@@ -29,65 +21,45 @@ export interface BossSnapshot {
 	readonly alpha: number;
 	/** 0..1 while the boss materialises at the start of the fight. */
 	readonly intro: number;
-	/** Angle toward the player: the eyes lock onto it during a wind-up. */
+	/** Angle toward the player: his eyes never leave him. */
 	readonly look: number;
-	/** 0..1 white flash after taking a hit. */
+	/** 0..1 after taking a hit (he squeezes his eyes and recoils). */
 	readonly hit: number;
 	/** The phase-3 decoy: same body, cold violet and translucent. */
 	readonly echo: boolean;
+	/** He has just hit the hero: he gloats. */
+	readonly gloat?: boolean;
 }
 
-interface Skin extends CelTones {
-	/** The rim light along the dome. */
-	readonly rim: string;
-	/** Lava cracks and the fire inside (rgb). */
-	readonly fire: string;
-	readonly horn: HornStyle;
-	readonly eye: string;
+/** What his body and face do now, from the fight's state (`hellActors.drawBoss`). */
+function modeOf(snap: BossSnapshot, tele: number): { mode: BossMode; k: number } {
+	if (snap.hit > 0.05) return { mode: 'hit', k: 1 - snap.hit };
+	switch (snap.state) {
+		case 'STUNNED':
+			return { mode: 'stunned', k: 0 };
+		case 'TRANSITION':
+			return { mode: 'omen', k: 0.8 };
+		case 'TELEGRAPH':
+			// the dash's crouch, or the swell before a cast
+			return snap.shape === 'wedge'
+				? { mode: 'windup', k: Math.min(1, tele * 1.3) }
+				: { mode: 'charge', k: tele };
+		case 'ACTIVE':
+			return snap.shape === 'wedge' ? { mode: 'windup', k: 1 } : { mode: 'cast', k: 0.3 };
+		case 'RECOVER':
+			return { mode: 'recover', k: 0 };
+		default:
+			return { mode: snap.gloat ? 'gloat' : 'chase', k: 0 };
+	}
 }
 
-const BONE: readonly [string, string] = ['#f1e4cc', '#9c8a72'];
-
 /**
- * One body colour in every phase, the arcade red (the other colours are the imps'), with a thick
- * ink line, yellow eyes and a light rim so it parts from the red flesh. The phases differ by iron
- * (`bossArmor`): phase 1 short bone horns; phase 2 an iron helm; phase 3 the helm, cheek plates
- * and long iron horns.
- */
-const BODY = {
-	light: '#f4604e',
-	mid: '#d0261f',
-	shade: '#7a0c14',
-	rim: '#ffc9a8',
-	fire: '255,110,40',
-	eye: '#ffe27a'
-} as const;
-const HORNS: readonly HornStyle[] = [
-	{ length: 0.4, curl: 0, bone: BONE, ember: null },
-	{ length: 0.5, curl: 0.15, bone: BONE, ember: null },
-	{ length: 0.85, curl: 0.4, bone: IRON_HORN, ember: null }
-];
-const SKINS: readonly Skin[] = HORNS.map((horn) => ({ ...BODY, horn }));
-
-const ECHO_SKIN: Skin = {
-	light: '#d8c8ff',
-	mid: '#6a46b8',
-	shade: '#241046',
-	rim: '#f0e8ff',
-	fire: '170,120,255',
-	horn: { length: 0.72, curl: 0.35, bone: ['#e8dcff', '#8068b8'], ember: '170,120,255' },
-	eye: '#efe8ff'
-};
-
-/**
- * Blinky, lord of hell: the red arcade ghost turned demon, one tile in size, cel-shaded like
- * the heroes (hard tone bands, a thick ink line).
- * One body colour, red, in every phase; the phases differ by iron (`bossArmor`): phase 1 short bone
- * horns, phase 2 an iron helm, phase 3 the helm, cheek plates and long iron horns.
- * The eyes look where it is heading (on the wind-up: at the player); no chevron, the
- * eyes are enough for the boss (the imps keep theirs). Wind-up: it swells and shivers, the
- * mouth glows. Dash: the body turns into a rolling lava ball and back (`doomDashFx`, the owner's
- * pick of the `hell-dash` prototype). Stunned: spiral eyes.
+ * Blinky, lord of hell (the owner's pick of the `hell-actors` prototype): his body and face are
+ * `hellActors.drawBoss` (he breathes, leans, tracks the hero with his eyes, crouches before the
+ * dash, swells before a cast, squeezes on a hit, slumps stunned, gloats; the phases grow his horns,
+ * crack him, add tusks, a second pair of horns and lava). The dash stays the lava ball (`LavaDash`,
+ * unchanged): over the wind-up's end he turns into it, rolls, and turns back. The echo is the same
+ * body in cold violet.
  */
 export class HellBlinkyView {
 	private readonly lava = new LavaDash();
@@ -97,19 +69,14 @@ export class HellBlinkyView {
 			return;
 		}
 		const S = layout.tileSize;
-		const phase = Math.min(3, Math.max(1, Math.floor(snap.phase)));
+		const phase = Math.min(3, Math.max(1, Math.floor(snap.phase))) as 1 | 2 | 3;
 		const intro = Math.min(1, Math.max(0, snap.intro));
 		const tele = snap.state === 'TELEGRAPH' ? snap.progress : 0;
 		const stunned = snap.state === 'STUNNED';
 		const transition = snap.state === 'TRANSITION';
 		const dash = snap.state === 'ACTIVE' && snap.shape === 'wedge';
 		const dashTele = snap.state === 'TELEGRAPH' && snap.shape === 'wedge';
-		const recover = snap.state === 'RECOVER';
-		const casting = snap.state === 'ACTIVE' && snap.shape === 'cast';
-		const skin = snap.echo ? ECHO_SKIN : SKINS[phase - 1];
-		const t = time * (stunned ? 0.35 : 1);
 		const heading = dirAngle(snap.dir);
-		const R = S * 0.5 * (0.3 + 0.7 * intro) * (1 + tele * 0.06);
 		const cx = layout.offsetX + snap.x * S;
 		const cy = layout.offsetY + snap.y * S;
 		let x = cx;
@@ -128,67 +95,44 @@ export class HellBlinkyView {
 		lava.drawFloor(ctx, S, time, snap.echo);
 		lava.drawCrouch(ctx, x, y, S, snap.echo);
 		ctx.restore();
-		const shiver = (transition ? 0.08 : 0) + (stunned ? 0.03 : 0) + tele * 0.04;
+		const shiver = (transition ? 0.08 : 0) + (stunned ? 0.03 : 0);
 		if (shiver > 0) {
-			x += Math.sin(time * 90) * R * shiver;
-			y += Math.cos(time * 77) * R * shiver;
+			x += Math.sin(time * 90) * S * 0.5 * shiver;
+			y += Math.cos(time * 77) * S * 0.5 * shiver;
 		}
-		const bob = Math.sin(t * 3.2) * R * 0.03;
-		const shape: GhostShape = {
-			// sized so the horn tips (phase 3) end at the tile's top edge
-			w: R * 0.64,
-			domeY: -R * 0.02 + bob,
-			// a long skirt (the owner, 2026-11-28: the body read too short), still inside the tile
-			hem: R * 0.94 + bob,
-			feet: 5,
-			torn: snap.echo ? 1 : 0.3,
-			seed: 7
-		};
-		const pulse = 0.5 + 0.5 * Math.sin(t * (3 + phase * 1.5));
 
 		ctx.save();
 		ctx.globalAlpha = snap.alpha * (snap.echo ? 0.72 : 1) * (0.3 + 0.7 * intro);
-		ctx.lineJoin = 'round';
-		ctx.lineCap = 'round';
+		lightGlow(
+			ctx,
+			x,
+			y,
+			S * 0.53,
+			snap.echo ? '150,90,255' : '255,70,30',
+			snap.echo ? 0.3 : tele * 0.3
+		);
 
-		// a dark pool and a glow under it, kept inside the tile
-		{
-			const pool = ctx.createRadialGradient(x, y + R * 0.2, R * 0.2, x, y + R * 0.2, R);
-			pool.addColorStop(0, 'rgba(0,0,0,0.5)');
-			pool.addColorStop(1, 'rgba(0,0,0,0)');
-			ctx.fillStyle = pool;
-			ctx.fillRect(x - R, y - R * 0.8, R * 2, R * 2);
-			lightGlow(
-				ctx,
-				x,
-				y,
-				R * 1.05,
-				snap.echo ? '150,90,255' : '255,70,30',
-				snap.echo ? 0.3 : tele * 0.3
-			);
-		}
-
-		// the body, unless the turn into the ball is over: smaller, darker and fading as it turns
+		// the body, unless the turn into the ball is over: smaller and fading as it turns
 		if (morph < 0.999) {
-			this.drawBodyAt(
-				ctx,
-				x,
-				y,
-				shape,
-				skin,
+			const { mode, k } = modeOf(snap, tele);
+			const state: BossState = {
+				dir: snap.dir,
 				phase,
-				t,
-				snap,
-				tele,
-				dashTele,
-				casting,
-				stunned,
-				transition,
-				recover,
-				pulse,
-				heading,
-				morph
-			);
+				mode,
+				k,
+				look: { x: Math.cos(snap.look), y: Math.sin(snap.look) }
+			};
+			const size = (0.3 + 0.7 * intro) * (1 - 0.4 * morph);
+			ctx.save();
+			ctx.globalAlpha *= Math.pow(1 - morph, 0.7);
+			ctx.translate(x, y);
+			ctx.scale(size, size);
+			ctx.translate(-x, -y);
+			if (snap.echo) {
+				ctx.filter = 'hue-rotate(250deg) saturate(0.7) brightness(1.1)';
+			}
+			drawBoss(ctx, x, y, S, time * (stunned ? 0.35 : 1), state);
+			ctx.restore();
 		}
 		if (morph > 0.001) {
 			lava.drawBall(ctx, x, y, S, heading, phase, time, snap.echo, snap.hit);
@@ -196,150 +140,5 @@ export class HellBlinkyView {
 		lava.drawAir(ctx, S, time, snap.echo);
 		lava.drawSteam(ctx, x, y, S, time, 0.7);
 		ctx.restore();
-	}
-
-	private drawBodyAt(
-		ctx: CanvasRenderingContext2D,
-		x: number,
-		y: number,
-		shape: GhostShape,
-		skin: Skin,
-		phase: number,
-		t: number,
-		snap: BossSnapshot,
-		tele: number,
-		dashTele: boolean,
-		casting: boolean,
-		stunned: boolean,
-		transition: boolean,
-		recover: boolean,
-		pulse: number,
-		heading: number,
-		morph: number
-	): void {
-		ctx.save();
-		ctx.translate(x, y);
-		if (morph > 0) {
-			ctx.globalAlpha *= Math.pow(1 - morph, 0.7);
-			ctx.scale(1 - 0.4 * morph, 1 - 0.4 * morph);
-		}
-		if (dashTele) {
-			ctx.rotate(heading);
-			ctx.scale(1 - 0.1 * tele, 1 + 0.07 * tele);
-			ctx.rotate(-heading);
-		}
-		const burning = casting || tele > 0;
-		drawHorns(
-			ctx,
-			0,
-			0,
-			shape,
-			0.55,
-			burning && !skin.horn.ember ? { ...skin.horn, ember: skin.fire } : skin.horn,
-			pulse
-		);
-		this.drawBody(ctx, shape, skin, phase, t, snap);
-		this.drawFace(ctx, shape, skin, phase, t, tele, casting, stunned, transition, recover, snap);
-		if (morph > 0) {
-			// the heat darkens him as he curls into the ball
-			ctx.save();
-			ghostPath(ctx, 0, 0, shape, t);
-			ctx.clip();
-			ctx.fillStyle = `rgba(40,6,4,${(0.7 * morph).toFixed(3)})`;
-			ctx.fillRect(-shape.w * 2, -shape.w * 3, shape.w * 4, shape.w * 6);
-			ctx.restore();
-		}
-		ctx.restore();
-	}
-
-	private drawBody(
-		ctx: CanvasRenderingContext2D,
-		shape: GhostShape,
-		skin: Skin,
-		phase: number,
-		t: number,
-		snap: BossSnapshot
-	): void {
-		const { w, domeY, hem } = shape;
-		ghostPath(ctx, 0, 0, shape, t);
-		ctx.fillStyle = skin.mid;
-		ctx.fill();
-
-		ctx.save();
-		ghostPath(ctx, 0, 0, shape, t);
-		ctx.clip();
-		celBands(ctx, shape, skin);
-		if (phase >= 2 && !snap.echo) {
-			drawHelm(ctx, shape);
-		}
-		if (snap.hit > 0) {
-			ctx.fillStyle = `rgba(255,255,255,${0.85 * snap.hit})`;
-			ctx.fillRect(-w * 1.3, domeY - w * 1.3, w * 2.6, hem - domeY + w * 2.6);
-		}
-		ctx.restore();
-		celOutline(ctx, shape, t, skin.rim);
-		if (phase >= 3 && !snap.echo) {
-			ctx.save();
-			ghostPath(ctx, 0, 0, shape, t);
-			ctx.clip();
-			drawCheeks(ctx, shape);
-			ctx.restore();
-		}
-	}
-
-	private drawFace(
-		ctx: CanvasRenderingContext2D,
-		shape: GhostShape,
-		skin: Skin,
-		phase: number,
-		t: number,
-		tele: number,
-		casting: boolean,
-		stunned: boolean,
-		transition: boolean,
-		recover: boolean,
-		snap: BossSnapshot
-	): void {
-		const { w, domeY } = shape;
-		const faceY = domeY + w * 0.35;
-		// on the wind-up the eyes lock onto the player; otherwise they look ahead
-		const look = tele > 0 ? snap.look : dirAngle(snap.dir);
-		const hot = tele > 0.5 || casting;
-		const eyes: EyeStyle = {
-			sclera: hot ? '#ffffff' : skin.eye,
-			glow: snap.echo || hot ? skin.fire : null
-		};
-		drawEyes(ctx, 0, faceY, w, look, eyes, transition ? 0 : recover ? 0.55 : 1, stunned, t);
-
-		// mouth: a scowl in phase 1, a fanged grin later; it opens and glows on a wind-up
-		const my = faceY + w * 0.42;
-		const mw = w * (!snap.echo ? 0.36 : 0.5);
-		const open = !snap.echo ? tele * 0.18 : 0.1 + tele * 0.14 + (casting ? 0.08 : 0);
-		ctx.fillStyle = '#120000';
-		ctx.beginPath();
-		ctx.moveTo(-mw, my - w * 0.04);
-		ctx.quadraticCurveTo(0, my + w * (0.06 + open), mw, my - w * 0.04);
-		ctx.quadraticCurveTo(0, my + w * 0.02, -mw, my - w * 0.04);
-		ctx.fill();
-		if (open > 0.05) {
-			lightGlow(
-				ctx,
-				0,
-				my + w * open * 0.4,
-				mw * 1.1,
-				skin.fire,
-				0.3 + tele * 0.6 + (casting ? 0.4 : 0)
-			);
-			ctx.fillStyle = '#f4ead8';
-			const fangs = 4;
-			for (let i = 0; i < fangs; i += 1) {
-				const fx = -mw * 0.7 + (i / (fangs - 1)) * mw * 1.4;
-				ctx.beginPath();
-				ctx.moveTo(fx - w * 0.05, my - w * 0.02);
-				ctx.lineTo(fx, my + w * (0.06 + open * 0.6));
-				ctx.lineTo(fx + w * 0.05, my - w * 0.02);
-				ctx.fill();
-			}
-		}
 	}
 }

@@ -144,7 +144,12 @@ last (see Later).
      **The art pass is complete.** Then from his play (2026-11-28): all four eaten gives his last
      weapon back charged; the hero's trail is cut after a rush (it was left behind); a spent weapon is
      tossed back and sinks into the floor; a refused press draws nothing on the field (the click and
-     the dial's red flash only). Left: his look at all of it in play.
+     the dial's red flash only). **The actors drawn anew** (same day, `prototypes/pacman/hell-actors`, in
+     the game as `render/doom/hellActors`): the boss (every state and phases 1-3 told apart; the dash
+     stays the game's lava ball), the imps (hopping, tail, grin) and the split's four flayed ghosts
+     (characters in their eyes, fright, blink, merge). Not wired yet: the imps' scare of an armed hero
+     and their pop out of the floor (drawn, the game sends no such moment). Left: his look at all of it
+     in play.
      **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):
      (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
      bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a
