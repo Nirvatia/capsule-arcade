@@ -79,7 +79,17 @@ last (see Later).
    **The hell, the owner's list (2026-11-27)**: he finds the fight too empty (most of the time you
    wander an empty maze) and the BFG too strong. Done: the BFG's orb 350 to 250 and its tracers 150 to
    100 (six orb hits for the boss, was five), the tar pool keeps a margin from its tile's edge (tested).
-   **Mock-ups for his approval** (`prototypes/pacman/hell-phase`, built from the game's own hell):
+   **The redesign is approved (2026-11-28, `DESIGN.md` §7 "The fight, redesigned")**: food charges
+   the BFG, the split is the phase change (at 1000 and 500 HP, the core in a corridor, 18 s of plain
+   Pac-Man, eaten ghosts are damage and stun), the berserk is one rush, the snare replaces the
+   barrel, the plasma and the armour are new pickups, the pickups leave the corners. Steps, one per
+   chat: (a) the playable prototype `hell-phase` on the real boss (`DoomBossService`) with the new
+   rules in its own `rules.ts`, placeholder art for what is new: built, awaits the owner's play;
+   (b) the rules into `logic/doom` (food in the map and `assertDoomMap`, the split in the boss's
+   state machine, the arsenal) with tests; (c) the art: the food's sprite, the four ghosts (equal,
+   the boss's armour darker than the imps now), the rush, the snare, the plasma, the armour, the
+   core; prototype first; (d) the HUD (the charge ring, the split's timer).
+   **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):
    (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
    bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a
    small shadow, no glow): the eye reads best, but **the owner picked the fang** (2026-11-27: it does

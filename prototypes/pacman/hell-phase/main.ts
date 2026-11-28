@@ -1,105 +1,75 @@
-// A playable mock-up of the boss's split on the game's own hell world: you run with the arrow keys, the
-// boss hunts you, then falls into four ghosts, the weapon is shut off and it is plain Pac-Man for a
-// while, then the four run back into him and he is weak. It loops. The hero, the maze, the food and the
-// ghosts' chase are the game's own pieces (`PlayerService`, `DronePack`); the split itself is only a
-// script here. Food candidates switch on the fly. Nothing here is the game's boss logic.
+// A playable prototype of the hell fight's redesign (DESIGN.md §7 "The fight, redesigned") on the game's
+// own hell: the real boss with his attacks and phases, the real hero and maze, and the new rules of
+// `rules.ts` (food charges the BFG, the split at 1000 and 500 HP, the rush, the snare, the plasma, the
+// armour). The art of what is new is a placeholder (the snare, the plasma, the armour, the core, the four
+// ghosts); the food's three candidates switch on the fly. Arrows / WASD move, F or Shift is the button.
 import { GRID_DOOM as DRAWN } from '../../../src/games/pacman/config/mazes/grid_doom';
-import { NET } from '../../../src/games/pacman/config/netConfig';
-import type { PacmanEventMap } from '../../../src/games/pacman/core/Events';
-import { EventBus } from '../../../src/games/pacman/engine/EventBus';
+import type { DoomAbilityService } from '../../../src/games/pacman/logic/doom/DoomAbilityService';
 import type { PlayerDirection } from '../../../src/games/pacman/logic/actors/PlayerModel';
-import { PlayerService } from '../../../src/games/pacman/logic/actors/PlayerService';
-import { LevelProgress } from '../../../src/games/pacman/logic/level/LevelProgress';
-import { ScoreModel } from '../../../src/games/pacman/logic/level/ScoreModel';
-import { GridModel } from '../../../src/games/pacman/logic/maze/GridModel';
-import { GridService } from '../../../src/games/pacman/logic/maze/GridService';
-import { DronePack } from '../../../src/games/pacman/logic/net/DronePack';
-import { zoneRng } from '../../../src/games/pacman/logic/zone/zoneRng';
 import { HeroView } from '../../../src/games/pacman/render/actors/HeroView';
-import { OrangeHero } from '../../../src/games/pacman/render/actors/hero/FruitHero';
+import { MsPacmanHero } from '../../../src/games/pacman/render/actors/hero/MsPacmanHero';
+import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
 import { chargePainter } from '../../../src/games/pacman/render/actors/hero/heroCharge';
-import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
+import { DoomCombatView } from '../../../src/games/pacman/render/doom/DoomCombatView';
+import { DoomFxView } from '../../../src/games/pacman/render/doom/DoomFxView';
 import { pickupSprite } from '../../../src/games/pacman/render/doom/DoomSprites';
-import type { BossSnapshot } from '../../../src/games/pacman/render/doom/HellBlinkyView';
+import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
+import type { DoomLight } from '../../../src/games/pacman/render/doom/DoomWorld';
 import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinkyView';
 import { drawImp } from '../../../src/games/pacman/render/doom/HellImpView';
 import { INK } from '../../../src/games/pacman/render/doom/hellGhost';
+import { easeGate, gateTiles, gateWanted } from '../../../src/games/pacman/render/doom/doomGate';
+import type { DoomDirection } from '../../../src/games/pacman/logic/doom/DoomGraph';
 import { drawFood } from './food';
 import type { FoodKind } from './food';
+import { HellRules, TUNE } from './rules';
+import type { PickupKind } from './rules';
 
-type Phase = 'fight' | 'omen' | 'burst' | 'pacman' | 'merge' | 'weak';
-const LENGTH: Record<Phase, number> = { fight: 7, omen: 1.7, burst: 0.7, pacman: 22, merge: 1.6, weak: 4.5 };
-const NEXT: Record<Phase, Phase> = { fight: 'omen', omen: 'burst', burst: 'pacman', pacman: 'merge', merge: 'weak', weak: 'fight' };
-const HOMES = [
-	{ x: 12, y: 10 },
-	{ x: 4, y: 8 },
-	{ x: 20, y: 8 },
-	{ x: 12, y: 16 }
-];
-const LAIR = { x: 12.5, y: 13.5 };
-const KINDS = ['pinky', 'inky', 'clyde'] as const;
-const GHOST = ['#ff3a2a', '#e0388e', '#1fa8d0', '#ee7a1e'] as const;
+type Lay = { tileSize: number; offsetX: number; offsetY: number };
 
 const D = Math.min(window.devicePixelRatio || 1, 2);
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const world = new DoomWorld(DRAWN, []);
 const bossView = new HellBlinkyView();
+const combat = new DoomCombatView();
+const fx = new DoomFxView();
+const NO_PICKUPS = { pickupList: [], barrelList: [], canCollect: () => false } as unknown as DoomAbilityService;
+const GHOST_KINDS = ['clyde', 'pinky', 'inky', 'clyde'] as const;
+const FONT = '"Arial Narrow",system-ui,sans-serif';
 
-let grid = new GridService(new GridModel(DRAWN));
-let events = new EventBus<PacmanEventMap>();
-let progress = new LevelProgress(grid, new ScoreModel(), events);
-let player = new PlayerService(grid, progress, events);
-let pack = new DronePack(grid, HOMES, zoneRng(3), 4, 1);
+let rules = new HellRules();
 let heroView = makeHero();
-let phase: Phase = 'fight';
-let phaseT = 0;
-let hp = 3;
-let bonus = 0;
-let dead = false;
-let immortal = false;
-let flash = 0;
-let want: PlayerDirection | null = null;
-let food: FoodKind = 'bone';
-let chain = 0;
-let energizers: boolean[] = [];
-let merging: Array<{ x: number; y: number }> = [];
-let bossAt = { x: 12.5, y: 10.5 };
-const popups: Array<{ x: number; y: number; text: string; age: number }> = [];
+let food: FoodKind = 'fang';
+let gate = 0;
+const gateAt = gateTiles(rules.grid);
 let w = 0;
 let h = 0;
 let time = 0;
+let fireHeld = false;
+let firePressed = false;
+let god = false;
+let formedAt = -10;
+let lastStage = rules.stage;
+const held: PlayerDirection[] = [];
 
 function makeHero(): HeroView {
-	const v = new HeroView(new OrangeHero(), chargePainter);
+	const v = new HeroView(location.search.includes('ms') ? new MsPacmanHero() : new PacmanHero(), chargePainter);
 	v.setSeason('hell');
 	return v;
 }
 
 function restart(): void {
-	grid = new GridService(new GridModel(DRAWN));
-	events = new EventBus<PacmanEventMap>();
-	progress = new LevelProgress(grid, new ScoreModel(), events);
-	player = new PlayerService(grid, progress, events);
-	player.reset();
-	pack = new DronePack(grid, HOMES, zoneRng(3), 4, 1);
+	rules = new HellRules();
+	rules.god = god;
 	heroView = makeHero();
-	phase = 'fight';
-	phaseT = 0;
-	hp = 3;
-	bonus = 0;
-	dead = false;
-	chain = 0;
-	merging = [];
-	popups.length = 0;
-	energizers = [];
-	for (let y = 0; y < DRAWN.length; y += 1) {
-		for (let x = 0; x < DRAWN[0].length; x += 1) {
-			if (grid.isEnergizer(x, y)) energizers.push(false);
-		}
-	}
+	fx.reset();
+	gate = 0;
+	formedAt = -10;
+	held.length = 0;
 }
-restart();
+
+// ---------- the page ----------
 
 const bar = document.getElementById('bar') as HTMLElement;
 const buttons: Array<{ el: HTMLButtonElement; on: () => boolean }> = [];
@@ -122,21 +92,34 @@ function add(parent: HTMLElement, label: string, on: (() => boolean) | null, cli
 	parent.append(el);
 	if (on) buttons.push({ el, on });
 }
-const g1 = group('Еда');
-for (const [k, label] of [
-	['bone', 'Кость'],
-	['fang', 'Клык'],
-	['eye', 'Глаз']
-] as const) {
-	add(g1, label, () => food === k, () => (food = k));
-}
-const g2 = group('Сценарий');
-add(g2, 'Распад сейчас', null, () => start('omen'));
-add(g2, 'Заново', null, restart);
-add(g2, 'Бессмертие', () => immortal, () => (immortal = !immortal));
 function refresh(): void {
 	for (const b of buttons) b.el.setAttribute('aria-pressed', String(b.on()));
 }
+const gFood = group('Еда');
+for (const [k, label] of [
+	['fang', 'Клык'],
+	['bone', 'Кость'],
+	['eye', 'Глаз']
+] as const) {
+	add(gFood, label, () => food === k, () => (food = k));
+}
+const gGive = group('Дать');
+for (const [k, label] of [
+	['berserk', 'Берсерк'],
+	['snare', 'Капкан'],
+	['plasma', 'Плазма'],
+	['bfg', 'Заряд BFG'],
+	['armour', 'Броня']
+] as const) {
+	add(gGive, label, null, () => rules.give(k));
+}
+const gRun = group('Бой');
+add(gRun, 'Распад сейчас', null, () => rules.splitNow());
+add(gRun, 'Заново', null, restart);
+add(gRun, 'Бессмертие', () => god, () => {
+	god = !god;
+	rules.god = god;
+});
 refresh();
 
 const KEYS: Record<string, PlayerDirection> = {
@@ -153,14 +136,24 @@ const KEYS: Record<string, PlayerDirection> = {
 	ф: 'LEFT',
 	в: 'RIGHT'
 };
+const isFire = (e: KeyboardEvent): boolean => e.key === 'Shift' || e.code === 'KeyF';
 window.addEventListener('keydown', (e) => {
-	const d = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
-	if (d) {
-		want = d;
+	const dir = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+	if (dir) {
+		if (!held.includes(dir)) held.push(dir);
 		e.preventDefault();
-	} else if (e.key.toLowerCase() === 'r' || e.key.toLowerCase() === 'к') {
+	} else if (isFire(e)) {
+		if (!e.repeat) firePressed = true;
+		fireHeld = true;
+		e.preventDefault();
+	} else if (e.code === 'KeyR') {
 		restart();
 	}
+});
+window.addEventListener('keyup', (e) => {
+	const dir = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+	if (dir) held.splice(held.indexOf(dir), 1);
+	if (isFire(e)) fireHeld = false;
 });
 
 function layout(): void {
@@ -168,399 +161,408 @@ function layout(): void {
 	h = view.clientHeight;
 	view.width = Math.round(w * D);
 	view.height = Math.round(h * D);
-	world.resize(w, h, D);
+	world.resize(w, h - 56, D);
 }
 window.addEventListener('resize', layout);
 layout();
 
-/** Moves the script on to `p`: what each step does to the ghosts. */
-function start(p: Phase): void {
-	phase = p;
-	phaseT = 0;
-	const boss = pack.list[0];
-	if (p === 'omen') {
-		bossAt = { x: boss.x, y: boss.y };
-		boss.state = 'wait';
-		boss.timer = Infinity;
-	} else if (p === 'burst') {
-		// all four from the boss's tile, one after another
-		const tx = Math.floor(bossAt.x);
-		const ty = Math.floor(bossAt.y);
-		pack.list.forEach((d, i) => {
-			Object.assign(d, { fx: tx, fy: ty, tx, ty, p: 0, x: tx + 0.5, y: ty + 0.5, state: 'wait', timer: i * 0.28 });
-		});
-		pack.fear = 0;
-	} else if (p === 'merge') {
-		merging = pack.list.map((d) => ({ x: d.x, y: d.y }));
-		pack.list.forEach((d) => Object.assign(d, { state: 'wait', timer: Infinity }));
-		pack.fear = 0;
-		grid.setLairOpen(true);
-	} else if (p === 'fight') {
-		grid.setLairOpen(false);
-		const b = pack.list[0];
-		Object.assign(b, { fx: 12, fy: 10, tx: 12, ty: 10, p: 0, x: 12.5, y: 10.5, state: 'hunt', timer: 0 });
-		pack.list.slice(1).forEach((d) => Object.assign(d, { state: 'wait', timer: Infinity }));
-	}
-}
-
-function hit(): void {
-	if (player.isInvulnerable || immortal) return;
-	hp -= 1;
-	flash = 0.35;
-	if (hp <= 0) {
-		dead = true;
-		return;
-	}
-	player.grantInvulnerability(1.4);
-}
+// ---------- update ----------
 
 function update(dt: number): void {
 	world.update(dt);
-	for (const q of popups) q.age += dt;
-	while (popups.length && popups[0].age > 1.1) popups.shift();
-	flash = Math.max(0, flash - dt);
-	if (dead) return;
-	phaseT += dt;
-	if (phaseT >= LENGTH[phase]) start(NEXT[phase]);
-	if (want) player.setDesiredDirection(want);
-	player.update(dt);
-	// an energizer: the ghosts flee (plain Pac-Man, in the Pac-Man phase and in the omen's calm too)
-	let i = 0;
-	for (let y = 0; y < DRAWN.length; y += 1) {
-		for (let x = 0; x < DRAWN[0].length; x += 1) {
-			if (!grid.isEnergizer(x, y)) continue;
-			if (!energizers[i] && progress.isCollected(x, y)) {
-				energizers[i] = true;
-				if (phase === 'pacman' || phase === 'fight') {
-					pack.hack(NET.hack.fear);
-					chain = 0;
-				}
-			}
-			i += 1;
-		}
-	}
-	const t = { x: Math.floor(player.position.x), y: Math.floor(player.position.y) };
-	pack.update(dt, {
-		hero: t,
-		ahead2: ahead(t, 2),
-		ahead4: ahead(t, 4),
-		speedMul: phase === 'fight' ? 0.85 : 1,
-		shut: () => false
-	});
-	if (pack.fear <= 0) chain = 0;
-	for (const d of pack.list) {
-		if (d.state === 'wait' || d.state === 'dead') continue;
-		if (Math.hypot(d.x - player.position.x, d.y - player.position.y) >= NET.drone.bite) continue;
-		if (d.state === 'fright') {
-			const worth = NET.hack.eat * 2 ** chain;
-			bonus += worth;
-			chain = Math.min(3, chain + 1);
-			popups.push({ x: d.x, y: d.y, text: `+${worth}`, age: 0 });
-			pack.eat(d);
-		} else {
-			hit();
-			pack.bitten(d);
-		}
-	}
-	// the weak boss at the lair: touch him (a bite here stands for a BFG hit)
-	if (phase === 'weak' && Math.hypot(LAIR.x - player.position.x, LAIR.y - player.position.y) < 0.9) {
-		bonus += 1000;
-		popups.push({ x: LAIR.x, y: LAIR.y, text: '+1000', age: 0 });
-		start('fight');
-	}
+	const want = held[held.length - 1];
+	if (want) rules.player.setDesiredDirection(want);
+	rules.update(dt, fireHeld, firePressed);
+	firePressed = false;
+	if (lastStage === 'merge' && rules.stage === 'fight') formedAt = time;
+	lastStage = rules.stage;
+	for (const e of rules.consumeFx()) fx.spawn(e);
+	fx.update(dt, rules.orbs, []);
+	const boss = rules.boss;
+	const actors = rules.split || boss.introProgress < 1 ? [] : [boss.position];
+	gate = easeGate(gate, gateWanted(gateAt, [...actors, ...boss.minionList.map((m) => ({ x: m.tile.x + 0.5, y: m.tile.y + 0.5 }))]), dt);
+	world.setGateOpen(gate);
 }
 
-function ahead(t: { x: number; y: number }, n: number): { x: number; y: number } {
-	const f = player.facing ?? player.desired;
-	const [dx, dy] = f ? { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[f] : [0, 0];
-	let at = t;
-	for (let i = 1; i <= n; i += 1) {
-		const p = { x: t.x + dx * i, y: t.y + dy * i };
-		if (!grid.isGhostWalkable(p.x, p.y, false)) break;
-		at = p;
-	}
-	return at;
-}
+// ---------- drawing ----------
 
-type Lay = { tileSize: number; offsetX: number; offsetY: number };
-
-const snap = (x: number, y: number, state: BossSnapshot['state'], shape: BossSnapshot['shape'], look: number): BossSnapshot => ({
-	x,
-	y,
-	phase: 3,
-	state,
-	shape,
-	dir: 'LEFT',
-	progress: 0,
-	alpha: 1,
-	intro: 1,
-	look,
-	hit: 0,
-	echo: false
-});
+const px = (L: Lay, x: number): number => L.offsetX + x * L.tileSize;
+const py = (L: Lay, y: number): number => L.offsetY + y * L.tileSize;
 
 function drawFoodField(L: Lay): void {
 	const S = L.tileSize;
+	const { grid, progress, player } = rules;
 	const hx = player.position.x;
 	const hy = player.position.y;
-	for (let r = 0; r < DRAWN.length; r += 1) {
-		for (let c = 0; c < DRAWN[0].length; c += 1) {
+	for (let r = 0; r < grid.height; r += 1) {
+		for (let c = 0; c < grid.width; c += 1) {
 			if (!grid.isDot(c, r) || progress.isCollected(c, r)) continue;
-			const horiz = DRAWN[r][c - 1] === 'DT' || DRAWN[r][c + 1] === 'DT';
-			drawFood(ctx, food, L.offsetX + (c + 0.5) * S, L.offsetY + (r + 0.5) * S, S, Math.atan2(hy - (r + 0.5), hx - (c + 0.5)), horiz ? 0 : Math.PI / 2);
+			const horiz = grid.isDot(c - 1, r) || grid.isDot(c + 1, r);
+			drawFood(ctx, food, px(L, c + 0.5), py(L, r + 0.5), S, Math.atan2(hy - (r + 0.5), hx - (c + 0.5)), horiz ? 0 : Math.PI / 2);
+		}
+	}
+	if (!rules.split) return;
+	for (let r = 0; r < grid.height; r += 1) {
+		for (let c = 0; c < grid.width; c += 1) {
+			if (!grid.isEnergizer(c, r) || progress.isCollected(c, r)) continue;
+			const k = 1 + 0.1 * Math.sin(time * 5 + c);
+			ctx.beginPath();
+			ctx.arc(px(L, c + 0.5), py(L, r + 0.5), S * 0.27 * k, 0, 7);
+			ctx.fillStyle = '#ffe9a8';
+			ctx.fill();
+			ctx.lineWidth = Math.max(1.8, S * 0.05);
+			ctx.strokeStyle = INK;
+			ctx.stroke();
 		}
 	}
 }
 
-function drawEnergizers(L: Lay): void {
-	const S = L.tileSize;
-	let i = 0;
-	for (let r = 0; r < DRAWN.length; r += 1) {
-		for (let c = 0; c < DRAWN[0].length; c += 1) {
-			if (!grid.isEnergizer(c, r)) continue;
-			if (!energizers[i++]) {
-				const x = L.offsetX + (c + 0.5) * S;
-				const y = L.offsetY + (r + 0.5) * S;
-				const k = 1 + 0.1 * Math.sin(time * 5 + c);
-				ctx.beginPath();
-				ctx.arc(x, y, S * 0.27 * k, 0, 7);
-				ctx.fillStyle = '#ffe9a8';
-				ctx.fill();
-				ctx.lineWidth = Math.max(1.8, S * 0.05);
-				ctx.strokeStyle = INK;
-				ctx.stroke();
-			}
-		}
-	}
-}
-
-/** The ghosts: the boss in his own armour, the three others as the brood in the arcade colours. */
-function drawGhosts(L: Lay): void {
-	const S = L.tileSize;
-	pack.list.forEach((d, i) => {
-		if (d.state === 'dead' || (d.state === 'wait' && (phase === 'fight' || phase === 'weak' || phase === 'merge'))) return;
-		const x = L.offsetX + d.x * S;
-		const y = L.offsetY + d.y * S;
-		const scared = d.state === 'fright';
-		const white = scared && pack.fear < 2 && Math.floor(time * 8) % 2 === 0;
-		const dir = Math.abs(d.dx) > Math.abs(d.dy) ? (d.dx > 0 ? 'RIGHT' : 'LEFT') : d.dy > 0 ? 'DOWN' : 'UP';
-		ctx.save();
-		ctx.globalAlpha = d.state === 'wait' ? 0.0 : 1;
-		if (i === 0) {
-			ctx.globalAlpha = 1;
-			bossView.draw(ctx, snap(d.x, d.y, 'CHASE', 'normal', Math.atan2(d.dy, d.dx)), L, time);
-		} else {
-			drawImp(ctx, KINDS[i - 1], x, y, S * 1.5, dir, time, d.state === 'wait' ? 0 : 1);
-		}
+/** Placeholder icons for what is new (the game's own for the berserk, the medkit and the BFG). */
+function drawIcon(kind: PickupKind | 'bfg', x: number, y: number, s: number, alpha = 1): void {
+	ctx.save();
+	ctx.globalAlpha = alpha;
+	if (kind === 'berserk' || kind === 'medkit' || kind === 'bfg') {
+		ctx.drawImage(pickupSprite(kind).icon, x - s / 2, y - s / 2, s, s);
 		ctx.restore();
-		if (scared) {
-			ctx.fillStyle = white ? 'rgba(255,255,255,.7)' : 'rgba(60,90,230,.6)';
-			ctx.beginPath();
-			ctx.arc(x, y, S * 0.45, 0, 7);
-			ctx.fill();
-		}
-	});
+		return;
+	}
+	ctx.lineWidth = Math.max(1.6, s * 0.06);
+	ctx.strokeStyle = INK;
+	if (kind === 'snare') {
+		jaws(x, y, s * 0.42, 0.55);
+	} else if (kind === 'plasma') {
+		ctx.fillStyle = '#26324a';
+		ctx.beginPath();
+		ctx.roundRect(x - s * 0.36, y - s * 0.16, s * 0.6, s * 0.32, s * 0.08);
+		ctx.fill();
+		ctx.stroke();
+		ctx.fillStyle = '#7fd8ff';
+		ctx.beginPath();
+		ctx.arc(x + s * 0.3, y, s * 0.14, 0, 7);
+		ctx.fill();
+		ctx.stroke();
+		ctx.fillStyle = '#bff0ff';
+		ctx.fillRect(x - s * 0.28, y - s * 0.05, s * 0.4, s * 0.1);
+	} else {
+		ctx.fillStyle = '#3a7ad8';
+		ctx.beginPath();
+		ctx.moveTo(x, y - s * 0.4);
+		ctx.lineTo(x + s * 0.34, y - s * 0.26);
+		ctx.quadraticCurveTo(x + s * 0.32, y + s * 0.2, x, y + s * 0.42);
+		ctx.quadraticCurveTo(x - s * 0.32, y + s * 0.2, x - s * 0.34, y - s * 0.26);
+		ctx.closePath();
+		ctx.fill();
+		ctx.stroke();
+		ctx.fillStyle = 'rgba(255,255,255,.55)';
+		ctx.fillRect(x - s * 0.2, y - s * 0.24, s * 0.08, s * 0.3);
+	}
+	ctx.restore();
 }
 
-/** The omen: the boss shakes, four coloured ghosts peel out of his body and press back in. */
-function drawOmen(L: Lay): void {
-	const S = L.tileSize;
-	const u = Math.min(1, phaseT / LENGTH.omen);
-	const sx = Math.sin(time * 60) * S * 0.04 * u;
-	const x = L.offsetX + bossAt.x * S;
-	const y = L.offsetY + bossAt.y * S;
-	for (let k = 0; k < 4; k += 1) {
-		const a = (k / 4) * Math.PI * 2 + Math.PI / 4;
-		const off = S * (0.1 + 0.55 * u) * (0.8 + 0.2 * Math.sin(time * 9 + k));
-		const gx = x + Math.cos(a) * off;
-		const gy = y + Math.sin(a) * off;
-		ctx.globalAlpha = 0.25 + 0.6 * u;
-		if (k === 0) {
-			ctx.fillStyle = GHOST[0];
+/** The snare: two rows of bone teeth; `open` 1 is wide, 0 is shut. */
+function jaws(x: number, y: number, r: number, open: number): void {
+	for (const side of [-1, 1]) {
+		ctx.fillStyle = '#e8dcc0';
+		ctx.beginPath();
+		const yy = y + side * r * 0.25 * open;
+		ctx.ellipse(x, yy, r, r * (0.35 + 0.3 * open), 0, side < 0 ? Math.PI : 0, side < 0 ? Math.PI * 2 : Math.PI);
+		ctx.closePath();
+		ctx.fill();
+		ctx.stroke();
+		ctx.fillStyle = '#fff6e0';
+		for (let k = -2; k <= 2; k += 1) {
+			const tx = x + k * r * 0.36;
 			ctx.beginPath();
-			ctx.arc(gx, gy, S * 0.4, 0, 7);
+			ctx.moveTo(tx - r * 0.12, yy);
+			ctx.lineTo(tx, yy - side * r * 0.32);
+			ctx.lineTo(tx + r * 0.12, yy);
+			ctx.closePath();
 			ctx.fill();
-		} else {
-			drawImp(ctx, KINDS[k - 1], gx, gy, S * 1.5, 'LEFT', time, 1);
+			ctx.stroke();
 		}
-		ctx.globalAlpha = 1;
 	}
-	bossView.draw(ctx, snap(bossAt.x + sx / S, bossAt.y, 'TELEGRAPH', 'cast', Math.PI), L, time);
-	const g = ctx.createRadialGradient(x, y, 0, x, y, S * (1 + 1.2 * u));
-	g.addColorStop(0, `rgba(255,236,190,${0.55 * u})`);
-	g.addColorStop(1, 'rgba(255,120,60,0)');
+}
+
+function drawPickups(L: Lay): void {
+	if (rules.split) return;
+	const S = L.tileSize;
+	for (const p of rules.pickups) {
+		if (!p.kind) continue;
+		const x = px(L, p.tile.x + 0.5);
+		const y = py(L, p.tile.y + 0.5) + Math.sin(time * 3 + p.tile.x) * S * 0.05;
+		ctx.fillStyle = 'rgba(10,3,4,.55)';
+		ctx.beginPath();
+		ctx.ellipse(x + S * 0.06, py(L, p.tile.y + 0.5) + S * 0.32, S * 0.36, S * 0.12, 0, 0, 7);
+		ctx.fill();
+		drawIcon(p.kind, x, y, S * 0.95, rules.canTake(p.kind) ? 1 : 0.45);
+	}
+	const sn = rules.snare;
+	if (sn) {
+		const open = sn.snapped < 0 ? 0.55 + 0.05 * Math.sin(time * 4) : 0;
+		ctx.lineWidth = Math.max(1.6, S * 0.05);
+		ctx.strokeStyle = INK;
+		jaws(px(L, sn.tile.x + 0.5), py(L, sn.tile.y + 0.5), S * 0.4, open);
+	}
+}
+
+function look(at: { x: number; y: number }): number {
+	const p = rules.player.position;
+	return Math.atan2(p.y - at.y, p.x - at.x);
+}
+
+function drawBoss(L: Lay): void {
+	const boss = rules.boss;
+	if (boss.defeated || rules.split) return;
+	const rs = boss.renderState;
+	const shakeX = rules.stage === 'omen' ? Math.sin(time * 60) * 0.05 * Math.min(1, rules.stageT / 1.5) : 0;
+	bossView.draw(
+		ctx,
+		{
+			x: boss.position.x + shakeX,
+			y: boss.position.y,
+			phase: boss.phase,
+			state: boss.state,
+			shape: rs.shape,
+			dir: rs.dir,
+			progress: rs.progress,
+			alpha: rs.alpha,
+			intro: boss.introProgress,
+			look: look(boss.position),
+			hit: 0,
+			echo: false
+		},
+		L,
+		time
+	);
+	if (rules.stage === 'omen') {
+		const u = Math.min(1, rules.stageT / 2.5);
+		const x = px(L, boss.position.x);
+		const y = py(L, boss.position.y);
+		const g = ctx.createRadialGradient(x, y, 0, x, y, L.tileSize * (1 + 1.2 * u));
+		g.addColorStop(0, `rgba(255,236,190,${0.5 * u})`);
+		g.addColorStop(1, 'rgba(255,120,60,0)');
+		ctx.fillStyle = g;
+		ctx.fillRect(x - L.tileSize * 2.4, y - L.tileSize * 2.4, L.tileSize * 4.8, L.tileSize * 4.8);
+	}
+}
+
+/** The core: the tile he burst on, beating, the four's way home. */
+function drawCore(L: Lay): void {
+	const c = rules.core;
+	if (!c || !rules.split) return;
+	const S = L.tileSize;
+	const x = px(L, c.x + 0.5);
+	const y = py(L, c.y + 0.5);
+	const beat = 1 + 0.12 * Math.max(0, Math.sin(time * 5));
+	const g = ctx.createRadialGradient(x, y, 0, x, y, S * 0.9);
+	g.addColorStop(0, 'rgba(255,90,50,.55)');
+	g.addColorStop(1, 'rgba(255,60,30,0)');
 	ctx.fillStyle = g;
-	ctx.fillRect(x - S * 2.4, y - S * 2.4, S * 4.8, S * 4.8);
+	ctx.fillRect(x - S, y - S, S * 2, S * 2);
+	ctx.beginPath();
+	ctx.arc(x, y, S * 0.26 * beat, 0, 7);
+	ctx.fillStyle = '#8a1418';
+	ctx.fill();
+	ctx.lineWidth = Math.max(1.6, S * 0.05);
+	ctx.strokeStyle = INK;
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(x - S * 0.07, y - S * 0.07, S * 0.09 * beat, 0, 7);
+	ctx.fillStyle = '#ff7a4a';
+	ctx.fill();
+}
+
+function facingOf(dx: number, dy: number): DoomDirection {
+	return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'RIGHT' : 'LEFT') : dy > 0 ? 'DOWN' : 'UP';
+}
+
+/** The four, equal (a placeholder: the brood's painter, the red one is Clyde's turned red). */
+function ghost(L: Lay, i: number, x: number, y: number, dir: DoomDirection, scale: number, scared: boolean): void {
+	const S = L.tileSize;
+	ctx.save();
+	if (i === 0) ctx.filter = 'hue-rotate(-28deg) saturate(1.5)';
+	drawImp(ctx, GHOST_KINDS[i], px(L, x), py(L, y), S * 1.5 * scale, dir, time, 1);
+	ctx.restore();
+	if (scared) {
+		const white = rules.pack.fear < 2 && Math.floor(time * 8) % 2 === 0;
+		ctx.fillStyle = white ? 'rgba(255,255,255,.72)' : 'rgba(50,80,230,.62)';
+		ctx.beginPath();
+		ctx.arc(px(L, x), py(L, y), S * 0.44, 0, 7);
+		ctx.fill();
+	}
+}
+
+function drawGhosts(L: Lay): void {
+	if (rules.stage === 'merge') {
+		const c = rules.core;
+		if (!c) return;
+		const u = Math.min(1, rules.stageT / TUNE.merge);
+		const e = u * u * (3 - 2 * u);
+		rules.mergePoints.forEach((m, i) => {
+			const x = m.x + (c.x + 0.5 - m.x) * e;
+			const y = m.y + (c.y + 0.5 - m.y) * e;
+			ghost(L, i % 4, x, y, facingOf(c.x + 0.5 - m.x, c.y + 0.5 - m.y), 1 - 0.3 * u, false);
+		});
+		return;
+	}
+	rules.pack.list.forEach((d, i) => {
+		if (d.state !== 'hunt' && d.state !== 'fright') return;
+		ghost(L, i, d.x, d.y, facingOf(d.dx, d.dy), 1, d.state === 'fright');
+	});
 }
 
 function drawBurst(L: Lay): void {
+	const c = rules.core;
+	if (rules.stage !== 'burst' || !c) return;
 	const S = L.tileSize;
-	const u = Math.min(1, phaseT / LENGTH.burst);
-	const x = L.offsetX + bossAt.x * S;
-	const y = L.offsetY + bossAt.y * S;
+	const u = Math.min(1, rules.stageT / TUNE.burst);
+	const x = px(L, c.x + 0.5);
+	const y = py(L, c.y + 0.5);
 	ctx.strokeStyle = `rgba(255,240,200,${1 - u})`;
 	ctx.lineWidth = 5 * (1 - u) + 1;
 	ctx.beginPath();
-	ctx.arc(x, y, S * (0.4 + 2.6 * u), 0, 7);
+	ctx.arc(x, y, S * (0.4 + 3.4 * u), 0, 7);
 	ctx.stroke();
-	const g = ctx.createRadialGradient(x, y, 0, x, y, S * (0.6 + 2 * u));
-	g.addColorStop(0, `rgba(255,250,230,${0.9 * (1 - u)})`);
-	g.addColorStop(1, 'rgba(255,120,60,0)');
-	ctx.fillStyle = g;
-	ctx.fillRect(x - S * 3, y - S * 3, S * 6, S * 6);
 }
 
-/** The return: the four run into the lair, the boss is there, weak. */
-function drawMerge(L: Lay): void {
+function drawBolts(L: Lay): void {
 	const S = L.tileSize;
-	const u = Math.min(1, phaseT / LENGTH.merge);
-	const e = u * u * (3 - 2 * u);
-	merging.forEach((m, i) => {
-		const x = L.offsetX + (m.x + (LAIR.x - m.x) * e) * S;
-		const y = L.offsetY + (m.y + (LAIR.y - m.y) * e) * S;
-		ctx.globalAlpha = 1 - 0.6 * u;
-		if (i === 0) {
-			ctx.fillStyle = GHOST[0];
-			ctx.beginPath();
-			ctx.arc(x, y, S * 0.4 * (1 - 0.3 * u), 0, 7);
-			ctx.fill();
-		} else {
-			drawImp(ctx, KINDS[i - 1], x, y, S * 1.5 * (1 - 0.3 * u), 'RIGHT', time, 1);
-		}
-		ctx.globalAlpha = 1;
-	});
+	ctx.save();
+	ctx.globalCompositeOperation = 'lighter';
+	for (const b of rules.bolts) {
+		const x = px(L, b.x);
+		const y = py(L, b.y);
+		const g = ctx.createRadialGradient(x, y, 0, x, y, S * 0.34);
+		g.addColorStop(0, 'rgba(220,250,255,.95)');
+		g.addColorStop(0.4, 'rgba(80,180,255,.7)');
+		g.addColorStop(1, 'rgba(40,90,255,0)');
+		ctx.fillStyle = g;
+		ctx.fillRect(x - S * 0.4, y - S * 0.4, S * 0.8, S * 0.8);
+	}
+	ctx.restore();
 }
 
-function weaponSlot(L: Lay, mode: 'on' | 'warn' | 'off'): void {
+function text(s: string, x: number, y: number, size: number, color: string, align: CanvasTextAlign = 'start'): void {
+	ctx.font = `700 ${size}px ${FONT}`;
+	ctx.textAlign = align;
+	ctx.lineWidth = Math.max(3, size * 0.18);
+	ctx.strokeStyle = INK;
+	ctx.strokeText(s, x, y);
+	ctx.fillStyle = color;
+	ctx.fillText(s, x, y);
+	ctx.textAlign = 'start';
+}
+
+function drawHud(L: Lay): void {
 	const S = L.tileSize;
-	const s = S * 2.1;
-	const x = L.offsetX;
-	const y = L.offsetY - s - S * 0.6;
+	const mazeW = rules.grid.width * S;
+	const top = L.offsetY + S * 1.2;
+	// health and armour, score
+	const hearts = '♥'.repeat(Math.max(0, rules.hp)) + '♡'.repeat(Math.max(0, TUNE.maxHp - rules.hp));
+	text(hearts, L.offsetX + S * 2.2, top, S * 0.9, '#ff6a8a');
+	if (rules.armour) drawIcon('armour', L.offsetX + S * 5.2, top - S * 0.3, S * 0.8);
+	text(String(rules.score), L.offsetX + S * 2.2, top + S * 0.9, S * 0.6, '#efe0d8');
+	// the hand: the item, or the BFG with its ring of eaten food
+	const cx = L.offsetX + mazeW - S * 3.4;
+	const cy = top - S * 0.05;
+	const R = S * 0.78;
 	ctx.fillStyle = 'rgba(14,6,8,.85)';
 	ctx.beginPath();
-	ctx.roundRect(x, y, s, s, 8);
+	ctx.arc(cx, cy, R, 0, 7);
 	ctx.fill();
-	ctx.lineWidth = 2.4;
-	ctx.strokeStyle = mode === 'warn' ? (Math.floor(time * 6) % 2 ? '#ffb02e' : '#7a4a10') : mode === 'off' ? '#5a2a2c' : '#e0483c';
+	const off = rules.split;
+	const item = rules.hand ?? 'bfg';
+	drawIcon(item, cx, cy, R * 1.3, off || (item === 'bfg' && !rules.bfgReady) ? 0.35 : 1);
+	ctx.lineWidth = S * 0.14;
+	ctx.strokeStyle = 'rgba(255,255,255,.12)';
+	ctx.beginPath();
+	ctx.arc(cx, cy, R, 0, 7);
 	ctx.stroke();
-	ctx.globalAlpha = mode === 'off' ? 0.28 : 1;
-	ctx.drawImage(pickupSprite('bfg').icon, x + s * 0.12, y + s * 0.12, s * 0.76, s * 0.76);
-	ctx.globalAlpha = 1;
-	if (mode === 'off') {
-		ctx.strokeStyle = '#ff3a2a';
-		ctx.lineWidth = 4;
-		ctx.beginPath();
-		ctx.moveTo(x + s * 0.18, y + s * 0.82);
-		ctx.lineTo(x + s * 0.82, y + s * 0.18);
-		ctx.stroke();
-	}
-	ctx.fillStyle = mode === 'on' ? '#efe0d8' : mode === 'warn' ? '#ffb02e' : '#ff6a5a';
-	ctx.font = `700 ${S * 0.55}px "Arial Narrow",system-ui,sans-serif`;
-	ctx.textAlign = 'center';
-	ctx.fillText(mode === 'on' ? 'BFG' : mode === 'warn' ? 'ОТКЛЮЧАЕТСЯ' : 'ОТКЛЮЧЕНО', x + s / 2, y + s + S * 0.62);
-	ctx.textAlign = 'start';
-}
-
-function banner(L: Lay, text: string, sub: string, bar: number | null): void {
-	const S = L.tileSize;
-	const cx = L.offsetX + (DRAWN[0].length * S) / 2;
-	const y = L.offsetY - S * 1.6;
-	ctx.textAlign = 'center';
-	ctx.font = `700 ${S * 1.15}px "Arial Narrow",system-ui,sans-serif`;
-	ctx.lineWidth = 5;
-	ctx.strokeStyle = INK;
-	ctx.strokeText(text, cx, y);
+	ctx.strokeStyle = rules.bfgReady ? '#8cff6a' : '#4f9a3c';
+	ctx.beginPath();
+	ctx.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * rules.charge) / TUNE.foodPerShot);
+	ctx.stroke();
+	let label = rules.bfgReady ? 'BFG готова' : `еда ${rules.charge}/${TUNE.foodPerShot}`;
+	if (rules.hand === 'berserk') label = `рывок · ${Math.ceil(rules.berserkLeft)} с`;
+	if (rules.hand === 'snare') label = 'капкан';
+	if (rules.hand === 'plasma') label = `плазма · ${rules.plasmaLeft.toFixed(1)} с`;
+	if (off) label = 'отключено';
+	text(label, cx, cy + R + S * 0.7, S * 0.5, off ? '#ff6a5a' : '#efe0d8', 'center');
+	// the boss's health with the two splits marked
+	const boss = rules.boss;
+	const bx = L.offsetX + mazeW / 2 - S * 5.5;
+	const bw = S * 11;
+	const by = top - S * 0.45;
+	ctx.fillStyle = 'rgba(14,6,8,.85)';
+	ctx.fillRect(bx, by, bw, S * 0.32);
+	ctx.fillStyle = '#e0483c';
+	ctx.fillRect(bx, by, (bw * Math.max(0, boss.hp)) / 1500, S * 0.32);
 	ctx.fillStyle = '#ffe9a8';
-	ctx.fillText(text, cx, y);
-	ctx.font = `700 ${S * 0.6}px "Arial Narrow",system-ui,sans-serif`;
-	ctx.fillStyle = '#d8b8b0';
-	ctx.fillText(sub, cx, y + S * 0.85);
-	if (bar !== null) {
-		const bw = S * 11;
-		ctx.fillStyle = 'rgba(14,6,8,.85)';
-		ctx.fillRect(cx - bw / 2, y + S * 1.1, bw, S * 0.34);
-		ctx.fillStyle = '#e0483c';
-		ctx.fillRect(cx - bw / 2, y + S * 1.1, bw * bar, S * 0.34);
-		ctx.strokeStyle = INK;
-		ctx.lineWidth = 2;
-		ctx.strokeRect(cx - bw / 2, y + S * 1.1, bw, S * 0.34);
+	for (const t of [1000, 500]) ctx.fillRect(bx + (bw * t) / 1500 - 1, by - S * 0.1, 2, S * 0.52);
+	ctx.strokeStyle = INK;
+	ctx.lineWidth = 2;
+	ctx.strokeRect(bx, by, bw, S * 0.32);
+	// the stage
+	const mid = L.offsetX + mazeW / 2;
+	const st = rules.stage;
+	if (st === 'omen') text('ОН РАСПАДАЕТСЯ', mid, by + S * 1.3, S * 0.8, '#ffe9a8', 'center');
+	if (st === 'burst' || st === 'pacman') {
+		const left = st === 'pacman' ? TUNE.pacman - rules.stageT : TUNE.pacman;
+		text(`РАСПАД · ${Math.ceil(left)} с · съедено ${rules.eaten}/4`, mid, by + S * 1.3, S * 0.8, '#ffe9a8', 'center');
+		ctx.fillStyle = '#ffe9a8';
+		ctx.fillRect(bx, by + S * 1.6, (bw * left) / TUNE.pacman, S * 0.16);
 	}
-	ctx.textAlign = 'start';
+	if (st === 'merge') text('ОНИ ВОЗВРАЩАЮТСЯ К ЯДРУ', mid, by + S * 1.3, S * 0.8, '#ffe9a8', 'center');
+	if (st === 'fight' && boss.isStunned && time - formedAt < 8) text('ОН СОБРАЛСЯ И ОГЛУШЁН: БЕЙ', mid, by + S * 1.3, S * 0.8, '#8cff6a', 'center');
+	for (const q of rules.popups) {
+		ctx.globalAlpha = Math.max(0, 1 - q.age / 1.1);
+		text(q.text, px(L, q.x), py(L, q.y) - q.age * S, S * 0.55, '#ffd24a', 'center');
+		ctx.globalAlpha = 1;
+	}
+	if (st === 'won' || st === 'lost') {
+		ctx.fillStyle = 'rgba(8,2,4,.72)';
+		ctx.fillRect(0, 0, w, h);
+		text(st === 'won' ? 'ПОБЕДА' : 'ПОЙМАН', w / 2, h / 2, S * 2, '#ffe9a8', 'center');
+		text('R или «Заново»', w / 2, h / 2 + S * 1.3, S * 0.8, '#efe0d8', 'center');
+	}
 }
 
 function render(): void {
 	ctx.setTransform(D, 0, 0, D, 0, 0);
+	ctx.fillStyle = '#0d0709';
+	ctx.fillRect(0, 0, w, h);
+	const boss = rules.boss;
+	world.setMood(boss.phase >= 2, boss.phase >= 3);
 	world.drawWorld(ctx);
+	const p = rules.player.position;
+	const lights: DoomLight[] = [{ x: p.x, y: p.y, r: 6.5, tint: 0xffe2b0, a: 1 }];
+	if (!rules.split && !boss.defeated) lights.push({ x: boss.position.x, y: boss.position.y, r: 3.2, tint: 0xff3a2a, a: 0.85 });
+	world.drawMood(ctx, lights);
 	const L = world.layout;
-	const S = L.tileSize;
+	fx.drawGround(ctx, L);
+	if (!rules.split && !boss.defeated) combat.drawGround(ctx, boss, NO_PICKUPS, rules.grid, L, time);
 	drawFoodField(L);
-	drawEnergizers(L);
-	if (phase === 'omen') drawOmen(L);
-	if (phase === 'merge') drawMerge(L);
-	if (phase === 'weak') {
-		bossView.draw(ctx, snap(LAIR.x, LAIR.y, 'STUNNED', 'stunned', Math.PI), L, time);
-		const g = ctx.createRadialGradient(L.offsetX + LAIR.x * S, L.offsetY + LAIR.y * S, 0, L.offsetX + LAIR.x * S, L.offsetY + LAIR.y * S, S * 2);
-		g.addColorStop(0, 'rgba(255,230,160,.6)');
-		g.addColorStop(1, 'rgba(255,120,60,0)');
-		ctx.fillStyle = g;
-		ctx.fillRect(L.offsetX + LAIR.x * S - S * 2, L.offsetY + LAIR.y * S - S * 2, S * 4, S * 4);
-	}
+	drawPickups(L);
+	drawCore(L);
+	drawBoss(L);
 	drawGhosts(L);
-	if (phase === 'burst') drawBurst(L);
-	heroView.draw(ctx, player, L, time, { look: 'normal', charge: 0, dying: false });
+	if (!rules.split && !boss.defeated) {
+		combat.drawAir(ctx, boss, L, time);
+		combat.drawPull(ctx, boss, p, L, time);
+	}
+	heroView.draw(ctx, rules.player, L, time, {
+		look: rules.berserk ? 'berserk' : 'normal',
+		charge: rules.charging >= 0 ? rules.charging / TUNE.bfgCharge : 0,
+		dying: false,
+		chargeLight: true
+	});
+	drawBolts(L);
+	fx.draw(ctx, L, rules.orbs, []);
+	drawBurst(L);
+	world.drawFx(ctx);
 	world.drawOverlay(ctx);
-	for (const q of popups) {
-		ctx.globalAlpha = Math.max(0, 1 - q.age / 1.1);
-		ctx.font = `700 ${S * 0.62}px "Arial Narrow",system-ui,sans-serif`;
-		ctx.textAlign = 'center';
-		ctx.lineWidth = 4;
-		ctx.strokeStyle = INK;
-		ctx.fillStyle = '#ffd24a';
-		ctx.strokeText(q.text, L.offsetX + q.x * S, L.offsetY + q.y * S - q.age * S);
-		ctx.fillText(q.text, L.offsetX + q.x * S, L.offsetY + q.y * S - q.age * S);
-		ctx.textAlign = 'start';
-		ctx.globalAlpha = 1;
-	}
-	const hearts = '♥'.repeat(Math.max(0, hp)) + '♡'.repeat(Math.max(0, 3 - hp));
-	ctx.font = `700 ${S * 0.8}px "Arial Narrow",system-ui,sans-serif`;
-	ctx.fillStyle = '#ff6a8a';
-	ctx.fillText(hearts, L.offsetX + S * 3, L.offsetY - S * 1.2);
-	ctx.fillStyle = '#efe0d8';
-	ctx.fillText(String(progress.score + bonus), L.offsetX + S * 3, L.offsetY - S * 0.3);
-	if (phase === 'fight') {
-		weaponSlot(L, 'on');
-		banner(L, 'БОЙ', 'босс гонится за тобой', null);
-	} else if (phase === 'omen') {
-		weaponSlot(L, 'warn');
-		banner(L, 'ОН РАСПАДАЕТСЯ', 'оружие отключится, беги', null);
-	} else if (phase === 'burst') {
-		weaponSlot(L, 'off');
-		banner(L, 'РАСПАД', '', null);
-	} else if (phase === 'pacman') {
-		weaponSlot(L, 'off');
-		banner(L, 'ПАКМАН', 'продержись, оружия нет', 1 - phaseT / LENGTH.pacman);
-	} else if (phase === 'merge') {
-		weaponSlot(L, 'off');
-		banner(L, 'ОНИ ВОЗВРАЩАЮТСЯ', '', null);
-	} else {
-		weaponSlot(L, 'on');
-		banner(L, 'ОН СЛАБ', 'коснись его, это удар', 1 - phaseT / LENGTH.weak);
-	}
-	if (flash > 0) {
-		ctx.fillStyle = `rgba(255,40,30,${flash * 0.7})`;
-		ctx.fillRect(0, 0, w, h);
-	}
-	if (dead) {
-		ctx.fillStyle = 'rgba(8,2,4,.72)';
-		ctx.fillRect(0, 0, w, h);
-		ctx.fillStyle = '#ffe9a8';
-		ctx.textAlign = 'center';
-		ctx.font = `700 ${S * 2}px "Arial Narrow",system-ui,sans-serif`;
-		ctx.fillText('ПОЙМАН', w / 2, h / 2);
-		ctx.font = `700 ${S * 0.8}px "Arial Narrow",system-ui,sans-serif`;
-		ctx.fillText('R или «Заново»', w / 2, h / 2 + S * 1.3);
-		ctx.textAlign = 'start';
-	}
+	fx.drawHurt(ctx, w, h);
+	drawHud(L);
 }
 
 let last = performance.now();

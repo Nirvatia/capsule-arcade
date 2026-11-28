@@ -278,6 +278,44 @@ pads, and no ghosts but their lord.
 - Direction rule: every actor shows where it heads (eyes; the imps add a small chevron; the boss's eyes are enough
   on the tile's leading edge; Pac-Man has his mouth).
 
+### The fight, redesigned (the owner's approval, 2026-11-28; in the `hell-phase` prototype, the game still plays the rules above)
+
+The fight was too empty (most of the time you wandered an empty maze) and Pac-Man is about eating
+dots under a chase. Each part keeps one job: **food** is the constant thing to do and charges the
+BFG; **pickups** are the tactical choices; the boss's **attacks** are the threat you keep running
+from (unchanged); the **split** is the phase change, plain Pac-Man with a window to strike.
+
+- **Food** (its sprite is the owner's later pick: the fang is the lead) fills the maze at the start;
+  each piece is 10 points and a share of the **BFG's charge** (the ring on the dial: about 30
+  pieces a shot, one shot stored). The BFG is no longer a pickup.
+- **The split** replaces the phase transition at 1000 and 500 HP (so twice a fight). The boss
+  stands and shakes (the omen, the old transition's 2.5 s), then bursts where he is: his flesh
+  splatters into **new food** (every eaten tile fills again) and his **core** stays on that tile
+  (always a corridor, shown all the time, not touchable). Then **18 s of plain Pac-Man**: four
+  equal ghosts (Blinky, Pinky, Inky, Clyde, the classic chase, all slower than the hero), the
+  weapons off (what is in hand is kept), a ghost's touch costs 1 HP, and four **energizers** in the
+  corners (they exist only here). An eaten ghost does not return: 200/400/800/1600 points, −75 HP
+  to the boss and +1 s to his stun when he forms. At the end the rest run back to **their core**
+  (that is the reason he forms there, not in the lair); eating all four ends it early. The boss
+  forms on the core **stunned for 2 s + 1 s per eaten ghost**: the hero knew where all along, so he
+  can stand on a straight line with the charge he ate during the split. The split's damage never
+  crosses the next phase's threshold.
+- **The button** spends what is in hand; with empty hands it fires the BFG if it is charged.
+- **Pickups** (four spots in the middle of the outer sides, away from the corners, which are the
+  split's energizers'; hidden during the split; one of each kind at most, 15–20 s to come):
+  - **Berserk**: the energizer state (×1.15 speed, the powered look), the boss's touch still hurts;
+    the button makes **one rush** along the heading (up to 5 tiles, to a wall, unhurt, its own
+    animation): about 250 damage and a stun on the boss, the imps on the way die; then the berserk
+    ends, however long was left. Unused, it runs out. (The contact bite is gone: it let you run
+    through the stunned boss back and forth.)
+  - **Snare** (replaces the barrel): set on your tile; it snaps on the boss stepping in, holds him
+    about 2.5 s (100 damage). You lure him over it; a held boss is the mark for the BFG, the rush or
+    the plasma. (A decoy was dropped: free damage at a press.)
+  - **Plasma**: hold the button about 3 s, bolts along the corridor that die on walls, about 300
+    damage if all hit, no stun, kills imps. The hero never backs or stands still, so shooting the
+    boss means turning to face him and running at him. The snare and the plasma are the best combo.
+  - **Medkit** only when hurt (+1 HP); **armour** only at full health (takes one hit, at most one).
+
 ## 7a. The station (boss level)
 
 **Approved by the owner on 2026-11-25.** The second boss world: an abandoned
