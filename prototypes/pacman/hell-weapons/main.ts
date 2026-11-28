@@ -259,12 +259,17 @@ const GHOST_FROM: ReadonlyArray<readonly [number, number]> = [[-3, -1], [3, -1],
 /** The corridor's tiles the tar cards cover, and the tar painters' origin in a card. */
 // one alone, a pair, one alone again: tar comes tile by tile and need not join
 const TAR_TILES = [3, 5, 6, 8].map((c) => ({ c, r: ROW }));
-const tarCard = (title: string, paint: typeof tar): Card => ({
+type SlowPaint = (c: Ctx, tiles: readonly E.Tile[], ox: number, oy: number, s: number, t: number, hero: E.HeroAt) => void;
+/** The hero walks the corridor slowly through the slow tiles; `over` draws them over him. */
+const tarCard = (title: string, paint: SlowPaint, over: boolean): Card => ({
 	title,
-	period: 4,
-	scene: (st, _u, t) => {
-		paint(st.ctx, TAR_TILES, -STRIP.x * st.S, -STRIP.y * st.S, st.S, t);
-		st.hero(2.6);
+	period: 6,
+	scene: (st, u, t) => {
+		const hx = lerp(2.5, 9.2, u);
+		const draw = (): void => paint(st.ctx, TAR_TILES, -STRIP.x * st.S, -STRIP.y * st.S, st.S, t, { x: hx + 0.5 - 0.5, y: ROW + 0.5 });
+		if (!over) draw();
+		st.hero(hx - 0.5);
+		if (over) draw();
 	}
 });
 
@@ -284,25 +289,20 @@ const END_SECTIONS: readonly Section[] = [
 				}
 			},
 			{
-				title: 'Сердце: 1 — в костяной оправе; выход — люк',
+				title: 'Сердце (без лучей) и выход: приняты',
 				period: 3,
 				scene: (st, u, t) => {
 					E.heartReliquary(st.ctx, st.X(4), st.Y(), st.S, t);
 					E.exitHatch(st.ctx, st.X(7), st.Y(), st.S, t, ease(0, 0.4, u));
 				}
 			},
-			{
-				title: 'Сердце: 2 — раскалённое',
-				period: 3,
-				scene: (st, _u, t) => E.heartHot(st.ctx, st.X(4), st.Y(), st.S, t)
-			}
 		]
 	},
 	{
 		id: 'tar',
-		title: 'Смола третьей фазы',
-		note: 'Каждая клетка сама по себе (смола может лежать одиночными клетками), без кругов. C: глянцевая чёрная плита по форме клетки с потёками. D: неровная клякса, у каждой клетки своя. E: плита сухой корки с тлеющими трещинами.',
-		cards: [tarCard('Сейчас: лужи', tar), tarCard('C: плита', E.tarSlab), tarCard('D: клякса', E.tarSplat), tarCard('E: корка', E.tarCrustTile)]
+		title: 'Замедление третьей фазы (вместо смолы)',
+		note: 'Не смола, а то, что держит: светлее пола, не похоже на урон, по клеткам, и реагирует на героя (он медленно идёт по коридору). 1: бледные руки грешников из трещины хватают его. 2: сухожилия натянуты по клетке и обтягивают его. 3: цепи крест-накрест натягиваются на нём. 4: ярко-алая трясина вздымается вокруг него.',
+		cards: [tarCard('Сейчас: лужи', (c, tl, ox, oy, s, t) => tar(c, tl, ox, oy, s, t), false), tarCard('1: руки из пола', E.slowHands, true), tarCard('2: паутина из жил', E.slowSinews, true), tarCard('3: цепи', E.slowChains, true), tarCard('4: кровавая трясина', E.slowBog, false)]
 	}
 ];
 

@@ -175,25 +175,13 @@ function heartPath(c: Ctx, S: number, k: number): void {
 
 /**
  * Heart candidate 1, the reliquary: a red heart set in a white bone frame (a light disc with a dark
- * ink edge reads on the dark floor), gold rays behind it.
+ * ink edge reads on the dark floor), a soft gold glow behind it.
  */
 export function heartReliquary(c: Ctx, x: number, y: number, S: number, t: number): void {
 	const bob = floatAt(c, x, y, S, t);
 	const beat = 1 + 0.12 * Math.max(0, Math.sin(t * 5)) ** 3;
 	const cy = y - S * 0.06 + bob;
 	bloom(c, x, cy, S * 1.2, '255,226,150', 0.6);
-	c.save();
-	c.strokeStyle = 'rgba(255,230,160,.8)';
-	c.lineWidth = Math.max(1.2, S * 0.04);
-	c.lineCap = 'round';
-	for (let i = 0; i < 8; i += 1) {
-		const a = (i * TAU) / 8 + t * 0.6;
-		c.beginPath();
-		c.moveTo(x + Math.cos(a) * S * 0.48, cy + Math.sin(a) * S * 0.48);
-		c.lineTo(x + Math.cos(a) * S * 0.62, cy + Math.sin(a) * S * 0.62);
-		c.stroke();
-	}
-	c.restore();
 	cel(c, () => { c.beginPath(); c.arc(x, cy, S * 0.44, 0, TAU); }, { light: '#ffffff', mid: '#f0e4cc', shade: '#b09a78' }, x, cy, S * 0.44, S, 1.2);
 	c.save();
 	c.translate(x, cy + S * 0.02);
@@ -204,39 +192,6 @@ export function heartReliquary(c: Ctx, x: number, y: number, S: number, t: numbe
 	c.ellipse(-S * 0.12, -S * 0.08, S * 0.05, S * 0.02, -0.6, 0, TAU);
 	c.fill();
 	c.restore();
-}
-
-/**
- * Heart candidate 2, the white-hot heart: the heart itself burning gold-white at its heart and red at
- * its rim, a strong halo and a ring of flame round it.
- */
-export function heartHot(c: Ctx, x: number, y: number, S: number, t: number): void {
-	const bob = floatAt(c, x, y, S, t);
-	const beat = 1 + 0.14 * Math.max(0, Math.sin(t * 5)) ** 3;
-	const cy = y - S * 0.06 + bob;
-	bloom(c, x, cy, S * 1.5, '255,200,120', 0.75);
-	c.save();
-	c.translate(x, cy);
-	c.scale(beat, beat);
-	heartPath(c, S, 1.05);
-	c.fillStyle = radial(c, -S * 0.04, -S * 0.04, 0, S * 0.38, ['#fffbe8', '#ffd27a', '#ff6a2a', '#b0141a']);
-	c.fill();
-	heartPath(c, S, 1.05);
-	ink(c, S, 1.2);
-	c.restore();
-	// a ring of small flames
-	for (let i = 0; i < 10; i += 1) {
-		const a = (i * TAU) / 10 + t * 1.2;
-		const fx = x + Math.cos(a) * S * 0.5;
-		const fy = cy + Math.sin(a) * S * 0.45;
-		const h = S * (0.08 + 0.04 * Math.sin(t * 9 + i));
-		c.fillStyle = 'rgba(255,170,70,.85)';
-		c.beginPath();
-		c.moveTo(fx - S * 0.03, fy);
-		c.quadraticCurveTo(fx, fy - h * 1.6, fx + S * 0.03, fy);
-		c.closePath();
-		c.fill();
-	}
 }
 
 /**
@@ -306,111 +261,239 @@ function rand(c: number, r: number, k: number): number {
 	return v - Math.floor(v);
 }
 
-/** The tar's inner box on a tile: it never leaves the tile and keeps a margin from its edge. */
-function inner(q: Tile, ox: number, oy: number, s: number): [number, number, number] {
-	const pad = s * 0.1;
-	return [ox + q.c * s + pad, oy + q.r * s + pad, s - pad * 2];
+/** The hero, in tile coordinates, or null. */
+export type HeroAt = { readonly x: number; readonly y: number } | null;
+
+/** How strongly the hero is on tile `q`: 1 at its centre, 0 from 0.75 of a tile away. */
+function grip(q: Tile, hero: HeroAt): number {
+	if (!hero) return 0;
+	const d = Math.hypot(hero.x - (q.c + 0.5), hero.y - (q.r + 0.5));
+	return Math.max(0, Math.min(1, (0.75 - d) / 0.45));
+}
+
+const SKIN: Tones = { light: '#e8ddd4', mid: '#b4a49c', shade: '#6a5a56' };
+
+/** One pale hand on its arm, from (bx, by) toward (hx, hy); `close` 0..1 curls its fingers. */
+function hand(c: Ctx, bx: number, by: number, hx: number, hy: number, s: number, close: number): void {
+	c.lineCap = 'round';
+	c.strokeStyle = '#1a0a08';
+	c.lineWidth = s * 0.13;
+	c.beginPath();
+	c.moveTo(bx, by);
+	c.lineTo(hx, hy);
+	c.stroke();
+	c.strokeStyle = SKIN.mid;
+	c.lineWidth = s * 0.08;
+	c.stroke();
+	const a = Math.atan2(hy - by, hx - bx);
+	c.save();
+	c.translate(hx, hy);
+	c.rotate(a);
+	for (let k = -1.5; k <= 1.5; k += 1) {
+		const fa = k * 0.35 * (1 - 0.7 * close);
+		const len = s * 0.13 * (1 - 0.45 * close);
+		c.strokeStyle = '#1a0a08';
+		c.lineWidth = s * 0.06;
+		c.beginPath();
+		c.moveTo(0, 0);
+		c.lineTo(Math.cos(fa) * len, Math.sin(fa) * len);
+		c.stroke();
+		c.strokeStyle = SKIN.light;
+		c.lineWidth = s * 0.03;
+		c.stroke();
+	}
+	cel(c, () => { c.beginPath(); c.ellipse(0, 0, s * 0.07, s * 0.06, 0, 0, TAU); }, SKIN, 0, 0, s * 0.07, s, 0.4);
+	c.restore();
 }
 
 /**
- * Tar candidate C, the slab: each tile its own square slab of glossy black tar, its corners softened
- * (not round), its edges sagging into two drips, a long sheen along its top.
+ * Slow 1, the hands: a crack in each tile with three pale hands of the damned reaching out of it,
+ * swaying; on the hero they reach for him and close.
  */
-export function tarSlab(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number): void {
+export function slowHands(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number, hero: HeroAt): void {
 	for (const q of tiles) {
-		const [x0, y0, w] = inner(q, ox, oy, s);
-		const sag = s * 0.06;
+		const cx = ox + (q.c + 0.5) * s;
+		const cy = oy + (q.r + 0.5) * s;
+		const g = grip(q, hero);
+		// the crack they come out of
 		c.beginPath();
-		c.moveTo(x0 + w * 0.12, y0);
-		c.lineTo(x0 + w * 0.88, y0);
-		c.lineTo(x0 + w, y0 + w * 0.12);
-		c.lineTo(x0 + w, y0 + w * 0.82);
-		c.lineTo(x0 + w * 0.78, y0 + w + sag);
-		c.lineTo(x0 + w * 0.6, y0 + w);
-		c.lineTo(x0 + w * 0.3, y0 + w + sag * 1.4);
-		c.lineTo(x0 + w * 0.12, y0 + w);
-		c.lineTo(x0, y0 + w * 0.86);
-		c.lineTo(x0, y0 + w * 0.12);
+		c.moveTo(cx - s * 0.34, cy + s * 0.05);
+		c.lineTo(cx - s * 0.12, cy - s * 0.06);
+		c.lineTo(cx + s * 0.06, cy + s * 0.08);
+		c.lineTo(cx + s * 0.34, cy - s * 0.04);
+		c.lineTo(cx + s * 0.1, cy + s * 0.16);
+		c.lineTo(cx - s * 0.14, cy + s * 0.1);
 		c.closePath();
-		c.fillStyle = linear(c, 0, y0, 0, y0 + w, ['#2a1416', '#0a0405']);
+		c.fillStyle = '#080203';
 		c.fill();
-		ink(c, s, 0.6);
-		c.fillStyle = 'rgba(255,230,220,.28)';
-		c.fillRect(x0 + w * 0.16, y0 + w * 0.14, w * 0.5, Math.max(1, s * 0.04));
-		// one slow bubble rising and bursting, its spot seeded per tile
-		const u = (t * 0.4 + rand(q.c, q.r, 3)) % 1;
-		c.strokeStyle = `rgba(160,120,120,${0.5 * (1 - u)})`;
+		c.strokeStyle = 'rgba(200,120,90,.6)';
 		c.lineWidth = Math.max(1, s * 0.025);
-		c.beginPath();
-		c.arc(x0 + w * (0.3 + 0.4 * rand(q.c, q.r, 4)), y0 + w * (0.4 + 0.3 * rand(q.c, q.r, 5)), s * 0.05 * u, 0, TAU);
 		c.stroke();
+		for (let k = 0; k < 3; k += 1) {
+			const bx = cx + (k - 1) * s * 0.2;
+			const by = cy + s * 0.04;
+			const sway = Math.sin(t * 2.2 + k * 2 + q.c) * s * 0.08;
+			let hx = bx + sway * (1 - g);
+			let hy = by - s * (0.22 + 0.06 * Math.sin(t * 3 + k));
+			if (hero && g > 0) {
+				const tx = ox + hero.x * s + (k - 1) * s * 0.12;
+				const ty = oy + hero.y * s + s * 0.15;
+				hx += (tx - hx) * g;
+				hy += (ty - hy) * g;
+			}
+			hand(c, bx, by, hx, hy, s, g);
+		}
+	}
+}
+
+const SINEW = { light: '#ffe4dc', mid: '#f0aaa0', dark: '#8a3a3a' };
+
+/**
+ * Slow 2, the sinews: pale sinews stretched across each tile from four knots in its corners, like a
+ * web; on the hero they bow round him and stretch thin.
+ */
+export function slowSinews(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number, hero: HeroAt): void {
+	for (const q of tiles) {
+		const x0 = ox + q.c * s + s * 0.12;
+		const y0 = oy + q.r * s + s * 0.12;
+		const w = s * 0.76;
+		const g = grip(q, hero);
+		const hx = hero ? ox + hero.x * s : 0;
+		const hy = hero ? oy + hero.y * s : 0;
+		const corners: Array<[number, number]> = [[x0, y0], [x0 + w, y0], [x0 + w, y0 + w], [x0, y0 + w]];
+		const mids: Array<[number, number]> = [[x0 + w / 2, y0], [x0 + w, y0 + w / 2], [x0 + w / 2, y0 + w], [x0, y0 + w / 2]];
+		const strand = (a: [number, number], b: [number, number]): void => {
+			const mx = (a[0] + b[0]) / 2;
+			const my = (a[1] + b[1]) / 2 + s * 0.05 + Math.sin(t * 2 + a[0]) * s * 0.015;
+			const qx = mx + (hx - mx) * g * 1.1;
+			const qy = my + (hy - my) * g * 1.1;
+			for (const [col, lw] of [[SINEW.dark, 0.075 * (1 - 0.4 * g)], [SINEW.mid, 0.045 * (1 - 0.4 * g)], [SINEW.light, 0.015]] as const) {
+				c.strokeStyle = col;
+				c.lineWidth = Math.max(0.8, s * lw);
+				c.lineCap = 'round';
+				c.beginPath();
+				c.moveTo(a[0], a[1]);
+				c.quadraticCurveTo(qx, qy, b[0], b[1]);
+				c.stroke();
+			}
+		};
+		strand(corners[0], corners[2]);
+		strand(corners[1], corners[3]);
+		strand(mids[0], mids[2]);
+		strand(mids[1], mids[3]);
+		for (const [kx, ky] of corners) {
+			cel(c, () => { c.beginPath(); c.arc(kx, ky, s * 0.06, 0, TAU); }, { light: '#ffb0a0', mid: '#c0504a', shade: '#5a1418' }, kx, ky, s * 0.06, s, 0.5);
+		}
+	}
+}
+
+const STEEL: Tones = { light: '#eef2f6', mid: '#a8b0b8', shade: '#4a525a' };
+
+/**
+ * Slow 3, the chains: two iron chains across each tile, corner to corner, fixed by rings to the floor;
+ * on the hero they pull taut onto him and shake.
+ */
+export function slowChains(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number, hero: HeroAt): void {
+	for (const q of tiles) {
+		const x0 = ox + q.c * s + s * 0.14;
+		const y0 = oy + q.r * s + s * 0.14;
+		const w = s * 0.72;
+		const g = grip(q, hero);
+		const hx = hero ? ox + hero.x * s : 0;
+		const hy = hero ? oy + hero.y * s : 0;
+		const shake = g * Math.sin(t * 40) * s * 0.015;
+		const chain = (a: [number, number], b: [number, number]): void => {
+			const mx = (a[0] + b[0]) / 2;
+			const my = (a[1] + b[1]) / 2 + s * 0.06 * (1 - g);
+			const qx = mx + (hx - mx) * g + shake;
+			const qy = my + (hy - my) * g;
+			const N = 7;
+			for (let i = 0; i < N; i += 1) {
+				const u = (i + 0.5) / N;
+				const px = (1 - u) * (1 - u) * a[0] + 2 * (1 - u) * u * qx + u * u * b[0];
+				const py = (1 - u) * (1 - u) * a[1] + 2 * (1 - u) * u * qy + u * u * b[1];
+				const tx = 2 * (1 - u) * (qx - a[0]) + 2 * u * (b[0] - qx);
+				const ty = 2 * (1 - u) * (qy - a[1]) + 2 * u * (b[1] - qy);
+				const ang = Math.atan2(ty, tx);
+				c.save();
+				c.translate(px, py);
+				c.rotate(ang);
+				const wide = i % 2 === 0;
+				c.beginPath();
+				c.ellipse(0, 0, s * 0.075, s * (wide ? 0.045 : 0.02), 0, 0, TAU);
+				if (wide) c.ellipse(0, 0, s * 0.04, s * 0.015, 0, 0, TAU);
+				c.fillStyle = linear(c, 0, -s * 0.045, 0, s * 0.045, [STEEL.light, STEEL.mid, STEEL.shade]);
+				c.fill('evenodd');
+				ink(c, s, 0.35);
+				c.restore();
+			}
+		};
+		chain([x0, y0], [x0 + w, y0 + w]);
+		chain([x0 + w, y0], [x0, y0 + w]);
+		for (const [rx, ry] of [[x0, y0], [x0 + w, y0], [x0 + w, y0 + w], [x0, y0 + w]] as const) {
+			c.beginPath();
+			c.arc(rx, ry, s * 0.06, 0, TAU);
+			c.arc(rx, ry, s * 0.03, 0, TAU);
+			c.fillStyle = STEEL.mid;
+			c.fill('evenodd');
+			ink(c, s, 0.4);
+		}
 	}
 }
 
 /**
- * Tar candidate D, the splat: each tile an irregular star-shaped splat of black tar (seeded per tile,
- * so no two match), drips running out of its points, a sheen.
+ * Slow 4, the bog: a thick bright-red mire filling each tile (a wobbling square, not a round), its
+ * rim lighter, bubbles rising; on the hero it heaves up round him.
  */
-export function tarSplat(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, _t: number): void {
+export function slowBog(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number, hero: HeroAt): void {
 	for (const q of tiles) {
-		const [x0, y0, w] = inner(q, ox, oy, s);
-		const cx = x0 + w / 2;
-		const cy = y0 + w / 2;
+		const x0 = ox + q.c * s + s * 0.1;
+		const y0 = oy + q.r * s + s * 0.1;
+		const w = s * 0.8;
+		const g = grip(q, hero);
 		c.beginPath();
-		const N = 9;
+		const N = 24;
 		for (let i = 0; i <= N; i += 1) {
-			const a = (i * TAU) / N + rand(q.c, q.r, 1);
-			const r = w * (i % 2 ? 0.36 : 0.56) * (0.85 + 0.15 * rand(q.c, q.r, i + 2));
-			const px = cx + Math.cos(a) * r;
-			const py = cy + Math.sin(a) * r;
+			const u = i / N;
+			// round the square's edge
+			const side = Math.floor(u * 4) % 4;
+			const v = (u * 4) % 1;
+			const wob = s * 0.025 * Math.sin(t * 2 + i * 1.7 + q.c);
+			const pts: Array<[number, number]> = [[x0 + v * w, y0 - wob], [x0 + w + wob, y0 + v * w], [x0 + w - v * w, y0 + w + wob], [x0 - wob, y0 + w - v * w]];
+			const [px, py] = pts[side];
 			if (i === 0) c.moveTo(px, py);
 			else c.lineTo(px, py);
 		}
 		c.closePath();
-		c.fillStyle = linear(c, 0, y0, 0, y0 + w, ['#2a1416', '#0a0405']);
+		c.fillStyle = linear(c, 0, y0, 0, y0 + w, ['#e8302a', '#8a0c12']);
 		c.fill();
-		ink(c, s, 0.5);
-		c.fillStyle = 'rgba(255,230,220,.3)';
-		c.beginPath();
-		c.moveTo(cx - w * 0.2, cy - w * 0.12);
-		c.lineTo(cx + w * 0.05, cy - w * 0.2);
-		c.lineTo(cx - w * 0.12, cy - w * 0.08);
-		c.closePath();
-		c.fill();
-	}
-}
-
-/**
- * Tar candidate E, the crust tile: each tile its own plate of dry black crust (square, softened
- * corners), its cracks glowing a dull ember that breathes.
- */
-export function tarCrustTile(c: Ctx, tiles: readonly Tile[], ox: number, oy: number, s: number, t: number): void {
-	const glow = 0.5 + 0.2 * Math.sin(t * 2);
-	for (const q of tiles) {
-		const [x0, y0, w] = inner(q, ox, oy, s);
-		c.beginPath();
-		c.roundRect(x0, y0, w, w, w * 0.14);
-		c.fillStyle = '#1c0e0c';
-		c.fill();
-		ink(c, s, 0.6);
-		c.save();
-		c.beginPath();
-		c.roundRect(x0, y0, w, w, w * 0.14);
-		c.clip();
-		for (const pass of [0, 1]) {
-			c.strokeStyle = pass === 0 ? '#060202' : `rgba(255,110,40,${glow})`;
-			c.lineWidth = pass === 0 ? Math.max(1.6, s * 0.06) : Math.max(0.8, s * 0.022);
-			c.lineCap = 'round';
-			c.lineJoin = 'round';
-			const mx = x0 + w * (0.35 + 0.3 * rand(q.c, q.r, 1));
-			const my = y0 + w * (0.35 + 0.3 * rand(q.c, q.r, 2));
+		c.strokeStyle = '#ff9a88';
+		c.lineWidth = Math.max(1, s * 0.035);
+		c.stroke();
+		ink(c, s, 0.4);
+		for (let k = 0; k < 2; k += 1) {
+			const u = (t * 0.7 + k * 0.5 + rand(q.c, q.r, k)) % 1;
+			const bx = x0 + w * (0.25 + 0.5 * rand(q.c, q.r, k + 3));
+			const by = y0 + w * (0.3 + 0.4 * rand(q.c, q.r, k + 5));
+			c.fillStyle = `rgba(255,150,130,${0.8 * (1 - u)})`;
 			c.beginPath();
-			for (const [ex, ey] of [[0, 0.2], [1, 0.3], [0.6, 1], [0.15, 0.9]]) {
-				c.moveTo(mx, my);
-				c.lineTo(x0 + w * (ex + (rand(q.c, q.r, ex * 7 + ey) - 0.5) * 0.2), y0 + w * ey);
-			}
+			c.ellipse(bx, by, s * 0.05 * u + 1, s * 0.035 * u + 1, 0, 0, TAU);
+			c.fill();
+		}
+		if (g > 0 && hero) {
+			// it heaves up round him: a lip of mire over his lower half
+			const hx = ox + hero.x * s;
+			const hy = oy + hero.y * s;
+			c.fillStyle = `rgba(200,30,30,${0.85 * g})`;
+			c.beginPath();
+			c.moveTo(hx - s * 0.42, hy + s * 0.32);
+			c.quadraticCurveTo(hx - s * 0.3, hy + s * 0.05 - s * 0.1 * g, hx, hy + s * 0.12);
+			c.quadraticCurveTo(hx + s * 0.3, hy + s * 0.05 - s * 0.1 * g, hx + s * 0.42, hy + s * 0.32);
+			c.closePath();
+			c.fill();
+			c.strokeStyle = `rgba(255,154,136,${g})`;
+			c.lineWidth = Math.max(1, s * 0.03);
 			c.stroke();
 		}
-		c.restore();
 	}
 }
