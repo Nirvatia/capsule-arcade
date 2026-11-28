@@ -14,6 +14,7 @@ import { FRUIT_BODY_RATIO, OrangeHero } from '../../../src/games/pacman/render/a
 import { chargePainter } from '../../../src/games/pacman/render/actors/hero/heroCharge';
 import { pickupSprite } from '../../../src/games/pacman/render/doom/DoomSprites';
 import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
+import type { CordLook } from '../../../src/games/pacman/render/doom/fleshBake';
 import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinkyView';
 import { KITS } from './kits';
 import type { Kit } from './kits';
@@ -227,6 +228,47 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 }
 
 const root = document.getElementById('kits') as HTMLElement;
+
+/** The hot line round the walls at three widths (seam, glow blur, warm spread on the floor, px). */
+const CORDS: ReadonlyArray<{ name: string; note: string; look: Partial<CordLook> }> = [
+	{ name: 'Сейчас', note: 'шов 2.6 · свечение 3 · ореол 5', look: {} },
+	{ name: 'А', note: 'шов 1.8 · свечение 2 · ореол 4', look: { seam: 1.8, glow: 2, spread: 4 } },
+	{ name: 'Б', note: 'шов 1.2 · свечение 1.5 · ореол 3', look: { seam: 1.2, glow: 1.5, spread: 3 } }
+];
+{
+	const section = document.createElement('section');
+	section.className = 'kit';
+	section.id = 'cord';
+	section.innerHTML = '<header><span class="tag">Стены</span><h2>Неоновый контур</h2><p>Левая верхняя четверть карты ада в масштабе игры, ночью. Меняется только горячая линия у основания стен.</p></header>';
+	const row = document.createElement('div');
+	row.className = 'frames';
+	for (const cord of CORDS) {
+		const w = new DoomWorld(GRID_DOOM, DOOM_PICKUP_TILES, cord.look);
+		w.resize(WORLD_W, WORLD_H, D);
+		w.update(0.016);
+		const off = document.createElement('canvas');
+		off.width = Math.round(WORLD_W * D);
+		off.height = Math.round(WORLD_H * D);
+		const ctx = off.getContext('2d') as CanvasRenderingContext2D;
+		ctx.setTransform(D, 0, 0, D, 0, 0);
+		w.drawWorld(ctx);
+		w.drawMood(ctx, [{ x: 6, y: 8, r: 6.5, tint: 0xffe2b0, a: 1 }]);
+		const L: Lay = w.layout;
+		const sx = L.offsetX + 0.6 * L.tileSize;
+		const sy = L.offsetY + 0.6 * L.tileSize;
+		const sw = 9 * L.tileSize;
+		const sh = 8 * L.tileSize;
+		const [cv, out] = canvas(sw, sh, `Неоновый контур: ${cord.name}`);
+		out.drawImage(off, sx * D, sy * D, sw * D, sh * D, 0, 0, sw, sh);
+		const fig = document.createElement('figure');
+		fig.append(cv);
+		fig.insertAdjacentHTML('beforeend', `<figcaption><b>${cord.name}</b> — ${cord.note}</figcaption>`);
+		row.append(fig);
+	}
+	section.append(row);
+	root.append(section);
+}
+
 KITS.forEach((kit) => {
 	const section = document.createElement('section');
 	section.className = 'kit';

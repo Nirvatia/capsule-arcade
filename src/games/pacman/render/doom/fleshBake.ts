@@ -164,8 +164,18 @@ function kindOf(S: GridMatrix, c: number, r: number): Kind {
 const tx = (c: number): number => MX + c * SCENE_TILE;
 const ty = (r: number): number => MY + r * SCENE_TILE;
 
-export function bakeFlesh(S: GridMatrix): FleshBake {
+/** The hot line round the islands: its width, its glow's blur and the warm spread on the floor, px. */
+export interface CordLook {
+	readonly seam: number;
+	readonly glow: number;
+	readonly spread: number;
+}
+
+export function bakeFlesh(S: GridMatrix, look: Partial<CordLook> = {}): FleshBake {
 	const st = WALL;
+	const seam = look.seam ?? st.seam;
+	const glowBlur = look.glow ?? 3;
+	const spread = look.spread ?? 5;
 	const rows = S.length;
 	const cols = S[0].length;
 	const isWall = (c: number, r: number): boolean => kindOf(S, c, r) === 'wall';
@@ -662,13 +672,13 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 			// the hot seam lies on the floor, not on the plate, and only where the light reaches: the
 			// far side (down and right) is in the plates' shadow, the seam fades out into it
 			const lit = without(
-				without(dilate(wallM, st.seam), wallM),
+				without(dilate(wallM, seam), wallM),
 				blur(dilate(moved(wallM, st.cast.dx / 2, st.cast.dy / 2), 3), 2, true)
 			);
 			ex.drawImage(tint(lit, `rgba(${st.cord},.9)`), LX, LY);
 		}
 	}
-	const glowCv = blur(emis.cv, 3, true);
+	const glowCv = blur(emis.cv, glowBlur, true);
 
 	const wallShadow = clipTo(blur(tint(wallM, '#000'), 2, true), deckM);
 
@@ -697,7 +707,7 @@ export function bakeFlesh(S: GridMatrix): FleshBake {
 		// the plates sit in the floor: a warm glow at the foot, a long cast shadow down and right,
 		// a tight dark crease; the plates themselves stay clear of all three
 		m.globalAlpha = st.floorGlow;
-		m.drawImage(without(blur(tint(dilate(wallM, 5), '#c8401f'), 2, true), wallM), LX, LY);
+		m.drawImage(without(blur(tint(dilate(wallM, spread), '#c8401f'), 2, true), wallM), LX, LY);
 		m.globalAlpha = 1;
 		castOnFloor(m, wallM, st.cast.dx, st.cast.dy, 3, st.cast.alpha, LX, LY);
 		castOnFloor(m, wallM, 0, 0, 2, st.crease, LX, LY);

@@ -9,6 +9,7 @@ import type { GridLayout } from '../maze/GridView';
 import { DoomLightmap } from './DoomLightmap';
 import { DOOM_BG, DOOM_TILE } from './DoomBake';
 import { bakeFlesh, FRAME, MX, MY, SCENE_TILE } from './fleshBake';
+import type { CordLook } from './fleshBake';
 import { MoodBuffer } from '../common/moodBuffer';
 import { FleshLive, heartbeat } from './fleshLive';
 import {
@@ -178,7 +179,11 @@ export class DoomWorld {
 	private readonly mood = new MoodBuffer();
 	private styleId: MoodStyleId = 'cord';
 
-	constructor(S: GridMatrix, pickupTiles: ReadonlyArray<{ x: number; y: number }>) {
+	constructor(
+		S: GridMatrix,
+		pickupTiles: ReadonlyArray<{ x: number; y: number }>,
+		private readonly cordLook: Partial<CordLook> = {}
+	) {
 		this.S = S;
 		this.R = S.length;
 		this.C = S[0].length;
@@ -326,7 +331,7 @@ export class DoomWorld {
 
 	/** The flesh scene: ground, maze, walls and what moves in them. Leaves the context untransformed. */
 	drawWorld(ctx: CanvasRenderingContext2D): void {
-		this.scene ??= new FleshLive(bakeFlesh(this.S));
+		this.scene ??= new FleshLive(bakeFlesh(this.S, this.cordLook));
 		this.scene.setGate(this.gateOpen);
 		ctx.save();
 		ctx.globalAlpha = 1;

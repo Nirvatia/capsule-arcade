@@ -6,7 +6,7 @@
 import { TAU, VEC, bloom, cel, gloss, ink, linear, radial, shadow } from '../hell-kit/paint';
 import type { Ctx, Dir, Tones } from '../hell-kit/paint';
 
-const BONE: Tones = { light: '#fff4dc', mid: '#e2cba2', shade: '#8a6c48' };
+export const BONE_TONES: Tones = { light: '#fff4dc', mid: '#e2cba2', shade: '#8a6c48' };
 const INK = '#14080a';
 
 /** A point to look at, relative to the actor's centre, in tiles. */
@@ -19,7 +19,7 @@ export interface Look {
 
 export type Mood = 'hunt' | 'wind' | 'roar' | 'gloat' | 'hurt' | 'dazed' | 'tired' | 'scared' | 'sly' | 'dopey';
 
-interface EyeSpec {
+export interface EyeSpec {
 	readonly x: number;
 	readonly y: number;
 	readonly rx: number;
@@ -27,7 +27,7 @@ interface EyeSpec {
 }
 
 /** One eye: its white, the lid that mood lowers, the pupil toward `look`, the brow over it. */
-function eye(c: Ctx, e: EyeSpec, S: number, side: -1 | 1, mood: Mood, look: Look, t: number, pupil = 0.45, glowEyes = false): void {
+export function eye(c: Ctx, e: EyeSpec, S: number, side: -1 | 1, mood: Mood, look: Look, t: number, pupil = 0.45, glowEyes = false): void {
 	const { x, y, rx, ry } = e;
 	if (mood === 'hurt') {
 		// squeezed shut: a chevron
@@ -98,7 +98,7 @@ function eye(c: Ctx, e: EyeSpec, S: number, side: -1 | 1, mood: Mood, look: Look
 }
 
 /** A brow over each eye: its angle is the mood (anger: inner end down; worry: inner end up). */
-function brows(c: Ctx, eyes: readonly EyeSpec[], S: number, mood: Mood, w: number): void {
+export function brows(c: Ctx, eyes: readonly EyeSpec[], S: number, mood: Mood, w: number): void {
 	const angle = { hunt: 0.35, wind: 0.6, roar: 0.75, gloat: 0.25, hurt: 0.5, dazed: -0.45, tired: -0.2, scared: -0.55, sly: 0.1, dopey: -0.15 }[mood] ?? 0;
 	const lift = { roar: -0.04, scared: -0.05, dazed: -0.02 }[mood as 'roar'] ?? 0;
 	eyes.forEach((e, i) => {
@@ -119,7 +119,7 @@ function brows(c: Ctx, eyes: readonly EyeSpec[], S: number, mood: Mood, w: numbe
 }
 
 /** The mouth: shut, a grin, a roar or a wail; `teeth` for the demon kind. */
-function mouth(c: Ctx, x: number, y: number, w: number, S: number, mood: Mood, open: number, teeth: boolean): void {
+export function mouth(c: Ctx, x: number, y: number, w: number, S: number, mood: Mood, open: number, teeth: boolean): void {
 	c.lineCap = 'round';
 	c.lineJoin = 'round';
 	if (mood === 'scared') {
@@ -180,7 +180,7 @@ function mouth(c: Ctx, x: number, y: number, w: number, S: number, mood: Mood, o
 }
 
 /** Squash and stretch about the feet, along the heading or upright. */
-function squash(c: Ctx, x: number, footY: number, sx: number, sy: number): void {
+export function squash(c: Ctx, x: number, footY: number, sx: number, sy: number): void {
 	c.translate(x, footY);
 	c.scale(sx, sy);
 	c.translate(-x, -footY);
@@ -200,7 +200,7 @@ export interface BossState {
 	readonly look: Look;
 }
 
-const BOSS_SKIN: Record<1 | 2 | 3, Tones> = {
+export const BOSS_SKIN: Record<1 | 2 | 3, Tones> = {
 	1: { light: '#ff7a5a', mid: '#d8241e', shade: '#6a0810' },
 	2: { light: '#e8503a', mid: '#a81418', shade: '#48040c' },
 	3: { light: '#a8302a', mid: '#5a0a10', shade: '#200206' }
@@ -208,7 +208,7 @@ const BOSS_SKIN: Record<1 | 2 | 3, Tones> = {
 const HORN_TIP: Tones = { light: '#6a5a50', mid: '#2a2020', shade: '#0a0606' };
 
 /** The boss's body: a dome, its sides, a ragged skirt of five points waving back against his way. */
-function bossBody(c: Ctx, S: number, t: number, drag: number, wave: number): void {
+export function bossBody(c: Ctx, S: number, t: number, drag: number, wave: number): void {
 	const top = -S * 0.36;
 	const r = S * 0.34;
 	const foot = S * 0.36;
@@ -232,7 +232,7 @@ function bossBody(c: Ctx, S: number, t: number, drag: number, wave: number): voi
  * A horn of bone from the side of his head, curling up and out; `len` grows with the phase, from
  * phase 2 ringed with ridges and dark at the tip, in phase 3 its tip glowing like an ember.
  */
-function bossHorn(c: Ctx, side: -1 | 1, S: number, len: number, phase: number, t: number, hurt: number): void {
+export function bossHorn(c: Ctx, side: -1 | 1, S: number, len: number, phase: number, t: number, hurt: number): void {
 	c.save();
 	c.translate(side * S * 0.2, -S * 0.2);
 	c.rotate(side * (0.12 * hurt) + Math.sin(t * 2) * 0.03);
@@ -248,7 +248,7 @@ function bossHorn(c: Ctx, side: -1 | 1, S: number, len: number, phase: number, t
 		c.quadraticCurveTo(side * len * 0.4, -len * 0.38, 0, -w);
 		c.closePath();
 	};
-	cel(c, path, BONE, side * len * 0.4, -len * 0.3, len * 0.5, S, 0.9);
+	cel(c, path, BONE_TONES, side * len * 0.4, -len * 0.3, len * 0.5, S, 0.9);
 	if (phase >= 2) {
 		c.save();
 		path();
@@ -285,7 +285,7 @@ function browHorn(c: Ctx, side: -1 | 1, S: number): void {
 		c.lineTo(side * S * 0.12, -S * 0.42);
 		c.lineTo(side * S * 0.17, -S * 0.24);
 		c.closePath();
-	}, BONE, side * S * 0.12, -S * 0.3, S * 0.06, S, 0.6);
+	}, BONE_TONES, side * S * 0.12, -S * 0.3, S * 0.06, S, 0.6);
 }
 
 /** Two tusks over his lower lip (phase 2 on), bone, curving up. */
@@ -298,7 +298,7 @@ function tusks(c: Ctx, x: number, y: number, S: number, phase: number): void {
 			c.quadraticCurveTo(x + side * S * 0.13, y - h * 0.4, x + side * S * 0.11, y - h);
 			c.lineTo(x + side * S * 0.05, y + S * 0.02);
 			c.closePath();
-		}, BONE, x + side * S * 0.09, y - h * 0.4, S * 0.05, S, 0.5);
+		}, BONE_TONES, x + side * S * 0.09, y - h * 0.4, S * 0.05, S, 0.5);
 	}
 }
 
@@ -560,7 +560,7 @@ export function drawImp(c: Ctx, x: number, y: number, S: number, t: number, st: 
 			c.lineTo(x + side * R * 0.75, cy - R * 1.35);
 			c.lineTo(x + side * R * 0.8, cy - R * 0.55);
 			c.closePath();
-		}, BONE, x + side * R * 0.6, cy - R, R * 0.3, S, 0.5);
+		}, BONE_TONES, x + side * R * 0.6, cy - R, R * 0.3, S, 0.5);
 	}
 	// the body: a round devil with a three-point skirt
 	cel(c, () => {
