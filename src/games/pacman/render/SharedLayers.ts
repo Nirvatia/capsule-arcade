@@ -16,6 +16,7 @@ import { FruitView } from './items/fruit/FruitView';
 import { EasterEggView } from './items/EasterEggView';
 import { drawBonusLife } from './items/BonusLifeView';
 import { drawExit } from './items/ExitView';
+import { drawHellExit, drawHellHeart } from './doom/finaleArt';
 import type { RenderFrame } from './RenderFrame';
 
 /**
@@ -56,11 +57,19 @@ export class SharedLayers {
 		const heart = reward?.offered ? reward.heart : null;
 		const exit = reward?.offered ? reward.exit : null;
 		const S = layout.tileSize;
+		// the hell's own: an iron hatch open on gold light, a red heart in a bone frame
+		const hell = level.hellMode;
 		if (exit) {
-			drawExit(ctx, layout.offsetX + exit.x * S, layout.offsetY + exit.y * S, S, frame.time);
+			const ex = layout.offsetX + exit.x * S;
+			const ey = layout.offsetY + exit.y * S;
+			if (hell) drawHellExit(ctx, ex, ey, S, frame.time, 1);
+			else drawExit(ctx, ex, ey, S, frame.time);
 		}
 		if (heart) {
-			drawBonusLife(ctx, layout.offsetX + heart.x * S, layout.offsetY + heart.y * S, S, frame.time);
+			const hx = layout.offsetX + heart.x * S;
+			const hy = layout.offsetY + heart.y * S;
+			if (hell) drawHellHeart(ctx, hx, hy, S, frame.time);
+			else drawBonusLife(ctx, hx, hy, S, frame.time);
 		}
 	}
 

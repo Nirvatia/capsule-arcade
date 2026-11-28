@@ -265,7 +265,7 @@ pads, and no ghosts but their lord.
   - phase 2: + seals (the junctions ahead of Pac-Man burn, a hit if standing on one, then
     stay locked), pull, cross, void trail; an ash storm rises;
   - phase 3: + split (boss and echo close in from both ends), eruption (a disc around
-    Pac-Man, then the ring around it), corruption of the outer corridors (slows), blink,
+    Pac-Man, then the ring around it), corruption of the outer corridors (slows; pale hands of the damned reach out of a crack in each tile and grab at the hero), blink,
     brood (imps: small horned ghosts in Pinky / Inky / Clyde colours); night falls.
   - Every attack is telegraphed and checked for fairness: there is always a way out.
 - **Player**: 3 HP in the fight (separate from lives). Losing them drops Pac-Man into the

@@ -93,7 +93,10 @@ render/
                    `split-form`) with them; bossArt (the boss and split pass): the stun's
                    skulls and timer, the split's window brackets, hit chips by strength (the
                    renderer adds his recoil), the omen's cracks, the core (a heart in ribs), his
-                   forming, a ghost eaten
+                   forming, a ghost eaten; finaleArt (the finale pass): the boss's death
+                   (the renderer plays it where he fell, then keeps his pool), the hell's heart
+                   and exit (`SharedLayers` draws them in the hell), the phase-3 slow as hands
+                   of the damned (`handPoints`, tested)
   station/         the station in the game: StationLevelRenderer over b7/ (b7Scene: the owner's
                    mock-up Station_Level_v2 carried over as drawn on the game's maze; B7World:
                    the hull and baked architecture as one screen layer per resize, the phase's

@@ -14,6 +14,7 @@ import { drawFleshEnergizer, drawFleshGhost, drawStingBolt, fleshFoodSprite } fr
 import { counterReady, mawCharge, rushSaw, rushTrail, stingMuzzle } from './weaponArt';
 import { WeaponFxView, hitStrength } from './WeaponFxView';
 import { core as drawCore, omen, stunOverlay, windowMark } from './bossArt';
+import { bossDeath } from './finaleArt';
 import type { DoomAbilityService } from '../../logic/doom/DoomAbilityService';
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
 import type { LevelProgress } from '../../logic/level/LevelProgress';
@@ -29,6 +30,8 @@ import type { GridLayout } from '../maze/GridView';
  * storm in boss phase 2, night with a corridor light map in phase 3), then the actors on
  * top so they always stay readable, then embers and vignette.
  */
+/** Seconds the boss's death plays (the pool stays after). */
+const DEATH_TIME = 3;
 /** Seconds of the boss's recoil from a hit. */
 const RECOIL_TIME = 0.22;
 /** The omen's cracks open fully over this long (the old transition's length). */
@@ -39,6 +42,8 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 	private readonly fxView = new DoomFxView();
 	private readonly weaponFx = new WeaponFxView();
 	private recoil: { x: number; y: number; amount: number; t: number } | null = null;
+	/** When and where the boss died: his death plays, then his pool stays with his horns. */
+	private death: { start: number; x: number; y: number } | null = null;
 	private readonly bossView = new HellBlinkyView();
 	private readonly echoBossView = new HellBlinkyView();
 	private readonly combatView = new DoomCombatView();
@@ -122,6 +127,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 				this.drawSplit(ctx, doom, layout, time);
 			}
 			if (boss && doom && fighting && !split) {
+				this.combatView.hero = level.player ? level.player.position : null;
 				this.combatView.drawGround(ctx, boss, doom, grid, layout, time);
 				const echo = boss.echo;
 				const echoPos = boss.echoPosition();
@@ -153,6 +159,11 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 					}
 				}
 				this.combatView.drawAir(ctx, boss, layout, time);
+			}
+			if (boss && doom && boss.defeated) {
+				this.drawDeath(ctx, level, boss, layout, time);
+			} else {
+				this.death = null;
 			}
 			const player = level.player;
 			if (state !== 'death') {
@@ -324,6 +335,30 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		if (doom.stingFiring) {
 			stingMuzzle(frame.ctx, x, y, S, facing, (time * 10) % 1);
 		}
+	}
+
+	/** The boss's death where he fell (`finaleArt.bossDeath`), then the pool of blood he leaves. */
+	private drawDeath(
+		ctx: CanvasRenderingContext2D,
+		level: LevelLoader,
+		boss: DoomBossService,
+		layout: GridLayout,
+		time: number
+	): void {
+		if (!this.death) {
+			this.death = { start: time, x: boss.position.x, y: boss.position.y };
+		}
+		const d = this.death;
+		const S = layout.tileSize;
+		const f = Math.min(1, (time - d.start) / DEATH_TIME);
+		bossDeath(ctx, layout.offsetX + d.x * S, layout.offsetY + d.y * S, S, f, time, (dx) =>
+			this.bossView.draw(
+				ctx,
+				this.bossSnapshot(level, boss, { x: d.x + dx, y: d.y }, false, 1),
+				layout,
+				time
+			)
+		);
 	}
 
 	/** The baked world is rebuilt only when a new hell level (a new grid) starts. */

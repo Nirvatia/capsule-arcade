@@ -7,7 +7,7 @@
 //  - the seal: its ring and pentagram, outlined in ink and lit pale so it parts from the red floor
 //    (`sealWarn` while it burns, `sealLocked` once it is a wall).
 //  - block (a void cell left by the boss): an iron shutter, a temporary wall that does no harm.
-//  - slow (the corrupted tiles of phase 3): black tar, glossy, with bubbles, clipped to its tiles.
+//  - slow (the corrupted tiles of phase 3): hands of the damned out of a crack (`finaleArt`).
 // Everything is drawn in screen pixels, `s` the tile size, `x, y` a tile's top-left corner.
 type Ctx = CanvasRenderingContext2D;
 
@@ -18,11 +18,6 @@ export interface Tile {
 }
 
 const INK = '#14080a';
-
-function noise(a: number, b: number): number {
-	const v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
-	return v - Math.floor(v);
-}
 
 /** One warning tile: amber hatching that marches, a dashed edge, a faint dark floor under it. */
 export function warnTile(ctx: Ctx, x: number, y: number, s: number, p: number, t: number): void {
@@ -135,89 +130,6 @@ export function block(ctx: Ctx, x: number, y: number, s: number, t: number, fade
 	ctx.beginPath();
 	ctx.arc(cx, cy, s * 0.15, 0, Math.PI * 2);
 	ctx.stroke();
-	ctx.restore();
-}
-
-/** Tar: black glossy pools that merge across neighbouring tiles, with a sheen and bubbles. */
-export function tar(
-	ctx: Ctx,
-	tiles: readonly Tile[],
-	ox: number,
-	oy: number,
-	s: number,
-	t: number
-): void {
-	ctx.save();
-	// the pool never leaves its tiles, and keeps a margin from their edge: the corridor's wall, its rim
-	// and its shadow lie there, and tar over them read as spilling out of the tile
-	const pad = s * 0.07;
-	ctx.beginPath();
-	for (const q of tiles) ctx.rect(ox + q.c * s + pad, oy + q.r * s + pad, s - pad * 2, s - pad * 2);
-	ctx.clip();
-	const blob = (tile: Tile, grow: number): void => {
-		const cx = ox + (tile.c + 0.5) * s;
-		const cy = oy + (tile.r + 0.5) * s;
-		ctx.beginPath();
-		const n = 16;
-		for (let i = 0; i <= n; i += 1) {
-			const a = (i / n) * Math.PI * 2;
-			const r = s * (0.42 + 0.05 * (noise(tile.c * 3 + i, tile.r * 5) - 0.5)) + grow;
-			const x = cx + Math.cos(a) * r;
-			const y = cy + Math.sin(a) * r;
-			if (i) ctx.lineTo(x, y);
-			else ctx.moveTo(x, y);
-		}
-		ctx.closePath();
-	};
-	// neighbouring tiles are joined by bridges, then one outline round the whole pool and the
-	// fill over it, so that the tiles merge into one pool and not a row of beads
-	const has = (c: number, r: number): boolean => tiles.some((q) => q.c === c && q.r === r);
-	const bridges = (grow: number): void => {
-		for (const q of tiles) {
-			const x = ox + (q.c + 0.5) * s;
-			const y = oy + (q.r + 0.5) * s;
-			if (has(q.c + 1, q.r)) ctx.fillRect(x, y - s * 0.3 - grow, s, s * 0.6 + grow * 2);
-			if (has(q.c, q.r + 1)) ctx.fillRect(x - s * 0.3 - grow, y, s * 0.6 + grow * 2, s);
-		}
-	};
-	const rim = Math.max(1, s * 0.035);
-	ctx.fillStyle = 'rgba(80,50,70,.7)';
-	for (const tile of tiles) {
-		blob(tile, rim);
-		ctx.fill();
-	}
-	bridges(rim);
-	ctx.fillStyle = '#050304';
-	for (const tile of tiles) {
-		blob(tile, 0);
-		ctx.fill();
-	}
-	bridges(0);
-	// the sheen: a hard highlight and a glint on each blob (no tinted disc: it made them read as beads)
-	for (const tile of tiles) {
-		const cx = ox + (tile.c + 0.5) * s;
-		const cy = oy + (tile.r + 0.5) * s;
-		ctx.fillStyle = 'rgba(255,255,255,.4)';
-		ctx.beginPath();
-		ctx.ellipse(cx - s * 0.16, cy - s * 0.18, s * 0.09, s * 0.035, -0.6, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.fillStyle = 'rgba(255,255,255,.22)';
-		ctx.beginPath();
-		ctx.arc(cx + s * 0.12, cy + s * 0.14, s * 0.035, 0, Math.PI * 2);
-		ctx.fill();
-		// a bubble that swells and pops
-		const u = (t * 0.45 + noise(tile.c, tile.r)) % 1;
-		if (u > 0.3) {
-			const bx = cx + (noise(tile.r, tile.c) - 0.5) * s * 0.5;
-			const by = cy + (noise(tile.c + 4, tile.r) - 0.5) * s * 0.4;
-			const br = s * 0.07 * Math.sin(((u - 0.3) / 0.7) * Math.PI);
-			ctx.strokeStyle = `rgba(200,180,220,${0.8 * (1 - u)})`;
-			ctx.lineWidth = Math.max(1, s * 0.03);
-			ctx.beginPath();
-			ctx.arc(bx, by, br, 0, Math.PI * 2);
-			ctx.stroke();
-		}
-	}
 	ctx.restore();
 }
 

@@ -17,13 +17,17 @@ import {
 } from './doomRift';
 import type { Lane } from './doomRift';
 import { CROSS_ACTIVE } from '../../logic/doom/DoomBalance';
-import { block, liveTile, sealLocked, sealWarn, tar, warnTile } from './attackArt';
+import { block, liveTile, sealLocked, sealWarn, warnTile } from './attackArt';
+import { slowHands } from './finaleArt';
 import type { Tile } from './attackArt';
 
 /** Seconds a weapon takes to rise out of its blister on the spot. */
 const ARRIVE = 0.7;
 
 export class DoomCombatView {
+	/** The hero (tile coordinates), whom the slow tiles' hands reach for; set before `drawGround`. */
+	hero: { x: number; y: number } | null = null;
+
 	private readonly scars = new RiftScars();
 	/** When the cross's burst was first seen, for its short fade. */
 	private crossT0 = -1;
@@ -119,7 +123,7 @@ export class DoomCombatView {
 		ctx.restore();
 	}
 
-	/** Phase 3: outer corridors fill with tar (they slow the player). */
+	/** Phase 3: hands of the damned reach out of the outer corridors' tiles (they slow the player). */
 	private drawCorruption(
 		ctx: CanvasRenderingContext2D,
 		boss: DoomBossService,
@@ -138,7 +142,7 @@ export class DoomCombatView {
 				}
 			}
 		}
-		tar(ctx, tiles, layout.offsetX, layout.offsetY, layout.tileSize, time);
+		slowHands(ctx, tiles, layout.offsetX, layout.offsetY, layout.tileSize, time, this.hero);
 	}
 
 	private drawPendingSeals(

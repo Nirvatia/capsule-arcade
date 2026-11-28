@@ -135,8 +135,13 @@ last (see Later).
      core is a heart in a cage of ribs (`doomPlaceholders` gone); a flash as he forms on it; a ghost
      eaten bursts into flesh, its eyes fly and its score rises. Left: his look in play (seen in the
      browser: the omen); the four running back are the merge as before;
-   - next: his death, the heart and the exit (check them), and the tar without round pools (e.g. a
-     cracked crust along the corridor);
+   - **the finale and the slow: done** (2026-11-28, same page, in the game as `render/doom/finaleArt`):
+     his death (he swells under turning beams, bursts white with two shock rings, flesh flung far, his
+     horns thrown high, blood rain; the pool with his horns stays), the hell's heart (+1 life, a red
+     heart in a white bone frame) and exit (an iron hatch open on gold light) in place of the shared
+     ones, and the phase-3 slow drawn as pale hands of the damned out of a crack, reaching for the
+     hero on their tile (the tar is gone; the sinews, the chains and the bog were the other three).
+     **The art pass is complete.** Left: his look at all of it in play.
      **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):
      (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
      bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a
