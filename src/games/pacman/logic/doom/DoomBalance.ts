@@ -123,15 +123,13 @@ export const STING_FOOD_PER_SECOND = FOOD_PER_SEGMENT;
 export const STING_RATE = 0.1;
 export const STING_SPEED = 16;
 export const STING_DAMAGE = 5;
-/** Seconds of fire one Sting carries (a whole meter's worth), then it is spent. */
-export const STING_LOAD = 3;
-/** The berserk (the light one, no food): faster for a while after it is taken, the button a rush. */
+/** The berserk (the light one): faster for a while after it is taken, the button a rush. */
 export const BERSERK_SPEED_MUL = 1.15;
 /** Seconds of `BERSERK_SPEED_MUL` after the berserk is taken. */
 export const BERSERK_HASTE = 5;
 export const RUSH_TILES = 5;
-/** Rushes one berserk carries, then it is spent. */
-export const RUSH_LOAD = 3;
+/** A rush burns out one charged segment of the berserk's three: three rushes, then it is spent. */
+export const RUSH_COST = FOOD_PER_SEGMENT;
 export const RUSH_COOLDOWN = 2.5;
 export const RUSH_DAMAGE = 50;
 export const RUSH_STUN = 0.5;

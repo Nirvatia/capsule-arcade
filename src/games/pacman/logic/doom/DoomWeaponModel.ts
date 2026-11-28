@@ -1,20 +1,22 @@
 import {
+	BERSERK_HASTE,
 	FOOD_PER_SEGMENT,
 	FOOD_SEGMENTS,
 	MAW_COST,
-	BERSERK_HASTE,
 	RUSH_COOLDOWN,
-	RUSH_LOAD,
-	STING_FOOD_PER_SECOND,
-	STING_LOAD
+	RUSH_COST,
+	STING_FOOD_PER_SECOND
 } from './DoomBalance';
 
 /**
  * What the hero holds (DESIGN §7 "The fight, redesigned"): one weapon from the pickups, and the
  * button uses it. `bfg` is the Maw (Жерло, the heavy gun), `plasma` the Sting (Жало), `berserk` the
- * light one. A new pickup replaces the weapon in hand. Each weapon picked up carries one **load**
- * (the Maw one shot, the Sting `STING_LOAD` s of fire, the berserk `RUSH_LOAD` rushes); the food
- * pays the guns (the berserk needs none), and when the load is gone the weapon is spent.
+ * light one. A new pickup replaces the weapon in hand.
+ *
+ * Each weapon has its own meter, which is also its whole load: it comes empty, food charges it, and
+ * what is used is gone from the meter for good (a rush burns out one of the berserk's three
+ * segments, the Sting's fire shortens its meter, the Maw's shot takes it all). When nothing of the
+ * meter is left, the weapon is spent and leaves the hand.
  */
 export type DoomSlotItem = 'berserk' | 'plasma' | 'bfg' | null;
 
@@ -25,34 +27,33 @@ export interface DoomBfgChargeState {
 
 const BFG_CHARGE_TIME = 0.8;
 const BFG_RECOIL_LOCK = 0.3;
-const FOOD_MAX = FOOD_SEGMENTS * FOOD_PER_SEGMENT;
+/** A weapon's whole meter, in pieces of food. */
+export const WEAPON_METER = FOOD_SEGMENTS * FOOD_PER_SEGMENT;
+const EPS = 1e-6;
 
-/**
- * The hell's weapon state: the weapon in hand, the food meter that feeds all three, the Maw's charge
- * and the rush's cooldown.
- */
+/** The hell's weapon state: the weapon in hand, its meter, the Maw's charge and the rush's cooldown. */
 export class DoomWeaponModel {
 	public slot: DoomSlotItem = null;
-	/** Food in the meter, 0..`FOOD_SEGMENTS * FOOD_PER_SEGMENT`. */
+	/** Food charged in the weapon's meter, 0..`capacity`. */
 	public food = 0;
+	/** What is left of the weapon's meter (charged or not), 0..`WEAPON_METER`; spent below that. */
+	public capacity = 0;
 	public rushCooldown = 0;
+	/** Seconds the berserk's speed still lasts. */
+	public haste = 0;
 	public bfgCharging = false;
 	public bfgChargeTimer = 0;
 	public bfgRecoilTimer = 0;
 	private chargeCompletedValue = false;
 	private spentValue: DoomSlotItem = null;
-	/** What is left of the load in hand: shots, seconds of fire or rushes. */
-	public load = 0;
-	/** Seconds the berserk's speed still lasts. */
-	public haste = 0;
 
 	get berserkActive(): boolean {
 		return this.slot === 'berserk';
 	}
 
-	/** The Maw has the whole meter to fire. */
+	/** The Maw has its whole meter to fire. */
 	get bfgReady(): boolean {
-		return this.food >= MAW_COST;
+		return this.slot === 'bfg' && this.food >= MAW_COST - EPS;
 	}
 
 	get bfgChargeState(): DoomBfgChargeState {
@@ -62,66 +63,59 @@ export class DoomWeaponModel {
 		};
 	}
 
+	/** Charges the weapon in hand, up to what is left of its meter. */
 	addFood(count: number): void {
-		if (!Number.isFinite(count) || count <= 0) {
+		if (!Number.isFinite(count) || count <= 0 || this.slot === null) {
 			return;
 		}
-		this.food = Math.min(FOOD_MAX, this.food + count);
+		this.food = Math.min(this.capacity, this.food + count);
 	}
 
-	/** Takes `item` in hand, in place of what was there; false while the Maw charges. */
+	/** Takes `item` in hand, empty, in place of what was there; false while the Maw charges. */
 	take(item: Exclude<DoomSlotItem, null>): boolean {
 		if (this.bfgCharging || this.slot === item) {
 			return false;
 		}
 		this.slot = item;
+		this.food = 0;
+		this.capacity = WEAPON_METER;
 		this.rushCooldown = 0;
-		this.load = DoomWeaponModel.loadOf(item);
 		this.haste = item === 'berserk' ? BERSERK_HASTE : 0;
 		return true;
 	}
 
-	/** The whole load of `item`: shots, seconds of fire or rushes. */
-	static loadOf(item: DoomSlotItem): number {
-		return item === 'berserk' ? RUSH_LOAD : item === 'plasma' ? STING_LOAD : item === 'bfg' ? 1 : 0;
-	}
-
-	/** The berserk's rush can go now: its cooldown is over (it needs no food). */
+	/** The berserk's rush can go now: its cooldown is over and a segment is charged. */
 	get rushReady(): boolean {
-		return this.slot === 'berserk' && this.rushCooldown <= 0;
+		return this.slot === 'berserk' && this.rushCooldown <= 0 && this.food >= RUSH_COST - EPS;
 	}
 
-	/** The meter cannot pay the weapon in hand: the press is refused, not merely early. */
+	/** The weapon in hand is not charged enough to use: the press is refused, not merely early. */
 	get starved(): boolean {
+		if (this.slot === 'berserk') {
+			return this.food < RUSH_COST - EPS;
+		}
 		if (this.slot === 'plasma') {
-			return this.food <= 0;
+			return this.food <= EPS;
 		}
 		return this.slot === 'bfg' && !this.bfgReady;
 	}
 
-	/** A rush goes: it starts the cooldown and uses one of the load. */
+	/** A rush goes: it burns out a charged segment and starts the cooldown. */
 	spendRush(): boolean {
 		if (!this.rushReady) {
 			return false;
 		}
+		this.burn(RUSH_COST);
 		this.rushCooldown = RUSH_COOLDOWN;
-		this.load -= 1;
-		if (this.load <= 0) {
-			this.spend();
-		}
 		return true;
 	}
 
-	/** Burns `dt` of the Sting's fire from the meter and the load; false when the meter is empty. */
+	/** Burns `dt` of the Sting's fire out of its meter; false when nothing is charged. */
 	spendSting(dt: number): boolean {
-		if (this.slot !== 'plasma' || this.food <= 0) {
+		if (this.slot !== 'plasma' || this.food <= EPS) {
 			return false;
 		}
-		this.food = Math.max(0, this.food - STING_FOOD_PER_SECOND * dt);
-		this.load -= dt;
-		if (this.load <= 1e-9) {
-			this.spend();
-		}
+		this.burn(Math.min(this.food, STING_FOOD_PER_SECOND * dt));
 		return true;
 	}
 
@@ -130,13 +124,6 @@ export class DoomWeaponModel {
 		const value = this.spentValue;
 		this.spentValue = null;
 		return value;
-	}
-
-	private spend(): void {
-		this.spentValue = this.slot;
-		this.slot = null;
-		this.rushCooldown = 0;
-		this.load = 0;
 	}
 
 	startBfgCharge(): boolean {
@@ -174,9 +161,8 @@ export class DoomWeaponModel {
 				this.bfgCharging = false;
 				this.bfgChargeTimer = 0;
 				this.bfgRecoilTimer = BFG_RECOIL_LOCK;
-				this.food = Math.max(0, this.food - MAW_COST);
 				this.chargeCompletedValue = true;
-				this.spend();
+				this.burn(this.capacity);
 			}
 		}
 		if (this.bfgRecoilTimer > 0) {
@@ -187,13 +173,26 @@ export class DoomWeaponModel {
 	reset(): void {
 		this.slot = null;
 		this.food = 0;
+		this.capacity = 0;
 		this.rushCooldown = 0;
+		this.haste = 0;
 		this.bfgCharging = false;
 		this.bfgChargeTimer = 0;
 		this.bfgRecoilTimer = 0;
 		this.chargeCompletedValue = false;
 		this.spentValue = null;
-		this.load = 0;
-		this.haste = 0;
+	}
+
+	/** Uses `amount` of the charge: gone from the meter for good; nothing left spends the weapon. */
+	private burn(amount: number): void {
+		this.food = Math.max(0, this.food - amount);
+		this.capacity = Math.max(0, this.capacity - amount);
+		if (this.capacity <= EPS) {
+			this.spentValue = this.slot;
+			this.slot = null;
+			this.food = 0;
+			this.capacity = 0;
+			this.rushCooldown = 0;
+		}
 	}
 }

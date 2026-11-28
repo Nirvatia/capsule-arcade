@@ -140,13 +140,9 @@ export class DoomWeaponService {
 		return this.model.spendRush();
 	}
 
-	/** What is left of the load in hand (shots, seconds of fire or rushes) and its whole. */
-	get load(): number {
-		return this.model.load;
-	}
-
-	get loadMax(): number {
-		return DoomWeaponModel.loadOf(this.model.slot);
+	/** What is left of the weapon's meter, charged or not (pieces of food). */
+	get capacity(): number {
+		return this.model.capacity;
 	}
 
 	/** The berserk's speed still lasts. */

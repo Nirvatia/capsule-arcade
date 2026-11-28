@@ -103,6 +103,9 @@ export class DoomAbilityService {
 		this.grid = grid;
 		this.boss = boss;
 		this.progress = progress;
+		// he eats only into a weapon with room (the food waits on the map otherwise); in the split
+		// he eats as in plain Pac-Man
+		progress.setDotGate(() => this.splitValue.active || this.weaponHasRoom());
 		this.events = events;
 		this.weapons = new DoomWeaponService(grid);
 		this.pickups = new DoomPickupService(pickupTiles, this.needs());
@@ -143,19 +146,24 @@ export class DoomAbilityService {
 		return this.pickups.isCollectible(kind, this.needs());
 	}
 
-	/** The food meter, 0..1 (`FOOD_SEGMENTS` segments). */
+	/** The weapon's charge, 0..1 of a whole meter. */
 	get food(): number {
 		return this.weapons.food / FOOD_MAX;
+	}
+
+	/** What is left of the weapon's meter, charged or not, 0..1 (0 empty-handed). */
+	get capacity(): number {
+		return this.weapons.capacity / FOOD_MAX;
+	}
+
+	/** The meter's segments for the weapon in hand: the berserk's three, the guns' one whole. */
+	get segments(): number {
+		return this.weapons.slot === 'berserk' ? FOOD_SEGMENTS : 1;
 	}
 
 	/** The boss stands stunned after a split with all four eaten: the rush and the Sting hit ×3. */
 	get splitWindow(): boolean {
 		return this.splitWindowValue;
-	}
-
-	/** What is left of the weapon's load in hand (shots, seconds of fire or rushes) and its whole. */
-	get load(): { readonly left: number; readonly max: number } {
-		return { left: this.weapons.load, max: this.weapons.loadMax };
 	}
 
 	/** The Maw has its whole meter. */
@@ -420,6 +428,12 @@ export class DoomAbilityService {
 			handFree: !this.weapons.bfgCharging,
 			phase: this.boss.phase
 		};
+	}
+
+	/** The weapon in hand can take one more piece (counting what is eaten but not yet in the meter). */
+	private weaponHasRoom(): boolean {
+		const pending = Math.max(0, this.progress.collectedDots - this.foodSeen);
+		return this.weapons.slot !== null && this.weapons.food + pending < this.weapons.capacity - 1e-6;
 	}
 
 	/** Every `FOOD_REGROW_EVERY` s an eaten tile away from the hero fills again: the fight never runs dry. */

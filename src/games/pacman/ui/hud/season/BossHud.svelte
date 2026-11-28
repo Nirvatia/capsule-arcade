@@ -4,7 +4,7 @@
 	hangs there instead. Beside the maze, or in two bands on a tall screen: the score board and the
 	record tag, the level board with its banner, the lives counter, the hero's hearts on a bone rail
 	(the health on this level, apart from the lives) and a dial with the weapon in hand, its ring
-	always the food meter in segments; in the split the bar shows its time. The pause knob stands in the corner. -->
+	the weapon's meter (charged bright, chargeable dim, spent gone; the berserk's in three segments); in the split the bar shows its time. The pause knob stands in the corner. -->
 <script lang="ts">
 	import type { HudSnapshot } from '../hudSnapshot';
 	import { t } from '../../i18n';
@@ -51,11 +51,16 @@
 	const ms = $derived(snap.profile === 'ms-pacman');
 	const lives = $derived(Math.max(0, snap.lives));
 
-	/** The ring is the food meter that feeds the guns, whatever is in hand (bright once it is full). */
+	/**
+	 * The ring is the weapon's meter: bright what is charged, dim what food can still charge, nothing
+	 * where it is spent (bright green once it is full: he no longer eats).
+	 */
+	const track = $derived(boss ? clamp01(boss.capacity) : 0);
 	const ring = $derived.by(() => {
 		if (!boss) return { ratio: 0, color: '#4f9a3c' };
 		const food = clamp01(boss.food);
-		return { ratio: food, color: food >= 1 ? '#7dff5a' : '#4f9a3c' };
+		const full = boss.capacity > 0 && food >= clamp01(boss.capacity) - 1e-6;
+		return { ratio: food, color: full ? '#7dff5a' : '#4f9a3c' };
 	});
 	/** Where the meter's segments part, as angles round the dial (from the top, clockwise). */
 	const segmentTicks = $derived(
@@ -75,9 +80,7 @@
 				? `${boss.rush.toFixed(1)}s`
 				: boss.charge > 0
 					? `${Math.round(boss.charge * 100)}%`
-					: boss.loadMax > 0
-						? `${Math.ceil(boss.load - 1e-6)}/${boss.loadMax}`
-						: ''
+					: ''
 	);
 	const hearts = $derived(
 		boss ? Array.from({ length: boss.playerHpMax }, (_, i) => i < boss.playerHp) : []
@@ -204,6 +207,19 @@
 	{#if weaponKey === 'berserk'}
 		<circle class="rage" cx={dial.cx} cy={dial.cy} r={dial.r - 3} fill="rgba(190,22,16,.7)" />
 	{/if}
+	<circle
+		class="ring"
+		cx={dial.cx}
+		cy={dial.cy}
+		r={dial.r - 5}
+		fill="none"
+		stroke="rgba(125,255,90,.18)"
+		stroke-width="6"
+		stroke-linecap="round"
+		stroke-dasharray={ringLen}
+		stroke-dashoffset={ringLen * (1 - track)}
+		transform="rotate(-90 {dial.cx} {dial.cy})"
+	/>
 	<circle
 		class="ring"
 		cx={dial.cx}

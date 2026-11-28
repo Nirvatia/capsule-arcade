@@ -111,7 +111,12 @@ last (see Later).
    grows back (a tile every 1.5 s, 6+ tiles from the hero). His fourth play: "much better"; done:
    the rush needs no food (only its load), the berserk's speed lasts 5 s after it is taken, and in
    the split's window (all four eaten) the rush and the Sting hit ×3 (`splitWindow`, for its look
-   in the art pass). Left: his play of these numbers (`DoomBalance`: the weights, the glance,
+   in the art pass). Then (his note: the berserk must charge from food, the 3/3 beside a filling
+   ring misleads): **each weapon has its own meter that is its whole load** (it comes empty, food
+   charges it, what is used burns out of it for good; the berserk's in three segments, the guns'
+   whole), and he eats only into a weapon with room (in the split as in plain Pac-Man); the dial
+   shows charged bright, chargeable dim, burnt gone (seen in the browser empty and full). Left: his
+   play of these numbers (`DoomBalance`: the weights, the glance,
    the segment), then **one art pass in `hell-kit`** (frames, his approval, then into the game):
    - the weapons: the Sting's icon (unreadable), its muzzle flash and its bolts' hits (boss, wall,
      imp; now only a white flash on the boss); the rush redone (it reads as caramel), its trail and its

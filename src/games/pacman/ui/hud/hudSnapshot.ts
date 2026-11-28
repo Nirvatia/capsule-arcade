@@ -4,12 +4,7 @@ import type { PacmanStateName, PacmanProfile } from '../../core/Events';
 import type { LevelLoader } from '../../logic/level/LevelLoader';
 import type { FruitKind } from '../../logic/bonuses/fruitCatalog';
 import { fruitForLevel } from '../../logic/bonuses/fruitCatalog';
-import {
-	BOSS_HP,
-	PHASE_THRESHOLDS,
-	PLAYER_MAX_HP,
-	FOOD_SEGMENTS
-} from '../../logic/doom/DoomBalance';
+import { BOSS_HP, PHASE_THRESHOLDS, PLAYER_MAX_HP } from '../../logic/doom/DoomBalance';
 import { arcadeRound } from '../../config/arcadeConfig';
 import type { AbilityKind } from '../../config/abilityConfig';
 import { RUN_TUNE } from '../../logic/station/StationRun';
@@ -41,10 +36,9 @@ export interface HudBoss {
 	readonly rush: number;
 	/** 0..1 while the Maw charges. */
 	readonly charge: number;
-	/** What is left of the weapon's load (shots, seconds of fire or rushes) and its whole; 0 empty-handed. */
-	readonly load: number;
-	readonly loadMax: number;
-	/** The food meter that feeds the guns, 0..1 in `segments` segments (the dial's ring, always). */
+	/** What is left of the weapon's meter, charged or not, 0..1 (the rest is spent; 0 empty-handed). */
+	readonly capacity: number;
+	/** The weapon's charge, 0..1, in `segments` segments (the dial's ring: the berserk's three, the guns' one). */
 	readonly food: number;
 	readonly segments: number;
 	/** The split: seconds of Pac-Man left and the ghosts eaten (of four), or null. */
@@ -157,9 +151,8 @@ export function buildHudSnapshot(
 					rush: doom.rushCooldown,
 					charge: doom.bfgCharging ? doom.bfgChargeProgress : 0,
 					food: doom.food,
-					load: doom.load.left,
-					loadMax: doom.load.max,
-					segments: FOOD_SEGMENTS,
+					capacity: doom.capacity,
+					segments: doom.segments,
 					split: doom.split.active ? { left: doom.split.timeLeft, eaten: doom.split.eaten } : null,
 					defeated: bossService.defeated,
 					rewardOffered: Boolean(level.bossReward?.offered)

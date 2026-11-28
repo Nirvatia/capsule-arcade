@@ -24,7 +24,7 @@ import {
 	PLAYER_MAX_HP,
 	RUSH_COOLDOWN,
 	RUSH_COUNTER_MUL,
-	RUSH_LOAD,
+	RUSH_COST,
 	SPLIT_FORM_STUN,
 	SPLIT_WINDOW_MUL,
 	BERSERK_HASTE,
@@ -33,7 +33,6 @@ import {
 	SPLIT_GHOST_DAMAGE,
 	SPLIT_PACMAN,
 	STING_DAMAGE,
-	STING_LOAD,
 	FOOD_REGROW_EVERY,
 	FOOD_REGROW_MIN_DIST,
 	WEAPON_WAIT_MAX
@@ -190,12 +189,33 @@ describe('the food meter feeds the guns', () => {
 		// one shot spends the Maw: it leaves the hand
 		expect(f.doom.armed).toBe('');
 	});
+
+	it('he does not eat into a full meter, nor empty-handed: the food waits on the map', () => {
+		const f = fight();
+		f.run(INTRO_DURATION + 0.1);
+		const left = f.progress.remainingDots;
+		eat(f, 5);
+		expect(f.progress.remainingDots).toBe(left);
+		f.doom.debugGiveWeapon('plasma');
+		eat(f, MAW_COST + 5);
+		expect(f.progress.remainingDots).toBe(left - MAW_COST);
+		expect(f.doom.food).toBe(1);
+	});
+
+	it('in the split he eats as in plain Pac-Man, whatever is in hand', () => {
+		const f = fight();
+		toSplit(f);
+		const left = f.progress.remainingDots;
+		eat(f, 5);
+		expect(f.progress.remainingDots).toBe(left - 5);
+	});
 });
 
 describe('the split', () => {
 	it('freezes the boss, refills the food and runs plain Pac-Man', () => {
 		const f = fight();
 		f.run(INTRO_DURATION + 0.1);
+		f.doom.debugGiveWeapon('bfg');
 		for (let x = 0; x < 6; x += 1) {
 			f.progress.collectAt(x + 2, 8);
 		}
@@ -263,6 +283,7 @@ describe('the split', () => {
 		f.player.placeAt({ x: b.x + dx * 3, y: b.y + dy * 3 });
 		f.player.setDesiredDirection(dir);
 		f.doom.debugGiveWeapon('berserk');
+		f.doom.debugGiveWeapon('food');
 		f.run(0.05);
 		const hp = f.boss.hp;
 		expect(f.doom.fire(f.player)).toBe('rush');
@@ -302,12 +323,26 @@ describe('the hand', () => {
 		f.run(0.05);
 	}
 
-	it('the berserk rushes on an empty meter and waits its cooldown', () => {
+	it('the berserk will not rush without a charged segment', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('berserk');
 		f.tick();
-		expect(f.doom.food).toBe(0);
+		eat(f, RUSH_COST - 1);
+		const hp = f.boss.hp;
+		expect(f.doom.fire(f.player)).toBeNull();
+		f.run(0.6);
+		expect(f.boss.hp).toBe(hp);
+		eat(f, 1);
+		expect(f.doom.fire(f.player)).toBe('rush');
+	});
+
+	it('a rush burns out its segment for good: three rushes spend the berserk', () => {
+		const f = fight();
+		lineUp(f);
+		f.doom.debugGiveWeapon('berserk');
+		f.doom.debugGiveWeapon('food');
+		f.tick();
 		const hp = f.boss.hp;
 		expect(f.doom.counterWindow).toBe(false);
 		expect(f.doom.fire(f.player)).toBe('rush');
@@ -315,23 +350,13 @@ describe('the hand', () => {
 		expect(f.boss.hp).toBe(hp - RUSH_DAMAGE);
 		expect(f.doom.fire(f.player)).toBeNull();
 		f.run(RUSH_COOLDOWN);
-		expect(f.doom.fire(f.player)).toBe('rush');
-		expect(f.doom.armed).toBe('berserk');
-	});
-
-	it('a berserk carries RUSH_LOAD rushes, then is spent though the meter is full', () => {
-		const f = fight();
-		lineUp(f);
-		f.doom.debugGiveWeapon('berserk');
+		// the burnt segment does not come back: food tops up only the two left
 		f.doom.debugGiveWeapon('food');
-		f.tick();
-		for (let k = 0; k < RUSH_LOAD; k += 1) {
-			expect(f.doom.armed).toBe('berserk');
-			expect(f.doom.fire(f.player)).toBe('rush');
-			f.run(RUSH_COOLDOWN + 0.1);
-			f.doom.debugGiveWeapon('food');
-		}
-		expect(f.doom.food).toBe(1);
+		expect(f.doom.capacity * MAW_COST).toBeCloseTo(RUSH_COST * 2);
+		expect(f.doom.food).toBeCloseTo(f.doom.capacity);
+		expect(f.doom.fire(f.player)).toBe('rush');
+		f.run(RUSH_COOLDOWN + 0.1);
+		expect(f.doom.fire(f.player)).toBe('rush');
 		expect(f.doom.armed).toBe('');
 	});
 
@@ -385,21 +410,23 @@ describe('the hand', () => {
 		expect(seen).toBe(true);
 	});
 
-	it('the Sting fires while held, a segment a second, and stops on an empty meter', () => {
+	it('the Sting fires while held, a segment a second, burning its meter for good', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('plasma');
 		eat(f, FOOD_PER_SEGMENT);
 		const hp = f.boss.hp;
 		f.run(2, true);
-		expect(f.doom.food).toBe(0);
+		expect(f.doom.food).toBeCloseTo(0);
 		expect(f.boss.hp).toBeLessThan(hp);
 		expect((hp - f.boss.hp) % STING_DAMAGE).toBe(0);
 		const after = f.boss.hp;
 		f.run(1, true);
 		expect(f.boss.hp).toBe(after);
-		// an empty meter only stops it: its load is not used up
+		// nothing charged only stops it; a segment of its meter is burnt
 		expect(f.doom.armed).toBe('plasma');
+		// (what he ate on the way was fired too)
+		expect(f.doom.capacity * MAW_COST).toBeLessThanOrEqual(MAW_COST - FOOD_PER_SEGMENT + 1e-6);
 	});
 
 	it("the Sting's bolts hit SPLIT_WINDOW_MUL times harder in the split's window", () => {
@@ -415,15 +442,12 @@ describe('the hand', () => {
 		expect((hp - f.boss.hp) % (STING_DAMAGE * SPLIT_WINDOW_MUL)).toBe(0);
 	});
 
-	it('a Sting carries STING_LOAD s of fire, then is spent though the meter was refilled', () => {
+	it('the Sting is spent when its whole meter is burnt', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('plasma');
 		f.doom.debugGiveWeapon('food');
-		f.run(STING_LOAD / 2, true);
-		f.doom.debugGiveWeapon('food');
-		f.run(STING_LOAD / 2 + 0.2, true);
-		expect(f.doom.food).toBeGreaterThan(0);
+		f.run(MAW_COST / FOOD_PER_SEGMENT + 0.2, true);
 		expect(f.doom.armed).toBe('');
 	});
 
@@ -545,6 +569,7 @@ describe('the food grows back', () => {
 	it('an eaten tile away from the hero fills again, and the meter does not count it', () => {
 		const f = fight();
 		f.run(INTRO_DURATION + 0.1);
+		f.progress.setDotGate(null);
 		eat(f, 10000);
 		expect(f.progress.remainingDots).toBe(0);
 		const meter = f.doom.food;

@@ -14,6 +14,8 @@ export class LevelProgress {
 	private remainingEnergizersValue: number;
 	private pendingEnergizerValue = false;
 	private destroyedDotsValue = 0;
+	/** When set, a food tile is eaten only while it answers true (the hell: a weapon with room). */
+	private dotGate: (() => boolean) | null = null;
 
 	constructor(grid: GridService, scoreModel: ScoreModel, events: EventBus<PacmanEventMap>) {
 		if (!grid) {
@@ -164,7 +166,7 @@ export class LevelProgress {
 		}
 		const tile = this.grid.tileAt(x, y);
 		if (tile === 'DT') {
-			if (this.remainingDotsValue <= 0) {
+			if (this.remainingDotsValue <= 0 || (this.dotGate && !this.dotGate())) {
 				return;
 			}
 			this.collected.add(id);
@@ -210,6 +212,11 @@ export class LevelProgress {
 		this.remainingDotsValue = Math.max(0, this.remainingDotsValue - 1);
 		this.scoreModel.add(SCORE_TABLE.dot);
 		this.events.emit('audio:cue', { cue: 'dot' });
+	}
+
+	/** Food is eaten only while `gate` answers true (null: always). */
+	setDotGate(gate: (() => boolean) | null): void {
+		this.dotGate = gate;
 	}
 
 	/** A food tile eaten before fills again (the hell's food growing back); false if it was not eaten. */

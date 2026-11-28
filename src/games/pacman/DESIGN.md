@@ -286,9 +286,10 @@ guns; **pickups** are the weapons, a hierarchy to choose from; the boss's **atta
 from (unchanged); the **split** is the phase change, plain Pac-Man with a window to strike.
 
 - **Food** (its sprite is the owner's later pick: the fang is the lead) fills the maze at the start;
-  each piece is 10 points and fills the **food meter**, the weapons' one resource: 3 segments of 20
-  pieces (the ring on the dial with its segment ticks, shown whatever is in hand; 60 for the whole
-  meter since 2026-11-28, was 30: the maze's ~240 pieces made the Maw always ready). **The food
+  each piece is 10 points and charges **the meter of the weapon in hand** (60 pieces; since
+  2026-11-28, was one shared meter of 30: the maze's ~240 pieces made the Maw always ready). **He
+  eats only into a weapon with room**: with the meter full or the hand empty he passes over the food
+  and it waits on the map (in the split he eats as in plain Pac-Man). **The food
   grows back**: every 1.5 s one eaten tile at least 6 tiles from the hero fills again (about a meter
   in 1.5 min in an empty maze), so the fight never runs dry after the last split.
 - **The split** replaces the phase transition at 1000 and 500 HP (so twice a fight). The boss
@@ -307,20 +308,24 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
   eaten ghost, far less than a hit on him stunned (the owner's rule, 2026-11-28). The split's damage
   never crosses the next phase's threshold.
 - **The button** uses the weapon in hand, one action each (no gestures, no taps against holds: the
-  owner, 2026-11-28). A new weapon picked up replaces the one in hand. **Each weapon carries one load**
-  and is spent when it is gone, however much is eaten: the Maw one shot, the Sting 3 s of fire, the
-  berserk 3 rushes (the dial shows what is left, e.g. 2/3); the food pays the guns (the berserk
-  needs none), and a press the meter cannot pay is refused with a dull click (2026-11-28: the rotation of the weapons;
-  a first rule, "spent when the meter cannot pay", let a Sting let go early live for ever).
+  owner, 2026-11-28). A new weapon picked up replaces the one in hand and comes
+  **empty**. **Its meter is its whole load** (the owner, 2026-11-28): food charges it, and what is
+  used burns out of it for good, so it shortens: a rush burns one of the berserk's three segments,
+  the Sting's fire shortens its whole meter, the Maw's shot takes it all. Nothing of the meter left:
+  the weapon is spent and leaves the hand. The dial's ring shows it all at once: bright what is
+  charged (bright green when full), dim what food can still charge, nothing where it burnt. A press
+  the meter cannot pay (no charged segment, nothing charged, the Maw not full) is refused with a
+  dull click. (Tried and replaced the same day: a load counted apart from one shared meter, `2/3`
+  on the dial, which read as a contradiction beside a full ring.)
 - **Pickups** (four spots in the middle of the outer sides, away from the corners, which are the
   split's energizers'; hidden during the split). **The weapons come one at a time** (2026-11-28):
   only while the hand is empty and none lies, 4–6 s after, on a spot away from the hero; its kind
   drawn by the phase's weights (berserk / Sting / Maw: 60/30/10, 40/35/25, 25/30/45), so the heavy
   gun is rare at first and the likeliest at the end. The fight starts with one lying. The weapons,
   light to heavy:
-  - **Berserk** (light, no food): ×1.15 speed for 5 s after it is taken (not while held: the
-    owner, 2026-11-28); the button is a **rush** along the heading (5 tiles, to a wall): 50 damage
-    and a short stun, the imps on the way die, then 2.5 s to rush again. A plain rush is not covered (touching the boss in its strike costs nothing more). A rush
+  - **Berserk** (light, three segments): ×1.15 speed for 5 s after it is taken (not while held: the
+    owner, 2026-11-28); the button is a **rush** along the heading (5 tiles, to a wall) that burns a
+    charged segment: 50 damage and a short stun, the imps on the way die, then 2.5 s to rush again. A plain rush is not covered (touching the boss in its strike costs nothing more). A rush
     made **while the boss's attack is live** (the lava ball's run, a burning rift or seal, the
     eruption: his ACTIVE state or a hazard burning) is a **counter**: ×3 damage, unhurt for the rush.
     Its look: the hero spins up into a whirlwind of blood, the same for both heroes; while a rush
