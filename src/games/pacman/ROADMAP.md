@@ -93,8 +93,8 @@ last (see Later).
    then set in a hierarchy (2026-11-28, in the game: the berserk with its rush and counter, the Sting
    «Жало», the Maw «Жерло» on one food meter of 3 segments; the armour and the snare dropped); the
    mock-up shows their icons light to heavy, the rush as a whirlwind of blood, the ghosts smaller with
-   a long ragged skirt, the boss's longer skirt (in the game already); awaits the owner; then the
-   kit into `render/doom` in place of `doomPlaceholders`; the split and the core get their own
+   a long ragged skirt, the boss's longer skirt (in the game already); approved and in the game (2026-11-28: `render/doom/fleshKit`; the maze's thinner wall line and
+   its blood on the walls only went in with it); the split and the core get their own
    mock-up; (d) the HUD (done in part: the ring is the food meter with segment ticks, shown always).
    The owner played it (2026-11-28): "plays briskly"; his rule, in the prototype: the stun only for
    all four eaten (no HP then), fewer give 75 HP each and no stun.

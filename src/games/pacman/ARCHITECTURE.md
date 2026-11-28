@@ -82,8 +82,11 @@ render/
                    (fleshLive), light map, Blinky lord of hell, imps, combat and weapon FX;
                    the boss's dash (doomDashFx: LavaDash, the body turned into a rolling lava
                    ball that lays a cooling track, its timing read from the telegraph's run);
-                   doomPlaceholders: the redesign's art until it is approved (the food as one
-                   cached fang sprite, the Sting, the core, the split's four ghosts)
+                   fleshKit (with fleshPaint): the redesign's art, the owner's pick «Плоть»
+                   (the food as one cached fang sprite, the split's hot heart energizer and its
+                   four flayed ghosts, the Sting's bolts, the Maw's and the Sting's pickup icons,
+                   the berserk's rush as a whirlwind of blood, a gold ring on the hero while a rush
+                   would be a counter); doomPlaceholders: the split's core until its mock-up
   station/         the station in the game: StationLevelRenderer over b7/ (b7Scene: the owner's
                    mock-up Station_Level_v2 carried over as drawn on the game's maze; B7World:
                    the hull and baked architecture as one screen layer per resize, the phase's

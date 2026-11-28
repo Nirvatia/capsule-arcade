@@ -10,7 +10,14 @@ import { DoomWorld } from './DoomWorld';
 import type { DoomLight } from './DoomWorld';
 import { pickupSprite } from './DoomSprites';
 import { SPLIT_MERGE } from '../../logic/doom/DoomBalance';
-import { drawBolt, drawCore, drawEnergizer, drawSplitGhost, foodSprite } from './doomPlaceholders';
+import { drawCore } from './doomPlaceholders';
+import {
+	drawFleshEnergizer,
+	drawFleshGhost,
+	drawRushWhirl,
+	drawStingBolt,
+	fleshFoodSprite
+} from './fleshKit';
 import type { DoomAbilityService } from '../../logic/doom/DoomAbilityService';
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
 import type { LevelProgress } from '../../logic/level/LevelProgress';
@@ -40,6 +47,8 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 	private lastPlayerPos: { x: number; y: number } | null = null;
 	/** How far the lair's gate is open (the boss, his echo and the imps open it). */
 	private gate = 0;
+	/** When the current rush started (render time), or -1. */
+	private rushStart = -1;
 	private gateOf: { grid: GridService; tiles: Point[]; side: 1 | -1 } | null = null;
 
 	constructor(shared: SharedLayers) {
@@ -119,7 +128,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 				if (player && boss && fighting && !split) {
 					this.combatView.drawPull(ctx, boss, player.position, layout, time);
 				}
-				this.shared.drawPlayer(frame, layout);
+				this.drawHero(frame, layout, doom, time);
 			}
 			if (doom) {
 				this.drawBolts(ctx, doom, layout);
@@ -147,7 +156,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			return;
 		}
 		const S = layout.tileSize;
-		const sprite = foodSprite(S);
+		const sprite = fleshFoodSprite(S);
 		for (let y = 0; y < grid.height; y += 1) {
 			for (let x = 0; x < grid.width; x += 1) {
 				if (progress.isCollected(x, y)) {
@@ -158,7 +167,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 				if (grid.isDot(x, y)) {
 					ctx.drawImage(sprite, px, py, S, S);
 				} else if (split && grid.isEnergizer(x, y)) {
-					drawEnergizer(ctx, px + S / 2, py + S / 2, S, time);
+					drawFleshEnergizer(ctx, px + S / 2, py + S / 2, S, time);
 				}
 			}
 		}
@@ -186,13 +195,13 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 				const x = m.x + (core.x + 0.5 - m.x) * e;
 				const y = m.y + (core.y + 0.5 - m.y) * e;
 				const facing = headingOf(core.x + 0.5 - m.x, core.y + 0.5 - m.y);
-				drawSplitGhost(ctx, m.ghost, X(x), Y(y), S, facing, time, 0, 1 - 0.3 * u);
+				splitGhost(ctx, m.ghost, X(x), Y(y), S, facing, time, 0, 1 - 0.3 * u);
 			}
 			return;
 		}
 		for (const { drone, index } of split.ghosts) {
 			const fright = drone.state === 'fright' ? split.fear : 0;
-			drawSplitGhost(
+			splitGhost(
 				ctx,
 				index,
 				X(drone.x),
@@ -205,7 +214,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		}
 	}
 
-	/** The plasma's bolts, additive. */
+	/** The Sting's bolts. */
 	private drawBolts(
 		ctx: CanvasRenderingContext2D,
 		doom: DoomAbilityService,
@@ -215,12 +224,59 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			return;
 		}
 		const S = layout.tileSize;
-		ctx.save();
-		ctx.globalCompositeOperation = 'lighter';
 		for (const bolt of doom.bolts) {
-			drawBolt(ctx, layout.offsetX + bolt.x * S, layout.offsetY + bolt.y * S, S);
+			drawStingBolt(
+				ctx,
+				layout.offsetX + bolt.x * S,
+				layout.offsetY + bolt.y * S,
+				S,
+				headingOf(bolt.vx, bolt.vy)
+			);
 		}
-		ctx.restore();
+	}
+
+	/**
+	 * The hero, or during the berserk's rush the whirlwind he spins up into (it grows in over the
+	 * first moment); a gold ring round him while a rush would be a counter (the boss's attack is live).
+	 */
+	private drawHero(
+		frame: RenderFrame,
+		layout: GridLayout,
+		doom: DoomAbilityService | null,
+		time: number
+	): void {
+		const player = frame.level.player;
+		const rushing = Boolean(doom?.rushActive && player);
+		if (!rushing) {
+			this.rushStart = -1;
+			this.shared.drawPlayer(frame, layout);
+		}
+		if (!doom || !player) {
+			return;
+		}
+		const S = layout.tileSize;
+		const x = layout.offsetX + player.position.x * S;
+		const y = layout.offsetY + player.position.y * S;
+		if (rushing) {
+			if (this.rushStart < 0) {
+				this.rushStart = time;
+			}
+			const morph = Math.min(1, (time - this.rushStart) / 0.12);
+			drawRushWhirl(frame.ctx, x, y, S, player.facing ?? 'RIGHT', morph, time);
+			return;
+		}
+		if (doom.berserkActive && doom.counterWindow && doom.rushCooldown <= 0) {
+			const ctx = frame.ctx;
+			const pulse = 0.5 + 0.5 * Math.sin(time * 14);
+			ctx.save();
+			ctx.globalCompositeOperation = 'lighter';
+			ctx.strokeStyle = `rgba(255,214,110,${0.45 + 0.45 * pulse})`;
+			ctx.lineWidth = Math.max(1.5, S * 0.08);
+			ctx.beginPath();
+			ctx.arc(x, y, S * (0.5 + 0.04 * pulse), 0, Math.PI * 2);
+			ctx.stroke();
+			ctx.restore();
+		}
 	}
 
 	/** The baked world is rebuilt only when a new hell level (a new grid) starts. */
@@ -396,4 +452,27 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 
 function headingOf(dx: number, dy: number): DoomDirection {
 	return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'RIGHT' : 'LEFT') : dy > 0 ? 'DOWN' : 'UP';
+}
+
+/**
+ * A ghost of the split (0 Blinky, 1 Pinky, 2 Inky, 3 Clyde), `scale` on its way back to the core;
+ * frightened it is blue, and in its last two seconds of fear it blinks back to its colour.
+ */
+function splitGhost(
+	ctx: CanvasRenderingContext2D,
+	index: number,
+	x: number,
+	y: number,
+	S: number,
+	facing: DoomDirection,
+	time: number,
+	fear: number,
+	scale = 1
+): void {
+	const fright = fear > 0 && !(fear < 2 && Math.floor(time * 8) % 2 === 0);
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.scale(scale, scale);
+	drawFleshGhost(ctx, index, 0, 0, S, facing, fright, time);
+	ctx.restore();
 }

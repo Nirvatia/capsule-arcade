@@ -1,9 +1,8 @@
 // The hell's pickup icons (the owner's mock-up `prototypes/pacman/art/hell-flesh-items.html`):
-// BFG, berserk fist and medkit (the redesign's snare, plasma and armour are placeholders in
-// `doomPlaceholders` for now) in the heroes' style, a wide dark outline, a light
-// top, a gloss. Each is painted in a box of -50..50 round the origin, light from the upper
-// left, and baked once by `DoomSprites`; the animated bits of the mock-up (the pulsing lens,
-// the burning cracks) are the pickup's glow in `DoomCombatView`.
+// the berserk fist and the medkit (the guns are the «Плоть» kit's, `fleshKit`) in the heroes'
+// style: a wide dark outline, a light top, a gloss. Each is painted in a box of -50..50 round the
+// origin, light from the upper left, and baked once by `DoomSprites`; the animated bits of the
+// mock-up (the burning cracks) are the pickup's glow in `DoomCombatView`.
 
 const INK = '#140608';
 
@@ -57,66 +56,6 @@ function bloom(
 	ctx.fillRect(x - r, y - r, r * 2, r * 2);
 	ctx.restore();
 }
-
-/** A steel cannon with a green lens. */
-export const paintBfg: Painter = (ctx) => {
-	part(
-		ctx,
-		() => {
-			ctx.beginPath();
-			ctx.moveTo(-26, 14);
-			ctx.lineTo(-10, 14);
-			ctx.lineTo(-4, 42);
-			ctx.lineTo(-22, 42);
-			ctx.closePath();
-		},
-		linear(ctx, 0, 14, 0, 42, ['#4a525c', '#272c33'])
-	);
-	part(
-		ctx,
-		() => {
-			ctx.beginPath();
-			ctx.roundRect(-44, -18, 60, 36, 9);
-		},
-		linear(ctx, 0, -18, 0, 18, ['#8a939e', '#58616c', '#323840'])
-	);
-	part(
-		ctx,
-		() => {
-			ctx.beginPath();
-			ctx.moveTo(12, -16);
-			ctx.lineTo(40, -32);
-			ctx.lineTo(40, 34);
-			ctx.lineTo(12, 18);
-			ctx.closePath();
-		},
-		linear(ctx, 12, 0, 40, 0, ['#69727d', '#3b424b'])
-	);
-	ctx.fillStyle = '#40ff50';
-	for (let i = 0; i < 3; i += 1) {
-		ctx.beginPath();
-		ctx.roundRect(-34 + i * 11, -6, 5, 14, 2);
-		ctx.fill();
-	}
-	const lens = ctx.createRadialGradient(36, 1, 1, 36, 1, 26);
-	lens.addColorStop(0, '#f4fff0');
-	lens.addColorStop(0.35, '#58ff66');
-	lens.addColorStop(1, '#0a7a22');
-	part(
-		ctx,
-		() => {
-			ctx.beginPath();
-			ctx.ellipse(38, 1, 11, 27, 0, 0, Math.PI * 2);
-		},
-		lens,
-		5
-	);
-	ctx.fillStyle = 'rgba(255,255,255,.55)';
-	ctx.beginPath();
-	ctx.ellipse(-26, -11, 12, 3.5, -0.1, 0, Math.PI * 2);
-	ctx.fill();
-	bloom(ctx, 38, 1, 30, '64,255,80', 0.6);
-};
 
 const FLAME =
 	'M-26 22 C-34 4 -22 -6 -20 -22 C-14 -12 -10 -16 -8 -30 C-2 -20 2 -22 4 -34 C8 -22 14 -18 14 -8 C20 -14 22 -6 24 -2 C34 8 30 20 26 24 C16 32 -16 32 -26 22Z';

@@ -311,7 +311,8 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
     again. A plain rush is not covered (touching the boss in its strike costs nothing more). A rush
     made **while the boss's attack is live** (the lava ball's run, a burning rift or seal, the
     eruption: his ACTIVE state or a hazard burning) is a **counter**: ×3 damage, unhurt for the rush.
-    Its look: the hero spins up into a whirlwind of blood, the same for both heroes.
+    Its look: the hero spins up into a whirlwind of blood, the same for both heroes; while a rush
+    would be a counter, a gold ring pulses round the hero.
   - **Жало** (the Sting, middle): fires bolts along the corridor while the button is held, a segment
     of the meter a second (about 100 damage a segment if all hit), no stun, kills imps; on the move.
   - **Жерло** (the Maw, the old BFG renamed, heavy): needs the **whole meter**; the hero stands

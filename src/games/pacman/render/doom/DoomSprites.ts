@@ -8,8 +8,8 @@ import {
 	radialTexture
 } from '../common/textures';
 
-import { paintBfg, paintFist, paintMedkit } from './doomItems';
-import { paintPlasmaIcon } from './doomPlaceholders';
+import { paintFist, paintMedkit } from './doomItems';
+import { paintMaw, paintSting } from './fleshKit';
 
 export { glowTexture } from '../common/textures';
 
@@ -74,24 +74,23 @@ const iconTexture = (paint: (ctx: CanvasRenderingContext2D) => void) =>
 			paint(x);
 		})
 	);
-const bfgTexture = iconTexture(paintBfg);
+const bfgTexture = iconTexture(paintMaw);
 const medkitTexture = iconTexture(paintMedkit);
 const fistTexture = iconTexture(paintFist);
-// placeholders until the redesign's art (ROADMAP Part II step c)
-const plasmaTexture = iconTexture(paintPlasmaIcon);
+const plasmaTexture = iconTexture(paintSting);
 
-/** Icon and glow tint per pickup kind (and the BFG's, for the hand); berserk is the fist. */
+/** Icon and glow tint per pickup kind: the Maw (`bfg`) and the Sting (`plasma`) of the «Плоть» kit, the fist, the medkit. */
 export function pickupSprite(kind: DoomPickupKind): {
 	icon: HTMLCanvasElement;
 	glow: number;
 } {
 	switch (kind) {
 		case 'bfg':
-			return { icon: bfgTexture(), glow: 0x40ff50 };
+			return { icon: bfgTexture(), glow: 0xff9a3a };
 		case 'medkit':
 			return { icon: medkitTexture(), glow: 0xff3a2a };
 		case 'plasma':
-			return { icon: plasmaTexture(), glow: 0x50b4ff };
+			return { icon: plasmaTexture(), glow: 0x50d0ff };
 		default:
 			return { icon: fistTexture(), glow: 0xff7a1a };
 	}
