@@ -2,6 +2,10 @@
 // plain strip of hell floor. Nothing plays; the states are scripted.
 import * as A from './actors';
 import type { Dir } from '../hell-kit/paint';
+import { LavaDash } from '../../../src/games/pacman/render/doom/doomDashFx';
+
+/** The game's lava ball (the boss's dash, kept): its turn is set by hand here. */
+const lava = new LavaDash();
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -80,14 +84,29 @@ const BOSS: readonly Card[] = [
 		}
 	},
 	{
-		title: 'Рывок: присел → бросок → отдышка',
-		note: 'перед рывком приседает и щурится, в броске вытягивается и ревёт',
-		period: 2.6,
+		title: 'Рывок: присел → лавовый шар → отдышка',
+		note: 'перед рывком приседает и щурится, сжимается в лавовый шар (как сейчас в игре), катится, разворачивается обратно и пыхтит',
+		period: 3,
 		scene: (c, S, X, Y, u, t) => {
 			heroDot(c, X(3.5), Y(0.5), S);
-			if (u < 0.45) A.drawBoss(c, X(0.5), Y(0.5), S, t, boss(1, 'windup', 'RIGHT', ease(0, 0.4, u), { x: 1, y: 0 }));
-			else if (u < 0.65) A.drawBoss(c, X(lerp(0.5, 2.4, ease(0.45, 0.65, u))), Y(0.5), S, t, boss(1, 'dash', 'RIGHT', 1, { x: 1, y: 0 }));
-			else A.drawBoss(c, X(2.4), Y(0.5), S, t, boss(1, 'recover', 'RIGHT', 0, { x: 1, y: 0 }));
+			const turnIn = ease(0.32, 0.42, u);
+			const turnOut = 1 - ease(0.68, 0.78, u);
+			const morph = u < 0.55 ? turnIn : turnOut;
+			const x = X(lerp(0.5, 2.4, ease(0.42, 0.68, u)));
+			const mode = u < 0.42 ? 'windup' : 'recover';
+			if (morph < 1) {
+				c.save();
+				c.globalAlpha *= 1 - morph;
+				c.translate(x, Y(0.5));
+				c.scale(1 - 0.5 * morph, 1 - 0.5 * morph);
+				c.translate(-x, -Y(0.5));
+				A.drawBoss(c, x, Y(0.5), S, t, boss(1, mode, 'RIGHT', ease(0, 0.32, u), { x: 1, y: 0 }));
+				c.restore();
+			}
+			if (morph > 0) {
+				lava.morph = morph;
+				lava.drawBall(c, x, Y(0.5), S, 0, 1, t, false, 0);
+			}
 		}
 	},
 	{

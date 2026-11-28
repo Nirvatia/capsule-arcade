@@ -27,7 +27,7 @@ interface EyeSpec {
 }
 
 /** One eye: its white, the lid that mood lowers, the pupil toward `look`, the brow over it. */
-function eye(c: Ctx, e: EyeSpec, S: number, side: -1 | 1, mood: Mood, look: Look, t: number, pupil = 0.45): void {
+function eye(c: Ctx, e: EyeSpec, S: number, side: -1 | 1, mood: Mood, look: Look, t: number, pupil = 0.45, glowEyes = false): void {
 	const { x, y, rx, ry } = e;
 	if (mood === 'hurt') {
 		// squeezed shut: a chevron
@@ -45,7 +45,7 @@ function eye(c: Ctx, e: EyeSpec, S: number, side: -1 | 1, mood: Mood, look: Look
 	c.save();
 	c.beginPath();
 	c.ellipse(x, y, rx, ry, 0, 0, TAU);
-	c.fillStyle = mood === 'roar' ? '#fff2c0' : '#ffffff';
+	c.fillStyle = mood === 'roar' || glowEyes ? '#ffe08a' : '#ffffff';
 	c.fill();
 	c.clip();
 	if (mood === 'dazed') {
@@ -202,9 +202,10 @@ export interface BossState {
 
 const BOSS_SKIN: Record<1 | 2 | 3, Tones> = {
 	1: { light: '#ff7a5a', mid: '#d8241e', shade: '#6a0810' },
-	2: { light: '#ff6a4a', mid: '#c01a1a', shade: '#580610' },
-	3: { light: '#ff5a3a', mid: '#a81018', shade: '#3e040a' }
+	2: { light: '#e8503a', mid: '#a81418', shade: '#48040c' },
+	3: { light: '#a8302a', mid: '#5a0a10', shade: '#200206' }
 };
+const HORN_TIP: Tones = { light: '#6a5a50', mid: '#2a2020', shade: '#0a0606' };
 
 /** The boss's body: a dome, its sides, a ragged skirt of five points waving back against his way. */
 function bossBody(c: Ctx, S: number, t: number, drag: number, wave: number): void {
@@ -227,19 +228,78 @@ function bossBody(c: Ctx, S: number, t: number, drag: number, wave: number): voi
 	void top;
 }
 
-/** A horn of bone, curling up and out; `len` grows with the phase. */
-function bossHorn(c: Ctx, side: -1 | 1, S: number, len: number, t: number, hurt: number): void {
+/**
+ * A horn of bone from the side of his head, curling up and out; `len` grows with the phase, from
+ * phase 2 ringed with ridges and dark at the tip, in phase 3 its tip glowing like an ember.
+ */
+function bossHorn(c: Ctx, side: -1 | 1, S: number, len: number, phase: number, t: number, hurt: number): void {
 	c.save();
-	c.translate(side * S * 0.2, -S * 0.3);
-	c.rotate(side * (0.35 + 0.15 * hurt) + Math.sin(t * 2) * 0.03);
+	c.translate(side * S * 0.2, -S * 0.2);
+	c.rotate(side * (0.12 * hurt) + Math.sin(t * 2) * 0.03);
+	// a bull's horn: out to the side first, then curling up to its point
+	const w = S * (0.085 + 0.02 * phase);
+	const tipX = side * len * 0.95;
+	const tipY = -len * 0.75;
+	const path = (): void => {
+		c.beginPath();
+		// the lower, outer edge bows out; the upper, inner one curls up harder: a thick crescent
+		c.moveTo(0, w);
+		c.quadraticCurveTo(side * len * 0.85, w * 0.6, tipX, tipY);
+		c.quadraticCurveTo(side * len * 0.4, -len * 0.38, 0, -w);
+		c.closePath();
+	};
+	cel(c, path, BONE, side * len * 0.4, -len * 0.3, len * 0.5, S, 0.9);
+	if (phase >= 2) {
+		c.save();
+		path();
+		c.clip();
+		// the ridges
+		c.strokeStyle = 'rgba(90,60,40,.75)';
+		c.lineWidth = Math.max(1, S * 0.022);
+		for (let k = 1; k <= 3; k += 1) {
+			const u = k / 4.2;
+			const rx = side * len * 0.75 * u;
+			const ry = -len * 0.2 * u * u * 3;
+			c.beginPath();
+			c.moveTo(rx - side * w * 0.3, ry - w);
+			c.lineTo(rx + side * w * 0.3, ry + w);
+			c.stroke();
+		}
+		// the dark tip, glowing in phase 3
+		c.fillStyle = phase === 3 ? `rgba(255,${110 + 40 * Math.sin(t * 4)},40,.95)` : HORN_TIP.mid;
+		c.beginPath();
+		c.arc(tipX, tipY, len * 0.22, 0, TAU);
+		c.fill();
+		c.restore();
+		path();
+		ink(c, S, 0.8);
+	}
+	c.restore();
+}
+
+/** Phase 3's second, smaller pair of horns, jutting forward over his brow. */
+function browHorn(c: Ctx, side: -1 | 1, S: number): void {
 	cel(c, () => {
 		c.beginPath();
-		c.moveTo(-S * 0.06, S * 0.04);
-		c.quadraticCurveTo(side * S * 0.02, -len * 0.6, side * S * 0.1, -len);
-		c.quadraticCurveTo(side * S * 0.04, -len * 0.45, S * 0.06, S * 0.02);
+		c.moveTo(side * S * 0.06, -S * 0.26);
+		c.lineTo(side * S * 0.12, -S * 0.42);
+		c.lineTo(side * S * 0.17, -S * 0.24);
 		c.closePath();
-	}, BONE, side * S * 0.02, -len * 0.4, len * 0.5, S, 0.7);
-	c.restore();
+	}, BONE, side * S * 0.12, -S * 0.3, S * 0.06, S, 0.6);
+}
+
+/** Two tusks over his lower lip (phase 2 on), bone, curving up. */
+function tusks(c: Ctx, x: number, y: number, S: number, phase: number): void {
+	const h = S * (phase === 3 ? 0.11 : 0.08);
+	for (const side of [-1, 1] as const) {
+		cel(c, () => {
+			c.beginPath();
+			c.moveTo(x + side * S * 0.08, y + S * 0.02);
+			c.quadraticCurveTo(x + side * S * 0.13, y - h * 0.4, x + side * S * 0.11, y - h);
+			c.lineTo(x + side * S * 0.05, y + S * 0.02);
+			c.closePath();
+		}, BONE, x + side * S * 0.09, y - h * 0.4, S * 0.05, S, 0.5);
+	}
 }
 
 /**
@@ -328,10 +388,10 @@ export function drawBoss(c: Ctx, x: number, y: number, S: number, t: number, st:
 	squash(c, x, foot, sx, sy);
 	c.translate(x, y);
 	c.rotate(lean);
-	// the horns behind the dome
-	const hornLen = S * (st.phase === 1 ? 0.18 : st.phase === 2 ? 0.22 : 0.27);
-	bossHorn(c, -1, S, hornLen, t, m === 'hit' ? 1 : 0);
-	bossHorn(c, 1, S, hornLen, t, m === 'hit' ? 1 : 0);
+	// the horns behind the dome: bigger every phase
+	const hornLen = S * (st.phase === 1 ? 0.26 : st.phase === 2 ? 0.31 : 0.36);
+	bossHorn(c, -1, S, hornLen, st.phase, t, m === 'hit' ? 1 : 0);
+	bossHorn(c, 1, S, hornLen, st.phase, t, m === 'hit' ? 1 : 0);
 	cel(c, () => bossBody(c, S, t, drag, wave), skin, 0, 0, S * 0.36, S, 1.1);
 	// phase 2 on: glowing cracks across him
 	if (st.phase >= 2) {
@@ -339,8 +399,11 @@ export function drawBoss(c: Ctx, x: number, y: number, S: number, t: number, st:
 		bossBody(c, S, t, drag, wave);
 		c.clip();
 		const glow = 0.55 + 0.25 * Math.sin(t * 2.5) + (m === 'omen' ? 0.4 * k : 0);
-		c.strokeStyle = `rgba(255,170,70,${glow})`;
-		c.lineWidth = Math.max(1, S * 0.025);
+		const lava = st.phase === 3;
+		c.strokeStyle = lava ? `rgba(255,${150 + 50 * Math.sin(t * 3)},60,${Math.min(1, glow + 0.3)})` : `rgba(255,170,70,${glow})`;
+		c.lineWidth = Math.max(1, S * (lava ? 0.035 : 0.025));
+		c.lineCap = 'round';
+		c.lineJoin = 'round';
 		c.beginPath();
 		c.moveTo(-S * 0.3, S * 0.1);
 		c.lineTo(-S * 0.18, S * 0.16);
@@ -348,6 +411,19 @@ export function drawBoss(c: Ctx, x: number, y: number, S: number, t: number, st:
 		c.moveTo(S * 0.28, S * 0.06);
 		c.lineTo(S * 0.2, S * 0.18);
 		c.lineTo(S * 0.27, S * 0.26);
+		if (lava) {
+			// phase 3: the cracks run all over him, up to the crown
+			c.moveTo(-S * 0.05, -S * 0.34);
+			c.lineTo(-S * 0.02, -S * 0.24);
+			c.moveTo(-S * 0.32, -S * 0.12);
+			c.lineTo(-S * 0.24, -S * 0.02);
+			c.lineTo(-S * 0.3, S * 0.04);
+			c.moveTo(S * 0.33, -S * 0.1);
+			c.lineTo(S * 0.25, -S * 0.04);
+			c.moveTo(S * 0.0, S * 0.3);
+			c.lineTo(S * 0.06, S * 0.22);
+			c.lineTo(S * 0.02, S * 0.36);
+		}
 		c.stroke();
 		c.restore();
 	}
@@ -356,9 +432,15 @@ export function drawBoss(c: Ctx, x: number, y: number, S: number, t: number, st:
 		{ x: -S * 0.13 + dx * S * 0.04, y: -S * 0.08 + dy * S * 0.03, rx: S * 0.1, ry: S * 0.115 },
 		{ x: S * 0.13 + dx * S * 0.04, y: -S * 0.08 + dy * S * 0.03, rx: S * 0.1, ry: S * 0.115 }
 	];
-	eyes.forEach((e, i) => eye(c, e, S, i === 0 ? -1 : 1, mood, st.look, t));
+	if (st.phase === 3) eyes.forEach((e) => bloom(c, e.x, e.y, S * 0.16, '255,170,60', 0.5));
+	eyes.forEach((e, i) => eye(c, e, S, i === 0 ? -1 : 1, mood, st.look, t, 0.45, st.phase === 3));
 	brows(c, eyes, S, mood, 0.05);
 	mouth(c, dx * S * 0.04, S * 0.14 + dy * S * 0.02, S * 0.13, S, mood, open, true);
+	if (st.phase >= 2) tusks(c, dx * S * 0.04, S * 0.15 + dy * S * 0.02, S, st.phase);
+	if (st.phase === 3) {
+		browHorn(c, -1, S);
+		browHorn(c, 1, S);
+	}
 	gloss(c, -S * 0.2, -S * 0.26, S * 0.06, S * 0.025, 0.5, -0.6);
 	c.restore();
 	// phase 3: smoke rising off his horns
@@ -368,7 +450,7 @@ export function drawBoss(c: Ctx, x: number, y: number, S: number, t: number, st:
 			const side = i % 2 ? 1 : -1;
 			c.fillStyle = `rgba(60,40,40,${0.45 * (1 - u)})`;
 			c.beginPath();
-			c.arc(x + side * S * (0.32 + 0.05 * u) + Math.sin(u * 6 + i) * S * 0.03, y - S * (0.48 + 0.0 * u) - u * S * 0.0, S * (0.03 + 0.04 * u), 0, TAU);
+			c.arc(x + side * S * (0.42 - 0.04 * u) + Math.sin(u * 6 + i) * S * 0.02, y - S * (0.44 + 0.04 * u), S * (0.025 + 0.03 * u), 0, TAU);
 			c.fill();
 		}
 	}
