@@ -58,6 +58,8 @@ export class DoomSplitService {
 	private stageTime = 0;
 	private coreValue: GridPoint | null = null;
 	private eatenValue = 0;
+	/** Where ghosts were eaten since the last look, and for how much (for their effect). */
+	private readonly eatenFx: Array<{ x: number; y: number; points: number }> = [];
 	private chain = 0;
 	private merging: Array<{ x: number; y: number; ghost: number }> = [];
 	private burstValue = false;
@@ -98,6 +100,11 @@ export class DoomSplitService {
 
 	get core(): GridPoint | null {
 		return this.coreValue;
+	}
+
+	/** The ghosts eaten since the last call (once each). */
+	consumeEatenFx(): Array<{ x: number; y: number; points: number }> {
+		return this.eatenFx.splice(0);
 	}
 
 	get eaten(): number {
@@ -276,6 +283,7 @@ export class DoomSplitService {
 				this.chain = Math.min(3, this.chain + 1);
 				this.eatenValue += 1;
 				this.score.add(points);
+				this.eatenFx.push({ x: d.x, y: d.y, points });
 				this.events.emit('audio:cue', { cue: 'ghost-eaten' });
 				this.events.emit('fx:event', {
 					kind: 'ghost-eaten',

@@ -33,6 +33,8 @@ export class DoomBossModel {
 	public phase = 1;
 	public state: DoomStateName = 'INTRO';
 	public stateTimer = 0;
+	/** The length of the stun now running (for its timer ring). */
+	public stunTotal = 0;
 	public chaos = 1.0;
 	public shape: DoomShape = 'normal';
 	public attackKind: DoomAttackKind | null = null;
@@ -254,10 +256,14 @@ export class DoomBossModel {
 			return;
 		}
 		if (this.state === 'STUNNED') {
-			this.stateTimer = Math.max(this.stateTimer, duration);
+			if (duration > this.stateTimer) {
+				this.stateTimer = duration;
+				this.stunTotal = duration;
+			}
 		} else {
 			this.state = 'STUNNED';
 			this.stateTimer = duration;
+			this.stunTotal = duration;
 			this.shape = 'stunned';
 			this.chaos = 0.95;
 			this.attackKind = null;

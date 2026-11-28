@@ -208,6 +208,14 @@ export class DoomBossService {
 		return this.model.state === 'STUNNED';
 	}
 
+	/** What is left of the stun now running, 1..0 (0 when he is not stunned). */
+	get stunLeft(): number {
+		if (this.model.state !== 'STUNNED' || this.model.stunTotal <= 0) {
+			return 0;
+		}
+		return Math.max(0, Math.min(1, this.model.stateTimer / this.model.stunTotal));
+	}
+
 	get isStunImmune(): boolean {
 		return this.model.stunImmunityTimer > 0;
 	}

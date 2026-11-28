@@ -272,6 +272,9 @@ export class DoomAbilityService {
 			split.startOmen();
 		}
 		split.update(dt, player, this.boss, () => this.damagePlayer(1, player, 'ghost'));
+		for (const e of split.consumeEatenFx()) {
+			this.weapons.pushFx({ kind: 'ghost-eaten', x: e.x, y: e.y, detail: String(e.points) });
+		}
 		if (split.consumeBurst()) {
 			this.weapons.clearShots();
 			this.rushing = false;
@@ -291,6 +294,8 @@ export class DoomAbilityService {
 			this.pickups.fillEmpty(this.needs(), player);
 			// all four eaten: he formed stunned, the window for the rush's and the Sting's triple hit
 			this.splitWindowValue = this.boss.isStunned;
+			const b = this.boss.position;
+			this.weapons.pushFx({ kind: 'split-form', x: b.x, y: b.y });
 		}
 		if (!this.boss.isStunned) {
 			this.splitWindowValue = false;

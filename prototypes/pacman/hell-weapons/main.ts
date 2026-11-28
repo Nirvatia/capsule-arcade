@@ -17,7 +17,6 @@ import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinky
 import { FLESH_KIT } from '../hell-kit/kitFlesh';
 import * as W from './weapons';
 import * as B from './bossFx';
-import { drawCore } from '../../../src/games/pacman/render/doom/doomPlaceholders';
 
 type Ctx = CanvasRenderingContext2D;
 type Look = 'normal' | 'berserk';
@@ -284,7 +283,6 @@ const BOSS_SECTIONS: readonly Section[] = [
 					B.omen(st.ctx, st.X(6), st.Y(), st.S, t, k);
 				}
 			},
-			{ title: 'Ядро: сейчас', period: 3, scene: (st, _u, t) => drawCore(st.ctx, st.X(6), st.Y(), st.S, t) },
 			{ title: 'Ядро: сердце в рёбрах', period: 3, scene: (st, _u, t) => B.core(st.ctx, st.X(6), st.Y(), st.S, t) },
 			{
 				title: 'Сбор на ядре',

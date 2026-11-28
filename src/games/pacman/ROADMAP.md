@@ -128,13 +128,15 @@ last (see Later).
      the bone casket medkit; the dial's burnt part charred; the food he cannot eat faded. Left: his
      look at all of it in play (seen in the browser: the pickups and the faded food; the effects only
      in the prototype);
-   - the boss: a clear stunned state (now spiral eyes and a slow body): slumped, something circling,
-     the window and how long it lasts; hit reactions by strength (now a white flash); the split's
-     omen, the core (`doomPlaceholders.drawCore`), the four running back and his forming on it; his
-     death, the heart and the exit (check);
-   - the split: **a ghost eaten** (no effect at all: the fx `ghost-eaten` event has no painter): the
-     flesh bursting, the 200-1600 score, the sound; the frightened flayed ghost and its blink (check);
-   - the hazards: the tar without round pools in the tiles (e.g. a cracked crust along the corridor).
+   - **the boss and the split: done** (2026-11-28, same page, in the game as `render/doom/bossArt`):
+     the stunned boss with three skulls circling and a timer ring under him (`stunLeft`), the split's
+     window as four gold brackets and a gold timer; on a hit he recoils away from the hero and sheds
+     flesh chips by its strength (the Sting, a rush or a glance, the full Maw); the omen's cracks; the
+     core is a heart in a cage of ribs (`doomPlaceholders` gone); a flash as he forms on it; a ghost
+     eaten bursts into flesh, its eyes fly and its score rises. Left: his look in play (seen in the
+     browser: the omen); the four running back are the merge as before;
+   - next: his death, the heart and the exit (check them), and the tar without round pools (e.g. a
+     cracked crust along the corridor);
      **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):
      (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
      bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a

@@ -10,10 +10,10 @@ import { DoomWorld } from './DoomWorld';
 import type { DoomLight } from './DoomWorld';
 import { pickupSprite } from './DoomSprites';
 import { SPLIT_MERGE } from '../../logic/doom/DoomBalance';
-import { drawCore } from './doomPlaceholders';
 import { drawFleshEnergizer, drawFleshGhost, drawStingBolt, fleshFoodSprite } from './fleshKit';
 import { counterReady, mawCharge, rushSaw, rushTrail, stingMuzzle } from './weaponArt';
-import { WeaponFxView } from './WeaponFxView';
+import { WeaponFxView, hitStrength } from './WeaponFxView';
+import { core as drawCore, omen, stunOverlay, windowMark } from './bossArt';
 import type { DoomAbilityService } from '../../logic/doom/DoomAbilityService';
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
 import type { LevelProgress } from '../../logic/level/LevelProgress';
@@ -29,10 +29,16 @@ import type { GridLayout } from '../maze/GridView';
  * storm in boss phase 2, night with a corridor light map in phase 3), then the actors on
  * top so they always stay readable, then embers and vignette.
  */
+/** Seconds of the boss's recoil from a hit. */
+const RECOIL_TIME = 0.22;
+/** The omen's cracks open fully over this long (the old transition's length). */
+const OMEN_LOOK = 2.5;
+
 export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 	private readonly shared: SharedLayers;
 	private readonly fxView = new DoomFxView();
 	private readonly weaponFx = new WeaponFxView();
+	private recoil: { x: number; y: number; amount: number; t: number } | null = null;
 	private readonly bossView = new HellBlinkyView();
 	private readonly echoBossView = new HellBlinkyView();
 	private readonly combatView = new DoomCombatView();
@@ -70,6 +76,14 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			for (const event of doom.consumeFx()) {
 				this.fxView.spawn(event);
 				this.weaponFx.spawn(event);
+				const strength = hitStrength(event);
+				if (strength > 0 && boss && level.player) {
+					// he recoils away from the hero, harder for a harder hit
+					const p = level.player.position;
+					const b = boss.position;
+					const d = Math.hypot(b.x - p.x, b.y - p.y) || 1;
+					this.recoil = { x: (b.x - p.x) / d, y: (b.y - p.y) / d, amount: 0.06 * strength, t: 0 };
+				}
 				if (event.kind === 'boss-hit' || event.kind === 'bite') {
 					this.bossHitFlash = 1;
 				}
@@ -79,6 +93,12 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			}
 			this.fxView.update(dt, doom.shots);
 			this.weaponFx.update(dt);
+			if (this.recoil) {
+				this.recoil.t += dt;
+				if (this.recoil.t >= RECOIL_TIME) {
+					this.recoil = null;
+				}
+			}
 			this.bossHitFlash = Math.max(0, this.bossHitFlash - dt * 5);
 		}
 
@@ -113,12 +133,25 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 						time
 					);
 				}
-				this.bossView.draw(
-					ctx,
-					this.bossSnapshot(level, boss, boss.position, false, 1),
-					layout,
-					time
-				);
+				const r = this.recoil;
+				const kick = r ? Math.sin((r.t / RECOIL_TIME) * Math.PI) * r.amount : 0;
+				const at = {
+					x: boss.position.x + (r ? r.x * kick : 0),
+					y: boss.position.y + (r ? r.y * kick : 0)
+				};
+				this.bossView.draw(ctx, this.bossSnapshot(level, boss, at, false, 1), layout, time);
+				const S = layout.tileSize;
+				const bx = layout.offsetX + at.x * S;
+				const by = layout.offsetY + at.y * S;
+				if (doom.split.stage === 'omen') {
+					omen(ctx, bx, by, S, time, Math.min(1, doom.split.stageElapsed / OMEN_LOOK));
+				}
+				if (boss.isStunned) {
+					stunOverlay(ctx, bx, by, S, time, boss.stunLeft);
+					if (doom.splitWindow) {
+						windowMark(ctx, bx, by, S, time, boss.stunLeft);
+					}
+				}
 				this.combatView.drawAir(ctx, boss, layout, time);
 			}
 			const player = level.player;

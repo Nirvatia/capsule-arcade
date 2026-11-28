@@ -1,6 +1,7 @@
 import type { DoomFxEvent } from '../../logic/doom/DoomWeaponService';
 import type { GridLayout } from '../maze/GridView';
 import { pickupSprite } from './DoomSprites';
+import { formFlash, ghostEaten, hitChips } from './bossArt';
 import type { Ctx, Dir } from './fleshPaint';
 import {
 	mawFull,
@@ -22,7 +23,10 @@ type Kind =
 	| 'glance'
 	| 'full'
 	| 'spent'
-	| 'refused';
+	| 'refused'
+	| 'chips'
+	| 'eaten'
+	| 'form';
 
 interface Effect {
 	readonly kind: Kind;
@@ -31,7 +35,23 @@ interface Effect {
 	readonly dir: Dir;
 	readonly item: 'berserk' | 'plasma' | 'bfg';
 	readonly duration: number;
+	/** The chips' strength (1..3) or the eaten ghost's points. */
+	readonly value: number;
 	age: number;
+}
+
+/** How hard a hit on the boss lands: its flesh chips (and his recoil) grow with it. */
+export function hitStrength(event: DoomFxEvent): number {
+	switch (event.kind) {
+		case 'sting-hit':
+			return event.detail === 'boss' ? 1 : 0;
+		case 'rush-hit':
+			return 2;
+		case 'maw-hit':
+			return event.detail === 'full' ? 3 : 2;
+		default:
+			return 0;
+	}
 }
 
 const DURATION: Record<Kind, number> = {
@@ -43,7 +63,10 @@ const DURATION: Record<Kind, number> = {
 	glance: 0.45,
 	full: 0.6,
 	spent: 0.9,
-	refused: 0.4
+	refused: 0.4,
+	chips: 0.5,
+	eaten: 0.9,
+	form: 0.45
 };
 /** Bolts land ten a second: one splash on the boss at a time is enough. */
 const MAX_STING = 6;
@@ -52,8 +75,9 @@ const dirOf = (dx = 0, dy = 0): Dir =>
 	Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'LEFT' : 'RIGHT') : dy < 0 ? 'UP' : 'DOWN';
 
 /**
- * The weapons' painted effects (`weaponArt`): the Sting's hits, the rush's and the Maw's hits on
- * the boss, a weapon spent and the refused press (these two follow the hero). Each plays once.
+ * The hell's painted effects (`weaponArt`, `bossArt`): the Sting's hits, the rush's and the Maw's
+ * hits on the boss with flesh chips by strength, a weapon spent and the refused press (these two
+ * follow the hero), a split ghost eaten, his forming on the core. Each plays once.
  */
 export class WeaponFxView {
 	private readonly list: Effect[] = [];
@@ -70,6 +94,19 @@ export class WeaponFxView {
 			return;
 		}
 		const item = event.detail === 'berserk' || event.detail === 'bfg' ? event.detail : 'plasma';
+		const strength = hitStrength(event);
+		if (strength > 0 && this.list.filter((e) => e.kind === 'chips').length < MAX_STING) {
+			this.list.push({
+				kind: 'chips',
+				x: event.x,
+				y: event.y,
+				dir: 'RIGHT',
+				item,
+				duration: DURATION.chips,
+				value: strength,
+				age: 0
+			});
+		}
 		this.list.push({
 			kind,
 			x: event.x,
@@ -77,6 +114,7 @@ export class WeaponFxView {
 			dir: dirOf(event.dx, event.dy),
 			item,
 			duration: DURATION[kind],
+			value: kind === 'eaten' ? Number(event.detail) || 0 : 0,
 			age: 0
 		});
 	}
@@ -131,6 +169,15 @@ export class WeaponFxView {
 				case 'refused':
 					refused(ctx, x, y, S, e.dir, f);
 					break;
+				case 'chips':
+					hitChips(ctx, x, y, S, f, e.value);
+					break;
+				case 'eaten':
+					ghostEaten(ctx, x, y, S, f, e.value);
+					break;
+				case 'form':
+					formFlash(ctx, x, y, S, f);
+					break;
 			}
 		}
 	}
@@ -151,6 +198,10 @@ export class WeaponFxView {
 				return 'spent';
 			case 'refused':
 				return 'refused';
+			case 'ghost-eaten':
+				return 'eaten';
+			case 'split-form':
+				return 'form';
 			default:
 				return null;
 		}

@@ -38,7 +38,11 @@ export interface DoomFxEvent {
 		/** The Maw's orb struck the boss (`detail`: 'full' when he was stunned, else 'glance'). */
 		| 'maw-hit'
 		/** The press was refused: nothing charged (dx, dy: the hero's heading). */
-		| 'refused';
+		| 'refused'
+		/** A ghost of the split eaten (`detail`: its points). */
+		| 'ghost-eaten'
+		/** The split is over: he forms on the core. */
+		| 'split-form';
 	readonly x: number;
 	readonly y: number;
 	readonly dx?: number;

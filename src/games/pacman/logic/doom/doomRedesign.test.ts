@@ -262,6 +262,26 @@ describe('the split', () => {
 		expect(f.boss.isStunned).toBe(true);
 	});
 
+	it('reports each ghost eaten and his forming for their effects; the stun timer runs down', () => {
+		const f = fight();
+		toSplit(f);
+		f.doom.consumeFx();
+		eatGhosts(f, 4);
+		finishSplit(f);
+		const kinds = f.doom.consumeFx().map((e) => `${e.kind}:${e.detail ?? ''}`);
+		expect(kinds.filter((k) => k.startsWith('ghost-eaten'))).toEqual([
+			'ghost-eaten:200',
+			'ghost-eaten:400',
+			'ghost-eaten:800',
+			'ghost-eaten:1600'
+		]);
+		expect(kinds).toContain('split-form:');
+		const left = f.boss.stunLeft;
+		expect(left).toBeGreaterThan(0.9);
+		f.run(1);
+		expect(f.boss.stunLeft).toBeLessThan(left);
+	});
+
 	it('all four eaten: in his stun the rush and the Sting hit SPLIT_WINDOW_MUL times harder', () => {
 		const f = fight();
 		toSplit(f);
