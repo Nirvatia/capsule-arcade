@@ -10,12 +10,13 @@ import { ScoreModel } from '../../../src/games/pacman/logic/level/ScoreModel';
 import { GridModel } from '../../../src/games/pacman/logic/maze/GridModel';
 import { GridService } from '../../../src/games/pacman/logic/maze/GridService';
 import { HeroView } from '../../../src/games/pacman/render/actors/HeroView';
-import { PacmanHero } from '../../../src/games/pacman/render/actors/hero/PacmanHero';
+import { FRUIT_BODY_RATIO, OrangeHero } from '../../../src/games/pacman/render/actors/hero/FruitHero';
 import { chargePainter } from '../../../src/games/pacman/render/actors/hero/heroCharge';
 import { pickupSprite } from '../../../src/games/pacman/render/doom/DoomSprites';
 import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
 import { KITS } from './kits';
-import type { Dir, Kit } from './kits';
+import type { Kit } from './kits';
+import type { Dir } from './paint';
 
 type Lay = { tileSize: number; offsetX: number; offsetY: number };
 
@@ -23,10 +24,12 @@ const D = Math.min(window.devicePixelRatio || 1, 2);
 /** The world is drawn big and the frame keeps the maze (tile `SCENE_S` px, about the game's on a laptop). */
 const WORLD_W = 1240;
 const WORLD_H = 1340;
-const CELL = 104;
+const CELL = 128;
 const SHEET_COLS = 5;
 const SHEET_ROWS = 4;
-const SHEET_S = 54;
+const SHEET_S = 70;
+/** The frames are still: one moment of the animations. */
+const T = 0.35;
 const FONT = '"PT Sans Narrow","Arial Narrow",system-ui,sans-serif';
 
 const grid = new GridService(new GridModel(GRID_DOOM));
@@ -36,7 +39,7 @@ const player = new PlayerService(grid, progress, events);
 player.placeAt({ x: 8, y: 18 });
 player.setDesiredDirection('RIGHT');
 player.update(0.02);
-const heroView = new HeroView(new PacmanHero(), chargePainter);
+const heroView = new HeroView(new OrangeHero(), chargePainter, FRUIT_BODY_RATIO);
 heroView.setSeason('hell');
 const world = new DoomWorld(GRID_DOOM, DOOM_PICKUP_TILES);
 world.resize(WORLD_W, WORLD_H, D);
@@ -90,7 +93,7 @@ function drawScene(kit: Kit): HTMLCanvasElement {
 	for (let y = 0; y < grid.height; y += 1) {
 		for (let x = 0; x < grid.width; x += 1) {
 			if (grid.isDot(x, y) && !EATEN.has(`${x},${y}`)) kit.food(ctx, X(x), Y(y), S);
-			else if (grid.isEnergizer(x, y)) kit.energizer(ctx, X(x), Y(y), S);
+			else if (grid.isEnergizer(x, y)) kit.energizer(ctx, X(x), Y(y), S, T);
 		}
 	}
 	kit.snare(ctx, X(8), Y(5), S, 1);
@@ -99,9 +102,9 @@ function drawScene(kit: Kit): HTMLCanvasElement {
 		if (p.item === 'berserk') existing(ctx, 'berserk', X(p.tile.x), Y(p.tile.y), S);
 		else kit.icon(ctx, p.item, X(p.tile.x), Y(p.tile.y), S);
 	}
-	GHOSTS.forEach((g, i) => kit.ghost(ctx, i, X(g.x), Y(g.y), S, g.dir, g.fright));
+	GHOSTS.forEach((g, i) => kit.ghost(ctx, i, X(g.x), Y(g.y), S, g.dir, g.fright, T + i * 0.4));
 	heroView.draw(ctx, player, L, 0.4, { look: 'normal', charge: 0, dying: false });
-	kit.armour(ctx, player.position.x * S + L.offsetX, player.position.y * S + L.offsetY, S);
+	kit.armour(ctx, player.position.x * S + L.offsetX, player.position.y * S + L.offsetY, S, 'RIGHT');
 	for (let k = 0; k < 3; k += 1) kit.bolt(ctx, X(10 + k * 1.3), Y(18), S, 'RIGHT');
 	world.drawOverlay(ctx);
 	// the maze and a strip of its frame
@@ -112,6 +115,12 @@ function drawScene(kit: Kit): HTMLCanvasElement {
 	const [cv, out] = canvas(sw, sh, `${kit.name}: кадр игры`);
 	out.drawImage(off, sx * D, sy * D, sw * D, sh * D, 0, 0, sw, sh);
 	return cv;
+}
+
+/** The current hero (the orange) drawn with its centre at (x, y), tile `S`. */
+function hero(ctx: CanvasRenderingContext2D, x: number, y: number, S: number, look: 'normal' | 'berserk'): void {
+	const L: Lay = { tileSize: S, offsetX: x - player.position.x * S, offsetY: y - player.position.y * S };
+	heroView.draw(ctx, player, L, T, { look, charge: 0, dying: false });
 }
 
 function drawSheet(kit: Kit): HTMLCanvasElement {
@@ -137,15 +146,15 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 	};
 	const names = ['Блинки', 'Пинки', 'Инки', 'Клайд'];
 	for (let i = 0; i < 4; i += 1) {
-		const c = cell(i, 0, 1, names[i]);
-		kit.ghost(ctx, i, c.x, c.y + 4, S, 'RIGHT', false);
+		const g = cell(i, 0, 1, names[i]);
+		kit.ghost(ctx, i, g.x, g.y + 6, S, 'RIGHT', false, T + i * 0.4);
 	}
 	let c = cell(4, 0, 1, 'испуганный');
-	kit.ghost(ctx, 1, c.x, c.y + 4, S, 'LEFT', true);
+	kit.ghost(ctx, 1, c.x, c.y + 6, S, 'LEFT', true, T);
 	c = cell(0, 1, 1, 'еда');
-	for (let k = -1; k <= 1; k += 1) kit.food(ctx, c.x + k * S * 0.6, c.y, S);
+	for (let k = -1; k <= 1; k += 1) kit.food(ctx, c.x + k * S * 0.55, c.y, S);
 	c = cell(1, 1, 1, 'энерджайзер');
-	kit.energizer(ctx, c.x, c.y, S);
+	kit.energizer(ctx, c.x, c.y, S, T);
 	c = cell(2, 1, 1, 'капкан');
 	kit.snare(ctx, c.x, c.y, S, 1);
 	c = cell(3, 1, 1, 'захлопнут');
@@ -155,22 +164,19 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 	c = cell(0, 2, 1, 'подбор: плазма');
 	kit.icon(ctx, 'plasma', c.x, c.y, S);
 	c = cell(1, 2, 1, 'выстрелы');
-	for (let k = -1; k <= 1; k += 1) kit.bolt(ctx, c.x + k * S * 0.5, c.y, S, 'RIGHT');
+	for (let k = -1; k <= 1; k += 1) kit.bolt(ctx, c.x + k * S * 0.45, c.y, S * 0.8, 'RIGHT');
 	c = cell(2, 2, 1, 'подбор: броня');
 	kit.icon(ctx, 'armour', c.x, c.y, S);
 	c = cell(3, 2, 1, 'герой в броне');
-	const L: Lay = { tileSize: S, offsetX: c.x - player.position.x * S, offsetY: c.y - player.position.y * S };
-	heroView.draw(ctx, player, L, 0.4, { look: 'normal', charge: 0, dying: false });
-	kit.armour(ctx, c.x, c.y, S);
+	hero(ctx, c.x, c.y, S, 'normal');
+	kit.armour(ctx, c.x, c.y, S, 'RIGHT');
 	c = cell(4, 2, 1, 'есть: берсерк', true);
 	existing(ctx, 'berserk', c.x, c.y, S);
-	c = cell(0, 3, 3, 'рывок берсерка и удар');
-	const left = c.x - CELL * 1.3;
-	const hit = c.x + CELL * 1.15;
-	kit.rush(ctx, left, hit - S * 0.45, c.y, S);
-	const H: Lay = { tileSize: S, offsetX: hit - S * 0.6 - player.position.x * S, offsetY: c.y - player.position.y * S };
-	heroView.draw(ctx, player, H, 0.4, { look: 'berserk', charge: 0, dying: false });
-	kit.impact(ctx, hit, c.y, S);
+	c = cell(0, 3, 3, 'рывок: превращение и удар');
+	hero(ctx, c.x - CELL * 1.05, c.y, S, 'berserk');
+	kit.form(ctx, c.x - CELL * 0.1, c.y, S, 'RIGHT', 0.45, T);
+	kit.form(ctx, c.x + CELL * 0.82, c.y, S, 'RIGHT', 1, T);
+	kit.impact(ctx, c.x + CELL * 1.25, c.y, S);
 	c = cell(3, 3, 1, 'есть: BFG', true);
 	existing(ctx, 'bfg', c.x, c.y, S);
 	c = cell(4, 3, 1, 'есть: аптечка', true);
