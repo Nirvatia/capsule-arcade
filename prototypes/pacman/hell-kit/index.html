@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Набор ада</title>
+    <!-- The hell redesign's missing art as three whole kits, on the game's own hell. `node prototypes/pacman/build.mjs hell-kit`. -->
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=PT+Sans:wght@400;700&family=PT+Sans+Narrow:wght@700&display=swap" />
+    <style>
+      /* One dark world on purpose: the page is the hell's art at its own light. A column of kits, each a game frame beside its sheet. */
+      :root {
+        --ground: #0d0607;
+        --panel: #1a0b0c;
+        --ink: #efe1d8;
+        --muted: #a8908a;
+        --blood: #d23a2e;
+        --rule: #3a1a1a;
+        --display: "Oswald", "Arial Narrow", system-ui, sans-serif;
+        --body: "PT Sans", "Segoe UI", system-ui, sans-serif;
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        background: var(--ground);
+        color: var(--ink);
+        font: 16px/1.5 var(--body);
+      }
+      main {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding-block: 28px 48px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        display: grid;
+        gap: 40px;
+      }
+      .intro h1 {
+        font: 700 clamp(30px, 5vw, 46px) / 1.05 var(--display);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        margin: 0 0 10px;
+        text-wrap: balance;
+      }
+      .intro h1 span { color: var(--blood); }
+      .intro p { max-width: 68ch; margin: 0; color: var(--muted); }
+      #kits { display: grid; gap: 40px; }
+      .kit { display: grid; gap: 16px; border-top: 2px solid var(--rule); padding-top: 22px; }
+      .kit header { display: grid; gap: 4px; max-width: 72ch; }
+      .tag {
+        font: 700 12px/1 var(--body);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--blood);
+      }
+      .kit h2 { font: 700 30px/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.03em; margin: 0; }
+      .kit p { margin: 0; color: var(--muted); }
+      .frames { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+      figure { margin: 0; display: grid; gap: 6px; min-width: 0; max-width: 100%; }
+      figure canvas { display: block; max-width: 100%; height: auto; background: var(--panel); border-radius: 4px; }
+      figcaption { font-size: 13px; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="intro">
+        <h1>Набор <span>ада</span></h1>
+        <p>Недостающий арт нового боя тремя целыми наборами, чтобы всё было из одного мира: еда, энерджайзер распада, четыре призрака (обычные и испуганные), капкан, плазма, броня и рывок берсерка. Каждый набор показан на настоящем лабиринте ада в масштабе игры и крупно. Распад и ядро будут отдельным макетом.</p>
+      </div>
+      <div id="kits"></div>
+    </main>
+    <script>
+/*SCRIPT*/
+    </script>
+  </body>
+</html>
