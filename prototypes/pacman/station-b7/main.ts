@@ -59,6 +59,29 @@ hooks.drawBioSpores = (g, time, showProps) => {
 	} as unknown as CanvasRenderingContext2D;
 	spores(small, time, showProps);
 };
+// «Пол → Светлее»: the corridors' floor lifted (screen keeps its texture), under the hive and the
+// light; the walls untouched, so the walls and the floor part by their tone, not by a line
+const NOT_FLOOR = new Set(['WL', 'ES', 'EX', '0C', 'LE', 'LT', 'BY', 'IY', 'PY', 'CE']);
+const fans = (world.scene as unknown as { drawLiveRoofFans(c: CanvasRenderingContext2D, t: number, ph: number): void })
+	.drawLiveRoofFans;
+(world.scene as unknown as { drawLiveRoofFans(c: CanvasRenderingContext2D, t: number, ph: number): void }).drawLiveRoofFans = (
+	c,
+	t,
+	ph
+) => {
+	fans(c, t, ph);
+	if (st.floor === 'now') return;
+	const sc = world.scene;
+	const k = st.inf;
+	const a = Math.round(96 - 44 * k);
+	c.save();
+	c.globalCompositeOperation = 'screen';
+	c.fillStyle = `rgb(${a - 6}, ${a}, ${a + 5})`;
+	for (let y = 0; y < GRID_STATION.length; y++)
+		for (let x = 0; x < GRID_STATION[0].length; x++)
+			if (!NOT_FLOOR.has(GRID_STATION[y][x])) c.fillRect(sc.tx(x), sc.ty(y), sc.TILE, sc.TILE);
+	c.restore();
+};
 const lightmap = hooks.renderLightmap;
 hooks.renderLightmap = (lg, ...rest) => {
 	lightmap(lg, ...rest);
@@ -95,13 +118,15 @@ const st = {
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
 	big: false,
-	look: 'now' as 'now' | WallMaterial
+	look: 'now' as 'now' | WallMaterial,
+	floor: 'now' as 'now' | 'light'
 };
 
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: красный маньяк',
 	'look-gloss': 'v4: стены забирает масса (глянец: чёрная, блик на горбах, лайм в складках), свет акта I поднят, еда мельче',
 	'look-moss': 'v4: стены забирает масса (мох: матовый, бархатный, чёрно-оливковый), свет акта I поднят, еда мельче',
+	'floor-light': 'Пол светлее (только коридоры, стены не тронуты): акт I светлая сталь, темнеет с заражением',
 	'mimic-now': 'Мимики как в игре: степперы',
 	'mimic-b1': 'Морок B1: голова из дыма в 0.8 клетки, острый капюшон назад, хвост дыма — движение',
 	'mimic-b2': 'Морок B2: голова из дыма в 0.8 клетки, круглый капюшон, хвост дыма — движение',
@@ -149,6 +174,14 @@ const GROUPS: Group[] = [
 			['Мох', 'moss']
 		],
 		after: (v) => setLook(v as 'now' | WallMaterial)
+	},
+	{
+		label: 'Пол',
+		key: 'floor',
+		items: [
+			['Как в игре', 'now'],
+			['Светлее', 'light']
+		]
 	},
 	{
 		label: 'Мимики',
@@ -242,6 +275,7 @@ function render(): void {
 	const lines = [
 		st.ring === 'cycle' ? NOTES['ring-cycle'] : '',
 		st.look !== 'now' ? NOTES[`look-${st.look}`] : '',
+		st.floor !== 'now' ? NOTES[`floor-${st.floor}`] : '',
 		st.mimic !== 'off' ? NOTES[`mimic-${st.mimic}`] : '',
 		st.rage !== 'off' ? NOTES[`rage-${st.rage}`] : '',
 		st.lure !== 'off' ? NOTES[`lure-${st.lure}`] : ''
