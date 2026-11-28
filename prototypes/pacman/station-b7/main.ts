@@ -19,6 +19,7 @@ import type { PretenderState } from '../../../src/games/pacman/render/station/pr
 type CandState = PretenderState;
 
 
+import { drawShade, type ShadeLook, type ShadeOpts } from './shadeLooks';
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
 const bar = document.getElementById('bar') as HTMLDivElement;
@@ -37,7 +38,8 @@ const open = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && OPE
 
 type RingMode = 'cycle' | 'guide' | 'charge' | 'lit' | 'press' | 'torn' | 'off';
 type Pick = 'now' | 'off';
-type Mim = 'now' | 'off';
+type Mim = 'now' | 'off' | ShadeLook;
+const isShade = (m: Mim): m is ShadeLook => m === 'a' || m === 'b' || m === 'c';
 type Lure = 'on' | 'off';
 const st = {
 	inf: 0.65,
@@ -53,6 +55,9 @@ const st = {
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: красный маньяк',
 	'mimic-now': 'Мимики как в игре: степперы',
+	'mimic-a': 'Морок A «Саван»: капюшон, глаза во тьме капюшона, рваный подол, дымный шлейф',
+	'mimic-b': 'Морок B «Дым»: столб клубящегося дыма с цветной каймой, сердце светит сквозь дым',
+	'mimic-c': 'Морок C «Жнец»: саван и две длинные руки с когтями, тянутся по ходу',
 	'lure-on': 'Приманка: циановая шашка, как в игре',
 	'ring-cycle': 'Круг, как в игре: контур → зарядка по контуру → горит',
 };
@@ -93,6 +98,9 @@ const GROUPS: Group[] = [
 		key: 'mimic',
 		items: [
 			['Как в игре', 'now'],
+			['Морок A', 'a'],
+			['Морок B', 'b'],
+			['Морок C', 'c'],
 			['Выкл', 'off']
 		]
 	},
@@ -307,6 +315,15 @@ function heroAt(t: number): { x: number; y: number; dx: number; dy: number } {
 	};
 }
 
+/** How far a walker is into its 180 at a run's end: 0 formed .. 1 all smoke (the shade's turn). */
+function turnAt(w: (typeof walkers)[number], t: number): number {
+	const len = w.n - 1;
+	const f = ((t * SPEED) / len + w.off * 2) % 2;
+	const s = f < 1 ? f : 2 - f;
+	const secs = (Math.min(s, 1 - s) * len) / SPEED;
+	return 1 - smoothstep(0, 0.16, secs);
+}
+
 function walkerAt(w: (typeof walkers)[number], t: number) {
 	const len = w.n - 1;
 	const u = (t * SPEED) / len + w.off * 2;
@@ -359,9 +376,22 @@ function drawMimic(
 	S: number,
 	kind: GhostKind,
 	cs: CandState,
-	o: PretenderOpts
+	o: PretenderOpts,
+	extra: Partial<ShadeOpts> = {}
 ): void {
 	if (st.mimic === 'off') return;
+	if (isShade(st.mimic)) {
+		drawShade(c, x, y, S, kind, cs, st.mimic, {
+			lookX: o.lookX,
+			lookY: o.lookY,
+			time: o.time,
+			fold: o.fold,
+			flashing: o.flashing,
+			white: o.white,
+			...extra
+		});
+		return;
+	}
 	drawPretender(c, x, y, S, kind, cs, o);
 }
 
@@ -416,7 +446,12 @@ function sheet(c: CanvasRenderingContext2D, vw: number, t: number): void {
 			spore: sporeAt(S, t),
 			...extra
 		};
-		drawMimic(c, cx, cy, S, kind, cs, o);
+		const moving = cs !== 'mimic';
+		const trail = moving
+			? Array.from({ length: 7 }, (_, j) => ({ x: -dx * (j + 1) * S * 0.13, y: -dy * (j + 1) * S * 0.13 + Math.sin(t * 4 + j) * S * 0.02 }))
+			: [];
+		const eyeOpen = smoothstep(0.55, 0.62, (t % 3.1) / 3.1) * (1 - smoothstep(0.7, 0.78, (t % 3.1) / 3.1));
+		drawMimic(c, cx, cy, S, kind, cs, o, { trail, eyeOpen: fold > 0.95 ? eyeOpen : 0 });
 		c.fillStyle = '#9fb0aa';
 		c.textAlign = 'center';
 		c.fillText(label, cx, cy + 62);
@@ -526,7 +561,8 @@ function frame(now: number): void {
 		drawRing(ctx, L, ring, ringLook, t);
 		for (const p of ring.posts) {
 			const g = new RailGait();
-			drawPretender(ctx, L.offsetX + (p.x + 0.5) * S, L.offsetY + (p.y + 0.5) * S, S, p.kind, ph.lit ? 'hunt' : 'tell', look(g, 0, 1, t));
+			if (isShade(st.mimic)) drawMimic(ctx, L.offsetX + (p.x + 0.5) * S, L.offsetY + (p.y + 0.5) * S, S, p.kind, ph.lit ? 'hunt' : 'tell', look(g, 0, 1, t));
+			else drawPretender(ctx, L.offsetX + (p.x + 0.5) * S, L.offsetY + (p.y + 0.5) * S, S, p.kind, ph.lit ? 'hunt' : 'tell', look(g, 0, 1, t));
 		}
 	}
 	if (st.rage !== 'off' || st.mimic !== 'off') {
@@ -534,8 +570,16 @@ function frame(now: number): void {
 			const p = walkerAt(w, t);
 			w.gait.update(dt, p.x, p.y, p.dx, p.dy, st.rage !== 'off');
 			const o = look(w.gait, p.dx, p.dy, t);
-			if (st.mimic !== 'off')
-				drawMimic(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, st.rage !== 'off' ? 'rage' : 'hunt', o);
+			if (st.mimic !== 'off') {
+				const px = L.offsetX + p.x * S;
+				const py = L.offsetY + p.y * S;
+				const trail = [];
+				for (let j = 1; j <= 9; j++) {
+					const q = walkerAt(w, t - j * 0.032);
+					trail.push({ x: L.offsetX + q.x * S - px, y: L.offsetY + q.y * S - py });
+				}
+				drawMimic(ctx, px, py, S, w.kind, st.rage !== 'off' ? 'rage' : 'hunt', o, { trail, turn: turnAt(w, t) });
+			}
 			else drawRage(ctx, L.offsetX + p.x * S, L.offsetY + p.y * S, S, w.kind, o);
 		}
 	}

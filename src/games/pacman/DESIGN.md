@@ -352,6 +352,43 @@ power the hatch, then run a lit route out, played as a scene. Third design: the 
 (they played, but the hounds looked wrong and the endless dark hid the walls and the enemies).
 Numbers are starting points, later in `config/stationConfig.ts`.
 
+**v4, "the shift" (the owner, 2026-11-28; approved as a direction, mechanics and art to come).**
+The level was quick and uneventful, phase 1 already dark, the phases hardly felt (a threshold of
+the infection, which is the hatch's charge), the vent pair crossed diagonally and unreadable, the
+maze a stand-in. The new frame, inside two rules: the maze reads in full light in every phase, and
+the drive test (the hero never waits; only what chases him costs a life). The maze stays 25×27
+like every other, so **events come in time, not in space**: at any moment the maze holds the
+squad, one tactic and one or two goal marks, no more.
+
+- **Three acts and the escape, about 3 minutes** (measured later with the player bot; if short,
+  add pressure, not things). Act I **routine** (bright cold white light, the station alive and
+  clean; one creature loose, the rest seen behind the containment's glass; only the lab wing
+  open, about a third of the maze, behind 2-3 bulkheads); its end is **the breach** (the lamps
+  falter from the lair out, the containment bursts, the whole squad comes out, the bulkheads blow
+  open). Act II **emergency** (amber, lamps faltering under the film; the whole station; one
+  relay on the far side, switched by running over it, opens the way on). Act III **the hive**
+  (the hive's lime and the red beacons light it; the last food in the hive's ground, then the
+  console and the escape). The squad grows by act (1, 4, 4 and the hive's runners), the tactics
+  unlock by act (the hunt and the vent, then the ambush, then the zone).
+- **The station's state, not darkness**: the floor and the walls keep their brightness within
+  about 15-20% of act I's in every act (a numeric check); fear comes from colour, the lamps'
+  behaviour, the hive's growth and sound. Act I's light is raised from today's (the lightmap's
+  base is about half brightness in phase 1).
+- **The creature: the shade** (`shade`, working name «Морок»), in place of the stepper (the
+  stepper is kept for another world): a dark tattered shroud, its hem dissolving into smoke, a
+  bright core and eyes in its kind's colour, a rim light, a smoke trail that shows the motion; a
+  180 turns through smoke (it comes apart and forms facing the other way); into a vent and between
+  posts it moves as a stream of smoke with a spark. Upright, the eyes showing the way. The
+  **ambush** becomes a black stain among the hive's stains on eaten tiles (5-6 at most at once;
+  tells: a wisp of smoke, its eyes opening for a moment), in place of the disguise as food.
+- **The maze, redrawn**: asymmetric, by zones with a character (the biolab round the lair with
+  tight rooms, the reactor's ring, the crew's comb of cabins for ambushes, the hangar's long
+  straights with the hatch); every vent leads straight across (the same row or column, like the
+  side tunnels), two pairs, each with its colour mark on both ends and its duct drawn along the
+  hull; dead ends only at the vents and the cabins; the bulkheads where the zones meet.
+- In reserve: doors that slam behind the hero on his own way (a new thing all over the maze, like
+  the Port's gates), a survivor led to the hatch.
+
 - **The rule of surprise**: every play of the squad has a **tell** (1-1.5 s before it: the
   station's lights flicker, a sound, the creatures' eyes turn one colour) and an **answer** the
   player can find. A surprise without a tell is unfair; with one it reads "they are lining up:

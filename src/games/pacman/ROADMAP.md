@@ -330,7 +330,16 @@ last (see Later).
          runners; a simulation with a still hero gives 5-8 every time): stunned runners are drawn
          pale blue as in the fright, and the pack runs nose to tail so the sprites overlap, both
          unproven; wants the owner's repro.
-      7. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
+      7. **v4, "the shift"** (the owner, 2026-11-28; `DESIGN.md` §7a, its first block): three
+         acts and the escape, the station bright in act I and sickening by colour, not darkness;
+         the shade in place of the stepper (the stepper's art is kept for another world); a new
+         asymmetric maze by zones with straight-across vents. Steps, each approved: (1) the
+         shade's prototype (`station-b7`, candidates in `station-b7/shadeLooks.ts`, the
+         «Мимики» buttons); (2) 2-3 maze candidates as matrices on the scene; (3) the light curve
+         (frames of the three acts, act I raised; a luminance check); (4) the mechanics (acts,
+         bulkheads, the relay, the squad and the tactics by act, the stain ambush), then the
+         owner's play and the bot's length measure.
+      8. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance
          check of the lit station.
