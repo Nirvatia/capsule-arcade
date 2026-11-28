@@ -8,9 +8,6 @@
 //   materials  `gloss`: black and wet, a cold highlight on the crests, lime glowing deep in the
 //              folds in a few patches; `moss`: matte and velvety, black to dark olive by height, a
 //              soft fuzzy edge, a little lime on some crests;
-//   `rim`      the gloss with a thin lime edge drawn over the light (the walls read by their outline,
-//              their fill calm: the floor and the walls apart in every phase), its folds' lime in
-//              small points;
 //   growth     it takes the walls from the lair out, a ragged front (by 98% every wall);
 //   life       the lime in the folds swells with the heartbeat, over the light.
 import type { createB7Scene } from '../../../src/games/pacman/render/station/b7/b7Scene';
@@ -19,7 +16,7 @@ import { heartbeat } from '../../../src/games/pacman/render/station/b7/b7Hive';
 type Scene = ReturnType<typeof createB7Scene>;
 type Ctx = CanvasRenderingContext2D;
 type Rows = readonly (readonly string[])[];
-export type WallMaterial = 'gloss' | 'moss' | 'rim';
+export type WallMaterial = 'gloss' | 'moss';
 
 /** Bake pixels per stage pixel. */
 const Z = 1.25;
@@ -84,9 +81,6 @@ export class WallHive {
 	private shown = -1;
 	private inf = 0;
 
-	private readonly rim: Float32Array;
-	private readonly edge: HTMLCanvasElement;
-
 	constructor(
 		private readonly scene: Scene,
 		rows: Rows,
@@ -94,7 +88,6 @@ export class WallHive {
 		material: WallMaterial
 	) {
 		const { TILE, tx, ty } = scene;
-		const isGloss = material !== 'moss';
 		const ROWS = rows.length;
 		const COLS = rows[0].length;
 		this.ox = tx(0);
@@ -139,13 +132,13 @@ export class WallHive {
 				const m = D[i] + (vnoise(sx * 0.09, sy * 0.09) - 0.5) * 4;
 				dm[i] = m;
 				if (m < -1.5) continue;
-				const l = isGloss ? fbm(sx / 24, sy / 24, 2) : fbm(sx / 15, sy / 15, 3);
-				const ridge = isGloss ? 0 : 1 - Math.abs(2 * fbm(sx / 8 + 31, sy / 8 + 17, 2) - 1);
+				const l = material === 'gloss' ? fbm(sx / 24, sy / 24, 2) : fbm(sx / 15, sy / 15, 3);
+				const ridge = material === 'gloss' ? 0 : 1 - Math.abs(2 * fbm(sx / 8 + 31, sy / 8 + 17, 2) - 1);
 				const f = material === 'moss' ? fbm(sx / 2.6, sy / 2.6, 2) : 0;
 				const h = smooth(0, 9, m);
 				lump[i] = l;
 				fuzz[i] = f;
-				Hf[i] = h * (3 + 7 * l + (isGloss ? 2.2 : 1) * ridge) + (material === 'moss' ? 0.8 * f : 0);
+				Hf[i] = h * (3 + 7 * l + (material === 'gloss' ? 2.2 : 1) * ridge) + (material === 'moss' ? 0.8 * f : 0);
 				const tx0 = Math.min(COLS - 1, Math.floor(sx / TILE));
 				const ty0 = Math.min(ROWS - 1, Math.floor(sy / TILE));
 				const d = wall(tx0, ty0) ? scene.infectionDistance(tx0, ty0) : nearestWallDist(scene, wall, tx0, ty0);
@@ -157,7 +150,6 @@ export class WallHive {
 		// shade it: normals from the height field, the light from the top left
 		this.rgba = new Uint8ClampedArray(W * H * 4);
 		this.lime = new Float32Array(W * H);
-		this.rim = new Float32Array(W * H);
 		const L = norm3(-0.55, -0.65, 0.55);
 		const Hh = norm3(L[0], L[1], L[2] + 1);
 		for (let v = 1; v < H - 1; v++)
@@ -176,12 +168,10 @@ export class WallHive {
 				let g: number;
 				let b: number;
 				let a: number;
-				const thin = material === 'rim';
-				const cavity = smooth(thin ? 0.7 : 0.55, thin ? 0.9 : 0.85, 1 - lump[i]) * smooth(3, 8, m);
-				const patch = smooth(thin ? 0.56 : 0.45, thin ? 0.7 : 0.68, vnoise(sx / 42 + 5, sy / 42 + 3));
-				if (thin && m >= 0) this.rim[i] = Math.exp(-(((m - 1.3) / 0.8) ** 2));
+				const cavity = smooth(0.55, 0.85, 1 - lump[i]) * smooth(3, 8, m);
+				const patch = smooth(0.45, 0.68, vnoise(sx / 42 + 5, sy / 42 + 3));
 				let lime: number;
-				if (isGloss) {
+				if (material === 'gloss') {
 					const shade = 0.38 + 1.35 * diff;
 					const spec = Math.pow(nh, 40) * 0.95 + Math.pow(nh, 6) * 0.1;
 					r = 15 * shade + 205 * spec;
@@ -213,7 +203,6 @@ export class WallHive {
 			}
 		this.mass = canvas(W, H);
 		this.glow = canvas(W, H);
-		this.edge = canvas(W, H);
 	}
 
 	update(infection: number): void {
@@ -223,7 +212,6 @@ export class WallHive {
 		const { W, H } = this;
 		const m = new ImageData(W, H);
 		const gl = new ImageData(W, H);
-		const ed = new ImageData(W, H);
 		for (let i = 0; i < W * H; i++) {
 			const a = this.rgba[i * 4 + 3];
 			if (!a) continue;
@@ -233,13 +221,6 @@ export class WallHive {
 			m.data[i * 4 + 1] = this.rgba[i * 4 + 1];
 			m.data[i * 4 + 2] = this.rgba[i * 4 + 2];
 			m.data[i * 4 + 3] = a * cov;
-			const e = this.rim[i] * cov;
-			if (e > 0.02) {
-				ed.data[i * 4] = 150;
-				ed.data[i * 4 + 1] = 222;
-				ed.data[i * 4 + 2] = 84;
-				ed.data[i * 4 + 3] = 255 * Math.min(1, e);
-			}
 			const l = this.lime[i] * cov;
 			if (l > 0.01) {
 				gl.data[i * 4] = LIME[0];
@@ -250,7 +231,6 @@ export class WallHive {
 		}
 		(this.mass.getContext('2d') as Ctx).putImageData(m, 0, 0);
 		(this.glow.getContext('2d') as Ctx).putImageData(gl, 0, 0);
-		(this.edge.getContext('2d') as Ctx).putImageData(ed, 0, 0);
 	}
 
 	/** In place of `B7Hive.draw`: the mass, then the game's lair (stage space, under the light). */
@@ -268,9 +248,6 @@ export class WallHive {
 		ctx.globalCompositeOperation = 'lighter';
 		ctx.globalAlpha = 0.28 + 0.6 * beat;
 		ctx.drawImage(this.glow, this.ox, this.oy, this.W / Z, this.H / Z);
-		// the lime edge: the walls' outline, the same in every light
-		ctx.globalAlpha = 0.78 + 0.18 * beat;
-		ctx.drawImage(this.edge, this.ox, this.oy, this.W / Z, this.H / Z);
 		ctx.restore();
 	}
 }
