@@ -794,7 +794,11 @@ export class OrangeHero extends FruitBase {
 		const ey = -R * 0.38;
 		const er = R * 0.2;
 		this.paintEye(ctx, ex, ey, er, p, false);
-		// the brow: a determined slash above the eye, the inner end lower
+		this.paintBrow(ctx, ex, ey, er, R);
+	}
+
+	/** The brow: a determined slash above the eye, the inner end lower. */
+	protected paintBrow(ctx: Ctx, ex: number, ey: number, er: number, R: number): void {
 		ctx.beginPath();
 		ctx.moveTo(ex - er * 1.0, ey - er * 1.0);
 		ctx.lineTo(ex + er * 1.15, ey - er * 1.5);
