@@ -242,9 +242,8 @@ const SECTIONS: readonly Section[] = [
 		note: 'На полу ада рядом с Жерлом и кулаком, как их увидит игрок. Первая карточка — как сейчас.',
 		cards: [
 			iconCard('Сейчас: винтовка', (c) => W.paintSting(c)),
-			iconCard('C: оса', W.paintStingWasp, 'брюшко осы в янтарных и чёрных полосах, жало с каплей яда'),
-			iconCard('D: шип', W.paintStingThorn, 'один большой костяной шип, по нему светится канал яда'),
-			iconCard('E: железа', W.paintStingGland, 'светящийся мешок яда на костяной рукояти, жало вперёд')
+			iconCard('F: пушка с барабаном', W.paintStingDrum, 'короткая толстая пушка, посередине большой стеклянный барабан яда'),
+			iconCard('G: винтовка с баком', W.paintStingTank, 'толстая винтовка, на спине стеклянный бак яда, светящиеся кольца на стволе')
 		]
 	},
 	{
@@ -263,20 +262,17 @@ const SECTIONS: readonly Section[] = [
 		note: 'Герой превращается в предмет, и рывок не зависит от его арта. Первая карточка — нынешний вихрь.',
 		cards: [
 			rushCard('Сейчас: вихрь', (st, x, t) => W.drawRushWhirl(st.ctx, x, st.Y(), st.S, 'RIGHT', 1, t), false),
-			rushCard('1: пила из клыков', (st, x, t, k) => W.rushSaw(st.ctx, x, st.Y(), st.S, t, k), false),
-			rushCard('2: бур', (st, x, t, k) => W.rushDrill(st.ctx, x, st.Y(), st.S, 'RIGHT', t, k), false),
-			rushCard('3: шипастый шар', (st, x, t, k) => W.rushThorns(st.ctx, x, st.Y(), st.S, t, k), false),
-			rushCard('1: контратака ×3', (st, x, t, k) => W.rushSaw(st.ctx, x, st.Y(), st.S, t, k), true),
-			rushCard('2: контратака ×3', (st, x, t, k) => W.rushDrill(st.ctx, x, st.Y(), st.S, 'RIGHT', t, k), true),
-			rushCard('3: контратака ×3', (st, x, t, k) => W.rushThorns(st.ctx, x, st.Y(), st.S, t, k), true)
+			rushCard('Выбрано: пила из клыков', (st, x, t, k) => W.rushSaw(st.ctx, x, st.Y(), st.S, t, k), false),
+			rushCard('Пила: контратака ×3', (st, x, t, k) => W.rushSaw(st.ctx, x, st.Y(), st.S, t, k), true),
+
 		]
 	},
 	{
 		id: 'maw',
 		title: 'Жерло: зарядка и два попадания',
-		note: 'По неоглушённому боссу шар разбивается и скользит; по оглушённому — полный удар.',
+		note: 'По неоглушённому боссу — оранжевый взрыв вполовину меньше и искры в стороны; по оглушённому — полный удар с белым ядром и кусками плоти.',
 		cards: [
-			{ title: 'Босс не оглушён: 150', period: 2.4, scene: mawShot(false) },
+			{ title: 'Босс не оглушён: 150 (взрыв меньше)', period: 2.4, scene: mawShot(false) },
 			{ title: 'Босс оглушён: 400', period: 2.4, scene: mawShot(true) }
 		]
 	},
@@ -295,15 +291,17 @@ const SECTIONS: readonly Section[] = [
 				period: 2.4,
 				scene: (st, u) => {
 					st.hero(5);
-					W.spent(st.ctx, st.X(5), st.Y(), st.S, ease(0.1, 0.9, u), W.paintStingThorn);
+					W.spent(st.ctx, st.X(5), st.Y(), st.S, ease(0.1, 0.9, u), W.paintStingTank);
 				}
 			},
 			{
 				title: 'Отказ: нет заряда',
 				period: 1.6,
 				scene: (st, u) => {
-					st.hero(5);
-					if (u > 0.2 && u < 0.7) W.refused(st.ctx, st.X(5), st.Y(), st.S, 'RIGHT');
+					const f = ease(0.2, 0.7, u);
+					const jolt = f > 0 && f < 1 ? Math.sin(f * Math.PI * 4) * 0.08 * (1 - f) : 0;
+					st.hero(5 - jolt);
+					if (f > 0 && f < 1) W.refused(st.ctx, st.X(5), st.Y(), st.S, 'RIGHT', f);
 				}
 			},
 			{

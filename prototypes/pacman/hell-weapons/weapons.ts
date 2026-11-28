@@ -23,114 +23,55 @@ function icon(c: Ctx, x: number, y: number, size: number, paint: (c: Ctx) => voi
 
 // ── the Sting's icon ─────────────────────────────────────────────────────────────────────────────
 
-const WASP = { light: '#ffe08a', mid: '#f0a828', shade: '#8a4a08', dark: '#1c0c08' };
-
 /**
- * Candidate C, the wasp: a wasp's abdomen as the gun, banded amber and black (bands read at any
- * size), a black sting with a drop of venom at its tip, on a short iron grip.
+ * Candidate F, the drum gun: a chunky pistol whose middle is a big glass drum of glowing venom (the
+ * read at any size), a bone stock, a thick short barrel with a bone sting for a muzzle.
  */
-export function paintStingWasp(c: Ctx): void {
+export function paintStingDrum(c: Ctx): void {
 	const S = 60;
-	part(c, () => { c.beginPath(); c.moveTo(-26, 8); c.lineTo(-12, 8); c.lineTo(-18, 34); c.lineTo(-32, 34); c.closePath(); }, linear(c, 0, 8, 0, 34, [IRON.mid, IRON.shade]), S, 0.9);
-	const body = (): void => { c.beginPath(); c.ellipse(-4, -2, 34, 20, 0, 0, TAU); };
-	body();
-	c.fillStyle = WASP.mid;
-	c.fill();
-	c.save();
-	body();
-	c.clip();
-	c.fillStyle = WASP.dark;
-	for (const bx of [-28, -12, 4, 20]) {
+	cel(c, () => { c.beginPath(); c.moveTo(-48, -8); c.lineTo(-26, -14); c.lineTo(-26, 8); c.lineTo(-46, 16); c.closePath(); }, BONE, -38, 0, 14, S, 1);
+	part(c, () => { c.beginPath(); c.moveTo(-18, 6); c.lineTo(-4, 6); c.lineTo(-10, 36); c.lineTo(-26, 36); c.closePath(); }, linear(c, 0, 6, 0, 36, [IRON.mid, IRON.shade]), S, 1.1);
+	part(c, () => { c.beginPath(); c.roundRect(-30, -16, 44, 24, 6); }, linear(c, 0, -16, 0, 8, [IRON.light, IRON.mid, IRON.shade]), S, 1.1);
+	// the thick barrel and the sting
+	part(c, () => { c.beginPath(); c.roundRect(10, -11, 26, 16, 4); }, linear(c, 0, -11, 0, 5, [IRON.light, IRON.mid, IRON.shade]), S, 1.1);
+	cel(c, () => { c.beginPath(); c.moveTo(34, -14); c.lineTo(50, -3); c.lineTo(34, 8); c.closePath(); }, BONE, 40, -3, 9, S, 0.9);
+	bloom(c, 49, -3, 12, VENOM.glow, 0.9);
+	// the drum
+	bloom(c, -6, -4, 40, VENOM.glow, 0.6);
+	part(c, () => { c.beginPath(); c.arc(-6, -4, 19, 0, TAU); }, radial(c, -12, -10, 2, 20, [VENOM.light, VENOM.mid, VENOM.shade]), S, 1.3);
+	c.strokeStyle = 'rgba(10,40,60,.7)';
+	c.lineWidth = 2.5;
+	for (let k = 0; k < 3; k += 1) {
+		const a = (k * TAU) / 3 + 0.3;
 		c.beginPath();
-		c.moveTo(bx, -24);
-		c.quadraticCurveTo(bx + 5, -2, bx, 22);
-		c.lineTo(bx + 7, 22);
-		c.quadraticCurveTo(bx + 12, -2, bx + 7, -24);
-		c.closePath();
-		c.fill();
+		c.moveTo(-6 + Math.cos(a) * 7, -4 + Math.sin(a) * 7);
+		c.lineTo(-6 + Math.cos(a) * 17, -4 + Math.sin(a) * 17);
+		c.stroke();
 	}
-	c.fillStyle = 'rgba(255,240,200,.35)';
-	c.beginPath();
-	c.ellipse(-10, -12, 24, 7, -0.1, 0, TAU);
-	c.fill();
-	c.fillStyle = 'rgba(40,10,0,.35)';
-	c.beginPath();
-	c.ellipse(-4, 14, 34, 8, 0, 0, TAU);
-	c.fill();
-	c.restore();
-	body();
-	ink(c, S, 1.1);
-	part(c, () => { c.beginPath(); c.moveTo(28, -7); c.lineTo(48, -1); c.lineTo(28, 5); c.closePath(); }, '#1c0c08', S, 0.8);
-	bloom(c, 48, -1, 14, VENOM.glow, 0.9);
-	part(c, () => { c.beginPath(); c.arc(48, 3, 4, 0, TAU); }, VENOM.mid, S, 0.5);
-	gloss(c, -16, -12, 9, 2.6, 0.8, -0.1);
+	gloss(c, -13, -12, 6, 3, 0.9, -0.5);
 }
 
 /**
- * Candidate D, the sting itself: one big curved thorn of bone, its hollow lit with venom, the tip
- * glowing. Nothing but the silhouette, as bold as the fist.
+ * Candidate G, the tank rifle: a thick rifle with a big glass tank of venom on its back, three lit
+ * coils round the barrel and a bone sting at the muzzle; longer than the Maw, cyan where it is orange.
  */
-export function paintStingThorn(c: Ctx): void {
+export function paintStingTank(c: Ctx): void {
 	const S = 60;
-	const thorn = (): void => {
-		c.beginPath();
-		c.moveTo(-40, 26);
-		c.quadraticCurveTo(-36, -18, 6, -30);
-		c.quadraticCurveTo(34, -36, 48, -10);
-		c.quadraticCurveTo(26, -20, 8, -12);
-		c.quadraticCurveTo(-18, -2, -22, 30);
-		c.closePath();
-	};
-	bloom(c, 40, -14, 18, VENOM.glow, 0.9);
-	cel(c, thorn, BONE, -4, -4, 30, S, 1.2);
-	// the venom channel along its inside
-	c.save();
-	c.strokeStyle = VENOM.mid;
-	c.lineWidth = 5;
-	c.lineCap = 'round';
-	c.beginPath();
-	c.moveTo(-30, 22);
-	c.quadraticCurveTo(-24, -10, 8, -20);
-	c.quadraticCurveTo(28, -26, 42, -14);
-	c.stroke();
-	c.strokeStyle = VENOM.light;
-	c.lineWidth = 1.8;
-	c.stroke();
-	c.restore();
-	// segments of the shaft
-	c.strokeStyle = 'rgba(80,50,30,.7)';
-	c.lineWidth = 1.8;
-	for (const [x0, y0, x1, y1] of [[-38, 8, -24, 12], [-30, -10, -16, -2], [-12, -24, -4, -12]]) {
-		c.beginPath();
-		c.moveTo(x0, y0);
-		c.lineTo(x1, y1);
-		c.stroke();
+	cel(c, () => { c.beginPath(); c.moveTo(-50, -2); c.lineTo(-32, -10); c.lineTo(-32, 10); c.lineTo(-48, 16); c.closePath(); }, BONE, -40, 4, 13, S, 1);
+	part(c, () => { c.beginPath(); c.moveTo(-20, 8); c.lineTo(-8, 8); c.lineTo(-13, 34); c.lineTo(-26, 34); c.closePath(); }, linear(c, 0, 8, 0, 34, [IRON.mid, IRON.shade]), S, 1.1);
+	part(c, () => { c.beginPath(); c.roundRect(-34, -8, 44, 20, 6); }, linear(c, 0, -8, 0, 12, [IRON.light, IRON.mid, IRON.shade]), S, 1.1);
+	// the tank on its back
+	bloom(c, -12, -18, 38, VENOM.glow, 0.6);
+	part(c, () => { c.beginPath(); c.roundRect(-34, -30, 42, 18, 9); }, linear(c, 0, -30, 0, -12, [VENOM.light, VENOM.mid, VENOM.shade]), S, 1.3);
+	gloss(c, -22, -25, 10, 2.6, 0.9, 0);
+	// the barrel, its coils, the sting
+	part(c, () => { c.beginPath(); c.rect(8, -5, 30, 12); }, linear(c, 0, -5, 0, 7, [IRON.light, IRON.mid, IRON.shade]), S, 1.1);
+	bloom(c, 22, 1, 20, VENOM.glow, 0.45);
+	for (const cx of [13, 22, 31]) {
+		part(c, () => { c.beginPath(); c.roundRect(cx, -9, 5, 20, 2); }, '#7fe6ff', S, 0.8);
 	}
-	part(c, () => { c.beginPath(); c.arc(48, -10, 4, 0, TAU); }, VENOM.light, S, 0.5);
-}
-
-/**
- * Candidate E, the venom gland: a translucent sac of glowing venom on a bone grip, held by sinews,
- * a bone sting jutting out of its front.
- */
-export function paintStingGland(c: Ctx): void {
-	const S = 60;
-	cel(c, () => { c.beginPath(); c.moveTo(-30, 4); c.lineTo(-16, 4); c.lineTo(-22, 34); c.lineTo(-36, 34); c.closePath(); }, BONE, -26, 18, 14, S, 0.9);
-	bloom(c, -2, -4, 46, VENOM.glow, 0.6);
-	part(c, () => { c.beginPath(); c.ellipse(-4, -4, 28, 22, 0, 0, TAU); }, radial(c, -12, -12, 2, 32, [VENOM.light, VENOM.mid, VENOM.shade]), S, 1.1);
-	// the sinews that hold it
-	c.strokeStyle = '#a83a34';
-	c.lineWidth = 4;
-	c.lineCap = 'round';
-	for (const s of [-1, 1]) {
-		c.beginPath();
-		c.moveTo(-28, 6);
-		c.quadraticCurveTo(-6, s * 26 - 4, 22, s * 10 - 4);
-		c.stroke();
-	}
-	gloss(c, -14, -16, 10, 4, 0.85, -0.4);
-	cel(c, () => { c.beginPath(); c.moveTo(22, -12); c.lineTo(50, -4); c.lineTo(22, 4); c.closePath(); }, BONE, 34, -4, 10, S, 0.8);
-	bloom(c, 49, -4, 9, VENOM.glow, 0.9);
+	cel(c, () => { c.beginPath(); c.moveTo(36, -10); c.lineTo(50, 1); c.lineTo(36, 12); c.closePath(); }, BONE, 41, 1, 8, S, 0.9);
+	bloom(c, 49, 1, 12, VENOM.glow, 0.9);
 }
 
 // ── the Sting's fire ─────────────────────────────────────────────────────────────────────────────
@@ -289,7 +230,7 @@ const HOT: Tones = { light: '#fff6d8', mid: '#ffcf5a', shade: '#a86a10' };
 const FLESH: Tones = { light: '#e05a4a', mid: '#8a1a1c', shade: '#3a0408' };
 
 /**
- * Rush candidate 1, the fang saw: a disc of dark flesh ringed with ten bone fangs, spinning fast.
+ * The rush, the fang saw (the owner's pick): a disc of dark flesh ringed with ten bone fangs, spinning fast.
  * `t` turns it; `counter` makes the fangs white-hot gold.
  */
 export function rushSaw(c: Ctx, x: number, y: number, S: number, t: number, counter: boolean): void {
@@ -324,75 +265,6 @@ export function rushSaw(c: Ctx, x: number, y: number, S: number, t: number, coun
 	}
 	c.restore();
 	cel(c, () => { c.beginPath(); c.arc(x, y, R * 0.24, 0, TAU); }, teeth, x, y, R * 0.24, S, 0.6);
-}
-
-/**
- * Rush candidate 2, the drill: a cone of flesh pointing along the heading, its spiral grooves turning,
- * a bone tip. `t` turns the grooves.
- */
-export function rushDrill(c: Ctx, x: number, y: number, S: number, dir: Dir, t: number, counter: boolean): void {
-	const [dx, dy] = VEC[dir];
-	if (counter) bloom(c, x + dx * S * 0.2, y + dy * S * 0.2, S * 0.8, GOLD, 0.5);
-	shadow(c, x, y, S * 0.4, S * 0.18, 0.45);
-	c.save();
-	c.translate(x, y);
-	c.rotate(Math.atan2(dy, dx));
-	const cone = (): void => {
-		c.beginPath();
-		c.moveTo(-S * 0.36, -S * 0.32);
-		c.quadraticCurveTo(-S * 0.44, 0, -S * 0.36, S * 0.32);
-		c.lineTo(S * 0.36, S * 0.05);
-		c.lineTo(S * 0.36, -S * 0.05);
-		c.closePath();
-	};
-	cone();
-	c.fillStyle = linear(c, 0, -S * 0.32, 0, S * 0.32, counter ? [HOT.light, HOT.mid, HOT.shade] : [FLESH.light, FLESH.mid, FLESH.shade]);
-	c.fill();
-	c.save();
-	cone();
-	c.clip();
-	c.strokeStyle = counter ? 'rgba(120,60,0,.55)' : 'rgba(30,0,4,.6)';
-	c.lineWidth = S * 0.06;
-	const phase = (t * 3) % 1;
-	for (let k = -1; k < 6; k += 1) {
-		const gx = -S * 0.4 + (k + phase) * S * 0.16;
-		c.beginPath();
-		c.moveTo(gx, -S * 0.4);
-		c.lineTo(gx + S * 0.12, S * 0.4);
-		c.stroke();
-	}
-	c.restore();
-	cone();
-	ink(c, S, 0.9);
-	cel(c, () => { c.beginPath(); c.moveTo(S * 0.3, -S * 0.09); c.lineTo(S * 0.52, 0); c.lineTo(S * 0.3, S * 0.09); c.closePath(); }, counter ? HOT : BONE, S * 0.4, 0, S * 0.1, S, 0.6);
-	c.restore();
-}
-
-/**
- * Rush candidate 3, the thorn ball: a knot of dark flesh bristling with eight bone thorns, rolling
- * along the heading. `t` rolls it.
- */
-export function rushThorns(c: Ctx, x: number, y: number, S: number, t: number, counter: boolean): void {
-	const R = S * 0.24;
-	const roll = t * 9;
-	if (counter) bloom(c, x, y, S * 0.8, GOLD, 0.5);
-	shadow(c, x, y, R * 1.3, R * 0.5, 0.45);
-	const thorn = counter ? HOT : BONE;
-	for (let k = 0; k < 6; k += 1) {
-		const a = roll + (k * TAU) / 6;
-		const len = S * 0.27;
-		c.save();
-		c.translate(x + Math.cos(a) * R * 0.8, y + Math.sin(a) * R * 0.8);
-		c.rotate(a);
-		cel(c, () => { c.beginPath(); c.moveTo(0, -S * 0.07); c.lineTo(len, 0); c.lineTo(0, S * 0.07); c.closePath(); }, thorn, len * 0.3, 0, S * 0.07, S, 0.55);
-		c.restore();
-	}
-	cel(c, () => { c.beginPath(); c.arc(x, y, R, 0, TAU); }, FLESH, x, y, R, S, 0.9);
-	c.strokeStyle = 'rgba(30,0,4,.55)';
-	c.lineWidth = Math.max(1, S * 0.025);
-	c.beginPath();
-	c.arc(x, y, R * 0.6, roll, roll + 2);
-	c.stroke();
 }
 
 /** The rush's hit on the boss: three claw cuts across him and a spray, bigger and gold for a counter. */
@@ -501,26 +373,35 @@ export function mawOrb(c: Ctx, x: number, y: number, S: number, t: number): void
 	ink(c, S, 0.5);
 }
 
-/** The orb on a boss who is not stunned: it breaks on him, sparks thrown aside, a dull small mark. */
+/**
+ * The orb on a boss who is not stunned: a real orange burst, half the full hit's size, sparks thrown
+ * aside off his hide, a dark scorch; no white-hot core and no flesh flying (that is the full hit's).
+ */
 export function mawGlance(c: Ctx, x: number, y: number, S: number, f: number): void {
 	const a = 1 - f;
-	bloom(c, x, y, S * 0.6, '255,150,60', 0.35 * a);
-	for (let k = 0; k < 8; k += 1) {
+	bloom(c, x, y, S * 1.0, '255,140,50', 0.55 * a);
+	c.fillStyle = radial(c, x, y, 0, S * (0.3 + 0.25 * f), [`rgba(255,200,110,${a})`, `rgba(240,110,30,${0.8 * a})`, 'rgba(160,30,10,0)']);
+	c.beginPath();
+	c.arc(x, y, S * (0.3 + 0.25 * f), 0, TAU);
+	c.fill();
+	c.save();
+	c.strokeStyle = `rgba(255,170,90,${0.8 * a})`;
+	c.lineWidth = S * 0.035 * a + 1;
+	c.beginPath();
+	c.arc(x, y, S * (0.25 + 0.5 * f), 0, TAU);
+	c.stroke();
+	c.restore();
+	for (let k = 0; k < 10; k += 1) {
 		const side = k % 2 ? 1 : -1;
-		const ang = Math.PI + side * (0.9 + (k >> 1) * 0.18);
-		const d = S * (0.2 + 0.55 * f);
-		c.strokeStyle = `rgba(255,${170 + k * 8},90,${a})`;
-		c.lineWidth = Math.max(1, S * 0.025);
+		const ang = Math.PI + side * (0.7 + (k >> 1) * 0.16);
+		const d = S * (0.25 + 0.6 * f);
+		c.strokeStyle = `rgba(255,${180 + k * 6},100,${a})`;
+		c.lineWidth = Math.max(1.2, S * 0.035);
 		c.beginPath();
-		c.moveTo(x + Math.cos(ang) * d * 0.6, y + Math.sin(ang) * d * 0.6);
+		c.moveTo(x + Math.cos(ang) * d * 0.55, y + Math.sin(ang) * d * 0.55);
 		c.lineTo(x + Math.cos(ang) * d, y + Math.sin(ang) * d);
 		c.stroke();
 	}
-	// a grey puff: the orb did not get in
-	c.fillStyle = `rgba(120,100,96,${0.5 * a})`;
-	c.beginPath();
-	c.arc(x - S * 0.1, y, S * (0.12 + 0.1 * f), 0, TAU);
-	c.fill();
 }
 
 /** The orb on a stunned boss: the real hit, a white-hot core, a fire burst and flesh flying. */
@@ -553,37 +434,50 @@ export function mawFull(c: Ctx, x: number, y: number, S: number, f: number): voi
 
 // ── spent, arriving, refused ─────────────────────────────────────────────────────────────────────
 
-/** The weapon in hand spent: its icon cracks over the hero and falls apart into ash, `f` 0..1. */
+/**
+ * The weapon in hand spent, bold enough for the game's scale: its icon pops up over the hero at full
+ * tile size with a flash, cracks white, and bursts into grey shards flung out, `f` 0..1.
+ */
 export function spent(c: Ctx, x: number, y: number, S: number, f: number, paint: (c: Ctx) => void): void {
-	const size = S * 0.7;
-	if (f < 0.45) {
-		const k = f / 0.45;
+	const size = S * 1.1;
+	const cy = y - S * 0.85;
+	if (f < 0.4) {
+		const k = f / 0.4;
+		bloom(c, x, cy, S * 0.9, '255,240,220', 0.5 * (1 - k));
 		c.save();
-		c.globalAlpha *= 1 - 0.3 * k;
-		c.filter = `grayscale(${k}) brightness(${1 - 0.4 * k})`;
-		icon(c, x, y - S * 0.6 - k * S * 0.1, size, paint);
+		c.filter = `grayscale(${k}) brightness(${1 + 0.5 * (1 - k)})`;
+		icon(c, x, cy - k * S * 0.12, size * (0.8 + 0.2 * Math.min(1, k * 3)), paint);
 		c.restore();
-		// the crack
 		c.save();
-		c.strokeStyle = `rgba(255,240,220,${k})`;
-		c.lineWidth = Math.max(1, S * 0.03);
+		c.strokeStyle = `rgba(255,255,255,${Math.min(1, k * 2)})`;
+		c.lineWidth = Math.max(1.5, S * 0.05);
+		c.lineJoin = 'round';
 		c.beginPath();
-		c.moveTo(x - size * 0.2, y - S * 0.6 - size * 0.3);
-		c.lineTo(x, y - S * 0.6);
-		c.lineTo(x - size * 0.06, y - S * 0.55);
-		c.lineTo(x + size * 0.18, y - S * 0.6 + size * 0.3);
+		c.moveTo(x - size * 0.3, cy - size * 0.35);
+		c.lineTo(x - size * 0.02, cy - size * 0.02);
+		c.lineTo(x - size * 0.12, cy + size * 0.06);
+		c.lineTo(x + size * 0.25, cy + size * 0.35);
 		c.stroke();
 		c.restore();
 		return;
 	}
-	const k = (f - 0.45) / 0.55;
-	for (let i = 0; i < 12; i += 1) {
-		const px = x + ((i % 4) - 1.5) * size * 0.22 + Math.sin(i * 1.7) * S * 0.08 * k;
-		const py = y - S * 0.65 + Math.floor(i / 4) * size * 0.2 + S * 0.5 * k * (0.6 + (i % 3) * 0.2);
-		c.fillStyle = `rgba(${110 + (i % 3) * 20},${100 + (i % 3) * 15},96,${1 - k})`;
+	const k = (f - 0.4) / 0.6;
+	bloom(c, x, cy, S * 0.7, '200,190,180', 0.4 * (1 - k));
+	for (let i = 0; i < 10; i += 1) {
+		const ang = (i * TAU) / 10 + 0.2;
+		const d = S * (0.1 + 0.75 * k);
+		c.save();
+		c.translate(x + Math.cos(ang) * d, cy + Math.sin(ang) * d + S * 0.5 * k * k);
+		c.rotate(ang + k * 6);
+		c.fillStyle = `rgba(${150 + (i % 3) * 25},${140 + (i % 3) * 20},132,${1 - k})`;
 		c.beginPath();
-		c.rect(px, py, S * 0.06 * (1 - k * 0.5), S * 0.05 * (1 - k * 0.5));
+		c.moveTo(-S * 0.09, -S * 0.05);
+		c.lineTo(S * 0.1, -S * 0.02);
+		c.lineTo(-S * 0.02, S * 0.08);
+		c.closePath();
 		c.fill();
+		ink(c, S, 0.4);
+		c.restore();
 	}
 }
 
@@ -613,25 +507,31 @@ export function arrive(c: Ctx, x: number, y: number, S: number, f: number, paint
 	}
 }
 
-/** The refused press: a dull grey puff at the hero's front and a short shake mark. */
-export function refused(c: Ctx, x: number, y: number, S: number, dir: Dir): void {
+/**
+ * The refused press, readable at game scale: the hero jolts back and a dull grey burst with a broken
+ * ring shows at his front (the dial flashes red in the HUD at the same time).
+ */
+export function refused(c: Ctx, x: number, y: number, S: number, dir: Dir, f: number): void {
 	const [dx, dy] = VEC[dir];
-	const mx = x + dx * S * 0.5;
-	const my = y + dy * S * 0.5;
-	for (let k = 0; k < 4; k += 1) {
-		c.fillStyle = `rgba(130,118,112,${0.55 - k * 0.1})`;
+	const mx = x + dx * S * 0.6;
+	const my = y + dy * S * 0.6;
+	const a = 1 - f;
+	c.fillStyle = `rgba(150,140,134,${0.7 * a})`;
+	for (let k = 0; k < 5; k += 1) {
+		const ang = (k * TAU) / 5;
 		c.beginPath();
-		c.arc(mx + dx * S * 0.06 * k + (k - 1.5) * S * 0.05 * dy, my + dy * S * 0.06 * k + (k - 1.5) * S * 0.05 * dx, S * (0.07 + k * 0.02), 0, TAU);
+		c.arc(mx + Math.cos(ang) * S * 0.14 * (0.6 + f), my + Math.sin(ang) * S * 0.14 * (0.6 + f), S * 0.11, 0, TAU);
 		c.fill();
 	}
 	c.save();
-	c.strokeStyle = 'rgba(220,200,190,.7)';
-	c.lineWidth = Math.max(1, S * 0.025);
-	for (const s of [-1, 1]) {
+	c.strokeStyle = `rgba(255,90,70,${a})`;
+	c.lineWidth = Math.max(1.5, S * 0.06);
+	c.lineCap = 'round';
+	const r = S * (0.28 + 0.15 * f);
+	for (let k = 0; k < 4; k += 1) {
+		const a0 = (k * TAU) / 4 + 0.3;
 		c.beginPath();
-		c.moveTo(x + s * S * 0.55, y - S * 0.12);
-		c.lineTo(x + s * S * 0.62, y);
-		c.lineTo(x + s * S * 0.55, y + S * 0.12);
+		c.arc(mx, my, r, a0, a0 + 0.9);
 		c.stroke();
 	}
 	c.restore();
