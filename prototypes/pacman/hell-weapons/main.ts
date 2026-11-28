@@ -635,7 +635,8 @@ for (const sec of [...FIX_SECTIONS, ...END_SECTIONS, ...BOSS_SECTIONS, ...SECTIO
 const frozen = new URLSearchParams(location.search).get('t');
 const start = performance.now();
 const tick = (now: number): void => {
-	const t = frozen !== null ? Number(frozen) : (now - start) / 1000;
+	// the first frame's stamp can come before `start`: time never runs below 0
+	const t = frozen !== null ? Number(frozen) : Math.max(0, (now - start) / 1000);
 	for (const l of live) l.paint(t);
 	if (frozen === null) requestAnimationFrame(tick);
 };

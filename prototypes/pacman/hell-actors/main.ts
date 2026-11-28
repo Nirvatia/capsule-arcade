@@ -281,7 +281,8 @@ for (const [id, title, note, cards] of [
 const frozen = new URLSearchParams(location.search).get('t');
 const start = performance.now();
 const tick = (now: number): void => {
-	const t = frozen !== null ? Number(frozen) : (now - start) / 1000;
+	// the first frame's stamp can come before `start`: time never runs below 0
+	const t = frozen !== null ? Number(frozen) : Math.max(0, (now - start) / 1000);
 	for (const paint of live) paint(t);
 	if (frozen === null) requestAnimationFrame(tick);
 };
