@@ -339,6 +339,16 @@ last (see Later).
          (frames of the three acts, act I raised; a luminance check); (4) the mechanics (acts,
          bulkheads, the relay, the squad and the tactics by act, the stain ambush), then the
          owner's play and the bot's length measure.
+         Done so far (2026-11-28): the shade round 1 (a shroud, a smoke column, a reaper: all
+         larger than a tile) and round 2 (compact: a head of smoke in 0.8 of a tile with a smoke
+         tail, `station-b7/shadeLooks.ts`, Морок B1/B2): liked, but hard to see, as the steppers
+         were. A flat redraw of the whole maze and a replaced hive layer were rejected (they threw
+         the station's look away). **The owner's finding**: the walls read by their shape; thin
+         lines of organics on them break the silhouette, so the infestation must take a whole wall
+         as its material (moss, a thicket), plus the light, the food and fewer details. Next: a
+         master asset, one wall island (a corner and a straight) as steel, half taken with a growth
+         front, fully taken, in two materials (glossy black with lime in the folds; a matte
+         thicket), volume from a baked height field lit from the top left, not from detail.
       8. Into the game: the squad and the escape in place of `StationService`'s ghost parts;
          the station's HUD; both heroes' station look (a prototype first); the hatch, the doors
          and the route's art; the caught transition and the world turn; sound; a performance

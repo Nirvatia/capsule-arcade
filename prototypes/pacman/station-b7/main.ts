@@ -19,7 +19,6 @@ import type { PretenderState } from '../../../src/games/pacman/render/station/pr
 type CandState = PretenderState;
 
 
-import { drawSimpleMaze } from './simpleMaze';
 import { drawShade, type ShadeLook, type ShadeOpts } from './shadeLooks';
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
@@ -50,8 +49,7 @@ const st = {
 	mimic: 'now' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
-	big: false,
-	maze: 'now' as 'now' | 'simple'
+	big: false
 };
 
 const NOTES: Record<string, string> = {
@@ -92,14 +90,6 @@ const GROUPS: Group[] = [
 		items: [
 			['Станция', 1],
 			['Зона', 2]
-		]
-	},
-	{
-		label: 'Лабиринт',
-		key: 'maze',
-		items: [
-			['Как в игре', 'now'],
-			['Упрощённый', 'simple']
 		]
 	},
 	{
@@ -559,7 +549,6 @@ function frame(now: number): void {
 	const hero = heroAt(t);
 	world.drawLight(ctx, t, st.inf, st.alarm ? 'alert' : 'quarantine', true);
 	const L = world.layout;
-	if (st.maze === 'simple') drawSimpleMaze(ctx, L, grid, world.scene, st.inf, t);
 	const S = L.tileSize;
 	const ph = ringPhase(t);
 	if (ph) {
