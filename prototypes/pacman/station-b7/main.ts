@@ -19,6 +19,7 @@ import type { PretenderState } from '../../../src/games/pacman/render/station/pr
 type CandState = PretenderState;
 
 
+import { WallHive, type WallMaterial } from './wallHive';
 import { drawShade, type ShadeLook, type ShadeOpts } from './shadeLooks';
 const view = document.getElementById('view') as HTMLCanvasElement;
 const ctx = view.getContext('2d') as CanvasRenderingContext2D;
@@ -28,6 +29,50 @@ const world = new B7World(GRID_STATION);
 const heroView = new CinnabarHero();
 heroView.setFeel(GAME_FEEL);
 world.setQuality('medium');
+
+// ------------------------------------------------------------------ the v4 candidate («Кандидат v4»)
+// The walls taken whole by the hive's mass (`wallHive`) in place of the game's hive layer; the
+// light map's base raised (act I bright, sinking to about 70% by the escape); the food the game's
+// own capsule at about half its size. Everything else is the game's scene.
+type HiveLayer = { update(i: number, dt: number): void; draw(c: CanvasRenderingContext2D): void; drawPulse(c: CanvasRenderingContext2D, i: number, t: number): void };
+const worldHive = world as unknown as { hive: HiveLayer };
+const gameHive = worldHive.hive;
+const gameLair = (gameHive as unknown as { lair: HTMLCanvasElement }).lair;
+const wallHives: Partial<Record<WallMaterial, WallHive>> = {};
+function setLook(v: 'now' | WallMaterial): void {
+	if (v === 'now') worldHive.hive = gameHive;
+	else worldHive.hive = wallHives[v] ??= new WallHive(world.scene, GRID_STATION, gameLair, v);
+}
+type SceneHooks = {
+	drawBioSpores(g: CanvasRenderingContext2D, time: number, showProps: boolean): void;
+	renderLightmap(lg: CanvasRenderingContext2D, ...rest: unknown[]): void;
+};
+const hooks = world.scene as unknown as SceneHooks;
+const spores = hooks.drawBioSpores;
+hooks.drawBioSpores = (g, time, showProps) => {
+	if (st.look === 'now') return spores(g, time, showProps);
+	// the same capsule, smaller about its own centre
+	const k = 0.55;
+	const small = {
+		drawImage: (img: CanvasImageSource, x: number, y: number, w: number, h: number) =>
+			g.drawImage(img, x + (w * (1 - k)) / 2, y + (h * (1 - k)) / 2, w * k, h * k)
+	} as unknown as CanvasRenderingContext2D;
+	spores(small, time, showProps);
+};
+const lightmap = hooks.renderLightmap;
+hooks.renderLightmap = (lg, ...rest) => {
+	lightmap(lg, ...rest);
+	if (st.look === 'now') return;
+	// the base raised: act I bright cold, less as the hive takes the station
+	const k = st.inf;
+	const a = k < 0.5 ? 74 - 28 * k : 60 - 8 * (k - 0.5);
+	lg.save();
+	lg.setTransform(1, 0, 0, 1, 0, 0);
+	lg.globalCompositeOperation = 'lighter';
+	lg.fillStyle = `rgb(${Math.round(a - 4)}, ${Math.round(a)}, ${Math.round(a + 3)})`;
+	lg.fillRect(0, 0, lg.canvas.width, lg.canvas.height);
+	lg.restore();
+};
 const grid = GRID_STATION;
 const H = grid.length;
 const W = grid[0].length;
@@ -49,11 +94,14 @@ const st = {
 	mimic: 'now' as Mim,
 	rage: 'off' as Pick,
 	lure: 'off' as Lure,
-	big: false
+	big: false,
+	look: 'now' as 'now' | WallMaterial
 };
 
 const NOTES: Record<string, string> = {
 	'rage-now': 'Ярость как в игре: красный маньяк',
+	'look-gloss': 'v4: стены забирает масса (глянец: чёрная, блик на горбах, лайм в складках), свет акта I поднят, еда мельче',
+	'look-moss': 'v4: стены забирает масса (мох: матовый, бархатный, чёрно-оливковый), свет акта I поднят, еда мельче',
 	'mimic-now': 'Мимики как в игре: степперы',
 	'mimic-b1': 'Морок B1: голова из дыма в 0.8 клетки, острый капюшон назад, хвост дыма — движение',
 	'mimic-b2': 'Морок B2: голова из дыма в 0.8 клетки, круглый капюшон, хвост дыма — движение',
@@ -91,6 +139,16 @@ const GROUPS: Group[] = [
 			['Станция', 1],
 			['Зона', 2]
 		]
+	},
+	{
+		label: 'Кандидат v4',
+		key: 'look',
+		items: [
+			['Как в игре', 'now'],
+			['Глянец', 'gloss'],
+			['Мох', 'moss']
+		],
+		after: (v) => setLook(v as 'now' | WallMaterial)
 	},
 	{
 		label: 'Мимики',
@@ -183,6 +241,7 @@ function render(): void {
 	}
 	const lines = [
 		st.ring === 'cycle' ? NOTES['ring-cycle'] : '',
+		st.look !== 'now' ? NOTES[`look-${st.look}`] : '',
 		st.mimic !== 'off' ? NOTES[`mimic-${st.mimic}`] : '',
 		st.rage !== 'off' ? NOTES[`rage-${st.rage}`] : '',
 		st.lure !== 'off' ? NOTES[`lure-${st.lure}`] : ''
