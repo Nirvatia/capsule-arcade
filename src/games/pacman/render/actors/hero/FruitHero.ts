@@ -3,7 +3,7 @@
 // (base, a shade crescent away from the light, a light band toward it), an ink line heavier on the
 // shadow side, the key light upper left, rounded simple shapes that still read at 14 px. The orange:
 // a dimpled peel, a pith ring, eight juicy segments with a glint each, a leaf on the nape, a
-// determined brow over a big glossy eye. The watermelon: a striped rind, a pale band, ruby flesh
+// sharp brow over a cocky eye under a lowered lid. The watermelon: a striped rind, a pale band, ruby flesh
 // with glossy seeds, a gold bow with a green gem, lashes. The buff ("fresh ice"): the flesh keeps
 // its colour; the peel or rind frosts, a dark teal and white rim closes the cut fruit with a few
 // frost shards on its back (it blinks as the buff runs out), bubbles rise in the flesh, and the
@@ -21,6 +21,7 @@ import {
 	type ParticleKind
 } from './Hero';
 import { Wake } from './heroWake';
+import { paintHeroBrow, paintHeroEye } from './heroEye';
 
 type RGB = [number, number, number];
 type Ctx = CanvasRenderingContext2D;
@@ -346,55 +347,30 @@ abstract class FruitBase extends Hero {
 	}
 	protected abstract wallColor(): RGB;
 
-	/** One big glossy eye: white with a shade, a pupil on the gaze, two glints, a lid on blinks. */
+	/**
+	 * The eye (`heroEye`, "cocky"): an oval under a lowered, slanted lid, the pupil on the gaze; her
+	 * lashes and liner. The blink and the squint close it; the power rings the pupil cold.
+	 */
 	protected paintEye(ctx: Ctx, x: number, y: number, r: number, p: number, lashes: boolean): void {
 		const close = Math.max(
 			this.blink >= 0 ? Math.sin((this.blink / 0.13) * Math.PI) : 0,
 			this.squint * 0.75
 		);
-		ctx.save();
-		ctx.translate(x, y);
-		ctx.scale(1, 1 - 0.88 * close);
-		const L = { lx: -0.55, ly: -0.83 };
-		cel(
-			ctx,
-			ell(0, 0, r, r),
-			{
-				shade: [206, 198, 186],
-				base: mix([255, 252, 244], ICE_WHITE, p * 0.5) as RGB,
-				light: [255, 255, 255]
-			},
-			L,
-			{ sh: r * 0.2, lightK: 0.5, lightOff: r * 0.1, ink: Math.max(1.3, r * 0.26), px: 1 }
-		);
-		const gx = this.gazeX * r * 0.3;
-		const gy = this.gazeY * r * 0.3;
-		disc(ctx, gx, gy, r * 0.56, '#1c0e0a');
-		disc(ctx, gx - r * 0.2, gy - r * 0.24, r * 0.22, '#ffffff');
-		disc(ctx, gx + r * 0.2, gy + r * 0.18, r * 0.1, 'rgba(255,255,255,0.7)');
-		if (p > 0.3) {
-			ctx.beginPath();
-			ctx.arc(gx, gy, r * 0.6, 0, TAU);
-			ctx.strokeStyle = css([110, 230, 255], 0.8 * p);
-			ctx.lineWidth = Math.max(0.8, r * 0.1);
-			ctx.stroke();
-		}
-		if (lashes) {
-			ctx.strokeStyle = css(this.inkColor());
-			ctx.lineWidth = Math.max(1.1, r * 0.22);
-			ctx.lineCap = 'round';
-			for (const [a, len] of [
-				[-0.45, 0.5],
-				[-0.95, 0.55],
-				[-1.5, 0.45]
-			] as const) {
-				ctx.beginPath();
-				ctx.moveTo(Math.cos(a) * r * 0.96, Math.sin(a) * r * 0.96);
-				ctx.lineTo(Math.cos(a - 0.12) * r * (0.96 + len), Math.sin(a - 0.12) * r * (0.96 + len));
-				ctx.stroke();
-			}
-		}
-		ctx.restore();
+		paintHeroEye(ctx, x, y, {
+			r,
+			close,
+			gx: this.gazeX * r * 0.3,
+			gy: this.gazeY * r * 0.3,
+			power: p,
+			girl: lashes,
+			ink: css(this.inkColor()),
+			lid: this.eyeLid()
+		});
+	}
+
+	/** The lid's colour: the skin round the eye, darker. */
+	protected eyeLid(): string {
+		return '#a84a08';
 	}
 
 	// ---------------------------------------------------------------------- the trail
@@ -797,15 +773,9 @@ export class OrangeHero extends FruitBase {
 		this.paintBrow(ctx, ex, ey, er, R);
 	}
 
-	/** The brow: a determined slash above the eye, the inner end lower. */
+	/** The brow: a sharp slash right above the lid, down toward the front (`heroEye`). */
 	protected paintBrow(ctx: Ctx, ex: number, ey: number, er: number, R: number): void {
-		ctx.beginPath();
-		ctx.moveTo(ex - er * 1.0, ey - er * 1.0);
-		ctx.lineTo(ex + er * 1.15, ey - er * 1.5);
-		ctx.strokeStyle = css(ORANGE.ink);
-		ctx.lineWidth = R < 12 ? Math.max(1.1, R * 0.075) : Math.max(1.5, R * 0.1);
-		ctx.lineCap = 'round';
-		ctx.stroke();
+		paintHeroBrow(ctx, ex, ey, er, R, css(ORANGE.ink));
 	}
 
 	/** The portal's ball: a whole orange with a leaf, turning with the roll. */
@@ -879,6 +849,10 @@ const MELON_DESIGN: HeroDesign = {
 };
 
 export class MelonHero extends FruitBase {
+	protected eyeLid(): string {
+		return '#4a1420';
+	}
+
 	protected readonly design = MELON_DESIGN;
 	protected readonly kit: Kit = {
 		edgeCalm: [6, 52, 28],

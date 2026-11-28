@@ -51,7 +51,7 @@ last (see Later).
    `MsPacmanHero` and their tests; `drawIceBow` moves to the mask) unless the icons want them. The
    menu/HUD icons are simplified vessels since 2026-11-26 (`heroIcon`), the sun and the comet
    are not needed for them.
-   **Fruit heroes: in the game** (2026-11-27; `render/actors/hero/FruitHero`, `DESIGN.md` §12): an
+   **Fruit heroes: in the game** (2026-11-27; the eye redrawn 2026-11-28, "cocky", `heroEye`; `render/actors/hero/FruitHero`, `DESIGN.md` §12): an
    orange for Pac-Man, a watermelon with a gold bow for Ms. Pac-Man, the buff's ice rim and fizzy
    ribbon, the calm juice ribbon; the HUD and menu icons follow. The glass vessels stay as the other
    look (`heroSkin`, the dev panel's «Герои»; no player-facing choice yet). The prototype pages

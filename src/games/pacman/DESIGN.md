@@ -708,9 +708,10 @@ scared loop. The arcade synthesises its own (`audio/ArcadeSynth.ts`).
   orange slice, Ms. Pac-Man a watermelon slice, the bite is the mouth; 0.3135 of a tile, the ice rim
   and the bow inside the tile. Cel-shaded like the rest (bands, an ink line heavier on the shadow
   side, the light upper left), simple rounded shapes that read at 14 px. The orange: a dimpled peel,
-  a pith ring, eight juicy segments with glints and beads, a leaf on the nape, a big glossy eye under
-  a determined brow. The watermelon: a striped rind, a pale band, ruby flesh, glossy seeds, a big eye
-  with lashes, a gold bow with a green gem on the crown (it sways). Calm, the trail is a swaying
+  a pith ring, eight juicy segments with glints and beads, a leaf on the nape, a cocky eye under
+  a sharp brow. The watermelon: a striped rind, a pale band, ruby flesh, glossy seeds, a cocky eye
+  with lashes and a winged liner (the eye since 2026-11-28, the owner's pick of `hero-eyes`: an oval
+  30% bigger than the old round one, its upper lid lowered aslant toward the front, the pupil under it), a gold bow with a green gem on the crown (it sways). Calm, the trail is a swaying
   ribbon of juice (a dark edge and a bright core, the owner's) with the drops and bubbles it sheds. The
   energizer (the buff, "fresh ice"): the flesh keeps its colour, the peel or rind frosts, a dark teal
   and white rim closes the cut with a few frost shards on the back (it blinks as the buff runs out),
