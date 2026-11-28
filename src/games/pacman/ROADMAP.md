@@ -88,10 +88,14 @@ last (see Later).
    chat: (a) the playable prototype `hell-phase` (done, the owner played it); (b) the rules in the
    game (done 2026-11-28: `DoomSplitService`, the new `DoomWeapon*`/`DoomPickup*`, the food on the
    map, the fire held down, placeholder art in `render/doom/doomPlaceholders`, tests in
-   `doomRedesign.test.ts`; awaits the owner's play in the game); (c) the art: the food's sprite, the four ghosts (equal,
-   the boss's armour darker than the imps now), the rush, the snare, the plasma, the armour, the
-   core; prototype first; (d) the HUD (the charge ring, the split's timer; the BFG's charge must
-   show while another item is in hand, the prototype hides it under the snare).
+   `doomRedesign.test.ts`; awaits the owner's play in the game); (c) the art, prototype `hell-kit` (an artifact): the owner
+   picked the kit «Плоть» (flayed ghosts, a fang for food, a hot heart energizer); the weapons were
+   then set in a hierarchy (2026-11-28, in the game: the berserk with its rush and counter, the Sting
+   «Жало», the Maw «Жерло» on one food meter of 3 segments; the armour and the snare dropped); the
+   mock-up shows their icons light to heavy, the rush as a whirlwind of blood, the ghosts smaller with
+   a long ragged skirt, the boss's longer skirt (in the game already); awaits the owner; then the
+   kit into `render/doom` in place of `doomPlaceholders`; the split and the core get their own
+   mock-up; (d) the HUD (done in part: the ring is the food meter with segment ticks, shown always).
    The owner played it (2026-11-28): "plays briskly"; his rule, in the prototype: the stun only for
    all four eaten (no HP then), fewer give 75 HP each and no stun.
    **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):

@@ -138,9 +138,10 @@ export class HellBlinkyView {
 			// sized so the horn tips (phase 3) end at the tile's top edge
 			w: R * 0.64,
 			domeY: -R * 0.02 + bob,
-			hem: R * 0.78 + bob,
-			feet: 4,
-			torn: snap.echo ? 1 : 0,
+			// a long skirt (the owner, 2026-11-28: the body read too short), still inside the tile
+			hem: R * 0.94 + bob,
+			feet: 5,
+			torn: snap.echo ? 1 : 0.3,
 			seed: 7
 		};
 		const pulse = 0.5 + 0.5 * Math.sin(t * (3 + phase * 1.5));

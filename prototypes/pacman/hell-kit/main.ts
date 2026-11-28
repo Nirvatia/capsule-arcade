@@ -14,6 +14,7 @@ import { FRUIT_BODY_RATIO, OrangeHero } from '../../../src/games/pacman/render/a
 import { chargePainter } from '../../../src/games/pacman/render/actors/hero/heroCharge';
 import { pickupSprite } from '../../../src/games/pacman/render/doom/DoomSprites';
 import { DoomWorld } from '../../../src/games/pacman/render/doom/DoomWorld';
+import { HellBlinkyView } from '../../../src/games/pacman/render/doom/HellBlinkyView';
 import { KITS } from './kits';
 import type { Kit } from './kits';
 import type { Dir } from './paint';
@@ -53,11 +54,11 @@ const GHOSTS: ReadonlyArray<{ x: number; y: number; dir: Dir; fright: boolean }>
 	{ x: 19, y: 15, dir: 'DOWN', fright: true },
 	{ x: 18, y: 21, dir: 'LEFT', fright: true }
 ];
-const PICKUPS: ReadonlyArray<{ tile: { x: number; y: number }; item: 'snare' | 'plasma' | 'armour' | 'berserk' }> = [
-	{ tile: DOOM_PICKUP_TILES[0], item: 'snare' },
+const PICKUPS: ReadonlyArray<{ tile: { x: number; y: number }; item: 'bfg' | 'plasma' | 'berserk' | 'medkit' }> = [
+	{ tile: DOOM_PICKUP_TILES[0], item: 'bfg' },
 	{ tile: DOOM_PICKUP_TILES[1], item: 'plasma' },
-	{ tile: DOOM_PICKUP_TILES[2], item: 'armour' },
-	{ tile: DOOM_PICKUP_TILES[3], item: 'berserk' }
+	{ tile: DOOM_PICKUP_TILES[2], item: 'berserk' },
+	{ tile: DOOM_PICKUP_TILES[3], item: 'medkit' }
 ];
 
 function canvas(w: number, h: number, label: string): [HTMLCanvasElement, CanvasRenderingContext2D] {
@@ -96,15 +97,12 @@ function drawScene(kit: Kit): HTMLCanvasElement {
 			else if (grid.isEnergizer(x, y)) kit.energizer(ctx, X(x), Y(y), S, T);
 		}
 	}
-	kit.snare(ctx, X(8), Y(5), S, 1);
-	kit.snare(ctx, X(16), Y(5), S, 0);
 	for (const p of PICKUPS) {
-		if (p.item === 'berserk') existing(ctx, 'berserk', X(p.tile.x), Y(p.tile.y), S);
+		if (p.item === 'medkit') existing(ctx, 'medkit', X(p.tile.x), Y(p.tile.y), S);
 		else kit.icon(ctx, p.item, X(p.tile.x), Y(p.tile.y), S);
 	}
 	GHOSTS.forEach((g, i) => kit.ghost(ctx, i, X(g.x), Y(g.y), S, g.dir, g.fright, T + i * 0.4));
 	heroView.draw(ctx, player, L, 0.4, { look: 'normal', charge: 0, dying: false });
-	kit.armour(ctx, player.position.x * S + L.offsetX, player.position.y * S + L.offsetY, S, 'RIGHT');
 	for (let k = 0; k < 3; k += 1) kit.bolt(ctx, X(10 + k * 1.3), Y(18), S, 'RIGHT');
 	world.drawOverlay(ctx);
 	// the maze and a strip of its frame
@@ -121,6 +119,18 @@ function drawScene(kit: Kit): HTMLCanvasElement {
 function hero(ctx: CanvasRenderingContext2D, x: number, y: number, S: number, look: 'normal' | 'berserk'): void {
 	const L: Lay = { tileSize: S, offsetX: x - player.position.x * S, offsetY: y - player.position.y * S };
 	heroView.draw(ctx, player, L, T, { look, charge: 0, dying: false });
+}
+
+const bossView = new HellBlinkyView();
+
+/** The boss (phase 3, the biggest horns) with its new long skirt, centred at (x, y). */
+function boss(ctx: CanvasRenderingContext2D, x: number, y: number, S: number): void {
+	bossView.draw(
+		ctx,
+		{ x: 0.5, y: 0.5, phase: 3, state: 'CHASE', shape: 'normal', dir: 'RIGHT', progress: 0, alpha: 1, intro: 1, look: 0, hit: 0, echo: false },
+		{ tileSize: S, offsetX: x - S / 2, offsetY: y - S / 2 },
+		T
+	);
 }
 
 function drawSheet(kit: Kit): HTMLCanvasElement {
@@ -165,26 +175,25 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 	for (let k = -1; k <= 1; k += 1) kit.food(ctx, c.x + k * S * 0.55, c.y, S);
 	c = cell(1, 1, 1, 'энерджайзер');
 	kit.energizer(ctx, c.x, c.y, S, T);
-	c = cell(2, 1, 1, 'капкан');
-	kit.snare(ctx, c.x, c.y, S, 1);
-	c = cell(3, 1, 1, 'захлопнут');
-	kit.snare(ctx, c.x, c.y, S, 0);
-	c = cell(4, 1, 1, 'подбор: капкан');
-	kit.icon(ctx, 'snare', c.x, c.y, S);
-	c = cell(0, 2, 1, 'подбор: плазма');
+	c = cell(2, 1, 1, 'берсерк');
+	kit.icon(ctx, 'berserk', c.x, c.y, S);
+	c = cell(3, 1, 1, 'Жало');
 	kit.icon(ctx, 'plasma', c.x, c.y, S);
-	c = cell(1, 2, 1, 'выстрелы');
+	c = cell(4, 1, 1, 'Жерло');
+	kit.icon(ctx, 'bfg', c.x, c.y, S);
+	c = cell(0, 2, 1, 'выстрелы Жала');
 	for (let k = -1; k <= 1; k += 1) kit.bolt(ctx, c.x + k * S * 0.45, c.y, S * 0.8, 'RIGHT');
-	c = cell(2, 2, 1, 'подбор: броня');
-	kit.icon(ctx, 'armour', c.x, c.y, S);
-	c = cell(3, 2, 1, 'герой в броне');
+	c = cell(1, 2, 1, 'герой');
 	hero(ctx, c.x, c.y, S, 'normal');
-	kit.armour(ctx, c.x, c.y, S, 'RIGHT');
-	c = cell(4, 2, 1, 'есть: берсерк', true);
-	existing(ctx, 'berserk', c.x, c.y, S);
-	c = cell(0, 3, 3, 'рывок: превращение и удар');
+	c = cell(2, 2, 1, 'босс, длинная юбка');
+	boss(ctx, c.x, c.y, S);
+	c = cell(3, 2, 1, 'есть: аптечка', true);
+	existing(ctx, 'medkit', c.x, c.y, S);
+	c = cell(4, 2, 1, 'было: BFG', true);
+	existing(ctx, 'bfg', c.x, c.y, S);
+	c = cell(0, 3, 3, 'рывок берсерка: превращение и удар');
 	hero(ctx, c.x - CELL * 1.05, c.y, S, 'berserk');
-	// halfway: the fruit fades as the skull grows over it
+	// halfway: the fruit fades as the whirlwind spins up over it
 	ctx.save();
 	ctx.globalAlpha = 0.4;
 	hero(ctx, c.x - CELL * 0.12, c.y, S, 'berserk');
@@ -192,10 +201,8 @@ function drawSheet(kit: Kit): HTMLCanvasElement {
 	kit.form(ctx, c.x - CELL * 0.12, c.y, S, 'RIGHT', 0.5, T);
 	kit.form(ctx, c.x + CELL * 0.78, c.y, S, 'RIGHT', 1, T);
 	kit.impact(ctx, c.x + CELL * 1.25, c.y, S);
-	c = cell(3, 3, 1, 'есть: BFG', true);
-	existing(ctx, 'bfg', c.x, c.y, S);
-	c = cell(4, 3, 1, 'есть: аптечка', true);
-	existing(ctx, 'medkit', c.x, c.y, S);
+	c = cell(3, 3, 1, 'было: кулак', true);
+	existing(ctx, 'berserk', c.x, c.y, S);
 	return cv;
 }
 

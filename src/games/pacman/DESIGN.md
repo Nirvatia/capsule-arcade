@@ -270,7 +270,7 @@ pads, and no ghosts but their lord.
   - Every attack is telegraphed and checked for fairness: there is always a way out.
 - **Player**: 3 HP in the fight (separate from lives). Losing them drops Pac-Man into the
   abyss: the run goes on to the next level without losing a life.
-- **Weapons**: the BFG charged by the food; berserk (one rush), snare, plasma, medkit, armour
+- **Weapons**: the berserk, the Sting (Жало) and the Maw (Жерло) on one food meter, and the medkit,
   on four spots off the corners (see "The fight, redesigned" below).
 - **Reward**: when the boss dies a heart appears at the far end of the maze from the player
   (it has to be run for) and an exit far from both;
@@ -281,13 +281,13 @@ pads, and no ghosts but their lord.
 ### The fight, redesigned (the owner's approval, 2026-11-28; in the game since 2026-11-28 with placeholder art, the lines above on the weapons and the transition are replaced by this)
 
 The fight was too empty (most of the time you wandered an empty maze) and Pac-Man is about eating
-dots under a chase. Each part keeps one job: **food** is the constant thing to do and charges the
-BFG; **pickups** are the tactical choices; the boss's **attacks** are the threat you keep running
+dots under a chase. Each part keeps one job: **food** is the constant thing to do and feeds the
+guns; **pickups** are the weapons, a hierarchy to choose from; the boss's **attacks** are the threat you keep running
 from (unchanged); the **split** is the phase change, plain Pac-Man with a window to strike.
 
 - **Food** (its sprite is the owner's later pick: the fang is the lead) fills the maze at the start;
-  each piece is 10 points and a share of the **BFG's charge** (the ring on the dial: about 30
-  pieces a shot, one shot stored). The BFG is no longer a pickup.
+  each piece is 10 points and fills the **food meter**, the guns' one resource: 3 segments of 10
+  pieces (the ring on the dial with its segment ticks, shown whatever is in hand).
 - **The split** replaces the phase transition at 1000 and 500 HP (so twice a fight). The boss
   stands and shakes (the omen, the old transition's 2.5 s), then bursts where he is: his flesh
   splatters into **new food** (every eaten tile fills again) and his **core** stays on that tile
@@ -301,21 +301,24 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
   he ate during the split, the window for the real hit. **Fewer**: no stun, he only loses 75 HP per
   eaten ghost, far less than a hit on him stunned (the owner's rule, 2026-11-28). The split's damage
   never crosses the next phase's threshold.
-- **The button** spends what is in hand; with empty hands it fires the BFG if it is charged.
+- **The button** uses the weapon in hand, one action each (no gestures, no taps against holds: the
+  owner, 2026-11-28). A new weapon picked up replaces the one in hand: the choice is always there.
 - **Pickups** (four spots in the middle of the outer sides, away from the corners, which are the
-  split's energizers'; hidden during the split; one of each kind at most, 15–20 s to come):
-  - **Berserk**: the energizer state (×1.15 speed, the powered look), the boss's touch still hurts;
-    the button makes **one rush** along the heading (up to 5 tiles, to a wall, unhurt, its own
-    animation): about 250 damage and a stun on the boss, the imps on the way die; then the berserk
-    ends, however long was left. Unused, it runs out. (The contact bite is gone: it let you run
-    through the stunned boss back and forth.)
-  - **Snare** (replaces the barrel): set on your tile; it snaps on the boss stepping in, holds him
-    about 2.5 s (100 damage). You lure him over it; a held boss is the mark for the BFG, the rush or
-    the plasma. (A decoy was dropped: free damage at a press.)
-  - **Plasma**: hold the button about 3 s, bolts along the corridor that die on walls, about 300
-    damage if all hit, no stun, kills imps. The hero never backs or stands still, so shooting the
-    boss means turning to face him and running at him. The snare and the plasma are the best combo.
-  - **Medkit** only when hurt (+1 HP); **armour** only at full health (takes one hit, at most one).
+  split's energizers'; hidden during the split; one of each kind at most, never the weapon in hand,
+  15–20 s to come). The weapons, light to heavy:
+  - **Berserk** (light, free): ×1.15 speed while held; the button is a **rush** along the heading
+    (5 tiles, to a wall): 50 damage and a short stun, the imps on the way die, then 2.5 s to rush
+    again. A plain rush is not covered (touching the boss in its strike costs nothing more). A rush
+    made **while the boss's attack is live** (the lava ball's run, a burning rift or seal, the
+    eruption: his ACTIVE state or a hazard burning) is a **counter**: ×3 damage, unhurt for the rush.
+    Its look: the hero spins up into a whirlwind of blood, the same for both heroes.
+  - **Жало** (the Sting, middle): fires bolts along the corridor while the button is held, a segment
+    of the meter a second (about 100 damage a segment if all hit), no stun, kills imps; on the move.
+  - **Жерло** (the Maw, the old BFG renamed, heavy): needs the **whole meter**; the hero stands
+    still for its charge (0.8 s), then the orb: 400 damage and a 1 s stun, the tracers along the
+    corridors as before.
+  - **Medkit**: only when hurt (+1 HP).
+    The armour and the snare were dropped (2026-11-28: too many things, no hierarchy).
 
 ## 7a. The station (boss level)
 
