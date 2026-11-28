@@ -25,10 +25,14 @@ import {
 	RUSH_COOLDOWN,
 	RUSH_COST,
 	RUSH_COUNTER_MUL,
+	RUSH_LOAD,
 	RUSH_DAMAGE,
 	SPLIT_GHOST_DAMAGE,
 	SPLIT_PACMAN,
 	STING_DAMAGE,
+	STING_LOAD,
+	FOOD_REGROW_EVERY,
+	FOOD_REGROW_MIN_DIST,
 	WEAPON_WAIT_MAX
 } from './DoomBalance';
 import { DoomBossService } from './DoomBossService';
@@ -292,8 +296,22 @@ describe('the hand', () => {
 		expect(f.doom.fire(f.player)).toBeNull();
 		f.run(RUSH_COOLDOWN);
 		expect(f.doom.fire(f.player)).toBe('rush');
-		// what he ate on the way does not make a segment: the berserk is spent
-		expect(f.doom.food * MAW_COST).toBeLessThan(RUSH_COST);
+		expect(f.doom.armed).toBe('berserk');
+	});
+
+	it('a berserk carries RUSH_LOAD rushes, then is spent though the meter is full', () => {
+		const f = fight();
+		lineUp(f);
+		f.doom.debugGiveWeapon('berserk');
+		f.doom.debugGiveWeapon('food');
+		f.tick();
+		for (let k = 0; k < RUSH_LOAD; k += 1) {
+			expect(f.doom.armed).toBe('berserk');
+			expect(f.doom.fire(f.player)).toBe('rush');
+			f.run(RUSH_COOLDOWN + 0.1);
+			f.doom.debugGiveWeapon('food');
+		}
+		expect(f.doom.food).toBe(1);
 		expect(f.doom.armed).toBe('');
 	});
 
@@ -334,7 +352,7 @@ describe('the hand', () => {
 		expect(seen).toBe(true);
 	});
 
-	it('the Sting fires while held, a segment a second, and is spent on an empty meter', () => {
+	it('the Sting fires while held, a segment a second, and stops on an empty meter', () => {
 		const f = fight();
 		lineUp(f);
 		f.doom.debugGiveWeapon('plasma');
@@ -347,6 +365,19 @@ describe('the hand', () => {
 		const after = f.boss.hp;
 		f.run(1, true);
 		expect(f.boss.hp).toBe(after);
+		// an empty meter only stops it: its load is not used up
+		expect(f.doom.armed).toBe('plasma');
+	});
+
+	it('a Sting carries STING_LOAD s of fire, then is spent though the meter was refilled', () => {
+		const f = fight();
+		lineUp(f);
+		f.doom.debugGiveWeapon('plasma');
+		f.doom.debugGiveWeapon('food');
+		f.run(STING_LOAD / 2, true);
+		f.doom.debugGiveWeapon('food');
+		f.run(STING_LOAD / 2 + 0.2, true);
+		expect(f.doom.food).toBeGreaterThan(0);
 		expect(f.doom.armed).toBe('');
 	});
 
@@ -461,6 +492,35 @@ describe('the pickups', () => {
 		expect(first.plasma).toBeLessThan(first.berserk);
 		expect(last.bfg).toBeGreaterThan(last.plasma);
 		expect(last.bfg).toBeGreaterThan(last.berserk);
+	});
+});
+
+describe('the food grows back', () => {
+	it('an eaten tile away from the hero fills again, and the meter does not count it', () => {
+		const f = fight();
+		f.run(INTRO_DURATION + 0.1);
+		eat(f, 10000);
+		expect(f.progress.remainingDots).toBe(0);
+		const meter = f.doom.food;
+		const hero = f.player.tile;
+		const step = (): void => {
+			f.player.update(STEP);
+			f.doom.update(STEP, f.player);
+		};
+		for (let t = 0; t < FOOD_REGROW_EVERY * 4 + 0.1; t += STEP) {
+			step();
+		}
+		expect(f.progress.remainingDots).toBe(4);
+		expect(f.doom.food).toBe(meter);
+		for (let y = 0; y < f.grid.height; y += 1) {
+			for (let x = 0; x < f.grid.width; x += 1) {
+				if (f.grid.isDot(x, y) && !f.progress.isCollected(x, y)) {
+					expect(Math.abs(x - hero.x) + Math.abs(y - hero.y)).toBeGreaterThanOrEqual(
+						FOOD_REGROW_MIN_DIST
+					);
+				}
+			}
+		}
 	});
 });
 

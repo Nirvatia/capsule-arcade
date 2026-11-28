@@ -212,6 +212,17 @@ export class LevelProgress {
 		this.events.emit('audio:cue', { cue: 'dot' });
 	}
 
+	/** A food tile eaten before fills again (the hell's food growing back); false if it was not eaten. */
+	restoreDot(x: number, y: number): boolean {
+		const id = this.key(x, y);
+		if (!this.collected.has(id) || this.grid.tileAt(x, y) !== 'DT') {
+			return false;
+		}
+		this.collected.delete(id);
+		this.remainingDotsValue = Math.min(this.grid.dotCount, this.remainingDotsValue + 1);
+		return true;
+	}
+
 	resetDots(): void {
 		this.collected.clear();
 		this.remainingDotsValue = this.grid.dotCount;

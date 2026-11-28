@@ -122,11 +122,15 @@ export const MAW_COST = FOOD_SEGMENTS * FOOD_PER_SEGMENT;
 export const STING_FOOD_PER_SECOND = FOOD_PER_SEGMENT;
 export const STING_RATE = 0.1;
 export const STING_SPEED = 16;
-export const STING_DAMAGE = 10;
+export const STING_DAMAGE = 5;
+/** Seconds of fire one Sting carries (a whole meter's worth), then it is spent. */
+export const STING_LOAD = 3;
 /** The berserk (the light one): faster, the button is a rush that costs a segment, with a cooldown. */
 export const BERSERK_SPEED_MUL = 1.15;
 export const RUSH_TILES = 5;
 export const RUSH_COST = FOOD_PER_SEGMENT;
+/** Rushes one berserk carries, then it is spent. */
+export const RUSH_LOAD = 3;
 export const RUSH_COOLDOWN = 2.5;
 export const RUSH_DAMAGE = 50;
 export const RUSH_STUN = 0.5;
@@ -145,6 +149,12 @@ export const WEAPON_WEIGHTS: ReadonlyArray<readonly [berserk: number, sting: num
 		[40, 35, 25],
 		[25, 30, 45]
 	];
+/**
+ * The food grows back (the fight never runs dry): every `FOOD_REGROW_EVERY` s one eaten tile at least
+ * `FOOD_REGROW_MIN_DIST` tiles from the hero fills again; in an empty maze about a meter in 1.5 min.
+ */
+export const FOOD_REGROW_EVERY = 1.5;
+export const FOOD_REGROW_MIN_DIST = 6;
 /** The medkit comes to a hurt hero after this wait (none lies yet). */
 export const MEDKIT_WAIT_MIN = 15;
 export const MEDKIT_WAIT_MAX = 20;

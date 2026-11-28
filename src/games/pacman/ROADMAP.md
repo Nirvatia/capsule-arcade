@@ -104,7 +104,11 @@ last (see Later).
    stunned boss, 150 otherwise; a rush costs a segment; a weapon is spent when the meter cannot pay
    its next use; the weapons come one at a time by the phase's weights; the medkit on its own wait;
    frightened split ghosts turn at random and the shy one never hides (`DronePack.classic`); no tar on
-   a teleport or its mouth. Left: his play of these numbers (`DoomBalance`: the weights, the glance,
+   a teleport or its mouth. His third play (same day): the Sting carried the fight (let go before
+   empty, it lived for ever and outdid the rest per food), and once the food after the last split
+   was eaten, nothing could hurt the boss. Done: each weapon carries one load (the Maw a shot, the
+   Sting 3 s, the berserk 3 rushes; the dial shows it as `2/3`), the Sting's bolt 10 → 5, the food
+   grows back (a tile every 1.5 s, 6+ tiles from the hero). Left: his play of these numbers (`DoomBalance`: the weights, the glance,
    the segment), then **one art pass in `hell-kit`** (frames, his approval, then into the game):
    - the weapons: the Sting's icon (unreadable), its muzzle flash and its bolts' hits (boss, wall,
      imp; now only a white flash on the boss); the rush redone (it reads as caramel), its trail and its

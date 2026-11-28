@@ -288,7 +288,9 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
 - **Food** (its sprite is the owner's later pick: the fang is the lead) fills the maze at the start;
   each piece is 10 points and fills the **food meter**, the weapons' one resource: 3 segments of 20
   pieces (the ring on the dial with its segment ticks, shown whatever is in hand; 60 for the whole
-  meter since 2026-11-28, was 30: the maze's ~240 pieces made the Maw always ready).
+  meter since 2026-11-28, was 30: the maze's ~240 pieces made the Maw always ready). **The food
+  grows back**: every 1.5 s one eaten tile at least 6 tiles from the hero fills again (about a meter
+  in 1.5 min in an empty maze), so the fight never runs dry after the last split.
 - **The split** replaces the phase transition at 1000 and 500 HP (so twice a fight). The boss
   stands and shakes (the omen, the old transition's 2.5 s), then bursts where he is: his flesh
   splatters into **new food** (every eaten tile fills again) and his **core** stays on that tile
@@ -304,10 +306,11 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
   eaten ghost, far less than a hit on him stunned (the owner's rule, 2026-11-28). The split's damage
   never crosses the next phase's threshold.
 - **The button** uses the weapon in hand, one action each (no gestures, no taps against holds: the
-  owner, 2026-11-28). A new weapon picked up replaces the one in hand. **A weapon is spent** and leaves
-  the hand when the meter it used cannot pay its next use: the Maw after its shot, the Sting on an
-  empty meter (let go earlier, it stays), the berserk when a rush leaves less than a segment. A
-  press the meter cannot pay is refused with a dull click (2026-11-28: the rotation of the weapons).
+  owner, 2026-11-28). A new weapon picked up replaces the one in hand. **Each weapon carries one load**
+  and is spent when it is gone, however much is eaten: the Maw one shot, the Sting 3 s of fire, the
+  berserk 3 rushes (the dial shows what is left, e.g. 2/3); the food still pays every use, and a
+  press the meter cannot pay is refused with a dull click (2026-11-28: the rotation of the weapons;
+  a first rule, "spent when the meter cannot pay", let a Sting let go early live for ever).
 - **Pickups** (four spots in the middle of the outer sides, away from the corners, which are the
   split's energizers'; hidden during the split). **The weapons come one at a time** (2026-11-28):
   only while the hand is empty and none lies, 4–6 s after, on a spot away from the hero; its kind
@@ -322,7 +325,8 @@ from (unchanged); the **split** is the phase change, plain Pac-Man with a window
     Its look: the hero spins up into a whirlwind of blood, the same for both heroes; while a rush
     would be a counter, a gold ring pulses round the hero.
   - **Жало** (the Sting, middle): fires bolts along the corridor while the button is held, a segment
-    of the meter a second (about 100 damage a segment if all hit), no stun, kills imps; on the move.
+    of the meter a second (about 50 damage a segment if all hit, halved 2026-11-28: it outdid the
+    other two per piece of food), no stun, kills imps; on the move.
   - **Жерло** (the Maw, the old BFG renamed, heavy): needs the **whole meter**; the hero stands
     still for its charge (0.8 s), then the orb: **400 damage only on a stunned boss** (the split's
     window, or a rush's or an orb's stun), **150 otherwise** (a glance), and a 1 s stun; the tracers

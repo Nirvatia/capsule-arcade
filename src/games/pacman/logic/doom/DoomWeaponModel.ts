@@ -4,15 +4,17 @@ import {
 	MAW_COST,
 	RUSH_COOLDOWN,
 	RUSH_COST,
-	STING_FOOD_PER_SECOND
+	RUSH_LOAD,
+	STING_FOOD_PER_SECOND,
+	STING_LOAD
 } from './DoomBalance';
 
 /**
  * What the hero holds (DESIGN §7 "The fight, redesigned"): one weapon from the pickups, and the
  * button uses it. `bfg` is the Maw (Жерло, the heavy gun), `plasma` the Sting (Жало), `berserk` the
- * light one. A new pickup replaces the weapon in hand. A weapon is spent, and leaves the hand, when
- * the meter it used cannot pay its next use: the Maw after its shot, the Sting on an empty meter, the
- * berserk when a rush leaves less than a segment.
+ * light one. A new pickup replaces the weapon in hand. Each weapon picked up carries one **load**
+ * (the Maw one shot, the Sting `STING_LOAD` s of fire, the berserk `RUSH_LOAD` rushes); the food
+ * pays every use, and when the load is gone the weapon is spent and leaves the hand.
  */
 export type DoomSlotItem = 'berserk' | 'plasma' | 'bfg' | null;
 
@@ -39,6 +41,8 @@ export class DoomWeaponModel {
 	public bfgRecoilTimer = 0;
 	private chargeCompletedValue = false;
 	private spentValue: DoomSlotItem = null;
+	/** What is left of the load in hand: shots, seconds of fire or rushes. */
+	public load = 0;
 
 	get berserkActive(): boolean {
 		return this.slot === 'berserk';
@@ -70,7 +74,13 @@ export class DoomWeaponModel {
 		}
 		this.slot = item;
 		this.rushCooldown = 0;
+		this.load = DoomWeaponModel.loadOf(item);
 		return true;
+	}
+
+	/** The whole load of `item`: shots, seconds of fire or rushes. */
+	static loadOf(item: DoomSlotItem): number {
+		return item === 'berserk' ? RUSH_LOAD : item === 'plasma' ? STING_LOAD : item === 'bfg' ? 1 : 0;
 	}
 
 	/** The berserk's rush can go now: its cooldown is over and the meter holds a segment. */
@@ -89,26 +99,28 @@ export class DoomWeaponModel {
 		return this.slot === 'bfg' && !this.bfgReady;
 	}
 
-	/** A rush goes: it pays a segment and starts the cooldown; the berserk is spent below a segment. */
+	/** A rush goes: it pays a segment, starts the cooldown and uses one of the load. */
 	spendRush(): boolean {
 		if (!this.rushReady) {
 			return false;
 		}
 		this.food -= RUSH_COST;
 		this.rushCooldown = RUSH_COOLDOWN;
-		if (this.food < RUSH_COST) {
+		this.load -= 1;
+		if (this.load <= 0) {
 			this.spend();
 		}
 		return true;
 	}
 
-	/** Burns `dt` of the Sting's fire from the meter; false when the meter is empty. Spent at empty. */
+	/** Burns `dt` of the Sting's fire from the meter and the load; false when the meter is empty. */
 	spendSting(dt: number): boolean {
 		if (this.slot !== 'plasma' || this.food <= 0) {
 			return false;
 		}
 		this.food = Math.max(0, this.food - STING_FOOD_PER_SECOND * dt);
-		if (this.food <= 0) {
+		this.load -= dt;
+		if (this.load <= 1e-9) {
 			this.spend();
 		}
 		return true;
@@ -125,6 +137,7 @@ export class DoomWeaponModel {
 		this.spentValue = this.slot;
 		this.slot = null;
 		this.rushCooldown = 0;
+		this.load = 0;
 	}
 
 	startBfgCharge(): boolean {
@@ -180,5 +193,6 @@ export class DoomWeaponModel {
 		this.bfgRecoilTimer = 0;
 		this.chargeCompletedValue = false;
 		this.spentValue = null;
+		this.load = 0;
 	}
 }

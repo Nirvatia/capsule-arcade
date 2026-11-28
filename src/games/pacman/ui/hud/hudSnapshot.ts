@@ -41,6 +41,9 @@ export interface HudBoss {
 	readonly rush: number;
 	/** 0..1 while the Maw charges. */
 	readonly charge: number;
+	/** What is left of the weapon's load (shots, seconds of fire or rushes) and its whole; 0 empty-handed. */
+	readonly load: number;
+	readonly loadMax: number;
 	/** The food meter that feeds the guns, 0..1 in `segments` segments (the dial's ring, always). */
 	readonly food: number;
 	readonly segments: number;
@@ -154,6 +157,8 @@ export function buildHudSnapshot(
 					rush: doom.rushCooldown,
 					charge: doom.bfgCharging ? doom.bfgChargeProgress : 0,
 					food: doom.food,
+					load: doom.load.left,
+					loadMax: doom.load.max,
 					segments: FOOD_SEGMENTS,
 					split: doom.split.active ? { left: doom.split.timeLeft, eaten: doom.split.eaten } : null,
 					defeated: bossService.defeated,

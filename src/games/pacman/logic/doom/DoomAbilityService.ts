@@ -23,6 +23,8 @@ import {
 	BFG_ORB_GLANCE_DAMAGE,
 	BFG_ORB_STUN,
 	BFG_TRACER_DAMAGE,
+	FOOD_REGROW_EVERY,
+	FOOD_REGROW_MIN_DIST,
 	BERSERK_SPEED_MUL,
 	FOOD_PER_SEGMENT,
 	FOOD_SEGMENTS,
@@ -74,6 +76,8 @@ export class DoomAbilityService {
 	private rushCounter = false;
 	private rushHit = false;
 	private foodSeen = 0;
+	private regrowClock = 0;
+	private readonly rng: () => number = Math.random;
 	private splitWasActive = false;
 	private readonly processedTracers = new Set<DoomBfgTracer>();
 
@@ -140,6 +144,11 @@ export class DoomAbilityService {
 	/** The food meter, 0..1 (`FOOD_SEGMENTS` segments). */
 	get food(): number {
 		return this.weapons.food / FOOD_MAX;
+	}
+
+	/** What is left of the weapon's load in hand (shots, seconds of fire or rushes) and its whole. */
+	get load(): { readonly left: number; readonly max: number } {
+		return { left: this.weapons.load, max: this.weapons.loadMax };
 	}
 
 	/** The Maw has its whole meter. */
@@ -232,6 +241,7 @@ export class DoomAbilityService {
 			this.splitWasActive = false;
 			this.pickups.fillEmpty(this.needs(), player);
 		}
+		this.regrowFood(dt, player);
 		this.ballHitBossValue = false;
 		this.weapons.update(dt);
 		if (this.weapons.consumeChargeCompleted()) {
@@ -373,6 +383,7 @@ export class DoomAbilityService {
 		this.processedTracers.clear();
 		this.progress.clearEnergizers();
 		this.foodSeen = this.progress.collectedDots;
+		this.regrowClock = 0;
 		this.pickups.reset(this.needs());
 	}
 
@@ -396,6 +407,35 @@ export class DoomAbilityService {
 			handFree: !this.weapons.bfgCharging,
 			phase: this.boss.phase
 		};
+	}
+
+	/** Every `FOOD_REGROW_EVERY` s an eaten tile away from the hero fills again: the fight never runs dry. */
+	private regrowFood(dt: number, player: PlayerService): void {
+		this.regrowClock += dt;
+		if (this.regrowClock < FOOD_REGROW_EVERY) {
+			return;
+		}
+		this.regrowClock -= FOOD_REGROW_EVERY;
+		const hero = player.tile;
+		const far: GridPoint[] = [];
+		for (let y = 0; y < this.grid.height; y += 1) {
+			for (let x = 0; x < this.grid.width; x += 1) {
+				if (
+					this.grid.isDot(x, y) &&
+					this.progress.isCollected(x, y) &&
+					Math.abs(x - hero.x) + Math.abs(y - hero.y) >= FOOD_REGROW_MIN_DIST
+				) {
+					far.push({ x, y });
+				}
+			}
+		}
+		if (far.length === 0) {
+			return;
+		}
+		const at = far[Math.floor(this.rng() * far.length)];
+		this.progress.restoreDot(at.x, at.y);
+		// the meter counts only what is eaten: a tile growing back is not food in hand
+		this.foodSeen = this.progress.collectedDots;
 	}
 
 	/** The food eaten since the last look fills the meter (the split's refill starts the count again). */

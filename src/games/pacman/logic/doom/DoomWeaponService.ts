@@ -140,6 +140,15 @@ export class DoomWeaponService {
 		return this.model.spendRush();
 	}
 
+	/** What is left of the load in hand (shots, seconds of fire or rushes) and its whole. */
+	get load(): number {
+		return this.model.load;
+	}
+
+	get loadMax(): number {
+		return DoomWeaponModel.loadOf(this.model.slot);
+	}
+
 	/** The meter cannot pay the weapon in hand. */
 	get starved(): boolean {
 		return this.model.starved;

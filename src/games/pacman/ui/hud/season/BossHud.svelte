@@ -75,7 +75,9 @@
 				? `${boss.rush.toFixed(1)}s`
 				: boss.charge > 0
 					? `${Math.round(boss.charge * 100)}%`
-					: ''
+					: boss.loadMax > 0
+						? `${Math.ceil(boss.load - 1e-6)}/${boss.loadMax}`
+						: ''
 	);
 	const hearts = $derived(
 		boss ? Array.from({ length: boss.playerHpMax }, (_, i) => i < boss.playerHp) : []
