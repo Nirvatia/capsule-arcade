@@ -207,6 +207,17 @@
 	{#if weaponKey === 'berserk'}
 		<circle class="rage" cx={dial.cx} cy={dial.cy} r={dial.r - 3} fill="rgba(190,22,16,.7)" />
 	{/if}
+	{#if weaponKey}
+		<!-- what is burnt for good: charred under the rest -->
+		<circle
+			cx={dial.cx}
+			cy={dial.cy}
+			r={dial.r - 5}
+			fill="none"
+			stroke="#4a3632"
+			stroke-width="6"
+		/>
+	{/if}
 	<circle
 		class="ring"
 		cx={dial.cx}
@@ -233,6 +244,17 @@
 		stroke-dashoffset={ringLen * (1 - ring.ratio)}
 		transform="rotate(-90 {dial.cx} {dial.cy})"
 	/>
+	{#if boss && boss.refused > 0}
+		<circle
+			cx={dial.cx}
+			cy={dial.cy}
+			r={dial.r - 1}
+			fill="none"
+			stroke="#ff3a28"
+			stroke-width="4"
+			opacity={boss.refused}
+		/>
+	{/if}
 	{#each segmentTicks as angle (angle)}
 		<line
 			x1={dial.cx}

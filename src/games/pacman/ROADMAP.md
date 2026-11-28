@@ -117,21 +117,24 @@ last (see Later).
    whole), and he eats only into a weapon with room (in the split as in plain Pac-Man); the dial
    shows charged bright, chargeable dim, burnt gone (seen in the browser empty and full). Left: his
    play of these numbers (`DoomBalance`: the weights, the glance,
-   the segment), then **one art pass in `hell-kit`** (frames, his approval, then into the game):
-   - the weapons: the Sting's icon (unreadable), its muzzle flash and its bolts' hits (boss, wall,
-     imp; now only a white flash on the boss); the rush redone (it reads as caramel), its trail and its
-     hit, the counter's ×3 hit stronger than a plain one, the gold "counter now" ring checked; the
-     Maw's charge on the hero checked, its glance and its full hit told apart; a weapon spent (now a
-     grey placeholder ring, fx `spent`); a weapon arriving on its spot; the refused press (sound
-     only now); the medkit in the «Плоть» style (check);
+   the segment), then **the art pass**, group by group (a prototype page of looping cards on the real
+   hell, his picks, then into the game):
+   - **the weapons: done** (2026-11-28, `prototypes/pacman/hell-weapons`, in the game as
+     `render/doom/weaponArt` and `WeaponFxView`): the Sting's icon is the tank rifle, its muzzle and
+     its hits on the boss, a wall and an imp; the rush turns him into the fang saw with a trail, its
+     hit, the counter in gold and the gold ready ring; the Maw's charge, a burst on a boss not stunned
+     and the full hit on a stunned one; a weapon arriving (a blister bursts) and spent (its icon pops
+     up over him and shatters); the refused press (a jolt, a broken red ring, the dial flashes red);
+     the bone casket medkit; the dial's burnt part charred; the food he cannot eat faded. Left: his
+     look at all of it in play (seen in the browser: the pickups and the faded food; the effects only
+     in the prototype);
    - the boss: a clear stunned state (now spiral eyes and a slow body): slumped, something circling,
      the window and how long it lasts; hit reactions by strength (now a white flash); the split's
      omen, the core (`doomPlaceholders.drawCore`), the four running back and his forming on it; his
      death, the heart and the exit (check);
    - the split: **a ghost eaten** (no effect at all: the fx `ghost-eaten` event has no painter): the
      flesh bursting, the 200-1600 score, the sound; the frightened flayed ghost and its blink (check);
-   - the hazards: the tar without round pools in the tiles (e.g. a cracked crust along the corridor);
-   - the HUD: the meter's 20-piece segments, the empty slot after a weapon is spent.
+   - the hazards: the tar without round pools in the tiles (e.g. a cracked crust along the corridor).
      **Earlier mock-ups** (`prototypes/pacman/hell-phase`, built from the game's own hell):
      (1) **food** for the empty maze. Round one (souls, bones, eyes): the souls' glow hurt the eyes, the
      bones read but were noisy, the eyes were too faint. Round two (bone, fang, bigger plain eye, each on a

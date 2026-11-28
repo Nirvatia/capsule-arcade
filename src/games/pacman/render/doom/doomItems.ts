@@ -140,7 +140,6 @@ export const paintFist: Painter = (ctx) => {
 	ctx.restore();
 };
 
-/** A white first-aid box with a raised red cross. */
 export const paintMedkit: Painter = (ctx) => {
 	const strap = () => {
 		ctx.beginPath();

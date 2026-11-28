@@ -44,6 +44,17 @@ const MINION_SHOT_HIT_RADIUS_SQ = 0.25;
 const BOLT_HIT_RADIUS_SQ = 0.3;
 const RUSH_REACH_SQ = 0.9;
 const RECOIL_LOCK = 0.3;
+/** The unit step of a heading (none: to the right). */
+function headingVector(facing: string | null | undefined): [number, number] {
+	return facing === 'LEFT'
+		? [-1, 0]
+		: facing === 'UP'
+			? [0, -1]
+			: facing === 'DOWN'
+				? [0, 1]
+				: [1, 0];
+}
+
 /** The counter rush's cover: `PlayerService`'s dash runs 10 tiles a second. */
 const RUSH_COVER = RUSH_TILES / 10 + 0.15;
 /** A plain rush that strikes the boss is not hurt by touching him in the same moment. */
@@ -79,6 +90,9 @@ export class DoomAbilityService {
 	private foodSeen = 0;
 	private regrowClock = 0;
 	private splitWindowValue = false;
+	private stingFiringValue = false;
+	/** 1 at a refused press, fading: the HUD's dial flashes red. */
+	private refusedValue = 0;
 	private readonly rng: () => number = Math.random;
 	private splitWasActive = false;
 	private readonly processedTracers = new Set<DoomBfgTracer>();
@@ -159,6 +173,26 @@ export class DoomAbilityService {
 	/** The meter's segments for the weapon in hand: the berserk's three, the guns' one whole. */
 	get segments(): number {
 		return this.weapons.slot === 'berserk' ? FOOD_SEGMENTS : 1;
+	}
+
+	/** The rush now running is a counter (×3, gold). */
+	get rushIsCounter(): boolean {
+		return this.rushing && this.rushCounter;
+	}
+
+	/** The Sting is firing this frame (its muzzle shows). */
+	get stingFiring(): boolean {
+		return this.stingFiringValue;
+	}
+
+	/** He would eat food now (a weapon with room, or the split); otherwise the food shows faded. */
+	get canEat(): boolean {
+		return this.splitValue.active || this.weaponHasRoom();
+	}
+
+	/** 1 at a refused press, fading to 0. */
+	get refusedFlash(): number {
+		return this.refusedValue;
 	}
 
 	/** The boss stands stunned after a split with all four eaten: the rush and the Sting hit ×3. */
@@ -275,7 +309,10 @@ export class DoomAbilityService {
 				this.rushing = false;
 			}
 		}
+		this.refusedValue = Math.max(0, this.refusedValue - dt * 2.5);
+		this.stingFiringValue = false;
 		if (fireHeld && this.weapons.slot === 'plasma' && player.facing) {
+			this.stingFiringValue = this.weapons.food > 0;
 			this.weapons.fireSting(player, dt);
 		} else {
 			this.weapons.releaseSting();
@@ -318,8 +355,12 @@ export class DoomAbilityService {
 		}
 		const slot = this.weapons.slot;
 		if (slot && this.weapons.starved) {
-			// the meter cannot pay it: a dull click, nothing goes
+			// the meter cannot pay it: a dull click, a jolt at his front, the dial flashes red
 			this.events.emit('audio:cue', { cue: 'ability-fizzle' });
+			const p = player.position;
+			const [dx, dy] = headingVector(player.facing);
+			this.weapons.pushFx({ kind: 'refused', x: p.x, y: p.y, dx, dy });
+			this.refusedValue = 1;
 			return null;
 		}
 		if (slot === 'berserk') {
@@ -520,7 +561,12 @@ export class DoomAbilityService {
 			if (!player.isInvulnerable) {
 				player.grantInvulnerability(RUSH_HIT_GRACE);
 			}
-			this.weapons.pushFx({ kind: 'bite', x: b.x, y: b.y });
+			this.weapons.pushFx({
+				kind: 'rush-hit',
+				x: b.x,
+				y: b.y,
+				detail: this.rushCounter ? 'counter' : ''
+			});
 			this.weapons.pushFx({ kind: 'boss-hit', x: b.x, y: b.y });
 		}
 		this.boss.killMinionsWhere((minion) => {
@@ -548,6 +594,12 @@ export class DoomAbilityService {
 				);
 				this.boss.applyStun(BFG_ORB_STUN);
 				this.weapons.pushFx({ kind: 'boss-hit', x: bossPos.x, y: bossPos.y });
+				this.weapons.pushFx({
+					kind: 'maw-hit',
+					x: bossPos.x,
+					y: bossPos.y,
+					detail: stunned ? 'full' : 'glance'
+				});
 				this.weapons.detonateShot(i);
 				this.ballHitBossValue = true;
 				continue;
@@ -571,6 +623,7 @@ export class DoomAbilityService {
 			if (bdx * bdx + bdy * bdy < BOLT_HIT_RADIUS_SQ && !this.boss.defeated) {
 				const mul = this.splitWindowValue ? SPLIT_WINDOW_MUL : 1;
 				this.boss.takeDamage(STING_DAMAGE * mul, mul > 1 ? 'Sting, split window' : 'Sting');
+				this.weapons.pushFx({ kind: 'sting-hit', x: bolt.x, y: bolt.y, detail: 'boss' });
 				this.weapons.removeBolt(i);
 				continue;
 			}
@@ -581,6 +634,7 @@ export class DoomAbilityService {
 				return mdx * mdx + mdy * mdy < BOLT_HIT_RADIUS_SQ;
 			});
 			if (killed > 0) {
+				this.weapons.pushFx({ kind: 'sting-hit', x: bolt.x, y: bolt.y, detail: 'imp' });
 				this.weapons.removeBolt(i);
 			}
 		}

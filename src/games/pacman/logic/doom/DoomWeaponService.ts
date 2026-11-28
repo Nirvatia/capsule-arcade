@@ -30,7 +30,15 @@ export interface DoomFxEvent {
 		| 'boss-hit'
 		| 'player-hit'
 		/** The weapon in hand is spent and leaves it (`detail`: the weapon). */
-		| 'spent';
+		| 'spent'
+		/** A Sting bolt landed (`detail`: 'boss', 'wall' or 'imp'). */
+		| 'sting-hit'
+		/** The rush struck the boss (`detail`: 'counter' for the ×3). */
+		| 'rush-hit'
+		/** The Maw's orb struck the boss (`detail`: 'full' when he was stunned, else 'glance'). */
+		| 'maw-hit'
+		/** The press was refused: nothing charged (dx, dy: the hero's heading). */
+		| 'refused';
 	readonly x: number;
 	readonly y: number;
 	readonly dx?: number;
@@ -220,7 +228,18 @@ export class DoomWeaponService {
 			}
 		}
 		for (let i = this.stingBolts.length - 1; i >= 0; i -= 1) {
-			if (!this.advance(this.stingBolts[i], dt)) {
+			const bolt = this.stingBolts[i];
+			if (!this.advance(bolt, dt)) {
+				if (bolt.life > 0) {
+					// it met a wall: the splat sits on the wall's face
+					const sp = Math.hypot(bolt.vx, bolt.vy) || 1;
+					this.pushFx({
+						kind: 'sting-hit',
+						x: bolt.x + (bolt.vx / sp) * 0.3,
+						y: bolt.y + (bolt.vy / sp) * 0.3,
+						detail: 'wall'
+					});
+				}
 				this.stingBolts.splice(i, 1);
 			}
 		}

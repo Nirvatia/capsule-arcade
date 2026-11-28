@@ -6,6 +6,7 @@ import { minionPosition } from '../../logic/doom/DoomMinions';
 import { VOID_FLICKER } from '../../logic/doom/DoomBalance';
 import { DOOM_TILE } from './DoomBake';
 import { glowTexture, pickupSprite } from './DoomSprites';
+import { arrive } from './weaponArt';
 import { drawImp } from './HellImpView';
 import {
 	drawLaneBeam,
@@ -18,6 +19,9 @@ import type { Lane } from './doomRift';
 import { CROSS_ACTIVE } from '../../logic/doom/DoomBalance';
 import { block, liveTile, sealLocked, sealWarn, tar, warnTile } from './attackArt';
 import type { Tile } from './attackArt';
+
+/** Seconds a weapon takes to rise out of its blister on the spot. */
+const ARRIVE = 0.7;
 
 export class DoomCombatView {
 	private readonly scars = new RiftScars();
@@ -314,6 +318,10 @@ export class DoomCombatView {
 		ctx.restore();
 	}
 
+	/** When each spot's pickup came (it rises out of a blister of flesh for `ARRIVE` s). */
+	private readonly arrivals = new Map<object, { kind: string; since: number }>();
+	private pickupsSeen = false;
+
 	// Power-up from the prototype: additive glow plus icon, gently pulsing and swaying.
 	// A pickup that cannot be taken right now (full health, occupied slot) is dimmed.
 	private drawPickups(
@@ -331,8 +339,34 @@ export class DoomCombatView {
 			const px = layout.offsetX + (pickup.tile.x + 0.5) * s;
 			const py = layout.offsetY + (pickup.tile.y + 0.5) * s;
 			const phase = pickup.tile.x * 1.7 + pickup.tile.y * 0.9;
+			if (!pickup.visible || !pickup.kind) {
+				this.arrivals.delete(pickup);
+			}
 			if (pickup.visible && pickup.kind) {
 				const sprite = pickupSprite(pickup.kind);
+				const seen = this.arrivals.get(pickup);
+				if (!seen || seen.kind !== pickup.kind) {
+					// what lay there from the start does not arrive; what comes later does
+					this.arrivals.set(pickup, {
+						kind: pickup.kind,
+						since: this.pickupsSeen ? time : -ARRIVE
+					});
+				}
+				const age = time - (this.arrivals.get(pickup)?.since ?? -ARRIVE);
+				if (age >= 0 && age < ARRIVE) {
+					const g = sprite.glow;
+					const rgb = `${(g >> 16) & 255},${(g >> 8) & 255},${g & 255}`;
+					arrive(
+						ctx,
+						px,
+						py,
+						s,
+						age / ARRIVE,
+						(c) => c.drawImage(sprite.icon, -50, -50, 100, 100),
+						rgb
+					);
+					continue;
+				}
 				const ready = doom.canCollect(pickup.kind);
 				const scale = 1 + 0.05 * Math.sin(time * 2.6 + phase);
 				const glow = ((64 * 0.95) / 3) * u;
@@ -349,6 +383,7 @@ export class DoomCombatView {
 				ctx.restore();
 			}
 		}
+		this.pickupsSeen = true;
 	}
 
 	/** Blinky's imps: small horned ghosts, eyes and chevron pointing where they run. */

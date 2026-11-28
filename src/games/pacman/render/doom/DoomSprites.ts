@@ -8,8 +8,9 @@ import {
 	radialTexture
 } from '../common/textures';
 
-import { paintFist, paintMedkit } from './doomItems';
-import { paintMaw, paintSting } from './fleshKit';
+import { paintFist } from './doomItems';
+import { paintMaw } from './fleshKit';
+import { paintMedkit, paintSting } from './weaponArt';
 
 export { glowTexture } from '../common/textures';
 

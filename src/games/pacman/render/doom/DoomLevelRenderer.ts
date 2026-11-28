@@ -11,13 +11,9 @@ import type { DoomLight } from './DoomWorld';
 import { pickupSprite } from './DoomSprites';
 import { SPLIT_MERGE } from '../../logic/doom/DoomBalance';
 import { drawCore } from './doomPlaceholders';
-import {
-	drawFleshEnergizer,
-	drawFleshGhost,
-	drawRushWhirl,
-	drawStingBolt,
-	fleshFoodSprite
-} from './fleshKit';
+import { drawFleshEnergizer, drawFleshGhost, drawStingBolt, fleshFoodSprite } from './fleshKit';
+import { counterReady, mawCharge, rushSaw, rushTrail, stingMuzzle } from './weaponArt';
+import { WeaponFxView } from './WeaponFxView';
 import type { DoomAbilityService } from '../../logic/doom/DoomAbilityService';
 import type { DoomDirection } from '../../logic/doom/DoomGraph';
 import type { LevelProgress } from '../../logic/level/LevelProgress';
@@ -36,6 +32,7 @@ import type { GridLayout } from '../maze/GridView';
 export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 	private readonly shared: SharedLayers;
 	private readonly fxView = new DoomFxView();
+	private readonly weaponFx = new WeaponFxView();
 	private readonly bossView = new HellBlinkyView();
 	private readonly echoBossView = new HellBlinkyView();
 	private readonly combatView = new DoomCombatView();
@@ -72,6 +69,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		if (doom) {
 			for (const event of doom.consumeFx()) {
 				this.fxView.spawn(event);
+				this.weaponFx.spawn(event);
 				if (event.kind === 'boss-hit' || event.kind === 'bite') {
 					this.bossHitFlash = 1;
 				}
@@ -80,6 +78,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 				}
 			}
 			this.fxView.update(dt, doom.shots);
+			this.weaponFx.update(dt);
 			this.bossHitFlash = Math.max(0, this.bossHitFlash - dt * 5);
 		}
 
@@ -96,7 +95,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			this.fxView.drawGround(ctx, layout);
 			this.shared.drawCollectibles(frame, layout);
 			if (doom && level.progress) {
-				this.drawFood(ctx, grid, level.progress, doom.split.active, layout, time);
+				this.drawFood(ctx, grid, level.progress, doom.split.active, doom.canEat, layout, time);
 			}
 			const split = doom?.split.active ?? false;
 			if (doom && split) {
@@ -133,6 +132,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			if (doom) {
 				this.drawBolts(ctx, doom, layout);
 				this.fxView.draw(ctx, layout, doom.shots, doom.tracerList);
+				this.weaponFx.draw(ctx, layout, player ? player.position : null);
 			}
 		}
 		this.trackTeleport(frame, world);
@@ -149,6 +149,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		grid: GridService | null,
 		progress: LevelProgress,
 		split: boolean,
+		canEat: boolean,
 		layout: GridLayout,
 		time: number
 	): void {
@@ -157,6 +158,8 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 		}
 		const S = layout.tileSize;
 		const sprite = fleshFoodSprite(S);
+		// the food he cannot eat now (a full meter, an empty hand) shows faded
+		const faded = canEat ? 1 : 0.45;
 		for (let y = 0; y < grid.height; y += 1) {
 			for (let x = 0; x < grid.width; x += 1) {
 				if (progress.isCollected(x, y)) {
@@ -165,7 +168,9 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 				const px = layout.offsetX + x * S;
 				const py = layout.offsetY + y * S;
 				if (grid.isDot(x, y)) {
+					ctx.globalAlpha = faded;
 					ctx.drawImage(sprite, px, py, S, S);
+					ctx.globalAlpha = 1;
 				} else if (split && grid.isEnergizer(x, y)) {
 					drawFleshEnergizer(ctx, px + S / 2, py + S / 2, S, time);
 				}
@@ -261,21 +266,30 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			if (this.rushStart < 0) {
 				this.rushStart = time;
 			}
+			// he turns into the fang saw (it grows in over the first moment), its trail behind
 			const morph = Math.min(1, (time - this.rushStart) / 0.12);
-			drawRushWhirl(frame.ctx, x, y, S, player.facing ?? 'RIGHT', morph, time);
+			const counter = doom.rushIsCounter;
+			const ctx = frame.ctx;
+			const facing = player.facing ?? 'RIGHT';
+			rushTrail(ctx, x, y, S, facing, morph, counter);
+			const k = 0.6 + 0.4 * morph;
+			ctx.save();
+			ctx.translate(x, y);
+			ctx.scale(k, k);
+			ctx.translate(-x, -y);
+			rushSaw(ctx, x, y, S, time, counter);
+			ctx.restore();
 			return;
 		}
 		if (doom.berserkActive && doom.counterWindow && doom.rushCooldown <= 0) {
-			const ctx = frame.ctx;
-			const pulse = 0.5 + 0.5 * Math.sin(time * 14);
-			ctx.save();
-			ctx.globalCompositeOperation = 'lighter';
-			ctx.strokeStyle = `rgba(255,214,110,${0.45 + 0.45 * pulse})`;
-			ctx.lineWidth = Math.max(1.5, S * 0.08);
-			ctx.beginPath();
-			ctx.arc(x, y, S * (0.5 + 0.04 * pulse), 0, Math.PI * 2);
-			ctx.stroke();
-			ctx.restore();
+			counterReady(frame.ctx, x, y, S, time);
+		}
+		const facing = player.facing ?? 'RIGHT';
+		if (doom.bfgCharging) {
+			mawCharge(frame.ctx, x, y, S, facing, doom.bfgChargeProgress);
+		}
+		if (doom.stingFiring) {
+			stingMuzzle(frame.ctx, x, y, S, facing, (time * 10) % 1);
 		}
 	}
 
@@ -294,6 +308,7 @@ export class DoomLevelRenderer implements LevelRenderer, WorldPreview {
 			}
 			this.previewWorld = null;
 			this.fxView.reset();
+			this.weaponFx.reset();
 			this.worldGrid = frame.grid;
 		}
 		return this.world;

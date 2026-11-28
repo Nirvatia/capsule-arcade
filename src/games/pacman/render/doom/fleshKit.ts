@@ -281,8 +281,6 @@ export function drawFleshEnergizer(c: Ctx, x: number, y: number, S: number, t: n
 }
 
 /** The trap's bone: brighter than the food's, it must read on the floor in every state. */
-const JAW: Tones = { light: '#fffaf0', mid: '#ecdcbc', shade: '#9a8462' };
-
 /** A part in the icon box: its fill, then a 6-unit ink line, as `doomItems` does. */
 function piece(c: Ctx, path: () => void, fill: string | CanvasGradient, w = 6): void {
 	path();
@@ -332,8 +330,6 @@ const HORN: Tones = { light: '#fffaf0', mid: '#e4d4b0', shade: '#8a7452' };
 /** The Maw's charge: hell's own fire, not the old green. */
 const EMBER: readonly string[] = ['#fff6d0', '#ffb040', '#c84010'];
 /** The Sting's venom. */
-const VENOM: Tones = { light: '#e8fdff', mid: '#4ed0f4', shade: '#14628e' };
-
 /** Gunmetal, the hell's iron the way the pickups' guns are drawn: a lit top, a dark belly. */
 const IRON: readonly string[] = ['#a8b0ba', '#5c6470', '#2a3038'];
 
@@ -456,105 +452,6 @@ export function paintMaw(c: Ctx): void {
 	gloss(c, -16, -12, 12, 3, 0.6, 0);
 }
 
-/**
- * The Sting (Жало), the middle gun: a slim rifle. A bone stock, a narrow iron body with a canister of
- * venom on top, a long thin barrel wound with glowing coils, and a bone sting for a muzzle. Lighter
- * and longer than the Maw. Kept inside -46..46.
- */
-export function paintSting(c: Ctx): void {
-	celPiece(
-		c,
-		() => {
-			c.beginPath();
-			c.moveTo(-46, -4);
-			c.lineTo(-30, -9);
-			c.lineTo(-30, 7);
-			c.lineTo(-44, 12);
-			c.closePath();
-		},
-		HORN,
-		-38,
-		2,
-		11
-	);
-	piece(
-		c,
-		() => {
-			c.beginPath();
-			c.moveTo(-18, 8);
-			c.lineTo(-9, 8);
-			c.lineTo(-12, 30);
-			c.lineTo(-21, 30);
-			c.closePath();
-		},
-		linear(c, 0, 8, 0, 30, [IRON[1], IRON[2]])
-	);
-	piece(
-		c,
-		() => {
-			c.beginPath();
-			c.roundRect(-32, -10, 34, 20, 6);
-		},
-		linear(c, 0, -10, 0, 10, IRON)
-	);
-	// the canister of venom
-	bloom(c, -16, -16, 24, '80,220,255', 0.5);
-	celPiece(
-		c,
-		() => {
-			c.beginPath();
-			c.roundRect(-27, -24, 22, 12, 6);
-		},
-		VENOM,
-		-16,
-		-18,
-		11,
-		5
-	);
-	gloss(c, -22, -21, 5, 2, 0.9, 0);
-	// the barrel and its coils
-	piece(
-		c,
-		() => {
-			c.beginPath();
-			c.rect(2, -5, 32, 10);
-		},
-		linear(c, 0, -5, 0, 5, IRON),
-		5
-	);
-	bloom(c, 18, 0, 22, '80,220,255', 0.4);
-	for (const cx of [8, 17, 26]) {
-		piece(
-			c,
-			() => {
-				c.beginPath();
-				c.roundRect(cx, -8, 4, 16, 2);
-			},
-			'#7fe6ff',
-			3
-		);
-	}
-	// the sting
-	celPiece(
-		c,
-		() => {
-			c.beginPath();
-			c.moveTo(32, -8);
-			c.lineTo(46, 0);
-			c.lineTo(32, 8);
-			c.closePath();
-		},
-		HORN,
-		37,
-		0,
-		8,
-		4
-	);
-	bloom(c, 45, 0, 12, '80,220,255', 0.8);
-	gloss(c, -18, -6, 9, 2, 0.6, 0);
-}
-
-/** A bolt of bile: a glowing drop, stretched along its flight, two drips behind. */
 export function drawStingBolt(c: Ctx, x: number, y: number, S: number, dir: Dir): void {
 	bloom(c, x, y, S * 0.5, '60,190,255', 0.5);
 	c.save();
@@ -586,131 +483,6 @@ export function drawStingBolt(c: Ctx, x: number, y: number, S: number, dir: Dir)
 		0.8
 	);
 	gloss(c, S * 0.02, -S * 0.05, S * 0.04, S * 0.018, 0.9, 0);
-	c.restore();
-}
-
-const VORTEX: readonly string[] = ['#ffb4a0', '#e0403a', '#9a1420', '#4a060c'];
-
-/**
- * The rush, the same for both heroes: the hero spins up into a whirlwind of blood, the boss's lava
- * ball's opposite (that one rolls and cools; this one spins and sprays). A disc of crimson spiral
- * bands with bone shards caught in them, a dark eye at the centre, drops flung off its rim, all
- * leaning into the heading. `morph` grows it in (the caller fades the hero out under it); `t` turns
- * it. Kept inside the tile.
- */
-export function drawRushWhirl(
-	c: Ctx,
-	x: number,
-	y: number,
-	S: number,
-	dir: Dir,
-	morph: number,
-	t: number
-): void {
-	const m = Math.max(0, Math.min(1, morph));
-	if (m <= 0) return;
-	const R = S * 0.42 * (0.5 + 0.5 * m);
-	const spin = t * 9;
-	const [dx, dy] = VEC[dir];
-	c.save();
-	c.globalAlpha *= Math.min(1, m * 1.5);
-	c.translate(x, y);
-	// the dark pool under it and a red bloom
-	c.fillStyle = 'rgba(10,0,3,.5)';
-	c.beginPath();
-	c.ellipse(S * 0.03, S * 0.05, R * 1.02, R * 0.98, 0, 0, TAU);
-	c.fill();
-	bloom(c, 0, 0, R * 1.5, '255,70,50', 0.35 * m);
-	// the disc, squashed a little along the heading as it charges
-	c.save();
-	c.rotate(Math.atan2(dy, dx));
-	c.scale(1 + 0.1 * m, 1 - 0.08 * m);
-	const disc = (): void => {
-		c.beginPath();
-		c.arc(0, 0, R, 0, TAU);
-	};
-	disc();
-	c.fillStyle = VORTEX[2];
-	c.fill();
-	c.save();
-	disc();
-	c.clip();
-	// spiral bands, light to dark toward the eye
-	for (let arm = 0; arm < 3; arm += 1) {
-		for (let band = 0; band < 3; band += 1) {
-			c.beginPath();
-			for (let k = 0; k <= 40; k += 1) {
-				const u = k / 40;
-				const a = spin + arm * ((Math.PI * 2) / 3) + u * Math.PI * 1.6;
-				const rr = R * (1.05 - u * 0.85) - band * R * 0.06;
-				const px = Math.cos(a) * rr;
-				const py = Math.sin(a) * rr;
-				if (k === 0) c.moveTo(px, py);
-				else c.lineTo(px, py);
-			}
-			c.strokeStyle = VORTEX[band];
-			c.lineWidth = R * (0.26 - band * 0.06);
-			c.lineCap = 'round';
-			c.stroke();
-		}
-	}
-	// the lit side and the shade, as every round thing in the hell
-	c.fillStyle = 'rgba(255,230,210,.22)';
-	c.beginPath();
-	c.ellipse(-R * 0.3, -R * 0.35, R * 0.8, R * 0.55, -0.5, 0, TAU);
-	c.fill();
-	c.fillStyle = 'rgba(30,0,6,.35)';
-	c.beginPath();
-	c.rect(-R * 2, -R * 2, R * 4, R * 4);
-	c.ellipse(-R * 0.15, -R * 0.15, R * 1.1, R * 1.1, 0, 0, TAU);
-	c.fill('evenodd');
-	// bone shards caught in the flow
-	for (let k = 0; k < 5; k += 1) {
-		const a = spin * 1.2 + k * 1.26;
-		const rr = R * (0.45 + 0.1 * (k % 3));
-		c.save();
-		c.translate(Math.cos(a) * rr, Math.sin(a) * rr);
-		c.rotate(a + Math.PI / 2);
-		cel(
-			c,
-			() => {
-				c.beginPath();
-				c.moveTo(-R * 0.12, 0);
-				c.lineTo(0, -R * 0.06);
-				c.lineTo(R * 0.12, 0);
-				c.lineTo(0, R * 0.05);
-				c.closePath();
-			},
-			JAW,
-			0,
-			0,
-			R * 0.1,
-			S,
-			0.45
-		);
-		c.restore();
-	}
-	c.restore();
-	disc();
-	ink(c, S, 1.1);
-	// the eye of the storm
-	c.beginPath();
-	c.arc(0, 0, R * 0.2, 0, TAU);
-	c.fillStyle = radial(c, 0, 0, 0, R * 0.2, ['#2a0004', '#120002']);
-	c.fill();
-	ink(c, S, 0.6);
-	c.restore();
-	// drops flung off the rim, behind the heading
-	for (let k = 0; k < 4; k += 1) {
-		const a = Math.atan2(-dy, -dx) + (k - 1.5) * 0.45;
-		const d = R * (1.02 + 0.06 * (k % 2));
-		c.beginPath();
-		c.ellipse(Math.cos(a) * d, Math.sin(a) * d, S * 0.035, S * 0.022, a, 0, TAU);
-		c.fillStyle = '#c8241c';
-		c.fill();
-		ink(c, S, 0.4);
-	}
-	gloss(c, -R * 0.45, -R * 0.5, R * 0.16, R * 0.06, 0.75);
 	c.restore();
 }
 

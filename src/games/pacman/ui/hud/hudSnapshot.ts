@@ -38,6 +38,8 @@ export interface HudBoss {
 	readonly charge: number;
 	/** What is left of the weapon's meter, charged or not, 0..1 (the rest is spent; 0 empty-handed). */
 	readonly capacity: number;
+	/** 1 at a refused press (nothing charged), fading: the dial flashes red. */
+	readonly refused: number;
 	/** The weapon's charge, 0..1, in `segments` segments (the dial's ring: the berserk's three, the guns' one). */
 	readonly food: number;
 	readonly segments: number;
@@ -152,6 +154,7 @@ export function buildHudSnapshot(
 					charge: doom.bfgCharging ? doom.bfgChargeProgress : 0,
 					food: doom.food,
 					capacity: doom.capacity,
+					refused: doom.refusedFlash,
 					segments: doom.segments,
 					split: doom.split.active ? { left: doom.split.timeLeft, eaten: doom.split.eaten } : null,
 					defeated: bossService.defeated,

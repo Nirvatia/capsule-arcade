@@ -84,9 +84,13 @@ render/
                    ball that lays a cooling track, its timing read from the telegraph's run);
                    fleshKit (with fleshPaint): the redesign's art, the owner's pick «Плоть»
                    (the food as one cached fang sprite, the split's hot heart energizer and its
-                   four flayed ghosts, the Sting's bolts, the Maw's and the Sting's pickup icons,
-                   the berserk's rush as a whirlwind of blood, a gold ring on the hero while a rush
-                   would be a counter); doomPlaceholders: the split's core until its mock-up
+                   four flayed ghosts, the Sting's bolts, the Maw's pickup icon;
+                   weaponArt (the weapons pass, `hell-weapons`): the Sting's icon, the medkit, the
+                   Sting's muzzle and hits, the rush as the fang saw with its trail, hit and the
+                   counter's gold ready ring, the Maw's charge and its two hits, a weapon arriving
+                   and spent, the refused press; WeaponFxView plays the weapons' fx events
+                   (`sting-hit`, `rush-hit`, `maw-hit`, `spent`, `refused`) with them);
+                   doomPlaceholders: the split's core until its mock-up
   station/         the station in the game: StationLevelRenderer over b7/ (b7Scene: the owner's
                    mock-up Station_Level_v2 carried over as drawn on the game's maze; B7World:
                    the hull and baked architecture as one screen layer per resize, the phase's

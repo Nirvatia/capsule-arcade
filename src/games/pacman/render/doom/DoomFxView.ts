@@ -204,10 +204,6 @@ export class DoomFxView {
 				this.hurtValue = 1;
 				this.shakeValue = Math.max(this.shakeValue, 0.4);
 				break;
-			case 'spent':
-				// placeholder until the hell-kit's own "spent" effect: a dull grey puff
-				this.ring(x, y, 1.0, 0x8a7a72, 0.3, 0.1);
-				break;
 		}
 	}
 
